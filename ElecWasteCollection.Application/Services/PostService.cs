@@ -179,5 +179,44 @@ namespace ElecWasteCollection.Application.Services
 			}
 			return false;
 		}
+
+		public PostModel GetById(Guid id)
+		{
+			var post = posts.FirstOrDefault(p => p.Id == id);
+			if (post == null)
+			{
+				return null;
+			}
+			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+			List<DailyTimeSlots> schedule = null;
+			if (!string.IsNullOrEmpty(post.ScheduleJson))
+			{
+				try
+				{
+					schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options);
+				}
+				catch (JsonException ex)
+				{
+					Console.WriteLine($"[JSON ERROR] Could not deserialize schedule for Post ID {post.Id}: {ex.Message}");
+				}
+			}
+			var sender = _userService.GetById(post.SenderId);
+			if (sender != null) {
+				return new PostModel
+				{
+					Id = post.Id,
+					Name = post.Name,
+					Category = post.Category,
+					Description = post.Description,
+					Date = post.Date,
+					Address = post.Address,
+					Images = post.Images,
+					Status = post.Status,
+					Sender = sender,
+					Schedule = schedule
+				};
+			}
+			return null;
+		}
 	}
 }

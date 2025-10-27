@@ -13,6 +13,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> AddPost(CreatePostModel createPostRequest);
 		List<PostModel> GetAll();
 
+		PostModel GetById(Guid id);
 		bool ApprovePost(Guid postId);
 	}
 }
