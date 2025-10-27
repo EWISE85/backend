@@ -1,0 +1,6 @@
+@ElecWasteCollection.API_HostAddress = http://localhost:5215
+
+GET {{ElecWasteCollection.API_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
