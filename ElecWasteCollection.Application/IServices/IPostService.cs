@@ -12,8 +12,10 @@ namespace ElecWasteCollection.Application.IServices
 	{
 		Task<bool> AddPost(CreatePostModel createPostRequest);
 		List<PostModel> GetAll();
-
+		List<PostModel> GetPostBySenderId(Guid senderId);
 		PostModel GetById(Guid id);
 		bool ApprovePost(Guid postId);
+
+		bool RejectPost(Guid postId, string rejectMessage);
 	}
 }

@@ -59,6 +59,13 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(post);
 		}
+		[HttpGet("sender/{senderId}")]
+		public IActionResult GetPostsBySenderId([FromRoute] Guid senderId)
+		{
+			var posts = _postService.GetPostBySenderId(senderId);
+			return Ok(posts);
+		}
+
 		[HttpPut("approve/{postId}")]
 		public IActionResult ApprovePost(Guid postId)
 		{
@@ -71,6 +78,19 @@ namespace ElecWasteCollection.API.Controllers
 			else
 			{
 				return StatusCode(400, $"An error occurred while approving the post {postId}.");
+			}
+		}
+		[HttpPut("reject/{postId}")]
+		public IActionResult RejectPost([FromRoute] Guid postId, [FromBody] RejectPostRequest rejectPostRequest)
+		{
+			var isRejected = _postService.RejectPost(postId, rejectPostRequest.RejectMessage);
+			if (isRejected)
+			{
+				return Ok(new { message = $"Post {postId} rejected successfully." });
+			}
+			else
+			{
+				return StatusCode(400, $"An error occurred while rejecting the post {postId}.");
 			}
 		}
 

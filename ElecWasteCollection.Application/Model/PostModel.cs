@@ -19,6 +19,7 @@ namespace ElecWasteCollection.Application.Model
 		public string Address { get; set; }
 		public List<DailyTimeSlots> Schedule { get; set; }
 		public List<string> Images { get; set; }
+		public string? RejectMessage { get; set; }
 		public string Status { get; set; }
 	}
 }

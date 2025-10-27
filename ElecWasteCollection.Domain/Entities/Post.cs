@@ -18,6 +18,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public string Address { get; set; }
 		public string? ScheduleJson { get; set; }
 		public List<string> Images { get; set; }
+
+		public string? RejectMessage { get; set; }
 		public string Status { get; set; }
 	}
 }

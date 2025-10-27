@@ -163,6 +163,7 @@ namespace ElecWasteCollection.Application.Services
 					Address = post.Address,
 					Images = post.Images,
 					Status = post.Status,
+					RejectMessage = post.RejectMessage,
 					Sender = sender,
 					Schedule = schedule
 				};
@@ -212,11 +213,65 @@ namespace ElecWasteCollection.Application.Services
 					Address = post.Address,
 					Images = post.Images,
 					Status = post.Status,
+					RejectMessage = post.RejectMessage,
 					Sender = sender,
 					Schedule = schedule
 				};
 			}
 			return null;
 		}
+
+		public bool RejectPost(Guid postId, string rejectMessage)
+		{
+			var post = posts.FirstOrDefault(p => p.Id == postId);
+			if (post != null)
+			{
+				post.Status = "Đã Từ Chối";
+				post.RejectMessage = rejectMessage;
+				return true;
+			}
+			return false;
+		}
+
+		public List<PostModel> GetPostBySenderId(Guid senderId)
+		{
+			var postList = posts.Where(p => p.SenderId == senderId).ToList();
+			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+			return postList.Select(post =>
+			{
+				List<DailyTimeSlots> schedule = null;
+
+				if (!string.IsNullOrEmpty(post.ScheduleJson))
+				{
+					try
+					{
+						schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options);
+					}
+					catch (JsonException ex)
+					{
+						Console.WriteLine($"[JSON ERROR] Could not deserialize schedule for Post ID {post.Id}: {ex.Message}");
+					}
+				}
+
+				var sender = _userService.GetById(post.SenderId);
+
+				return new PostModel
+				{
+					Id = post.Id,
+					Name = post.Name,
+					Category = post.Category,
+					Description = post.Description,
+					Date = post.Date,
+					Address = post.Address,
+					Images = post.Images,
+					Status = post.Status,
+					Sender = sender,
+					RejectMessage = post.RejectMessage,
+					Schedule = schedule
+				};
+			}).ToList();
+		}
+
 	}
 }
