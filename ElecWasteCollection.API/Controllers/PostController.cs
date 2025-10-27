@@ -49,6 +49,16 @@ namespace ElecWasteCollection.API.Controllers
 			var posts = _postService.GetAll();
 			return Ok(posts);
 		}
+		[HttpGet("{postId}")]
+		public IActionResult GetPostById(Guid postId)
+		{
+			var post = _postService.GetById(postId);
+			if (post == null)
+			{
+				return NotFound($"Post with ID {postId} not found.");
+			}
+			return Ok(post);
+		}
 		[HttpPut("approve/{postId}")]
 		public IActionResult ApprovePost(Guid postId)
 		{
@@ -63,6 +73,8 @@ namespace ElecWasteCollection.API.Controllers
 				return StatusCode(400, $"An error occurred while approving the post {postId}.");
 			}
 		}
+
+
 
 	}
 }
