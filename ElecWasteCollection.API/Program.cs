@@ -1,4 +1,5 @@
 
+using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Services;
 
@@ -18,6 +19,8 @@ namespace ElecWasteCollection.API
 			builder.Services.AddSwaggerGen();
 			builder.Services.AddScoped<IPostService, PostService>();
 			builder.Services.AddScoped<IUserService, UserService>();
+			builder.Services.AddScoped<ICollectorService, CollectorService>();
+			builder.Services.AddScoped<ICollectionRouteService, CollectionRouteService>();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
@@ -29,6 +32,10 @@ namespace ElecWasteCollection.API
 				});
 			});
 			var app = builder.Build();
+			_ = FakeDataSeeder.users;
+			_ = FakeDataSeeder.posts;
+			_ = FakeDataSeeder.collector;
+			_ = FakeDataSeeder.routes;
 			app.UseCors("AllowAll");
 
 			// Configure the HTTP request pipeline.

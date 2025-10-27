@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.Helper;
+﻿using ElecWasteCollection.Application.Data;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -15,7 +16,7 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class PostService : IPostService
 	{
-		private static List<Post> posts = new List<Post>();
+		private static List<Post> posts = FakeDataSeeder.posts;
 		private const string ImaggaApiKey = "acc_b80eaae365fbf2f";
 		private const string ImaggaApiSecret = "ac0c2b3adc747be522c11368f95882b3";
 		private const double ConfidenceThreshold = 80.0;
@@ -133,7 +134,7 @@ namespace ElecWasteCollection.Application.Services
 				return false;
 			}
 		}
-
+		
 		public List<PostModel> GetAll()
 		{
 			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };

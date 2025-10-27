@@ -15,6 +15,8 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public string DayName { get; set; }
 
+		public DateOnly PickUpDate { get; set; }
+
 		public List<TimeSlotDetail> Slots { get; set; }
 	}
 }
