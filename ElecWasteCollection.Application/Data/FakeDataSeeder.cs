@@ -19,10 +19,10 @@ namespace ElecWasteCollection.Application.Data
 			Name = "Trần Văn An",
 			Email = "tran.van.an@example.com",
 			Phone = "0901234567",
-			Address = "123 Đường Nguyễn Huệ, Quận 1, TP. Hồ Chí Minh",
+			Address = "Vinhomes Grand Park – Nguyễn Xiển, Phường Long Thạnh Mỹ, TP. Thủ Đức",
 			Avatar = "https://picsum.photos/id/1011/200/200",
-			Iat = 1050000,
-			Ing = 10660000
+			Iat = 10.842003,
+			Ing = 106.829580
 		},
 		new User
 		{
@@ -30,10 +30,10 @@ namespace ElecWasteCollection.Application.Data
 			Name = "Lê Thị Mai",
 			Email = "le.thi.mai@example.com",
 			Phone = "0987654321",
-			Address = "45 Hàng Ngang, Quận Hoàn Kiếm, Hà Nội",
+			Address = "Vincom Mega Mall Grand Park – Đường Nguyễn Xiển, Phường Long Thạnh Mỹ, TP. Thủ Đức",
 			Avatar = "https://picsum.photos/id/1025/200/200",
-			Iat = 2100000,
-			Ing = 10580000
+			Iat = 10.843450,
+			Ing = 106.829900
 		},
 		new User
 		{
@@ -41,10 +41,10 @@ namespace ElecWasteCollection.Application.Data
 			Name = "Nguyễn Minh Khôi",
 			Email = "nguyen.minh.khoi@example.com",
 			Phone = "0908123456",
-			Address = "22 Nguyễn Trãi, Quận 5, TP. Hồ Chí Minh",
+			Address = "Trường THCS Long Thạnh Mỹ – Đường Long Thạnh Mỹ, TP. Thủ Đức",
 			Avatar = "https://picsum.photos/id/1033/200/200",
-			Iat = 1055000,
-			Ing = 10640000
+			Iat = 10.845900,
+			Ing = 106.833400
 		},
 		new User
 		{
@@ -52,10 +52,10 @@ namespace ElecWasteCollection.Application.Data
 			Name = "Phạm Thị Hằng",
 			Email = "pham.thi.hang@example.com",
 			Phone = "0911222333",
-			Address = "89 Lê Lợi, Quận Hải Châu, Đà Nẵng",
+			Address = "UBND Phường Long Thạnh Mỹ – 86 Nguyễn Xiển, TP. Thủ Đức",
 			Avatar = "https://picsum.photos/id/1045/200/200",
-			Iat = 1600000,
-			Ing = 10850000
+			Iat = 10.841000,
+			Ing = 106.830000
 		},
 		new User
 		{
@@ -63,10 +63,10 @@ namespace ElecWasteCollection.Application.Data
 			Name = "Đỗ Quốc Bảo",
 			Email = "do.quoc.bao@example.com",
 			Phone = "0977222333",
-			Address = "77 Lý Thường Kiệt, TP. Huế",
+			Address = "Công viên Ánh Sáng Vinhomes – Khu đô thị Vinhomes Grand Park",
 			Avatar = "https://picsum.photos/id/1059/200/200",
-			Iat = 1700000,
-			Ing = 10770000
+			Iat = 10.839000,
+			Ing = 106.833800
 		}
 	};
 		private static string CreateSchedule(int daysFromNow, string start, string end)
