@@ -4,6 +4,7 @@ using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,10 +16,12 @@ namespace ElecWasteCollection.Application.Services
         private static List<CollectionRoutes> routes = FakeDataSeeder.routes;
         private readonly ICollectorService _collectorService;
         private readonly IPostService _postService;
-		public CollectionRouteService(ICollectorService collectorService, IPostService postService)
+        private readonly IUserService _userService;
+		public CollectionRouteService(ICollectorService collectorService, IPostService postService, IUserService userService)
         {
 			_collectorService = collectorService;
 			_postService = postService;
+			_userService = userService;
 		}
         public bool CancelCollection(Guid collectionRouteId, string rejectMessage)
         {
@@ -54,7 +57,9 @@ namespace ElecWasteCollection.Application.Services
                     CollectionRouteId = r.CollectionRouteId,
                     PostId = r.PostId,
                     Collector = _collectorService.GetById(r.CollectorId),
-                    CollectionDate = r.CollectionDate,
+					Sender = _userService.GetById(_postService.GetById(r.PostId).Sender.UserId),
+					ItemName = _postService.GetById(r.PostId).Name,
+					CollectionDate = r.CollectionDate,
                     EstimatedTime = r.EstimatedTime,
                     Actual_Time = r.Actual_Time,
                     ConfirmImages = r.ConfirmImages,
@@ -76,7 +81,9 @@ namespace ElecWasteCollection.Application.Services
                     CollectionRouteId = route.CollectionRouteId,
                     PostId = route.PostId,
                     Collector = _collectorService.GetById(route.CollectorId),
-                    CollectionDate = route.CollectionDate,
+                    Sender = _userService.GetById(_postService.GetById(route.PostId).Sender.UserId),
+                    ItemName = _postService.GetById(route.PostId).Name,
+					CollectionDate = route.CollectionDate,
                     EstimatedTime = route.EstimatedTime,
                     Actual_Time = route.Actual_Time,
                     ConfirmImages = route.ConfirmImages,
@@ -90,6 +97,5 @@ namespace ElecWasteCollection.Application.Services
 			}
 			return null;
 		}
-
     }
 }
