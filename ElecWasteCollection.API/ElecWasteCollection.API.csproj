@@ -12,10 +12,18 @@
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
   </ItemGroup>
-
+	<ItemGroup>
+		<None Include="..\ElecWasteCollection.Infrastructure\Resources\profanity-wordlist.txt">
+			<Link>Resources\profanity-wordlist.txt</Link>
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<CopyToPublishDirectory>Always</CopyToPublishDirectory>
+		</None>
+	</ItemGroup>
+	
   <ItemGroup>
     <ProjectReference Include="..\ElecWasteCollection.Application\ElecWasteCollection.Application.csproj" />
     <ProjectReference Include="..\ElecWasteCollection.Domain\ElecWasteCollection.Domain.csproj" />
+    <ProjectReference Include="..\ElecWasteCollection.Infrastructure\ElecWasteCollection.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>

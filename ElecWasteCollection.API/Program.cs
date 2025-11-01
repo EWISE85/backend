@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Services;
+using ElecWasteCollection.Infrastructure.Implementations;
 
 namespace ElecWasteCollection.API
 {
@@ -24,7 +25,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ICategoryService, CategoryService>();
 			builder.Services.AddScoped<ISizeTierService, SizeTierService>();
 			builder.Services.AddScoped<ICategoryAttributeService, CategoryAttributeService>();
-
+			builder.Services.AddSingleton<IProfanityChecker, CustomProfanityChecker>();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>

@@ -21,6 +21,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public string? ScheduleJson { get; set; }
 		//public List<PostImages> Images { get; set; }
 		//public List<string> Images { get; set; }
+
+		public List<string>? CheckMessage { get; set; }
 		public string? RejectMessage { get; set; }
 		public string Status { get; set; }
 		public ICollection<PostImages> Images { get; set; }

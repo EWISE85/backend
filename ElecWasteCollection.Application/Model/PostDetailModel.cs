@@ -12,8 +12,13 @@ namespace ElecWasteCollection.Application.Model
 		public Guid Id { get; set; }
 		public User Sender { get; set; } // Gửi đầy đủ thông tin người đăng
 		public string Name { get; set; } // Tiêu đề bài đăng
-		public string Category { get; set; } // Tên Category
+
+		public string ParentCategory { get; set; } // Tên Parent Category
+
+		public string SubCategory { get; set; } // Tên Category
 		public string Status { get; set; }
+
+		public List<string>? CheckMessage { get; set; }
 		public string? RejectMessage { get; set; }
 		public DateTime Date { get; set; }
 		public string Address { get; set; }

@@ -77,9 +77,9 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpPut("approve/{postId}")]
-		public IActionResult ApprovePost(Guid postId)
+		public async Task<IActionResult> ApprovePost(Guid postId)
 		{
-			var isApproved = _postService.ApprovePost(postId);
+			var isApproved = await _postService.ApprovePost(postId);
 
 			if (isApproved)
 			{

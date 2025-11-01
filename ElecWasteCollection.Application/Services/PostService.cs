@@ -31,38 +31,34 @@ namespace ElecWasteCollection.Application.Services
 		private const double ConfidenceThreshold = 80.0;
 		private static readonly HttpClient _httpClient = new HttpClient();
 		private readonly IUserService _userService;
+		private readonly IProfanityChecker _profanityChecker;
 
-
-		public PostService(IUserService userService)
+		public PostService(IUserService userService, IProfanityChecker profanityChecker)
 		{
 			_userService = userService;
+			_profanityChecker = profanityChecker;
 		}
 
-		// === VIẾT LẠI HOÀN TOÀN: AddPost ===
 		public async Task<PostDetailModel> AddPost(CreatePostModel createPostRequest)
 		{
-			string postStatus = "Chờ Duyệt"; // Mặc định
+			string postStatus = "Chờ Duyệt";
 			var productRequest = createPostRequest.Product;
 
 			if (productRequest == null)
 			{
-				return null; // Không có thông tin sản phẩm
+				return null; 
 			}
 
 			try
 			{
-				// --- BƯỚC 1: Tạo Product ---
 				var newProduct = new Products
 				{
 					Id = Guid.NewGuid(),
 					CategoryId = productRequest.SubCategoryId,
-					// === FIX 2: Lỗi Logic Description ===
-					// Description trong CreatePostModel là của SẢN PHẨM
 					Description = createPostRequest.Description,
 					Status = "Chờ gom nhóm"
 				};
 
-				// --- BƯỚC 2: Xử lý SizeTier hoặc Attributes ---
 				if (productRequest.SizeTierId.HasValue && productRequest.SizeTierId.Value != Guid.Empty)
 				{
 					newProduct.SizeTierId = productRequest.SizeTierId.Value;
@@ -71,9 +67,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					foreach (var attr in productRequest.Attributes)
 					{
-						// === FIX 3: Lỗi Crash (Treo) ===
-						// Dùng TryParse để tránh crash khi nhập "Sony" (nếu Attribute là string)
-						// Giả định: Bảng ProductValues của bạn lưu Value là 'double'
+						
 						double.TryParse(attr.Value, out double parsedValue);
 
 						var newProductValue = new ProductValues
@@ -96,27 +90,23 @@ namespace ElecWasteCollection.Application.Services
 					SenderId = createPostRequest.SenderId,
 					Name = createPostRequest.Name,
 					Date = DateTime.Now,
-					// GHI CHÚ: Model của bạn thiếu "Ghi chú bài đăng" (Post.Description)
-					// Tạm thời để là null hoặc rỗng
 					Description = string.Empty,
 					Address = createPostRequest.Address,
 					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
 					Status = postStatus, // Sẽ cập nhật sau
-					ProductId = newProduct.Id
-					// === FIX 4: Lỗi Logic Images ===
-					// Thuộc tính `Images` (List<string>) đã bị xóa khỏi Entity `Post`
-					// Nó sẽ được lưu ở `PostImages`
+					ProductId = newProduct.Id,
+					CheckMessage = new List<string>()
+
 				};
 
 
-				// --- BƯỚC 4: Xử lý Ảnh (Logic MỚI) ---
 				if (createPostRequest.Images != null && createPostRequest.Images.Any())
 				{
 					var category = categories.FirstOrDefault(c => c.Id == productRequest.SubCategoryId);
 					var categoryName = category?.Name ?? "unknown";
 
 					var checkTasks = createPostRequest.Images
-						.Select(imageUrl => CheckImageCategoryAsync(imageUrl, categoryName)) // Dùng categoryName
+						.Select(imageUrl => CheckImageCategoryAsync(imageUrl, categoryName)) 
 						.ToList();
 
 					var results = await Task.WhenAll(checkTasks);
@@ -128,21 +118,32 @@ namespace ElecWasteCollection.Application.Services
 						var newPostImage = new PostImages
 						{
 							PostImageId = Guid.NewGuid(),
-							PostId = newPost.Id, // Liên kết với Post
+							PostId = newPost.Id, 
 							ImageUrl = createPostRequest.Images[i],
-							AiDetectedLabelsJson = imageResult.DetectedTagsJson // Lưu JSON nhãn
+							AiDetectedLabelsJson = imageResult.DetectedTagsJson
 						};
-						postImages.Add(newPostImage); // Thêm vào DB (Fake list)
+						postImages.Add(newPostImage);
 					}
 
-					if (results.All(r => r.IsMatch)) // Kiểm tra tất cả ảnh
+					if (results.All(r => r.IsMatch)) 
 					{
 						postStatus = "Đã Duyệt";
 					}
 				}
-
-				newPost.Status = postStatus; // Cập nhật Status
-				posts.Add(newPost); // Thêm Post vào DB
+				var containsProfanity = await _profanityChecker.ContainsProfanityAsync(createPostRequest.Name);
+				if (containsProfanity)
+				{
+					newPost.CheckMessage.Add("Tiêu đề bài đăng chứa từ ngữ không phù hợp.");
+					postStatus = "Chờ Duyệt";
+				}
+				var containsPhoneNumber = await _profanityChecker.ContainsPhoneNumberAsync(createPostRequest.Name);
+				if (containsPhoneNumber)
+				{
+					newPost.CheckMessage.Add("Tiêu đề bài đăng chứa số điện thoại.");
+					postStatus = "Chờ Duyệt";
+				}
+				newPost.Status = postStatus;
+				posts.Add(newPost); 
 
 				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 				return MapToPostDetailModel(newPost, options);
@@ -379,6 +380,8 @@ namespace ElecWasteCollection.Application.Services
 
 			string categoryName = "Không rõ";
 			var productDetailModel = new ProductDetailModel(); // Model lồng
+			var parentCategoryId = categories.FirstOrDefault(c => c.Id == product.CategoryId)?.ParentCategoryId;
+			var parentCategory = categories.FirstOrDefault(c => c.Id == parentCategoryId);
 
 			if (product != null)
 			{
@@ -454,7 +457,8 @@ namespace ElecWasteCollection.Application.Services
 			{
 				Id = post.Id,
 				Name = post.Name,
-				Category = categoryName,
+				ParentCategory = parentCategory.Name,
+				SubCategory = categoryName,
 				Status = post.Status,
 				RejectMessage = post.RejectMessage,
 				Date = post.Date,
@@ -463,17 +467,20 @@ namespace ElecWasteCollection.Application.Services
 				Schedule = schedule,
 				PostNote = post.Description,
 				Product = productDetailModel,
+				CheckMessage = post.CheckMessage,
+
 
 				// === GÁN KẾT QUẢ MỚI ===
 				ImageUrls = imageUrls,
 				AggregatedAiLabels = aggregatedLabels
 			};
 		}
-		public bool ApprovePost(Guid postId)
+		public async Task<bool> ApprovePost(Guid postId)
 		{
 			var post = posts.FirstOrDefault(p => p.Id == postId);
 			if (post != null)
 			{
+				post.Name = await _profanityChecker.CensorTextAsync(post.Name);
 				post.Status = "Đã Duyệt";
 				return true;
 			}
