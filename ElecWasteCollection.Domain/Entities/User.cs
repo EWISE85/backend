@@ -19,8 +19,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string? Avatar { get; set; }
 
-		public double? Iat { get; set; }
+		public double Iat { get; set; }
 
-		public double? Ing { get; set; }
+		public double Ing { get; set; }
 	}
 }

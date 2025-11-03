@@ -758,6 +758,137 @@ namespace ElecWasteCollection.Application.Data
 				Status = "Chưa bắt đầu"
 			}
 		};
+		//
+		// === 11. SMALL COLLECTION POINTS ===
+public static List<SmallCollectionPoints> smallCollectionPoints = new()
+{
+    new SmallCollectionPoints
+    {
+        Id = 1,
+        Name = "Trạm Thu Gom Vinhomes Grand Park",
+        Address = "Nguyễn Xiển, Phường Long Thạnh Mỹ, TP. Thủ Đức",
+        Latitude = 10.841500,
+        Longitude = 106.830200,
+        Status = "active",
+        City_Team_Id = 1,
+        Created_At = DateTime.Now.AddMonths(-1),
+        Updated_At = DateTime.Now
+    },
+    new SmallCollectionPoints
+    {
+        Id = 2,
+        Name = "Trạm Thu Gom Khu Công Nghệ Cao",
+        Address = "Xa lộ Hà Nội, P. Hiệp Phú, TP. Thủ Đức",
+        Latitude = 10.850300,
+        Longitude = 106.787800,
+        Status = "active",
+        City_Team_Id = 1,
+        Created_At = DateTime.Now.AddMonths(-1),
+        Updated_At = DateTime.Now
+    }
+};
 
-	}
+// === 12. COLLECTION TEAMS ===
+public static List<CollectionTeams> collectionTeams = new()
+{
+    new CollectionTeams
+    {
+        Id = 1,
+        Name = "Đội Thu Gom TP. Thủ Đức",
+        Contact_Person = "Nguyễn Văn Hùng",
+        Phone = "0909123123",
+        City = "TP. Hồ Chí Minh",
+        Status = "active",
+        Created_At = DateTime.Now.AddMonths(-2),
+        Updated_At = DateTime.Now
+    }
+};
+
+// === 13. VEHICLES ===
+public static List<Vehicles> vehicles = new()
+{
+    new Vehicles
+    {
+        Id = 1,
+        Plate_Number = "51A-12345",
+        Vehicle_Type = "Xe tải nhỏ",
+        Capacity_Kg = 1000,
+        Capacity_M3 = 8,
+        Radius_Km = 10,
+        Status = "active",
+        Small_Collection_Point = 1
+    },
+    new Vehicles
+    {
+        Id = 2,
+        Plate_Number = "51B-67890",
+        Vehicle_Type = "Xe tải lớn",
+        Capacity_Kg = 2000,
+        Capacity_M3 = 15,
+        Radius_Km = 15,
+        Status = "active",
+        Small_Collection_Point = 1
+    }
+};
+
+		// === 14. SHIFTS ===
+		public static List<Shifts> shifts = new()
+{
+    // --- Ca hôm nay ---
+    new Shifts
+	{
+		Id = 1,
+		User_Id = users.First().UserId.GetHashCode(),
+		Vehicle_Id = 1,
+		WorkDate = DateOnly.FromDateTime(DateTime.Today),
+		Shift_Start_Time = DateTime.Today.AddHours(7),
+		Shift_End_Time = DateTime.Today.AddHours(15)
+	},
+	new Shifts
+	{
+		Id = 2,
+		User_Id = users.Last().UserId.GetHashCode(),
+		Vehicle_Id = 2,
+		WorkDate = DateOnly.FromDateTime(DateTime.Today),
+		Shift_Start_Time = DateTime.Today.AddHours(8),
+		Shift_End_Time = DateTime.Today.AddHours(16)
+	},
+
+    // --- Ca ngày mai ---
+    new Shifts
+	{
+		Id = 3,
+		User_Id = users.First().UserId.GetHashCode(),
+		Vehicle_Id = 1,
+		WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+		Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(7),
+		Shift_End_Time = DateTime.Today.AddDays(1).AddHours(15)
+	},
+	new Shifts
+	{
+		Id = 4,
+		User_Id = users.Last().UserId.GetHashCode(),
+		Vehicle_Id = 2,
+		WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+		Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(8),
+		Shift_End_Time = DateTime.Today.AddDays(1).AddHours(16)
+	},
+
+    // --- Ca ngày kia ---
+    new Shifts
+	{
+		Id = 5,
+		User_Id = users.First().UserId.GetHashCode(),
+		Vehicle_Id = 1,
+		WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(2)),
+		Shift_Start_Time = DateTime.Today.AddDays(2).AddHours(7),
+		Shift_End_Time = DateTime.Today.AddDays(2).AddHours(15)
+	},
+	};
+
+// === 15. COLLECTION GROUPS & ROUTES (Dùng để lưu kết quả grouping) ===
+public static List<CollectionGroups> collectionGroups = new();
+public static List<CollectionRoutes> collectionRoutes = new();
+
+    }
 }
