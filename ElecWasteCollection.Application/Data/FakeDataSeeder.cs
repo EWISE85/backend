@@ -205,7 +205,6 @@ namespace ElecWasteCollection.Application.Data
 
 
 		// === 6. SIZETIER (Bảng "Quy ước" S/M/L) ===
-		// --- ĐÃ SỬA LỖI GUID (thay 's' bằng 'a') ---
 		private static readonly Guid st_Tivi_TrungBinh = Guid.Parse("a1a1a1a1-0001-0001-0001-000000000002");
 		private static readonly Guid st_TuLanh_Lon = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000003");
 		private static readonly Guid st_MayGiat_TrungBinh = Guid.Parse("a1a1a1a1-0003-0003-0003-000000000002");

@@ -91,9 +91,9 @@ namespace ElecWasteCollection.API.Controllers
 			}
 		}
 		[HttpPut("reject/{postId}")]
-		public IActionResult RejectPost([FromRoute] Guid postId, [FromBody] RejectPostRequest rejectPostRequest)
+		public async Task<IActionResult> RejectPost([FromRoute] Guid postId, [FromBody] RejectPostRequest rejectPostRequest)
 		{
-			var isRejected = _postService.RejectPost(postId, rejectPostRequest.RejectMessage);
+			var isRejected = await _postService.RejectPost(postId, rejectPostRequest.RejectMessage);
 			if (isRejected)
 			{
 				return Ok(new { message = $"Post {postId} rejected successfully." });

@@ -27,9 +27,9 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ISizeTierService, SizeTierService>();
 			builder.Services.AddScoped<ICategoryAttributeService, CategoryAttributeService>();
 			builder.Services.AddSingleton<IProfanityChecker, CustomProfanityChecker>();
-            builder.Services.AddScoped<IGroupingService, GroupingService>();
-
-            builder.Services.AddCors(options =>
+      builder.Services.AddScoped<IGroupingService, GroupingService>();
+			builder.Services.AddScoped<IProductService, ProductService>();
+			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
 				{

@@ -487,8 +487,13 @@ namespace ElecWasteCollection.Application.Services
 			return false;
 		}
 
-		public bool RejectPost(Guid postId, string rejectMessage)
+		public async Task<bool> RejectPost(Guid postId, string rejectMessage)
 		{
+			var checkBadWord = await _profanityChecker.ContainsProfanityAsync(rejectMessage);
+			if (checkBadWord)
+			{
+				return false;
+			}
 			var post = posts.FirstOrDefault(p => p.Id == postId);
 			if (post != null)
 			{

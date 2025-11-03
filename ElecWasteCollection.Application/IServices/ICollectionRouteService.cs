@@ -12,9 +12,11 @@ namespace ElecWasteCollection.Application.IServices
         List<CollectionRouteModel> GetAllRoutes(DateOnly PickUpDate);
 		CollectionRouteModel GetRouteById(Guid collectionRoute);
 
-        bool ConfirmCollection(Guid collectionRouteId, List<string> confirmImages);
+        bool ConfirmCollection(Guid collectionRouteId, List<string> confirmImages, string QRCode);
 
         bool CancelCollection(Guid collectionRouteId, string rejectMessage);
+
+        bool IsUserConfirm(Guid collectionRouteId, bool isConfirm);
 
 	}
 }

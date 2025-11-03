@@ -17,11 +17,14 @@ namespace ElecWasteCollection.Application.Services
         private readonly ICollectorService _collectorService;
         private readonly IPostService _postService;
         private readonly IUserService _userService;
-		public CollectionRouteService(ICollectorService collectorService, IPostService postService, IUserService userService)
+		private readonly IProductService _productService;
+
+		public CollectionRouteService(ICollectorService collectorService, IPostService postService, IUserService userService, IProductService productService)
         {
 			_collectorService = collectorService;
 			_postService = postService;
 			_userService = userService;
+			_productService = productService;
 		}
         public bool CancelCollection(Guid collectionRouteId, string rejectMessage)
         {
@@ -35,17 +38,25 @@ namespace ElecWasteCollection.Application.Services
             return false;
         }
 
-        public bool ConfirmCollection(Guid collectionRouteId, List<string> confirmImages)
+        public  bool ConfirmCollection(Guid collectionRouteId, List<string> confirmImages, string QRCode)
         {
             var route = routes.FirstOrDefault(r => r.CollectionRouteId == collectionRouteId);
-            if (route != null)
-            {
-                route.Status = "Hoàn thành";
-                route.ConfirmImages = confirmImages;
-                route.Actual_Time = TimeOnly.FromDateTime(DateTime.Now);
-				return true;
-            }
-            return false;
+			if (route == null)
+			{
+				return false;
+			}
+			var post = _postService.GetById(route.PostId);
+			if (post == null) return false;
+			var product = _productService.GetById(post.Product.ProductId);
+			if (product == null) return false;
+			
+            route.Status = "Hoàn thành";
+            route.ConfirmImages = confirmImages;
+            route.Actual_Time = TimeOnly.FromDateTime(DateTime.Now);
+			product.QRCode = QRCode;
+			product.Status = "Đã thu gom";
+			return true;
+
         }
 
 		public List<CollectionRouteModel> GetAllRoutes(DateOnly PickUpDate)
@@ -122,5 +133,26 @@ namespace ElecWasteCollection.Application.Services
 			}
 			return null;
 		}
-    }
+
+		public bool IsUserConfirm(Guid collectionRouteId, bool isConfirm)
+		{
+			var route = routes.FirstOrDefault(r => r.CollectionRouteId == collectionRouteId);
+			if (route != null)
+			{
+				if (isConfirm)
+				{
+					route.Status = "Người dùng đã xác nhận";
+					return true;
+				}
+				else
+				{
+					route.Status = "Người dùng không xác nhận";
+					return true;
+				}
+				
+
+			}
+			return false;
+		}
+	}
 }

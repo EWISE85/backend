@@ -31,9 +31,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(route);
 		}
 		[HttpPut("confirm/{collectionRouteId}")]
-		public IActionResult ConfirmCollection(Guid collectionRouteId, [FromBody] ConfirmCollectionRequest confirmImages)
+		public IActionResult ConfirmCollection(Guid collectionRouteId, [FromBody] ConfirmCollectionRequest request)
 		{
-			var result = _collectionRouteService.ConfirmCollection(collectionRouteId, confirmImages.ConfirmImages);
+			var result = _collectionRouteService.ConfirmCollection(collectionRouteId, request.ConfirmImages, request.QRCode);
 			if (!result)
 			{
 				return StatusCode(400, "An error occurred while confirming the collection.");
@@ -49,6 +49,17 @@ namespace ElecWasteCollection.API.Controllers
 				return StatusCode(400, "An error occurred while canceling the collection.");
 			}
 			return Ok(new { message = "Collection canceled successfully." });
+		}
+
+		[HttpPut("user-confirm/{collectionRouteId}")]
+		public IActionResult IsUserConfirm(Guid collectionRouteId, [FromBody] UserConfirmRequest request)
+		{
+			var result = _collectionRouteService.IsUserConfirm(collectionRouteId, request.IsConfirm);
+			if (!result)
+			{
+				return StatusCode(400, "An error occurred while processing user confirmation.");
+			}
+			return Ok(new { message = "User confirmation processed successfully." });
 		}
 	}
 }
