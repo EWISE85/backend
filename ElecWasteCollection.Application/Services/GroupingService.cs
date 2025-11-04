@@ -57,20 +57,24 @@ namespace ElecWasteCollection.Application.Services
                         var user = FakeDataSeeder.users.FirstOrDefault(u => u.UserId == p.SenderId);
                         var distance = GeoHelper.DistanceKm(point.Latitude, point.Longitude, user!.Iat, user!.Ing);
 
-                        List<TimeSlotDetail>? slots = null;
-                        try
-                        {
+						//List<TimeSlotDetail>? slots = null;
+						TimeSlotDetail? slots = null;
+
+						try
+						{
                             var parsed = JsonSerializer.Deserialize<List<DailyTimeSlots>>(p.ScheduleJson ?? "[]");
                             slots = parsed?.FirstOrDefault()?.Slots;
                         }
                         catch
                         {
-                            slots = new List<TimeSlotDetail>();
-                        }
+							//slots = new List<TimeSlotDetail>();
+							slots = new TimeSlotDetail();
 
-                        return new { Post = p, User = user, Distance = distance, Slots = slots };
+						}
+
+						return new { Post = p, User = user, Distance = distance, Slots = slots };
                     })
-                    .Where(x => x.Distance <= radius && x.Slots != null && x.Slots.Any())
+                    .Where(x => x.Distance <= radius && x.Slots != null /*&& x.Slots.Any()*/)
                     .ToList();
 
                 if (!postsWithSchedule.Any())
@@ -80,8 +84,9 @@ namespace ElecWasteCollection.Application.Services
 
                 foreach (var item in postsWithSchedule)
                 {
-                    var slot = item.Slots!.First();
-                    var start = TimeOnly.Parse(slot.StartTime);
+					//var slot = item.Slots!.First();
+					var slot = item.Slots;
+					var start = TimeOnly.Parse(slot.StartTime);
                     var end = TimeOnly.Parse(slot.EndTime);
 
                     var found = clusters.FirstOrDefault(c =>
