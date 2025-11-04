@@ -80,7 +80,7 @@ namespace ElecWasteCollection.Application.Data
 				{
 					DayName = $"Thứ {((int)DateTime.Now.AddDays(daysFromNow).DayOfWeek == 0 ? 8 : (int)DateTime.Now.AddDays(daysFromNow).DayOfWeek + 1)}",
 					PickUpDate = DateOnly.FromDateTime(DateTime.Now.AddDays(daysFromNow)),
-					Slots = new List<TimeSlotDetail> { new TimeSlotDetail { StartTime = start, EndTime = end } }
+					Slots = new  TimeSlotDetail { StartTime = start, EndTime = end }
 				}
 			};
 			return JsonSerializer.Serialize(schedule);

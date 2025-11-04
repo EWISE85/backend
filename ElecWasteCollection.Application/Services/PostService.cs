@@ -410,8 +410,8 @@ namespace ElecWasteCollection.Application.Services
 							  {
 								  AttributeName = attr.Name,
 								  Value = pv.Value.ToString(),
-								  // GHI CHÚ: Bảng Attributes của bạn thiếu Unit
-								  Unit = ""
+								  //// GHI CHÚ: Bảng Attributes của bạn thiếu Unit
+								  //Unit = ""
 							  })
 						.ToList();
 				}
