@@ -14,6 +14,7 @@ namespace ElecWasteCollection.Application.Data
 		// === 1. USERS ===
 		public static List<User> users = new()
 		{
+			// ... (Giữ nguyên 5 users) ...
 			new User
 			{
 				UserId = Guid.Parse("7f5c8b33-1b52-4d11-91b0-932c3d243c71"),
@@ -53,6 +54,7 @@ namespace ElecWasteCollection.Application.Data
 				Name = "Phạm Thị Hằng",
 				Email = "pham.thi.hang@example.com",
 				Phone = "0911222333",
+
 				Address = "UBND Phường Long Thạnh Mỹ – 86 Nguyễn Xiển, TP. Thủ Đức",
 				Avatar = "https://picsum.photos/id/1045/200/200",
 				Iat = 10.841000,
@@ -80,7 +82,7 @@ namespace ElecWasteCollection.Application.Data
 				{
 					DayName = $"Thứ {((int)DateTime.Now.AddDays(daysFromNow).DayOfWeek == 0 ? 8 : (int)DateTime.Now.AddDays(daysFromNow).DayOfWeek + 1)}",
 					PickUpDate = DateOnly.FromDateTime(DateTime.Now.AddDays(daysFromNow)),
-					Slots = new  TimeSlotDetail { StartTime = start, EndTime = end }
+					Slots = new TimeSlotDetail { StartTime = start, EndTime = end }
 				}
 			};
 			return JsonSerializer.Serialize(schedule);
@@ -95,6 +97,7 @@ namespace ElecWasteCollection.Application.Data
 
 		public static List<Category> categories = new()
 		{
+			// ... (Giữ nguyên Categories) ...
 			new Category { Id = parent1_Id, Name = "Đồ gia dụng lớn", ParentCategoryId = null },
 			new Category { Id = Guid.Parse("11111111-1111-1111-1111-000000000001"), Name = "Tủ lạnh", ParentCategoryId = parent1_Id },
 			new Category { Id = Guid.Parse("11111111-1111-1111-1111-000000000002"), Name = "Máy giặt", ParentCategoryId = parent1_Id },
@@ -143,6 +146,7 @@ namespace ElecWasteCollection.Application.Data
 		// === 4. ATTRIBUTES (VÀ HELPER IDs) ===
 		public static List<Attributes> attributes = new()
 		{
+			// ... (Giữ nguyên Attributes) ...
 			new Attributes { Id = Guid.Parse("a1a1a1a1-0001-0001-0001-000000000001"), Name = "Kích thước màn hình (inch)", },
 			new Attributes { Id = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000001"), Name = "Chiều dài (cm)", },
 			new Attributes { Id = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000002"), Name = "Chiều rộng (cm)", },
@@ -179,6 +183,7 @@ namespace ElecWasteCollection.Application.Data
 		// === 5. CATEGORY_ATTRIBUTES (Bảng "Luật") ===
 		public static List<CategoryAttributes> categoryAttributes = new()
 		{
+			// ... (Giữ nguyên CategoryAttributes) ...
 			new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_Tivi, AttributeId = att_KichThuocManHinh },
 			new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_Tivi, AttributeId = att_TrongLuong },
 			new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, AttributeId = att_KichThuocManHinh },
@@ -212,6 +217,7 @@ namespace ElecWasteCollection.Application.Data
 
 		public static List<SizeTier> sizeTiers = new()
 		{
+			// ... (Giữ nguyên SizeTiers) ...
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Tivi, Name = "Nhỏ (Dưới 32 inch)", EstimatedWeight = 5, EstimatedVolume = 0.1 },
 			new SizeTier { SizeTierId = st_Tivi_TrungBinh, CategoryId = cat_Tivi, Name = "Trung bình (32-55 inch)", EstimatedWeight = 15, EstimatedVolume = 0.3 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Tivi, Name = "Lớn (Trên 55 inch)", EstimatedWeight = 30, EstimatedVolume = 0.6 },
@@ -229,10 +235,7 @@ namespace ElecWasteCollection.Application.Data
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Laptop, Name = "Thường/Gaming (Từ 2kg trở lên)", EstimatedWeight = 3, EstimatedVolume = 0.02 },
 		};
 
-		// === 7. PRODUCTS (Phải khai báo TRƯỚC Posts) ===
-		// --- ĐÃ SỬA LỖI GUID (thay 'p' bằng 'b') ---
-		// --- Đã sửa tên class thành 'Products' (số nhiều) ---
-		// --- Đã XÓA 'Condition' (vì không có trong entity/model) ---
+		// === 7. PRODUCTS (ĐÃ CẬP NHẬT 'Status' ĐỂ NHẤT QUÁN) ===
 		public static List<Products> products = new List<Products>
 		{
 			new Products
@@ -241,7 +244,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_Tivi,
 				SizeTierId = st_Tivi_TrungBinh,
 				Description = "Tivi Samsung 42 inch hỏng màn hình.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã đóng gói" // Cập nhật: Đã thu gom hôm qua, đã nhập kho, đã đóng gói
 			},
 			new Products
 			{
@@ -249,7 +253,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_MayGiat,
 				SizeTierId = st_MayGiat_TrungBinh,
 				Description = "Máy giặt Toshiba không hoạt động nữa.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã nhập kho" // Cập nhật: Đã thu gom hôm qua, đã nhập kho
 			},
 			new Products
 			{
@@ -257,7 +262,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_MayTinhDeBan,
 				SizeTierId = null,
 				Description = "CPU Intel i3 đời cũ, màn hình Dell 19 inch.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã nhập kho" // Cập nhật: Đã thu gom hôm qua, đã nhập kho
 			},
 			new Products
 			{
@@ -265,7 +271,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_TuLanh,
 				SizeTierId = st_TuLanh_Lon,
 				Description = "Tủ lạnh Panasonic không còn làm lạnh.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Chờ thu gom" // Giữ nguyên: Post bị rejected, route bị hủy
 			},
 			new Products
 			{
@@ -273,7 +280,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_Laptop,
 				SizeTierId = st_Laptop_MongNhe,
 				Description = "Laptop Acer bị vỡ màn hình.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã nhập kho" // Cập nhật: Đã thu gom hôm qua, đã nhập kho
 			},
 			new Products
 			{
@@ -281,7 +289,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_DienThoai,
 				SizeTierId = null,
 				Description = "iPhone 7 bị chai pin.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã thu gom" // Cập nhật: Đã thu gom hôm nay
 			},
 			new Products
 			{
@@ -289,7 +298,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_Loa,
 				SizeTierId = null,
 				Description = "Loa JBL mini không sạc được.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã thu gom" // Cập nhật: Đã thu gom hôm nay
 			},
 			new Products
 			{
@@ -297,7 +307,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_BinhNuocNong,
 				SizeTierId = null,
 				Description = "Bình Ariston bị rò điện.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã thu gom" // Cập nhật: Đã thu gom hôm nay
 			},
 			new Products
 			{
@@ -305,7 +316,8 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_MayIn,
 				SizeTierId = null,
 				Description = "Máy in HP cũ, không còn dùng.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã thu gom" // Cập nhật: Đã thu gom hôm nay
 			},
 			new Products
 			{
@@ -313,16 +325,15 @@ namespace ElecWasteCollection.Application.Data
 				CategoryId = cat_QuatDien,
 				SizeTierId = null,
 				Description = "Quạt Asia cũ, gãy cánh.",
-				Status = "Chờ thu gom"
+				// Status gốc: "Chờ thu gom"
+				Status = "Đã thu gom" // Cập nhật: Đã thu gom hôm nay
 			}
 		};
 
-		// === 8. PRODUCT_VALUES (Phải khai báo TRƯỚC Posts) ===
-		// --- Đã sửa tên class thành 'ProductValues' (số nhiều) ---
-		// --- Đã sửa PK thành 'ProductValuesId' ---
-		// --- Đã đảm bảo 'Value' là 'double' ---
+		// === 8. PRODUCT_VALUES ===
 		public static List<ProductValues> productValues = new List<ProductValues>
 		{
+			// ... (Giữ nguyên ProductValues) ...
 			// Values cho Product 3 (Máy tính)
 			new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = products[2].Id, AttributeId = att_KichThuocManHinh, Value = 19 },
 			new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = products[2].Id, AttributeId = att_TrongLuong, Value = 7 },
@@ -336,237 +347,230 @@ namespace ElecWasteCollection.Application.Data
 			new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = products[8].Id, AttributeId = att_ChieuCao, Value = 20 },
 		};
 
-		// === 9. POSTS (Đã refactor, dùng ID CŨ) ===
+		// === 9. POSTS ===
 		public static List<Post> posts = new()
-{
-	// Post 1 (Liên kết Product 1 - Tivi)
-	new Post
-	{
-		Id = Guid.Parse("a2d7b801-b0fb-4f7d-9b83-b741d23666a1"), // ID CŨ
-		SenderId = users[0].UserId,
-		ProductId = products[0].Id,
-		Name = "Thu gom tivi cũ",
-		Description = "Vui lòng đến vào buổi chiều.",
-		Date = DateTime.Now,
-		Address = users[0].Address,
-		ScheduleJson = CreateSchedule(2, "08:00", "09:00"),
-		// Images = ... (ĐÃ XÓA - Sẽ được lưu ở bảng PostImages)
-		Status = "Đã Duyệt"
-	},
-	// Post 2 (Liên kết Product 2 - Máy giặt)
-	new Post
-	{
-		Id = Guid.Parse("b34c1223-7545-41d2-9e42-67d75e3c2a31"), // ID CŨ
-		SenderId = users[1].UserId,
-		ProductId = products[1].Id,
-		Name = "Máy giặt hỏng cần thu gom",
-		Description = "Máy giặt Toshiba, lấy cẩn thận giúp.",
-		Date = DateTime.Now.AddDays(-5),
-		Address = users[1].Address,
-		ScheduleJson = CreateSchedule(2, "09:00", "10:00"),
-		Status = "Đã Duyệt"
-	},
-	// Post 3 (Liên kết Product 3 - Máy tính)
-	new Post
-	{
-		Id = Guid.Parse("c1b63fa1-ec52-44a0-8a9c-8b83f8d1b8c3"), // ID CŨ
-		SenderId = users[2].UserId,
-		ProductId = products[2].Id,
-		Name = "Máy tính cũ không dùng nữa",
-		// Category = ... (ĐÃ XÓA)
-		Description = "Gồm 1 case và 1 màn hình.",
-		Date = DateTime.Now.AddDays(-2),
-		Address = users[2].Address,
-		ScheduleJson = CreateSchedule(2, "10:00", "11:00"),
-		Status = "Đã Duyệt"
-	},
-	// Post 4 (Liên kết Product 4 - Tủ lạnh)
-	new Post
-	{
-		Id = Guid.Parse("d9a86de5-7d27-43d0-9f55-49094b30947d"), // ID CŨ
-		SenderId = users[3].UserId,
-		ProductId = products[3].Id,
-		Name = "Tủ lạnh hỏng cần xử lý",
-		// Category = ... (ĐÃ XÓA)
-		Description = "Tủ lạnh to, cần 2 người khiêng.",
-		Date = DateTime.Now.AddDays(-8),
-		Address = users[3].Address,
-		ScheduleJson = CreateSchedule(2, "11:00", "12:00"),
-		Status = "Rejected",
-		RejectMessage = "Hình ảnh không rõ ràng."
-	},
-	// Post 5 (Liên kết Product 5 - Laptop)
-	new Post
-	{
-		Id = Guid.Parse("e0f92a77-188b-402b-a0ea-3b1c68891ac0"), // ID CŨ
-		SenderId = users[4].UserId,
-		ProductId = products[4].Id,
-		Name = "Laptop bị vỡ màn hình",
-		// Category = ... (ĐÃ XÓA)
-		Description = "Chỉ thu gom laptop, không kèm sạc.",
-		Date = DateTime.Now.AddDays(-1),
-		Address = users[4].Address,
-		ScheduleJson = CreateSchedule(2, "13:00", "14:00"),
-		Status = "Đã Duyệt"
-	},
-	// Post 6 (Liên kết Product 6 - Điện thoại)
-	new Post
-	{
-		Id = Guid.Parse("f2c3cc25-f7d7-4b0a-bd1c-69a2dfb6b211"), // ID CŨ
-		SenderId = users[0].UserId,
-		ProductId = products[5].Id,
-		Name = "Điện thoại cũ bị chai pin",
-		// Category = ... (ĐÃ XÓA)
-		Description = "iPhone 7.",
-		Date = DateTime.Now.AddDays(-4),
-		Address = users[0].Address,
-		ScheduleJson = CreateSchedule(2, "14:00", "15:00"),
-		Status = "Đã Duyệt"
-	},
-	// Post 7 (Liên kết Product 7 - Loa)
-	new Post
-	{
-		Id = Guid.Parse("a82d6f7b-f1e7-45dc-83ec-7b3e2db21a4f"), // ID CŨ
-		SenderId = users[1].UserId,
-		ProductId = products[6].Id,
-		Name = "Loa Bluetooth bị hỏng",
-		// Category = ... (ĐÃ XÓA)
-		Description = "Loa JBL.",
-		Date = DateTime.Now.AddDays(-6),
-		Address = users[1].Address,
-		ScheduleJson = CreateSchedule(2, "15:00", "16:00"),
-		Status = "Đã Duyệt"
-	},
-	// Post 8 (Liên kết Product 8 - Bình nước nóng)
-	new Post
-	{
-		Id = Guid.Parse("b0b8c58b-4921-4e7d-9b09-0840f994e98e"), // ID CŨ
-		SenderId = users[2].UserId,
-		ProductId = products[7].Id,
-		Name = "Bình nước nóng hỏng",
-		// Category = ... (ĐÃ XÓA)
-		Description = "Bình Ariston, vẫn còn trên tường, cần gỡ.",
-		Date = DateTime.Now.AddDays(-9),
-		Address = users[2].Address,
-		ScheduleJson = CreateSchedule(2, "16:00", "17:00"),
-		Status = "Đã Duyệt"
-	},
-	// Post 9 (Liên kết Product 9 - Máy in)
-	new Post
-	{
-		Id = Guid.Parse("c9955eab-20a8-463f-b6db-4d20382195c3"), // ID CŨ
-		SenderId = users[3].UserId,
-		ProductId = products[8].Id,
-		Name = "Máy in văn phòng cũ",
-		// Category = ... (ĐÃ XÓA)
-		Description = "Máy in HP.",
-		Date = DateTime.Now.AddDays(-7),
-		Address = users[3].Address,
-		ScheduleJson = CreateSchedule(2, "17:00", "18:00"),
-		Status = "Đã Duyệt"
-	},
-	// Post 10 (Liên kết Product 10 - Quạt điện)
-	new Post
-	{
-		Id = Guid.Parse("e62aefc7-0e61-4b35-9d59-6b8e10d2b01e"), // ID CŨ
-		SenderId = users[4].UserId,
-		ProductId = products[9].Id,
-		Name = "Quạt điện hỏng cánh",
-		// Category = ... (ĐÃ XÓA)
-		Description = "Quạt Asia.",
-		Date = DateTime.Now.AddDays(-10),
-		Address = users[4].Address,
-		ScheduleJson = CreateSchedule(2, "18:00", "19:00"),
-		Status = "Đã Duyệt"
-	}
-};
+		{
+			// ... (Giữ nguyên 10 posts) ...
+			// Post 1 (Liên kết Product 1 - Tivi)
+			new Post
+			{
+				Id = Guid.Parse("a2d7b801-b0fb-4f7d-9b83-b741d23666a1"), // ID CŨ
+				SenderId = users[0].UserId,
+				ProductId = products[0].Id,
+				Name = "Thu gom tivi cũ",
+				Description = "Vui lòng đến vào buổi chiều.",
+				Date = DateTime.Now.AddDays(-2), // Cập nhật: 2 ngày trước
+				Address = users[0].Address,
+				ScheduleJson = CreateSchedule(0, "08:00", "09:00"), // Cập nhật: Lịch hôm qua
+				Status = "Đã Duyệt"
+			},
+			// Post 2 (Liên kết Product 2 - Máy giặt)
+			new Post
+			{
+				Id = Guid.Parse("b34c1223-7545-41d2-9e42-67d75e3c2a31"), // ID CŨ
+				SenderId = users[1].UserId,
+				ProductId = products[1].Id,
+				Name = "Máy giặt hỏng cần thu gom",
+				Description = "Máy giặt Toshiba, lấy cẩn thận giúp.",
+				Date = DateTime.Now.AddDays(-5),
+				Address = users[1].Address,
+				ScheduleJson = CreateSchedule(0, "09:00", "10:00"), // Cập nhật: Lịch hôm qua
+				Status = "Đã Duyệt"
+			},
+			// Post 3 (Liên kết Product 3 - Máy tính)
+			new Post
+			{
+				Id = Guid.Parse("c1b63fa1-ec52-44a0-8a9c-8b83f8d1b8c3"), // ID CŨ
+				SenderId = users[2].UserId,
+				ProductId = products[2].Id,
+				Name = "Máy tính cũ không dùng nữa",
+				Description = "Gồm 1 case và 1 màn hình.",
+				Date = DateTime.Now.AddDays(-2),
+				Address = users[2].Address,
+				ScheduleJson = CreateSchedule(0, "10:00", "11:00"), // Cập nhật: Lịch hôm qua
+				Status = "Đã Duyệt"
+			},
+			// Post 4 (Liên kết Product 4 - Tủ lạnh)
+			new Post
+			{
+				Id = Guid.Parse("d9a86de5-7d27-43d0-9f55-49094b30947d"), // ID CŨ
+				SenderId = users[3].UserId,
+				ProductId = products[3].Id,
+				Name = "Tủ lạnh hỏng cần xử lý",
+				Description = "Tủ lạnh to, cần 2 người khiêng.",
+				Date = DateTime.Now.AddDays(-8),
+				Address = users[3].Address,
+				ScheduleJson = CreateSchedule(0, "11:00", "12:00"), // Cập nhật: Lịch hôm qua
+				Status = "Rejected",
+				RejectMessage = "Hình ảnh không rõ ràng."
+			},
+			// Post 5 (Liên kết Product 5 - Laptop)
+			new Post
+			{
+				Id = Guid.Parse("e0f92a77-188b-402b-a0ea-3b1c68891ac0"), // ID CŨ
+				SenderId = users[4].UserId,
+				ProductId = products[4].Id,
+				Name = "Laptop bị vỡ màn hình",
+				Description = "Chỉ thu gom laptop, không kèm sạc.",
+				Date = DateTime.Now.AddDays(-1),
+				Address = users[4].Address,
+				ScheduleJson = CreateSchedule(0, "13:00", "14:00"), // Cập nhật: Lịch hôm qua
+				Status = "Đã Duyệt"
+			},
+			// Post 6 (Liên kết Product 6 - Điện thoại)
+			new Post
+			{
+				Id = Guid.Parse("f2c3cc25-f7d7-4b0a-bd1c-69a2dfb6b211"), // ID CŨ
+				SenderId = users[0].UserId,
+				ProductId = products[5].Id,
+				Name = "Điện thoại cũ bị chai pin",
+				Description = "iPhone 7.",
+				Date = DateTime.Now.AddDays(-4),
+				Address = users[0].Address,
+				ScheduleJson = CreateSchedule(1, "14:00", "15:00"), // Cập nhật: Lịch hôm nay
+				Status = "Đã Duyệt"
+			},
+			// Post 7 (Liên kết Product 7 - Loa)
+			new Post
+			{
+				Id = Guid.Parse("a82d6f7b-f1e7-45dc-83ec-7b3e2db21a4f"), // ID CŨ
+				SenderId = users[1].UserId,
+				ProductId = products[6].Id,
+				Name = "Loa Bluetooth bị hỏng",
+				Description = "Loa JBL.",
+				Date = DateTime.Now.AddDays(-6),
+				Address = users[1].Address,
+				ScheduleJson = CreateSchedule(1, "15:00", "16:00"), // Cập nhật: Lịch hôm nay
+				Status = "Đã Duyệt"
+			},
+			// Post 8 (Liên kết Product 8 - Bình nước nóng)
+			new Post
+			{
+				Id = Guid.Parse("b0b8c58b-4921-4e7d-9b09-0840f994e98e"), // ID CŨ
+				SenderId = users[2].UserId,
+				ProductId = products[7].Id,
+				Name = "Bình nước nóng hỏng",
+				Description = "Bình Ariston, vẫn còn trên tường, cần gỡ.",
+				Date = DateTime.Now.AddDays(-9),
+				Address = users[2].Address,
+				ScheduleJson = CreateSchedule(1, "16:00", "17:00"), // Cập nhật: Lịch hôm nay
+				Status = "Đã Duyệt"
+			},
+			// Post 9 (Liên kết Product 9 - Máy in)
+			new Post
+			{
+				Id = Guid.Parse("c9955eab-20a8-463f-b6db-4d20382195c3"), // ID CŨ
+				SenderId = users[3].UserId,
+				ProductId = products[8].Id,
+				Name = "Máy in văn phòng cũ",
+				Description = "Máy in HP.",
+				Date = DateTime.Now.AddDays(-7),
+				Address = users[3].Address,
+				ScheduleJson = CreateSchedule(1, "17:00", "18:00"), // Cập nhật: Lịch hôm nay
+				Status = "Đã Duyệt"
+			},
+			// Post 10 (Liên kết Product 10 - Quạt điện)
+			new Post
+			{
+				Id = Guid.Parse("e62aefc7-0e61-4b35-9d59-6b8e10d2b01e"), // ID CŨ
+				SenderId = users[4].UserId,
+				ProductId = products[9].Id,
+				Name = "Quạt điện hỏng cánh",
+				Description = "Quạt Asia.",
+				Date = DateTime.Now.AddDays(-10),
+				Address = users[4].Address,
+				ScheduleJson = CreateSchedule(1, "18:00", "19:00"), // Cập nhật: Lịch hôm nay
+				Status = "Đã Duyệt"
+			}
+		};
 
-		// === 10. POST IMAGES (Đã tách ra từ Post) ===
+		// === 10. POST IMAGES ===
 		public static List<PostImages> postImages = new()
-{
-	// Ảnh cho Post 1 (Tivi)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[0].Id, // a2d7b801...
-		ImageUrl = "https://tse4.mm.bing.net/th/id/OIP.LuRXEsdA9472ZA06zqLEswHaHa?pid=Api&P=0&h=180",
-		AiDetectedLabelsJson = "[{\"Tag\":\"television\",\"Confidence\":98.5},{\"Tag\":\"screen\",\"Confidence\":92.1},{\"Tag\":\"electronics\",\"Confidence\":85.0}]"
-	},
-	// Ảnh cho Post 2 (Máy giặt)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[1].Id, // b34c1223...
-		ImageUrl = "https://tse1.mm.bing.net/th/id/OIP.nqDpXYFDMJ4J3SHRuHJfCAHaF7?pid=Api&P=0&h=180",
-		AiDetectedLabelsJson = "[{\"Tag\":\"washing machine\",\"Confidence\":99.2},{\"Tag\":\"home appliance\",\"Confidence\":95.0},{\"Tag\":\"laundry\",\"Confidence\":70.1}]"
-	},
-	// Ảnh cho Post 3 (Máy tính)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[2].Id, // c1b63fa1...
-		ImageUrl = "https://mccvietnam.vn/media/lib/26-09-2022/b-pc-mcc-1920x1080.png",
-		AiDetectedLabelsJson = "[{\"Tag\":\"computer\",\"Confidence\":97.0},{\"Tag\":\"monitor\",\"Confidence\":90.3},{\"Tag\":\"desktop computer\",\"Confidence\":88.0},{\"Tag\":\"electronics\",\"Confidence\":85.0}]"
-	},
-	// Ảnh cho Post 4 (Tủ lạnh - Bị từ chối)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[3].Id, // d9a86de5...
-		ImageUrl = "https://picsum.photos/id/203/400/300",
-		AiDetectedLabelsJson = "[{\"Tag\":\"blurry\",\"Confidence\":70.0},{\"Tag\":\"dark\",\"Confidence\":65.0},{\"Tag\":\"unclear\",\"Confidence\":50.0}]"
-	},
-	// Ảnh cho Post 5 (Laptop)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[4].Id, // e0f92a77...
-		ImageUrl = "https://vinhphatstore.vn/wp-content/uploads/2022/09/cach-sua-man-hinh-laptop-bi-vo-hieu-qua-triet-de-3-1.jpg",
-		AiDetectedLabelsJson = "[{\"Tag\":\"laptop\",\"Confidence\":99.0},{\"Tag\":\"computer\",\"Confidence\":95.0},{\"Tag\":\"broken screen\",\"Confidence\":92.0}]"
-	},
-	// Ảnh cho Post 6 (Điện thoại)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[5].Id, // f2c3cc25...
-		ImageUrl = "https://cdn.nguyenkimmall.com/images/product/829/dien-thoai-iphone-14-pro-max-1tb-tim-1.jpg",
-		AiDetectedLabelsJson = "[{\"Tag\":\"smartphone\",\"Confidence\":99.8},{\"Tag\":\"iphone\",\"Confidence\":95.0},{\"Tag\":\"mobile phone\",\"Confidence\":90.0}]"
-	},
-	// Ảnh cho Post 7 (Loa)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[6].Id, // a82d6f7b...
-		ImageUrl = "https://tse1.mm.bing.net/th/id/OIP.h0WESAKXTusQdzs5QSsLVAHaHa?pid=Api&P=0&h=180",
-		AiDetectedLabelsJson = "[{\"Tag\":\"speaker\",\"Confidence\":96.0},{\"Tag\":\"bluetooth\",\"Confidence\":80.0},{\"Tag\":\"audio\",\"Confidence\":75.0}]"
-	},
-	// Ảnh cho Post 8 (Bình nước nóng)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[7].Id, // b0b8c58b...
-		ImageUrl = "https://media.eproshop.vn/file/Ggw3EQpfr",
-		AiDetectedLabelsJson = "[{\"Tag\":\"water heater\",\"Confidence\":94.0},{\"Tag\":\"boiler\",\"Confidence\":85.0},{\"Tag\":\"home appliance\",\"Confidence\":80.0}]"
-	},
-	// Ảnh cho Post 9 (Máy in)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[8].Id, // c9955eab...
-		ImageUrl = "https://cdn.tgdd.vn/Files/2019/01/24/1146335/may-in-da-nang-la-gi.jpg",
-		AiDetectedLabelsJson = "[{\"Tag\":\"printer\",\"Confidence\":99.0},{\"Tag\":\"office equipment\",\"Confidence\":90.0},{\"Tag\":\"copier\",\"Confidence\":85.0}]"
-	},
-	// Ảnh cho Post 10 (Quạt điện)
-	new PostImages
-	{
-		PostImageId = Guid.NewGuid(),
-		PostId = posts[9].Id, // e62aefc7...
-		ImageUrl = "https://meta.vn/Data/image/2020/07/01/quat-dung-dien-co-91-qd-cn450p5.jpg",
-		AiDetectedLabelsJson = "[{\"Tag\":\"fan\",\"Confidence\":98.0},{\"Tag\":\"electric fan\",\"Confidence\":92.0}]"
-	}
-};
+		{
+			// ... (Giữ nguyên PostImages) ...
+			// Ảnh cho Post 1 (Tivi)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[0].Id, // a2d7b801...
+				ImageUrl = "https://tse4.mm.bing.net/th/id/OIP.LuRXEsdA9472ZA06zqLEswHaHa?pid=Api&P=0&h=180",
+				AiDetectedLabelsJson = "[{\"Tag\":\"television\",\"Confidence\":98.5},{\"Tag\":\"screen\",\"Confidence\":92.1},{\"Tag\":\"electronics\",\"Confidence\":85.0}]"
+			},
+			// Ảnh cho Post 2 (Máy giặt)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[1].Id, // b34c1223...
+				ImageUrl = "https://tse1.mm.bing.net/th/id/OIP.nqDpXYFDMJ4J3SHRuHJfCAHaF7?pid=Api&P=0&h=180",
+				AiDetectedLabelsJson = "[{\"Tag\":\"washing machine\",\"Confidence\":99.2},{\"Tag\":\"home appliance\",\"Confidence\":95.0},{\"Tag\":\"laundry\",\"Confidence\":70.1}]"
+			},
+			// Ảnh cho Post 3 (Máy tính)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[2].Id, // c1b63fa1...
+				ImageUrl = "https://mccvietnam.vn/media/lib/26-09-2022/b-pc-mcc-1920x1080.png",
+				AiDetectedLabelsJson = "[{\"Tag\":\"computer\",\"Confidence\":97.0},{\"Tag\":\"monitor\",\"Confidence\":90.3},{\"Tag\":\"desktop computer\",\"Confidence\":88.0},{\"Tag\":\"electronics\",\"Confidence\":85.0}]"
+			},
+			// Ảnh cho Post 4 (Tủ lạnh - Bị từ chối)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[3].Id, // d9a86de5...
+				ImageUrl = "https://picsum.photos/id/203/400/300",
+				AiDetectedLabelsJson = "[{\"Tag\":\"blurry\",\"Confidence\":70.0},{\"Tag\":\"dark\",\"Confidence\":65.0},{\"Tag\":\"unclear\",\"Confidence\":50.0}]"
+			},
+			// Ảnh cho Post 5 (Laptop)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[4].Id, // e0f92a77...
+				ImageUrl = "https://vinhphatstore.vn/wp-content/uploads/2022/09/cach-sua-man-hinh-laptop-bi-vo-hieu-qua-triet-de-3-1.jpg",
+				AiDetectedLabelsJson = "[{\"Tag\":\"laptop\",\"Confidence\":99.0},{\"Tag\":\"computer\",\"Confidence\":95.0},{\"Tag\":\"broken screen\",\"Confidence\":92.0}]"
+			},
+			// Ảnh cho Post 6 (Điện thoại)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[5].Id, // f2c3cc25...
+				ImageUrl = "https://cdn.nguyenkimmall.com/images/product/829/dien-thoai-iphone-14-pro-max-1tb-tim-1.jpg",
+				AiDetectedLabelsJson = "[{\"Tag\":\"smartphone\",\"Confidence\":99.8},{\"Tag\":\"iphone\",\"Confidence\":95.0},{\"Tag\":\"mobile phone\",\"Confidence\":90.0}]"
+			},
+			// Ảnh cho Post 7 (Loa)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[6].Id, // a82d6f7b...
+				ImageUrl = "https://tse1.mm.bing.net/th/id/OIP.h0WESAKXTusQdzs5QSsLVAHaHa?pid=Api&P=0&h=180",
+				AiDetectedLabelsJson = "[{\"Tag\":\"speaker\",\"Confidence\":96.0},{\"Tag\":\"bluetooth\",\"Confidence\":80.0},{\"Tag\":\"audio\",\"Confidence\":75.0}]"
+			},
+			// Ảnh cho Post 8 (Bình nước nóng)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[7].Id, // b0b8c58b...
+				ImageUrl = "https://media.eproshop.vn/file/Ggw3EQpfr",
+				AiDetectedLabelsJson = "[{\"Tag\":\"water heater\",\"Confidence\":94.0},{\"Tag\":\"boiler\",\"Confidence\":85.0},{\"Tag\":\"home appliance\",\"Confidence\":80.0}]"
+			},
+			// Ảnh cho Post 9 (Máy in)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[8].Id, // c9955eab...
+				ImageUrl = "https://cdn.tgdd.vn/Files/2019/01/24/1146335/may-in-da-nang-la-gi.jpg",
+				AiDetectedLabelsJson = "[{\"Tag\":\"printer\",\"Confidence\":99.0},{\"Tag\":\"office equipment\",\"Confidence\":90.0},{\"Tag\":\"copier\",\"Confidence\":85.0}]"
+			},
+			// Ảnh cho Post 10 (Quạt điện)
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[9].Id, // e62aefc7...
+				ImageUrl = "https://meta.vn/Data/image/2020/07/01/quat-dung-dien-co-91-qd-cn450p5.jpg",
+				AiDetectedLabelsJson = "[{\"Tag\":\"fan\",\"Confidence\":98.0},{\"Tag\":\"electric fan\",\"Confidence\":92.0}]"
+			}
+		};
 
-		// === 10. COLLECTOR & ROUTES (Giữ nguyên, giờ sẽ hoạt động) ===
+		// === 10. COLLECTOR & ROUTES (ĐÃ CẬP NHẬT 'Status' ĐỂ NHẤT QUÁN) ===
 		public static Collector collector = new()
 		{
 			CollectorId = Guid.Parse("6df4af85-6a59-4a0a-8513-1d7859fbd789"),
@@ -576,9 +580,9 @@ namespace ElecWasteCollection.Application.Data
 			Avatar = "https://picsum.photos/id/1062/200/200"
 		};
 
-		public static List<CollectionRoutes> routes = new()
+		public static List<CollectionRoutes> collectionRoutes = new()
 		{
-			// === 5 ngày hôm qua ===
+			// === 5 ngày hôm qua (Đã hoàn thành/hủy) ===
 			new CollectionRoutes
 			{
 				CollectionRouteId = Guid.Parse("d1f2cde2-0e2a-4a8e-b5a0-60d34e8d3b90"),
@@ -618,7 +622,7 @@ namespace ElecWasteCollection.Application.Data
 			new CollectionRoutes
 			{
 				CollectionRouteId = Guid.Parse("d4f2cde2-0e2a-4a8e-b5a0-60d34e8d3b93"),
-				PostId = posts[3].Id,
+				PostId = posts[3].Id, // Post Tủ lạnh (bị reject)
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now.AddDays(-1)),
 				EstimatedTime = new TimeOnly(11, 0),
@@ -641,18 +645,18 @@ namespace ElecWasteCollection.Application.Data
 				Status = "Hoàn thành"
 			},
 
-			// === 5 ngày hôm nay ===
+			// === 5 ngày hôm nay (Cũng đã hoàn thành, vì giờ là buổi tối) ===
 			new CollectionRoutes
 			{
 				CollectionRouteId = Guid.Parse("e1f2cde2-0e2a-4a8e-b5a0-60d34e8d3b95"),
 				PostId = posts[5].Id,
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(8, 0),
-				Actual_Time = new TimeOnly(8, 10),
+				EstimatedTime = new TimeOnly(14, 0), // Sửa giờ cho hợp lý
+				Actual_Time = new TimeOnly(14, 10),
 				ConfirmImages = new List<string>{ "https://picsum.photos/id/306/400/300" },
 				LicensePlate = "51A-12345",
-				Status = "Đang tiến hành"
+				Status = "Hoàn thành" // Cập nhật (vì đã cuối ngày)
 			},
 			new CollectionRoutes
 			{
@@ -660,11 +664,11 @@ namespace ElecWasteCollection.Application.Data
 				PostId = posts[6].Id,
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(9, 0),
-				Actual_Time = new TimeOnly(9, 0),
+				EstimatedTime = new TimeOnly(15, 0),
+				Actual_Time = new TimeOnly(15, 5),
 				ConfirmImages = new List<string>{ "https://picsum.photos/id/307/400/300" },
 				LicensePlate = "51A-12345",
-				Status = "Đang tiến hành"
+				Status = "Hoàn thành" // Cập nhật
 			},
 			new CollectionRoutes
 			{
@@ -672,10 +676,11 @@ namespace ElecWasteCollection.Application.Data
 				PostId = posts[7].Id,
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(10, 0),
+				EstimatedTime = new TimeOnly(16, 0),
+				Actual_Time = new TimeOnly(16, 20),
 				ConfirmImages = new List<string>{ "https://picsum.photos/id/308/400/300" },
 				LicensePlate = "51A-12345",
-				Status = "Đang tiến hành"
+				Status = "Hoàn thành" // Cập nhật
 			},
 			new CollectionRoutes
 			{
@@ -683,11 +688,11 @@ namespace ElecWasteCollection.Application.Data
 				PostId = posts[8].Id,
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(11, 0),
+				EstimatedTime = new TimeOnly(17, 0),
+				Actual_Time = new TimeOnly(17, 10),
 				ConfirmImages = new List<string>{ "https://picsum.photos/id/309/400/300" },
 				LicensePlate = "51A-12345",
-
-				Status = "Đang tiến hành"
+				Status = "Hoàn thành" // Cập nhật
 			},
 			new CollectionRoutes
 			{
@@ -695,13 +700,14 @@ namespace ElecWasteCollection.Application.Data
 				PostId = posts[9].Id,
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(13, 0),
+				EstimatedTime = new TimeOnly(18, 0),
+				Actual_Time = new TimeOnly(18, 15),
 				ConfirmImages = new List<string>{ "https://picsum.photos/id/310/400/300" },
 				LicensePlate = "51A-12345",
-				Status = "Đang tiến hành"
+				Status = "Hoàn thành" // Cập nhật
 			},
 
-			// === 5 ngày mai ===
+			// === 5 ngày mai (Chưa bắt đầu) ===
 			new CollectionRoutes
 			{
 				CollectionRouteId = Guid.Parse("f1f2cde2-0e2a-4a8e-b5a0-60d34e8d3ba0"),
@@ -758,137 +764,210 @@ namespace ElecWasteCollection.Application.Data
 				Status = "Chưa bắt đầu"
 			}
 		};
-		//
+
 		// === 11. SMALL COLLECTION POINTS ===
-public static List<SmallCollectionPoints> smallCollectionPoints = new()
-{
-    new SmallCollectionPoints
-    {
-        Id = 1,
-        Name = "Trạm Thu Gom Vinhomes Grand Park",
-        Address = "Nguyễn Xiển, Phường Long Thạnh Mỹ, TP. Thủ Đức",
-        Latitude = 10.841500,
-        Longitude = 106.830200,
-        Status = "active",
-        City_Team_Id = 1,
-        Created_At = DateTime.Now.AddMonths(-1),
-        Updated_At = DateTime.Now
-    },
-    new SmallCollectionPoints
-    {
-        Id = 2,
-        Name = "Trạm Thu Gom Khu Công Nghệ Cao",
-        Address = "Xa lộ Hà Nội, P. Hiệp Phú, TP. Thủ Đức",
-        Latitude = 10.850300,
-        Longitude = 106.787800,
-        Status = "active",
-        City_Team_Id = 1,
-        Created_At = DateTime.Now.AddMonths(-1),
-        Updated_At = DateTime.Now
-    }
-};
+		public static List<SmallCollectionPoints> smallCollectionPoints = new()
+		{
+			// ... (Giữ nguyên SmallCollectionPoints) ...
+			new SmallCollectionPoints
+			{
+				Id = 1,
+				Name = "Trạm Thu Gom Vinhomes Grand Park",
+				Address = "Nguyễn Xiển, Phường Long Thạnh Mỹ, TP. Thủ Đức",
+				Latitude = 10.841500,
+				Longitude = 106.830200,
+				Status = "active",
+				City_Team_Id = 1,
+				Created_At = DateTime.Now.AddMonths(-1),
+				Updated_At = DateTime.Now
+			},
+			new SmallCollectionPoints
+			{
+				Id = 2,
+				Name = "Trạm Thu Gom Khu Công Nghệ Cao",
+				Address = "Xa lộ Hà Nội, P. Hiệp Phú, TP. Thủ Đức",
+				Latitude = 10.850300,
+				Longitude = 106.787800,
+				Status = "active",
+				City_Team_Id = 1,
+				Created_At = DateTime.Now.AddMonths(-1),
+				Updated_At = DateTime.Now
+			}
+		};
 
-// === 12. COLLECTION TEAMS ===
-public static List<CollectionTeams> collectionTeams = new()
-{
-    new CollectionTeams
-    {
-        Id = 1,
-        Name = "Đội Thu Gom TP. Thủ Đức",
-        Contact_Person = "Nguyễn Văn Hùng",
-        Phone = "0909123123",
-        City = "TP. Hồ Chí Minh",
-        Status = "active",
-        Created_At = DateTime.Now.AddMonths(-2),
-        Updated_At = DateTime.Now
-    }
-};
+		// === 12. COLLECTION TEAMS ===
+		public static List<CollectionTeams> collectionTeams = new()
+		{
+			// ... (Giữ nguyên CollectionTeams) ...
+			new CollectionTeams
+			{
+				Id = 1,
+				Name = "Đội Thu Gom TP. Thủ Đức",
+				Contact_Person = "Nguyễn Văn Hùng",
+				Phone = "0909123123",
+				City = "TP. Hồ Chí Minh",
+				Status = "active",
+				Created_At = DateTime.Now.AddMonths(-2),
+				Updated_At = DateTime.Now
+			}
+		};
 
-// === 13. VEHICLES ===
-public static List<Vehicles> vehicles = new()
-{
-    new Vehicles
-    {
-        Id = 1,
-        Plate_Number = "51A-12345",
-        Vehicle_Type = "Xe tải nhỏ",
-        Capacity_Kg = 1000,
-        Capacity_M3 = 8,
-        Radius_Km = 10,
-        Status = "active",
-        Small_Collection_Point = 1
-    },
-    new Vehicles
-    {
-        Id = 2,
-        Plate_Number = "51B-67890",
-        Vehicle_Type = "Xe tải lớn",
-        Capacity_Kg = 2000,
-        Capacity_M3 = 15,
-        Radius_Km = 15,
-        Status = "active",
-        Small_Collection_Point = 1
-    }
-};
+		// === 13. VEHICLES ===
+		public static List<Vehicles> vehicles = new()
+		{
+			// ... (Giữ nguyên Vehicles) ...
+			new Vehicles
+			{
+				Id = 1,
+				Plate_Number = "51A-12345",
+				Vehicle_Type = "Xe tải nhỏ",
+				Capacity_Kg = 1000,
+				Capacity_M3 = 8,
+				Radius_Km = 10,
+				Status = "active",
+				Small_Collection_Point = 1
+			},
+			new Vehicles
+			{
+				Id = 2,
+				Plate_Number = "51B-67890",
+				Vehicle_Type = "Xe tải lớn",
+				Capacity_Kg = 2000,
+				Capacity_M3 = 15,
+				Radius_Km = 15,
+				Status = "active",
+				Small_Collection_Point = 1
+			}
+		};
 
 		// === 14. SHIFTS ===
 		public static List<Shifts> shifts = new()
+		{
+			// ... (Giữ nguyên Shifts) ...
+			// --- Ca hôm nay ---
+			new Shifts
+			{
+				Id = 1,
+				User_Id = users.First().UserId.GetHashCode(),
+				Vehicle_Id = 1,
+				WorkDate = DateOnly.FromDateTime(DateTime.Today),
+				Shift_Start_Time = DateTime.Today.AddHours(7),
+				Shift_End_Time = DateTime.Today.AddHours(15)
+			},
+			new Shifts
+			{
+				Id = 2,
+				User_Id = users.Last().UserId.GetHashCode(),
+				Vehicle_Id = 2,
+				WorkDate = DateOnly.FromDateTime(DateTime.Today),
+				Shift_Start_Time = DateTime.Today.AddHours(8),
+				Shift_End_Time = DateTime.Today.AddHours(16)
+			},
+
+			// --- Ca ngày mai ---
+			new Shifts
+			{
+				Id = 3,
+				User_Id = users.First().UserId.GetHashCode(),
+				Vehicle_Id = 1,
+				WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+				Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(7),
+				Shift_End_Time = DateTime.Today.AddDays(1).AddHours(15)
+			},
+			new Shifts
+			{
+				Id = 4,
+				User_Id = users.Last().UserId.GetHashCode(),
+				Vehicle_Id = 2,
+				WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+				Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(8),
+				Shift_End_Time = DateTime.Today.AddDays(1).AddHours(16)
+			},
+
+			// --- Ca ngày kia ---
+			new Shifts
+			{
+				Id = 5,
+				User_Id = users.First().UserId.GetHashCode(),
+				Vehicle_Id = 1,
+				WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(2)),
+				Shift_Start_Time = DateTime.Today.AddDays(2).AddHours(7),
+				Shift_End_Time = DateTime.Today.AddDays(2).AddHours(15)
+			},
+		};
+
+		// === 15. COLLECTION GROUPS & ROUTES (Dùng để lưu kết quả grouping) ===
+		public static List<CollectionGroups> collectionGroups = new();
+		// public static List<CollectionRoutes> collectionRoutes = new(); // ĐÃ KHAI BÁO Ở #10
+
+
+		// ==================================================================
+		// === 16. DATA FAKE MỚI CHO CÁC BẢNG HISTORY ===
+		// ==================================================================
+
+
+
+		public static List<ProductStatusHistory> productStatusHistories = new()
 {
-    // --- Ca hôm nay ---
-    new Shifts
-	{
-		Id = 1,
-		User_Id = users.First().UserId.GetHashCode(),
-		Vehicle_Id = 1,
-		WorkDate = DateOnly.FromDateTime(DateTime.Today),
-		Shift_Start_Time = DateTime.Today.AddHours(7),
-		Shift_End_Time = DateTime.Today.AddHours(15)
-	},
-	new Shifts
-	{
-		Id = 2,
-		User_Id = users.Last().UserId.GetHashCode(),
-		Vehicle_Id = 2,
-		WorkDate = DateOnly.FromDateTime(DateTime.Today),
-		Shift_Start_Time = DateTime.Today.AddHours(8),
-		Shift_End_Time = DateTime.Today.AddHours(16)
-	},
+	// --- Product 1 (Tivi) - [DATA ĐẦY ĐỦ 7 BƯỚC] ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[0].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime(collectionRoutes[0].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[0].Address}", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime(collectionRoutes[0].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime(collectionRoutes[0].Actual_Time).AddHours(4) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "packaged", StatusDescription = "Đã đóng gói vào thùng T-001.", ChangedAt = DateTime.Now.AddHours(-8) }, // 8 tiếng trước
+	
+    // === DỮ LIỆU MỚI THÊM VÀO ===
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "in_transit", StatusDescription = "Thùng T-001 đang được chuyển đến trung tâm tái chế.", ChangedAt = DateTime.Now.AddHours(-4) }, // 4 tiếng trước
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "at_recycling_unit", StatusDescription = "Thùng T-001 đã đến trung tâm tái chế.", ChangedAt = DateTime.Now.AddHours(-1) }, // 1 tiếng trước
+	// ============================
 
-    // --- Ca ngày mai ---
-    new Shifts
-	{
-		Id = 3,
-		User_Id = users.First().UserId.GetHashCode(),
-		Vehicle_Id = 1,
-		WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
-		Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(7),
-		Shift_End_Time = DateTime.Today.AddDays(1).AddHours(15)
-	},
-	new Shifts
-	{
-		Id = 4,
-		User_Id = users.Last().UserId.GetHashCode(),
-		Vehicle_Id = 2,
-		WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
-		Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(8),
-		Shift_End_Time = DateTime.Today.AddDays(1).AddHours(16)
-	},
+	// --- Product 2 (Máy giặt) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[1].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[1].Address}", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].Actual_Time).AddHours(4) },
 
-    // --- Ca ngày kia ---
-    new Shifts
-	{
-		Id = 5,
-		User_Id = users.First().UserId.GetHashCode(),
-		Vehicle_Id = 1,
-		WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(2)),
-		Shift_Start_Time = DateTime.Today.AddDays(2).AddHours(7),
-		Shift_End_Time = DateTime.Today.AddDays(2).AddHours(15)
-	},
-	};
+	// --- Product 3 (Máy tính) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[2].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[2].Address}", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].Actual_Time).AddHours(4) },
 
-// === 15. COLLECTION GROUPS & ROUTES (Dùng để lưu kết quả grouping) ===
-public static List<CollectionGroups> collectionGroups = new();
-public static List<CollectionRoutes> collectionRoutes = new();
+	// --- Product 4 (Tủ lạnh) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[3].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[3].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[3].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[3].CollectionDate.ToDateTime(collectionRoutes[3].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[3].Id, Status = "collection_failed", StatusDescription = "Tài xế hủy: Rác không phù hợp loại đăng ký.", ChangedAt = collectionRoutes[3].CollectionDate.ToDateTime(collectionRoutes[3].Actual_Time) },
 
-    }
+	// --- Product 5 (Laptop) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[4].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[4].Address}", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].Actual_Time).AddHours(4) },
+
+	// --- Product 6 (Điện thoại) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[5].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[5].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[5].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[5].CollectionDate.ToDateTime(collectionRoutes[5].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[5].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[0].Address}", ChangedAt = collectionRoutes[5].CollectionDate.ToDateTime(collectionRoutes[5].Actual_Time) },
+
+	// --- Product 7 (Loa) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[6].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[6].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[6].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[6].CollectionDate.ToDateTime(collectionRoutes[6].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[6].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[1].Address}", ChangedAt = collectionRoutes[6].CollectionDate.ToDateTime(collectionRoutes[6].Actual_Time) },
+
+	// --- Product 8 (Bình nước nóng) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[7].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[7].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[7].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[7].CollectionDate.ToDateTime(collectionRoutes[7].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[7].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[2].Address}", ChangedAt = collectionRoutes[7].CollectionDate.ToDateTime(collectionRoutes[7].Actual_Time) },
+
+	// --- Product 9 (Máy in) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[8].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[8].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[8].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[8].CollectionDate.ToDateTime(collectionRoutes[8].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[8].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[3].Address}", ChangedAt = collectionRoutes[8].CollectionDate.ToDateTime(collectionRoutes[8].Actual_Time) },
+
+	// --- Product 10 (Quạt điện) ---
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[9].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[9].Date },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[9].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[9].CollectionDate.ToDateTime(collectionRoutes[9].EstimatedTime) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[9].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[4].Address}", ChangedAt = collectionRoutes[9].CollectionDate.ToDateTime(collectionRoutes[9].Actual_Time) },
+};
+	}
 }

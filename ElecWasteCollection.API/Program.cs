@@ -27,8 +27,9 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ISizeTierService, SizeTierService>();
 			builder.Services.AddScoped<ICategoryAttributeService, CategoryAttributeService>();
 			builder.Services.AddSingleton<IProfanityChecker, CustomProfanityChecker>();
-      builder.Services.AddScoped<IGroupingService, GroupingService>();
+			builder.Services.AddScoped<IGroupingService, GroupingService>();
 			builder.Services.AddScoped<IProductService, ProductService>();
+			builder.Services.AddScoped<ITrackingService, TrackingService>();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
@@ -43,7 +44,7 @@ namespace ElecWasteCollection.API
 			_ = FakeDataSeeder.users;
 			_ = FakeDataSeeder.posts;
 			_ = FakeDataSeeder.collector;
-			_ = FakeDataSeeder.routes;
+			_ = FakeDataSeeder.collectionRoutes;
 			_ = FakeDataSeeder.categories;
 			_ = FakeDataSeeder.products;
 			_ = FakeDataSeeder.productValues;
