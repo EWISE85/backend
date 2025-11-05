@@ -13,7 +13,7 @@ namespace ElecWasteCollection.Application.Services
 {
     public class CollectionRouteService : ICollectionRouteService
     {
-        private static List<CollectionRoutes> routes = FakeDataSeeder.routes;
+        private static List<CollectionRoutes> routes = FakeDataSeeder.collectionRoutes;
         private readonly ICollectorService _collectorService;
         private readonly IPostService _postService;
         private readonly IUserService _userService;
