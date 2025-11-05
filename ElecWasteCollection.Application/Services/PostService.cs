@@ -351,9 +351,37 @@ namespace ElecWasteCollection.Application.Services
 
 			var sender = _userService.GetById(post.SenderId);
 			var product = products.FirstOrDefault(p => p.Id == post.ProductId);
-			var category = categories.FirstOrDefault(c => c.Id == product?.CategoryId);
 
-			// Lấy ảnh đầu tiên làm thumbnail
+			// Bước 1: Lấy category được gán trực tiếp (VD: "Tivi")
+			var directCategory = categories.FirstOrDefault(c => c.Id == product?.CategoryId);
+
+			string finalCategoryName = "Không rõ";
+
+			if (directCategory != null)
+			{
+				// Bước 2: Kiểm tra xem category này có cha không?
+				if (directCategory.ParentCategoryId != null)
+				{
+					// Bước 3: Nếu có cha, tìm và lấy tên của cha
+					var parentCategory = categories.FirstOrDefault(c => c.Id == directCategory.ParentCategoryId);
+					if (parentCategory != null)
+					{
+						finalCategoryName = parentCategory.Name; // Chỉ lấy tên cha
+					}
+					else
+					{
+						// Trường hợp hiếm: có ParentCategoryId nhưng không tìm thấy cha
+						finalCategoryName = "Lỗi (Không tìm thấy cha)";
+					}
+				}
+				else
+				{
+					// Bước 4: Nếu không có cha (nó đã là cha), thì lấy chính nó
+					finalCategoryName = directCategory.Name;
+				}
+			}
+
+			// Lấy ảnh
 			var thumbnailUrl = postImages
 				.FirstOrDefault(pi => pi.PostId == post.Id)?
 				.ImageUrl;
@@ -362,7 +390,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				Id = post.Id,
 				Name = post.Name,
-				Category = category?.Name ?? "Không rõ",
+				Category = finalCategoryName, // <--- SỬ DỤNG TÊN ĐÃ QUA XỬ LÝ
 				Status = post.Status,
 				Date = post.Date,
 				Address = post.Address,
