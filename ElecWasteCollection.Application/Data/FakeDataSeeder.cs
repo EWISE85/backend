@@ -401,7 +401,7 @@ namespace ElecWasteCollection.Application.Data
 				Date = DateTime.Now.AddDays(-8),
 				Address = users[3].Address,
 				ScheduleJson = CreateSchedule(0, "11:00", "12:00"), // Cập nhật: Lịch hôm qua
-				Status = "Rejected",
+				Status = "Đã Từ Chối",
 				RejectMessage = "Hình ảnh không rõ ràng."
 			},
 			// Post 5 (Liên kết Product 5 - Laptop)
