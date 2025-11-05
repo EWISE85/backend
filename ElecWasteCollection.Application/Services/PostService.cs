@@ -536,5 +536,104 @@ namespace ElecWasteCollection.Application.Services
 			}
 			return false;
 		}
+
+		public Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model)
+		{
+			
+			var queryablePosts = posts.Select(post => {
+				var product = products.FirstOrDefault(p => p.Id == post.ProductId);
+				var directCategory = categories.FirstOrDefault(c => c.Id == product?.CategoryId);
+				string parentCategoryName = null;
+
+				if (directCategory != null)
+				{
+					if (directCategory.ParentCategoryId != null)
+					{
+						var parentCategory = categories.FirstOrDefault(c => c.Id == directCategory.ParentCategoryId);
+						parentCategoryName = parentCategory?.Name;
+					}
+					else
+					{
+						parentCategoryName = directCategory.Name; // Nó chính là category cha
+					}
+				}
+
+				return new
+				{
+					PostObject = post,
+					SearchableCategoryName = parentCategoryName ?? ""
+				};
+			}).AsQueryable();
+
+			// Bước 2: Lọc theo Status (nếu có)
+			if (!string.IsNullOrEmpty(model.Status))
+			{
+				queryablePosts = queryablePosts.Where(p => p.PostObject.Status == model.Status);
+			}
+
+			// Bước 3: Lọc theo Search (Name bài đăng HOẶC Name category cha)
+			if (!string.IsNullOrEmpty(model.Search))
+			{
+				string searchLower = model.Search.ToLower();
+				queryablePosts = queryablePosts.Where(p =>
+					p.PostObject.Name.ToLower().Contains(searchLower) ||
+					p.SearchableCategoryName.ToLower().Contains(searchLower)
+				);
+			}
+
+			// Bước 4: Lấy tổng số lượng (trước khi phân trang)
+			int totalItems = queryablePosts.Count();
+
+			// Bước 5: Sắp xếp (ORDER BY)
+			// Áp dụng logic nghiệp vụ bạn yêu cầu
+			IQueryable<dynamic> sortedPosts;
+			if (model.Status == "Chờ Duyệt")
+			{
+				// "nếu status là chờ duyệt thì orderby ngày tăng dần"
+				sortedPosts = queryablePosts.OrderBy(p => p.PostObject.Date);
+			}
+			else if (model.Status == "Đã Duyệt" || model.Status == "Đã Từ Chối")
+			{
+				// "nếu status là đã duyệt, đã từ chối thì order ngày giảm dần"
+				sortedPosts = queryablePosts.OrderByDescending(p => p.PostObject.Date);
+			}
+			else
+			{
+				// Trường hợp không lọc status (hoặc status khác),
+				// thì tuân theo tham số 'order'
+				if (model.Order?.ToUpper() == "ASC")
+				{
+					sortedPosts = queryablePosts.OrderBy(p => p.PostObject.Date);
+				}
+				else
+				{
+					// Mặc định là giảm dần (DESC)
+					sortedPosts = queryablePosts.OrderByDescending(p => p.PostObject.Date);
+				}
+			}
+
+			// Bước 6: Phân trang (SKIP & TAKE)
+			var pagedData = sortedPosts
+				.Skip((model.Page - 1) * model.Limit)
+				.Take(model.Limit)
+				.ToList(); // Thực thi query (lấy dữ liệu)
+
+			// Bước 7: Map kết quả sang PostSummaryModel
+			var finalResultList = pagedData
+	.Select(p => MapToPostSummaryModel(p.PostObject))
+	.Cast<PostSummaryModel>() // <-- THÊM DÒNG NÀY
+	.ToList();
+
+			// Bước 8: Tạo PagedResultModel
+			var pagedResult = new PagedResultModel<PostSummaryModel>(
+				finalResultList,
+				model.Page,
+				model.Limit,
+				totalItems
+			);
+
+			// Trả về Task (vì đang dùng fake list)
+			return Task.FromResult(pagedResult);
+		}
 	}
 }

@@ -17,5 +17,6 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> ApprovePost(Guid postId);
 
 		Task<bool> RejectPost(Guid postId, string rejectMessage);
+		Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model);
 	}
 }

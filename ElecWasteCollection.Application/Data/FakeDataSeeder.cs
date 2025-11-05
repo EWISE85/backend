@@ -11,6 +11,9 @@ namespace ElecWasteCollection.Application.Data
 {
 	public static class FakeDataSeeder
 	{
+		private static readonly Guid size_TiviVua = Guid.Parse("235406ca-2b0f-4bd7-94a6-c9bc23096a43");
+		private static readonly Guid prod_TiviMoi = Guid.Parse("b1111111-1111-1111-1111-000000000013");
+		private static readonly Guid post_TiviMoi = Guid.Parse("a0000000-0000-0000-0000-000000000004");
 		// === 1. USERS ===
 		public static List<User> users = new()
 		{
@@ -218,7 +221,7 @@ namespace ElecWasteCollection.Application.Data
 		public static List<SizeTier> sizeTiers = new()
 		{
 			// ... (Giữ nguyên SizeTiers) ...
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Tivi, Name = "Nhỏ (Dưới 32 inch)", EstimatedWeight = 5, EstimatedVolume = 0.1 },
+			new SizeTier { SizeTierId = size_TiviVua, CategoryId = cat_Tivi, Name = "Nhỏ (Dưới 32 inch)", EstimatedWeight = 5, EstimatedVolume = 0.1 },
 			new SizeTier { SizeTierId = st_Tivi_TrungBinh, CategoryId = cat_Tivi, Name = "Trung bình (32-55 inch)", EstimatedWeight = 15, EstimatedVolume = 0.3 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Tivi, Name = "Lớn (Trên 55 inch)", EstimatedWeight = 30, EstimatedVolume = 0.6 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_TuLanh, Name = "Nhỏ (Mini, Dưới 150L)", EstimatedWeight = 30, EstimatedVolume = 0.5 },
@@ -228,7 +231,7 @@ namespace ElecWasteCollection.Application.Data
 			new SizeTier { SizeTierId = st_MayGiat_TrungBinh, CategoryId = cat_MayGiat, Name = "Trung bình (7-10kg)", EstimatedWeight = 50, EstimatedVolume = 0.6 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_MayGiat, Name = "Lớn (Trên 10kg)", EstimatedWeight = 70, EstimatedVolume = 0.8 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_LoViSong, Name = "Nhỏ (Dưới 20L)", EstimatedWeight = 10, EstimatedVolume = 0.05 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_LoViSong, Name = "Lớn (Trên 20L)", EstimatedWeight = 15, EstimatedVolume = 0.1 },
+			new SizeTier { SizeTierId = Guid.Parse("f3c8c4ef-56f3-433e-b210-3f900248ffae"), CategoryId = cat_LoViSong, Name = "Lớn (Trên 20L)", EstimatedWeight = 15, EstimatedVolume = 0.1 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, Name = "Nhỏ (Dưới 24 inch)", EstimatedWeight = 3, EstimatedVolume = 0.05 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, Name = "Lớn (Từ 24 inch trở lên)", EstimatedWeight = 7, EstimatedVolume = 0.1 },
 			new SizeTier { SizeTierId = st_Laptop_MongNhe, CategoryId = cat_Laptop, Name = "Mỏng nhẹ (Dưới 2kg)", EstimatedWeight = 1.5, EstimatedVolume = 0.01 },
@@ -327,6 +330,22 @@ namespace ElecWasteCollection.Application.Data
 				Description = "Quạt Asia cũ, gãy cánh.",
 				// Status gốc: "Chờ thu gom"
 				Status = "Đã thu gom" // Cập nhật: Đã thu gom hôm nay
+			},
+			new Products
+			{
+				Id = Guid.Parse("b1111111-1111-1111-1111-000000000012"),
+				CategoryId = cat_LoViSong, // ID: 1111...0008
+				SizeTierId = Guid.Parse("f3c8c4ef-56f3-433e-b210-3f900248ffae"),
+				Description = "bị hư",
+				Status = "Chờ Duyệt"
+			},
+			new Products // Item 12
+			{
+				Id = prod_TiviMoi,
+				CategoryId = cat_Tivi, // ID: 2222...0001
+				SizeTierId = size_TiviVua,
+				Description = "bị hư",
+				Status = "Chờ Duyệt" // Vì AI confidence thấp
 			}
 		};
 
@@ -481,6 +500,34 @@ namespace ElecWasteCollection.Application.Data
 				Address = users[4].Address,
 				ScheduleJson = CreateSchedule(1, "18:00", "19:00"), // Cập nhật: Lịch hôm nay
 				Status = "Đã Duyệt"
+			},
+			new Post
+			{
+				Id = Guid.Parse("a0000000-0000-0000-0000-000000000003"),
+				SenderId = Guid.Parse("7f5c8b33-1b52-4d11-91b0-932c3d243c71"),
+				ProductId = products[10].Id, // Trỏ đến Product 12 (lò vi sóng)
+				Name = "lò vi sóng ko xài được nữa",
+				Description = "",
+				Date = DateTime.Now.AddDays(-3),
+				Address = "string",
+				ScheduleJson = "[{\"dayName\":\"T6\",\"pickUpDate\":\"2025-11-02\",\"slots\":{\"startTime\":\"09:00\",\"endTime\":\"10:00\"}}]",
+				Status = "Chờ Duyệt", // <-- Vì AI confidence < 80%
+				RejectMessage = null,
+				CheckMessage = new List<string>()
+			},
+			new Post // Item 12
+			{
+				Id = post_TiviMoi,
+				SenderId = Guid.Parse("7f5c8b33-1b52-4d11-91b0-932c3d243c71"),
+				ProductId = prod_TiviMoi,
+				Name = "tivi ko xài được nữa",
+				Description = "",
+				Date = DateTime.Now.AddDays(-1), // Vừa tạo
+				Address = "string",
+				ScheduleJson = "[{\"dayName\":\"T6\",\"pickUpDate\":\"2025-11-02\",\"slots\":{\"startTime\":\"09:00\",\"endTime\":\"10:00\"}}]",
+				Status = "Chờ Duyệt", // <-- TRẠNG THÁI CHÍNH
+				RejectMessage = null,
+				CheckMessage = new List<string>()
 			}
 		};
 
@@ -567,6 +614,20 @@ namespace ElecWasteCollection.Application.Data
 				PostId = posts[9].Id, // e62aefc7...
 				ImageUrl = "https://meta.vn/Data/image/2020/07/01/quat-dung-dien-co-91-qd-cn450p5.jpg",
 				AiDetectedLabelsJson = "[{\"Tag\":\"fan\",\"Confidence\":98.0},{\"Tag\":\"electric fan\",\"Confidence\":92.0}]"
+			},
+			new PostImages
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = posts[10].Id, // Trỏ đến Post 12 (lò vi sóng)
+				ImageUrl = "https://cdn.nguyenkimmall.com/images/detailed/616/10042970-lo-vi-song-sharp-23l-r-31a2vn-s-01.jpg",
+				AiDetectedLabelsJson = "[{\"tag\":\"equipment\",\"confidence\":50.56,\"status\":\"Không phù hợp với danh mục\"},{\"tag\":\"technology\",\"confidence\":49.04,\"status\":\"Không phù hợp với danh mục\"},{\"tag\":\"microwave\",\"confidence\":45.45,\"status\":\"Phù hợp với danh mục\"},{\"tag\":\"screen\",\"confidence\":40.33,\"status\":\"Không phù hợp với danh mục\"},{\"tag\":\"kitchen appliance\",\"confidence\":34.71,\"status\":\"Phù hợp với danh mục\"}]"
+			},
+			new PostImages // Ảnh cho Item 12
+			{
+				PostImageId = Guid.NewGuid(),
+				PostId = post_TiviMoi,
+				ImageUrl = "https://img.lovepik.com/free-png/20220125/lovepik-tv-monitor-png-image_401728080_wh1200.png",
+				AiDetectedLabelsJson = "[{\"tag\":\"monitor\",\"confidence\":51.47,\"status\":\"Phù hợp với danh mục\"},{\"tag\":\"screen\",\"confidence\":39.17,\"status\":\"Phù hợp với danh mục\"},{\"tag\":\"television\",\"confidence\":36.41,\"status\":\"Phù hợp với danh mục\"},{\"tag\":\"display\",\"confidence\":34.05,\"status\":\"Không phù hợp với danh mục\"},{\"tag\":\"computer\",\"confidence\":31.71,\"status\":\"Không phù hợp với danh mục\"}]"
 			}
 		};
 
