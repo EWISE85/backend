@@ -26,8 +26,8 @@ namespace ElecWasteCollection.Application.Services
 
 		private readonly double Confidence_AcceptToSave = 30.0;
 
-		private const string ImaggaApiKey = "acc_b80eaae365fbf2f";
-		private const string ImaggaApiSecret = "ac0c2b3adc747be522c11368f95882b3";
+		private const string ImaggaApiKey = "acc_0b3cc2e4b39fb2e";
+		private const string ImaggaApiSecret = "b83e9553a4612ac08c7a344594e14048";
 		private const double ConfidenceThreshold = 80.0;
 		private static readonly HttpClient _httpClient = new HttpClient();
 		private readonly IUserService _userService;
