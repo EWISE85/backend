@@ -706,18 +706,18 @@ namespace ElecWasteCollection.Application.Data
 				Status = "Hoàn thành"
 			},
 
-			// === 5 ngày hôm nay (Cũng đã hoàn thành, vì giờ là buổi tối) ===
+			// === 5 ngày hôm nay (Đang tiến hành) ===
 			new CollectionRoutes
 			{
 				CollectionRouteId = Guid.Parse("e1f2cde2-0e2a-4a8e-b5a0-60d34e8d3b95"),
 				PostId = posts[5].Id,
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(14, 0), // Sửa giờ cho hợp lý
-				Actual_Time = new TimeOnly(14, 10),
-				ConfirmImages = new List<string>{ "https://picsum.photos/id/306/400/300" },
+				EstimatedTime = new TimeOnly(14, 0),
+				Actual_Time = null, // <-- ĐÃ SỬA
+				ConfirmImages = new List<string>(), // <-- ĐÃ SỬA
 				LicensePlate = "51A-12345",
-				Status = "Hoàn thành" // Cập nhật (vì đã cuối ngày)
+				Status = "Đang tiến hành" // <-- ĐÃ SỬA
 			},
 			new CollectionRoutes
 			{
@@ -726,10 +726,10 @@ namespace ElecWasteCollection.Application.Data
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
 				EstimatedTime = new TimeOnly(15, 0),
-				Actual_Time = new TimeOnly(15, 5),
-				ConfirmImages = new List<string>{ "https://picsum.photos/id/307/400/300" },
+				Actual_Time = null, // <-- ĐÃ SỬA
+				ConfirmImages = new List<string>(), // <-- ĐÃ SỬA
 				LicensePlate = "51A-12345",
-				Status = "Hoàn thành" // Cập nhật
+				Status = "Đang tiến hành" // <-- ĐÃ SỬA
 			},
 			new CollectionRoutes
 			{
@@ -738,10 +738,10 @@ namespace ElecWasteCollection.Application.Data
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
 				EstimatedTime = new TimeOnly(16, 0),
-				Actual_Time = new TimeOnly(16, 20),
-				ConfirmImages = new List<string>{ "https://picsum.photos/id/308/400/300" },
+				Actual_Time = null, // <-- ĐÃ SỬA
+				ConfirmImages = new List<string>(), // <-- ĐÃ SỬA
 				LicensePlate = "51A-12345",
-				Status = "Hoàn thành" // Cập nhật
+				Status = "Đang tiến hành" // <-- ĐÃ SỬA
 			},
 			new CollectionRoutes
 			{
@@ -750,10 +750,10 @@ namespace ElecWasteCollection.Application.Data
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
 				EstimatedTime = new TimeOnly(17, 0),
-				Actual_Time = new TimeOnly(17, 10),
-				ConfirmImages = new List<string>{ "https://picsum.photos/id/309/400/300" },
+				Actual_Time = null, // <-- ĐÃ SỬA
+				ConfirmImages = new List<string>(), // <-- ĐÃ SỬA
 				LicensePlate = "51A-12345",
-				Status = "Hoàn thành" // Cập nhật
+				Status = "Đang tiến hành" // <-- ĐÃ SỬA
 			},
 			new CollectionRoutes
 			{
@@ -762,10 +762,10 @@ namespace ElecWasteCollection.Application.Data
 				CollectorId = collector.CollectorId,
 				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
 				EstimatedTime = new TimeOnly(18, 0),
-				Actual_Time = new TimeOnly(18, 15),
-				ConfirmImages = new List<string>{ "https://picsum.photos/id/310/400/300" },
+				Actual_Time = null, // <-- ĐÃ SỬA
+				ConfirmImages = new List<string>(), // <-- ĐÃ SỬA
 				LicensePlate = "51A-12345",
-				Status = "Hoàn thành" // Cập nhật
+				Status = "Đang tiến hành" // <-- ĐÃ SỬA
 			},
 
 			// === 5 ngày mai (Chưa bắt đầu) ===
@@ -973,11 +973,11 @@ namespace ElecWasteCollection.Application.Data
 	// --- Product 1 (Tivi) - [DATA ĐẦY ĐỦ 7 BƯỚC] ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[0].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime(collectionRoutes[0].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[0].Address}", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime(collectionRoutes[0].Actual_Time) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime(collectionRoutes[0].Actual_Time).AddHours(4) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[0].Address}", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime(collectionRoutes[0].Actual_Time.Value) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[0].CollectionDate.ToDateTime((collectionRoutes[0].Actual_Time.Value).AddHours(4) )},
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "packaged", StatusDescription = "Đã đóng gói vào thùng T-001.", ChangedAt = DateTime.Now.AddHours(-8) }, // 8 tiếng trước
 	
-    // === DỮ LIỆU MỚI THÊM VÀO ===
+    // === DỮ LIỆU MỚI THÊM VÀO ===
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "in_transit", StatusDescription = "Thùng T-001 đang được chuyển đến trung tâm tái chế.", ChangedAt = DateTime.Now.AddHours(-4) }, // 4 tiếng trước
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[0].Id, Status = "at_recycling_unit", StatusDescription = "Thùng T-001 đã đến trung tâm tái chế.", ChangedAt = DateTime.Now.AddHours(-1) }, // 1 tiếng trước
 	// ============================
@@ -985,50 +985,50 @@ namespace ElecWasteCollection.Application.Data
 	// --- Product 2 (Máy giặt) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[1].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[1].Address}", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].Actual_Time) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].Actual_Time).AddHours(4) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[1].Address}", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].Actual_Time.Value) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[1].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[1].CollectionDate.ToDateTime(collectionRoutes[1].Actual_Time.Value).AddHours(4) },
 
 	// --- Product 3 (Máy tính) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[2].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[2].Address}", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].Actual_Time) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].Actual_Time).AddHours(4) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[2].Address}", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].Actual_Time.Value) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[2].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[2].CollectionDate.ToDateTime(collectionRoutes[2].Actual_Time.Value).AddHours(4) },
 
 	// --- Product 4 (Tủ lạnh) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[3].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[3].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[3].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[3].CollectionDate.ToDateTime(collectionRoutes[3].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[3].Id, Status = "collection_failed", StatusDescription = "Tài xế hủy: Rác không phù hợp loại đăng ký.", ChangedAt = collectionRoutes[3].CollectionDate.ToDateTime(collectionRoutes[3].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[3].Id, Status = "collection_failed", StatusDescription = "Tài xế hủy: Rác không phù hợp loại đăng ký.", ChangedAt = collectionRoutes[3].CollectionDate.ToDateTime(collectionRoutes[3].Actual_Time.Value) },
 
 	// --- Product 5 (Laptop) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[4].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[4].Address}", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].Actual_Time) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].Actual_Time).AddHours(4) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[4].Address}", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].Actual_Time.Value) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[4].Id, Status = "at_warehouse", StatusDescription = "Đã nhập kho Trạm Vinhomes.", ChangedAt = collectionRoutes[4].CollectionDate.ToDateTime(collectionRoutes[4].Actual_Time.Value).AddHours(4) },
 
 	// --- Product 6 (Điện thoại) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[5].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[5].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[5].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[5].CollectionDate.ToDateTime(collectionRoutes[5].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[5].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[0].Address}", ChangedAt = collectionRoutes[5].CollectionDate.ToDateTime(collectionRoutes[5].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[5].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[0].Address}", ChangedAt = collectionRoutes[5].CollectionDate.ToDateTime(collectionRoutes[5].EstimatedTime).AddMinutes(10) }, // Giả định thời gian, vì Actual_Time giờ là null
 
 	// --- Product 7 (Loa) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[6].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[6].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[6].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[6].CollectionDate.ToDateTime(collectionRoutes[6].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[6].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[1].Address}", ChangedAt = collectionRoutes[6].CollectionDate.ToDateTime(collectionRoutes[6].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[6].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[1].Address}", ChangedAt = collectionRoutes[6].CollectionDate.ToDateTime(collectionRoutes[6].EstimatedTime).AddMinutes(5) }, // Giả định thời gian
 
 	// --- Product 8 (Bình nước nóng) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[7].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[7].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[7].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[7].CollectionDate.ToDateTime(collectionRoutes[7].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[7].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[2].Address}", ChangedAt = collectionRoutes[7].CollectionDate.ToDateTime(collectionRoutes[7].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[7].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[2].Address}", ChangedAt = collectionRoutes[7].CollectionDate.ToDateTime(collectionRoutes[7].EstimatedTime).AddMinutes(20) }, // Giả định thời gian
 
 	// --- Product 9 (Máy in) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[8].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[8].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[8].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[8].CollectionDate.ToDateTime(collectionRoutes[8].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[8].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[3].Address}", ChangedAt = collectionRoutes[8].CollectionDate.ToDateTime(collectionRoutes[8].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[8].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[3].Address}", ChangedAt = collectionRoutes[8].CollectionDate.ToDateTime(collectionRoutes[8].EstimatedTime).AddMinutes(10) }, // Giả định thời gian
 
 	// --- Product 10 (Quạt điện) ---
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[9].Id, Status = "created", StatusDescription = "Người dùng đã tạo yêu cầu.", ChangedAt = posts[9].Date },
 	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[9].Id, Status = "scheduled", StatusDescription = "Tài xế Ngô Văn Dũng đã nhận tuyến.", ChangedAt = collectionRoutes[9].CollectionDate.ToDateTime(collectionRoutes[9].EstimatedTime) },
-	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[9].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[4].Address}", ChangedAt = collectionRoutes[9].CollectionDate.ToDateTime(collectionRoutes[9].Actual_Time) },
+	new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = products[9].Id, Status = "collected", StatusDescription = $"Lấy hàng thành công tại: {users[4].Address}", ChangedAt = collectionRoutes[9].CollectionDate.ToDateTime(collectionRoutes[9].EstimatedTime).AddMinutes(15) }, // Giả định thời gian
 };
 	}
 }

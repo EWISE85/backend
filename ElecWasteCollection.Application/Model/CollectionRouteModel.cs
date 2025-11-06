@@ -20,7 +20,7 @@ namespace ElecWasteCollection.Application.Model
 		public User Sender { get; set; }
 		public DateOnly CollectionDate { get; set; }
 		public TimeOnly EstimatedTime { get; set; }
-		public TimeOnly Actual_Time { get; set; }
+		public TimeOnly? Actual_Time { get; set; }
 
 		public List<string> ConfirmImages { get; set; }
 
