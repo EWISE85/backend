@@ -26,17 +26,19 @@ RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 # Stage 2: Runtime image
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
-# === THÊM VÀO: CÀI ĐẶT THƯ VIỆN CHO OPENCV ===
-# Cài đặt các dependencies native mà OpenCvSharp cần trên Linux (Debian/Ubuntu)
-RUN apt-get update && apt-get install -y \
+# === CẬP NHẬT: CÀI ĐẶT ĐẦY ĐỦ THƯ VIỆN CHO OPENCV ===
+# Dùng --no-install-recommends để tránh cài các gói không cần thiết (như máy in, âm thanh)
+RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdiplus \
     libgl1-mesa-glx \
     libglib2.0-0 \
-    libgtk2.0-0
-# ============================================
+    libgtk2.0-0 \
+    libxext6 \
+    libxrender1
+# ===================================================
 
 WORKDIR /app
-COPY --from=build /app/publish .
+COPY --from-build /app/publish .
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "ElecWasteCollection.API.dll"]
