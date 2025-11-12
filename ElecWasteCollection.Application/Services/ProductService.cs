@@ -93,7 +93,7 @@ namespace ElecWasteCollection.Application.Services
 			return productDetails;
 		}
 
-		public List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly pickUpDate, int smallCollectionPointId)
+		public List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly pickUpDate, int smallCollectionPointId, string status)
 		{
 			// 1. Tìm các Xe (Vehicles) thuộc về trạm thu gom này
 			var vehicleIds = _vehicles
@@ -127,8 +127,9 @@ namespace ElecWasteCollection.Application.Services
 				return new List<ProductComeWarehouseDetailModel>();
 			}
 
-			// 5. Mapping dữ liệu
-			var result = routesOfTheDay.Select(route =>
+			// 5. Mapping dữ liệu (Tạo model đầy đủ)
+			// (Giữ làm IQueryable/IEnumerable để lọc ở bước 6)
+			var query = routesOfTheDay.Select(route =>
 			{
 				var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
 				if (post == null) return null;
@@ -140,12 +141,10 @@ namespace ElecWasteCollection.Application.Services
 				var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
 				var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
 
-				// === SỬA LỖI Ở ĐÂY: Lấy danh sách URL ảnh từ _postImages ===
 				var imageUrls = _postImages
 					.Where(img => img.PostId == post.Id)
-					.Select(img => img.ImageUrl) // Chỉ lấy trường ImageUrl (string)
+					.Select(img => img.ImageUrl)
 					.ToList();
-				// ============================================================
 
 				var attributesList = _productValues
 					.Where(pv => pv.ProductId == product.Id)
@@ -168,18 +167,25 @@ namespace ElecWasteCollection.Application.Services
 					BrandName = brand?.Name ?? "N/A",
 					CategoryId = category?.Id ?? Guid.Empty,
 					CategoryName = category?.Name ?? "N/A",
-
-					ProductImages = imageUrls, // Gán danh sách string URL đã lấy ở trên
-
-					Status = product.Status,
+					ProductImages = imageUrls,
+					Status = product.Status, // Lấy Status của Product
 					SizeTierName = sizeTier?.Name ?? null,
 					Attributes = attributesList
 				};
 			})
-			.Where(model => model != null)
-			.ToList();
+			.Where(model => model != null); // Lọc bỏ các item bị null do data hỏng
 
-			return result;
+			// 6. === THÊM BƯỚC LỌC STATUS ===
+			// Nếu tham số 'status' được truyền vào (không rỗng)
+			if (!string.IsNullOrEmpty(status))
+			{
+				// Thêm điều kiện lọc Status (không phân biệt hoa thường)
+				query = query.Where(model => model.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+			}
+			// ===============================
+
+			// 7. Trả về kết quả cuối cùng (đã lọc)
+			return query.ToList();
 		}
 
 		public bool UpdateProductStatusByQrCode(string productQrCode, string status)
