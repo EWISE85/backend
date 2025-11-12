@@ -1,3 +1,4 @@
+using ElecWasteCollection.Application.IServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
@@ -6,6 +7,8 @@ namespace ElecWasteCollection.API.Controllers
 	[Route("[controller]")]
 	public class WeatherForecastController : ControllerBase
 	{
+		//private readonly IImageComparisonService _test;
+
 		private static readonly string[] Summaries = new[]
 		{
 			"Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -29,5 +32,16 @@ namespace ElecWasteCollection.API.Controllers
 			})
 			.ToArray();
 		}
+		//[HttpPost]
+		//public IActionResult TestImageComparison([FromBody] test test)
+		//{
+		//	var result = _test.CompareImageSimilarity(test.Image1, test.Image2);
+		//	return Ok(new { AreSimilar = result });
+		//}
 	}
+	//public class test
+	//{
+	//	public string Image1 { get; set; }
+	//	public string Image2 { get; set; }
+	//}
 }

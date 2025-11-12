@@ -93,15 +93,31 @@ namespace ElecWasteCollection.Application.Services
 			return productDetails;
 		}
 
-		public List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly pickUpDate, int smallCollectionPointId, string status)
+		public PagedResult<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(int page, int limit, DateOnly pickUpDate, int smallCollectionPointId, string status)
 		{
+			// Helper để trả về kết quả rỗng nhanh gọn
+			PagedResult<ProductComeWarehouseDetailModel> ReturnEmpty()
+			{
+				return new PagedResult<ProductComeWarehouseDetailModel>
+				{
+					Page = page < 1 ? 1 : page,
+					Limit = limit < 1 ? 10 : limit,
+					TotalItems = 0,
+					Data = new List<ProductComeWarehouseDetailModel>()
+				};
+			}
+
+			// Chuẩn hóa input phân trang
+			if (page < 1) page = 1;
+			if (limit < 1) limit = 10;
+
 			// 1. Tìm các Xe (Vehicles) thuộc về trạm thu gom này
 			var vehicleIds = _vehicles
 				.Where(v => v.Small_Collection_Point == smallCollectionPointId)
 				.Select(v => v.Id)
 				.ToList();
 
-			if (!vehicleIds.Any()) return new List<ProductComeWarehouseDetailModel>();
+			if (!vehicleIds.Any()) return ReturnEmpty();
 
 			// 2. Tìm các Ca làm việc (Shifts) trong ngày đó sử dụng các xe trên
 			var shiftIds = _shifts
@@ -109,7 +125,7 @@ namespace ElecWasteCollection.Application.Services
 				.Select(s => s.Id)
 				.ToList();
 
-			if (!shiftIds.Any()) return new List<ProductComeWarehouseDetailModel>();
+			if (!shiftIds.Any()) return ReturnEmpty();
 
 			// 3. Tìm các Nhóm (Groups) thuộc các ca làm việc đó
 			var groupIds = _collectionGroups
@@ -122,13 +138,10 @@ namespace ElecWasteCollection.Application.Services
 				.Where(r => r.CollectionDate == pickUpDate && groupIds.Contains(r.CollectionGroupId))
 				.ToList();
 
-			if (!routesOfTheDay.Any())
-			{
-				return new List<ProductComeWarehouseDetailModel>();
-			}
+			if (!routesOfTheDay.Any()) return ReturnEmpty();
 
 			// 5. Mapping dữ liệu (Tạo model đầy đủ)
-			// (Giữ làm IQueryable/IEnumerable để lọc ở bước 6)
+			// Lưu ý: Logic này chạy trong RAM (IEnumerable) vì routesOfTheDay đã ToList() ở trên
 			var query = routesOfTheDay.Select(route =>
 			{
 				var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
@@ -168,24 +181,38 @@ namespace ElecWasteCollection.Application.Services
 					CategoryId = category?.Id ?? Guid.Empty,
 					CategoryName = category?.Name ?? "N/A",
 					ProductImages = imageUrls,
-					Status = product.Status, // Lấy Status của Product
+					Status = product.Status,
 					SizeTierName = sizeTier?.Name ?? null,
 					Attributes = attributesList
 				};
 			})
-			.Where(model => model != null); // Lọc bỏ các item bị null do data hỏng
+			.Where(model => model != null); // Lọc bỏ null
 
-			// 6. === THÊM BƯỚC LỌC STATUS ===
-			// Nếu tham số 'status' được truyền vào (không rỗng)
+			// 6. === LỌC STATUS ===
 			if (!string.IsNullOrEmpty(status))
 			{
-				// Thêm điều kiện lọc Status (không phân biệt hoa thường)
 				query = query.Where(model => model.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
 			}
-			// ===============================
 
-			// 7. Trả về kết quả cuối cùng (đã lọc)
-			return query.ToList();
+			// 7. === PHÂN TRANG ===
+			// Lưu ý: Vì query là IEnumerable (In-Memory), ta cần ép ToList() để lấy số lượng chính xác trước khi Skip
+			var filteredList = query.ToList();
+
+			var totalItems = filteredList.Count;
+
+			var pagedData = filteredList
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToList();
+
+			// 8. Trả về kết quả PagedResult
+			return new PagedResult<ProductComeWarehouseDetailModel>
+			{
+				Page = page,
+				Limit = limit,
+				TotalItems = totalItems,
+				Data = pagedData
+			};
 		}
 
 		public bool UpdateProductStatusByQrCode(string productQrCode, string status)

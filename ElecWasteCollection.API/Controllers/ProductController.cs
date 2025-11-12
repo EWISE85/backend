@@ -26,7 +26,7 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPut("receive-at-warehouse/{qrCode}")]
 		public IActionResult ReceiveProductAtWarehouse(string qrCode)
 		{
-			var result = _productService.UpdateProductStatusByQrCode(qrCode,"At_Warehouse");
+			var result = _productService.UpdateProductStatusByQrCode(qrCode,"Nhập kho");
 			if (!result)
 			{
 				return BadRequest("Failed to update product status.");
@@ -34,9 +34,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Product status updated successfully." });
 		}
 		[HttpGet("incoming-warehouse")]
-		public IActionResult GetProductsComingToWarehouse([FromQuery] DateOnly pickUpDate, [FromQuery] int smallCollectionPointId, [FromQuery] string? status)
+		public IActionResult GetProductsComingToWarehouse([FromQuery] int page, [FromQuery] int limit,[FromQuery] DateOnly pickUpDate, [FromQuery] int smallCollectionPointId, [FromQuery] string? status)
 		{
-			var products = _productService.ProductsComeWarehouseByDate(pickUpDate, smallCollectionPointId, status);
+			var products = _productService.ProductsComeWarehouseByDate(page,limit,pickUpDate, smallCollectionPointId, status);
 			return Ok(products);
 		}
 	}

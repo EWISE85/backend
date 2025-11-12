@@ -20,6 +20,6 @@ namespace ElecWasteCollection.Application.IServices
 
 		bool UpdateProductStatusByQrCode(string productQrCode, string status);
 
-		List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly pickUpDate, int smallCollectionPointId, string status);
+		PagedResult<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(int page, int limit,DateOnly pickUpDate, int smallCollectionPointId, string status);
 	}
 }
