@@ -27,7 +27,6 @@ RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
 # === CẬP NHẬT: CÀI ĐẶT ĐẦY ĐỦ THƯ VIỆN CHO OPENCV ===
-# Dùng --no-install-recommends để tránh cài các gói không cần thiết (như máy in, âm thanh)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdiplus \
     libgl1-mesa-glx \
@@ -38,7 +37,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # ===================================================
 
 WORKDIR /app
-COPY --from-build /app/publish .
+
+# SỬA LỖI CÚ PHÁP: DÙNG --from=build (DẤU BẰNG)
+COPY --from=build /app/publish .
+
 EXPOSE 8080
 
 ENTRYPOINT ["dotnet", "ElecWasteCollection.API.dll"]
