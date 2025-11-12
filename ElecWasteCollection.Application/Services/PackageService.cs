@@ -15,6 +15,7 @@ namespace ElecWasteCollection.Application.Services
 		private readonly List<Packages> packages = FakeDataSeeder.packages;
 		private readonly IProductService _productService;
 
+
 		public PackageService( IProductService productService)
 		{
 			_productService = productService;
@@ -34,9 +35,11 @@ namespace ElecWasteCollection.Application.Services
 			foreach (var qrCode in model.ProductsQrCode)
 			{
 				var product = _productService.GetByQrCode(qrCode);
+
 				if (product != null)
 				{
 					_productService.AddPackageIdToProductByQrCode(product.QRCode, newPackage.PackageId);
+					_productService.UpdateProductStatusByQrCode(product.QRCode, "In Package");
 				}
 			}
 

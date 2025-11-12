@@ -33,5 +33,11 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Product status updated successfully." });
 		}
+		[HttpGet("incoming-warehouse")]
+		public IActionResult GetProductsComingToWarehouse([FromQuery] DateOnly pickUpDate, [FromQuery] int smallCollectionPointId)
+		{
+			var products = _productService.ProductsComeWarehouseByDate(pickUpDate, smallCollectionPointId);
+			return Ok(products);
+		}
 	}
 }

@@ -48,6 +48,8 @@ namespace ElecWasteCollection.Application.Model
 		public Guid BrandId { get; set; } // Id thương hiệu
 		public string BrandName { get; set; } // Tên thương hiệu (ví dụ: "Samsung")
 
+		public string Status { get; set; } // Trạng thái hiện tại của sản phẩm (ví dụ: "Chờ thu gom", "Đã nhập kho", "Hủy")
+
 		// Thông tin kích thước (1 trong 2 sẽ có)
 		public string? SizeTierName { get; set; } // (ví dụ: "Tivi Lớn (Trên 55 inch)")
 		public List<ProductValueDetailModel>? Attributes { get; set; } // (ví dụ: "Nặng: 55 kg")

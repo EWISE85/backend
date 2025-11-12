@@ -359,10 +359,21 @@ namespace ElecWasteCollection.Application.Data
 			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000003"),CategoryId = cat_MayTinhDeBan,SizeTierId = null,BrandId = brand_Dell_PC,PackageId = null,Description = "CPU Intel i3 đời cũ, màn hình Dell 19 inch.",Status = "Đã nhập kho"},
 			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000004"),CategoryId = cat_TuLanh,SizeTierId = st_TuLanh_Lon,BrandId = brand_Pana_TuLanh,PackageId = null,Description = "Tủ lạnh Panasonic không còn làm lạnh.",Status = "Chờ thu gom"},
 			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000005"),CategoryId = cat_Laptop,SizeTierId = st_Laptop_MongNhe,BrandId = brand_Acer_Laptop,PackageId = null,Description = "Laptop Acer bị vỡ màn hình.",Status = "Đã nhập kho"},
-			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000006"),CategoryId = cat_DienThoai,SizeTierId = null,BrandId = brand_Apple_DienThoai,PackageId = null,Description = "iPhone 7 bị chai pin.",Status = "Đã thu gom"},
-			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000007"),CategoryId = cat_Loa,SizeTierId = null,BrandId = brand_JBL_Loa,PackageId = null,Description = "Loa JBL mini không sạc được.",Status = "Đã thu gom"},
-			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000008"),CategoryId = cat_BinhNuocNong,SizeTierId = null,BrandId = brand_Ariston_Binh,PackageId = null,Description = "Bình Ariston bị rò điện.",Status = "Đã thu gom"},
-			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000009"),CategoryId = cat_MayIn,SizeTierId = null,BrandId = brand_HP_MayIn,PackageId = null,Description = "Máy in HP cũ, không còn dùng.",Status = "Đã thu gom"},
+
+			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000006"),CategoryId = cat_DienThoai,SizeTierId = null,BrandId = brand_Apple_DienThoai,PackageId = null,Description = "iPhone 7 bị chai pin.",Status = "Hủy bỏ"}, 
+
+// Đơn 6: Đã xong sáng nay
+new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000007"),CategoryId = cat_Loa,SizeTierId = null,BrandId = brand_JBL_Loa,PackageId = null,Description = "Loa JBL mini không sạc được.",Status = "Đã thu gom"},
+
+// Đơn 7: Chưa làm (Đang chờ) -> SỬA STATUS
+new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000008"),CategoryId = cat_BinhNuocNong,SizeTierId = null,BrandId = brand_Ariston_Binh,PackageId = null,Description = "Bình Ariston bị rò điện.",Status = "Chờ thu gom"}, // <--- SỬA
+
+// Đơn 8: Chưa làm (Đang chờ) -> SỬA STATUS
+new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000009"),CategoryId = cat_MayIn,SizeTierId = null,BrandId = brand_HP_MayIn,PackageId = null,Description = "Máy in HP cũ, không còn dùng.",Status = "Chờ thu gom"}, // <--- SỬA
+
+// Đơn 9: Chưa làm (Đang chờ) -> SỬA STATUS
+new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000010"),CategoryId = cat_QuatDien,SizeTierId = null,BrandId = brand_Asia_Quat,PackageId = null,Description = "Quạt Asia cũ, gãy cánh.",Status = "Chờ thu gom"}, // <--- SỬA
+
 			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000010"),CategoryId = cat_QuatDien,SizeTierId = null,BrandId = brand_Asia_Quat,PackageId = null,Description = "Quạt Asia cũ, gãy cánh.",Status = "Đã thu gom"},
 			new Products{Id = Guid.Parse("b1111111-1111-1111-1111-000000000012"),CategoryId = cat_LoViSong,SizeTierId = Guid.Parse("f3c8c4ef-56f3-433e-b210-3f900248ffae"),BrandId = brand_Sharp_LoViSong,PackageId = null,Description = "bị hư",Status = "Chờ Duyệt"},
 			new Products{Id = prod_TiviMoi,CategoryId = cat_Tivi,SizeTierId = size_TiviVua,BrandId = brand_Samsung_Tivi,PackageId = null,Description = "bị hư",Status = "Chờ Duyệt"}
@@ -675,60 +686,69 @@ namespace ElecWasteCollection.Application.Data
 
 			// === 5 ngày hôm nay (Đang tiến hành) - (CẬP NHẬT) ===
 			new CollectionRoutes
-			{
-				CollectionRouteId = Guid.Parse("e1f2cde2-0e2a-4a8e-b5a0-60d34e8d3b95"),
-				PostId = posts[5].Id,
-				CollectionGroupId = group_Today_Tuan, // Gán cho Tuấn
-				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(14, 0),
-				Actual_Time = null,
-				ConfirmImages = new List<string>(),
-				Status = "Đang tiến hành"
-			},
-			new CollectionRoutes
-			{
-				CollectionRouteId = Guid.Parse("e2f2cde2-0e2a-4a8e-b5a0-60d34e8d3b96"),
-				PostId = posts[6].Id,
-				CollectionGroupId = group_Today_Tuan, // Gán cho Tuấn
-				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(15, 0),
-				Actual_Time = null,
-				ConfirmImages = new List<string>(),
-				Status = "Đang tiến hành"
-			},
-			new CollectionRoutes
-			{
-				CollectionRouteId = Guid.Parse("e3f2cde2-0e2a-4a8e-b5a0-60d34e8d3b97"),
-				PostId = posts[7].Id,
-				CollectionGroupId = group_Today_Tuan, // Gán cho Tuấn
-				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(16, 0),
-				Actual_Time = null,
-				ConfirmImages = new List<string>(),
-				Status = "Đang tiến hành"
-			},
-			new CollectionRoutes
-			{
-				CollectionRouteId = Guid.Parse("e4f2cde2-0e2a-4a8e-b5a0-60d34e8d3b98"),
-				PostId = posts[8].Id,
-				CollectionGroupId = group_Today_Dung, // (CẬP NHẬT) Gán cho Dũng
-				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(17, 0),
-				Actual_Time = null,
-				ConfirmImages = new List<string>(),
-				Status = "Đang tiến hành"
-			},
-			new CollectionRoutes
-			{
-				CollectionRouteId = Guid.Parse("e5f2cde2-0e2a-4a8e-b5a0-60d34e8d3b99"),
-				PostId = posts[9].Id,
-				CollectionGroupId = group_Today_Dung, // (CẬP NHẬT) Gán cho Dũng
-				CollectionDate = DateOnly.FromDateTime(DateTime.Now),
-				EstimatedTime = new TimeOnly(18, 0),
-				Actual_Time = null,
-				ConfirmImages = new List<string>(),
-				Status = "Đang tiến hành"
-			},
+{
+	CollectionRouteId = Guid.Parse("e1f2cde2-0e2a-4a8e-b5a0-60d34e8d3b95"),
+	PostId = posts[5].Id,
+	CollectionGroupId = group_Today_Tuan,
+	CollectionDate = DateOnly.FromDateTime(DateTime.Now),
+	EstimatedTime = new TimeOnly(8, 30), // Sáng sớm
+    Actual_Time = new TimeOnly(8, 45),   // <--- ĐÃ CÓ GIỜ THỰC TẾ
+    ConfirmImages = new List<string>{ "https://picsum.photos/id/401/400/300" }, // <--- CÓ ẢNH
+    Status = "Hoàn thành" // <--- SỬA THÀNH HOÀN THÀNH
+},
+
+// Route 6: Đã xong (Khớp với Product 6 "Đã thu gom")
+new CollectionRoutes
+{
+	CollectionRouteId = Guid.Parse("e2f2cde2-0e2a-4a8e-b5a0-60d34e8d3b96"),
+	PostId = posts[6].Id,
+	CollectionGroupId = group_Today_Tuan,
+	CollectionDate = DateOnly.FromDateTime(DateTime.Now),
+	EstimatedTime = new TimeOnly(9, 0),
+	Actual_Time = new TimeOnly(9, 10),   // <--- ĐÃ CÓ GIỜ THỰC TẾ
+    ConfirmImages = new List<string>{ "https://picsum.photos/id/402/400/300" }, // <--- CÓ ẢNH
+	RejectMessage = "Không có hàng",
+	Status = "Hủy bỏ" // <--- SỬA THÀNH HOÀN THÀNH
+},
+
+// Route 7: Đang chạy (Khớp với Product 7 "Chờ thu gom")
+new CollectionRoutes
+{
+	CollectionRouteId = Guid.Parse("e3f2cde2-0e2a-4a8e-b5a0-60d34e8d3b97"),
+	PostId = posts[7].Id,
+	CollectionGroupId = group_Today_Tuan,
+	CollectionDate = DateOnly.FromDateTime(DateTime.Now),
+	EstimatedTime = new TimeOnly(14, 0), // Chiều nay
+    Actual_Time = null, // <--- CHƯA XONG
+    ConfirmImages = new List<string>(),
+	Status = "Đang tiến hành" // <--- TÀI XẾ ĐANG ĐẾN
+},
+
+// Route 8: Đang chờ (Khớp với Product 8 "Chờ thu gom")
+new CollectionRoutes
+{
+	CollectionRouteId = Guid.Parse("e4f2cde2-0e2a-4a8e-b5a0-60d34e8d3b98"),
+	PostId = posts[8].Id,
+	CollectionGroupId = group_Today_Dung,
+	CollectionDate = DateOnly.FromDateTime(DateTime.Now),
+	EstimatedTime = new TimeOnly(15, 0),
+	Actual_Time = null,
+	ConfirmImages = new List<string>(),
+	Status = "Đang tiến hành"
+},
+
+// Route 9: Đang chờ (Khớp với Product 9 "Chờ thu gom")
+new CollectionRoutes
+{
+	CollectionRouteId = Guid.Parse("e5f2cde2-0e2a-4a8e-b5a0-60d34e8d3b99"),
+	PostId = posts[9].Id,
+	CollectionGroupId = group_Today_Dung,
+	CollectionDate = DateOnly.FromDateTime(DateTime.Now),
+	EstimatedTime = new TimeOnly(16, 0),
+	Actual_Time = null,
+	ConfirmImages = new List<string>(),
+	Status = "Đang tiến hành"
+},
 
 			// === 5 ngày mai (Chưa bắt đầu) ===
 			new CollectionRoutes
