@@ -7,7 +7,7 @@ namespace ElecWasteCollection.API.Controllers
 	[Route("[controller]")]
 	public class WeatherForecastController : ControllerBase
 	{
-		//private readonly IImageComparisonService _test;
+		private readonly IImageComparisonService _test;
 
 		private static readonly string[] Summaries = new[]
 		{
@@ -16,9 +16,10 @@ namespace ElecWasteCollection.API.Controllers
 
 		private readonly ILogger<WeatherForecastController> _logger;
 
-		public WeatherForecastController(ILogger<WeatherForecastController> logger)
+		public WeatherForecastController(ILogger<WeatherForecastController> logger, IImageComparisonService imageComparisonService)
 		{
 			_logger = logger;
+			_test = imageComparisonService;
 		}
 
 		[HttpGet(Name = "GetWeatherForecast")]
@@ -32,16 +33,16 @@ namespace ElecWasteCollection.API.Controllers
 			})
 			.ToArray();
 		}
-		//[HttpPost]
-		//public IActionResult TestImageComparison([FromBody] test test)
-		//{
-		//	var result = _test.CompareImageSimilarity(test.Image1, test.Image2);
-		//	return Ok(new { AreSimilar = result });
-		//}
+		[HttpPost]
+		public async Task<IActionResult> TestImageComparison([FromBody] test test)
+		{
+			var result = await _test.CompareImageSimilarityAsync(test.Image1, test.Image2);
+			return Ok(new { AreSimilar = result });
+		}
 	}
-	//public class test
-	//{
-	//	public string Image1 { get; set; }
-	//	public string Image2 { get; set; }
-	//}
+	public class test
+	{
+		public string Image1 { get; set; }
+		public string Image2 { get; set; }
+	}
 }

@@ -1,79 +1,140 @@
-﻿//using ElecWasteCollection.Application.IServices;
-//using OpenCvSharp;
-//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
+﻿using ElecWasteCollection.Application.IServices;
+using OpenCvSharp;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
 
-//namespace ElecWasteCollection.Application.Services
-//{
-//	public class ImageComparisonService : IImageComparisonService
-//	{
-//		public double CompareImageSimilarity(string imagePath1, string imagePath2)
-//		{
-//			try
-//			{
-//				// 1. Đọc ảnh và chuyển sang đen trắng (Grayscale) để thuật toán chạy chuẩn hơn
-//				using var img1 = Cv2.ImRead(imagePath1, ImreadModes.Grayscale);
-//				using var img2 = Cv2.ImRead(imagePath2, ImreadModes.Grayscale);
+namespace ElecWasteCollection.Application.Services
+{
+	public class ImageComparisonService : IImageComparisonService
+	{
+		private readonly HttpClient _httpClient;
 
-//				if (img1.Empty() || img2.Empty())
-//					throw new Exception("Không thể đọc file ảnh.");
+		public ImageComparisonService()
+		{
+			_httpClient = new HttpClient();
+			// Giả lập Browser để tránh bị chặn bởi một số server (như Tiki, Shopee)
+			_httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+		}
 
-//				// 2. Khởi tạo thuật toán ORB (Oriented FAST and Rotated BRIEF)
-//				// ORB nhanh và hiệu quả cho việc so sánh vật thể
-//				using var orb = ORB.Create(500); // Tìm tối đa 500 điểm đặc trưng
+		private async Task<Mat> LoadImageFromUrlOrPath(string input)
+		{
+			try
+			{
+				// Trường hợp 1: Input là URL (http/https)
+				if (input.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+				{
+					var imageBytes = await _httpClient.GetByteArrayAsync(input);
+					// ImDecode đọc byte array thành ảnh. Flag Grayscale để so sánh cho chuẩn.
+					return Cv2.ImDecode(imageBytes, ImreadModes.Grayscale);
+				}
+				// Trường hợp 2: Input là đường dẫn file local
+				else
+				{
+					return Cv2.ImRead(input, ImreadModes.Grayscale);
+				}
+			}
+			catch (Exception)
+			{
+				return new Mat(); // Trả về Mat rỗng nếu lỗi
+			}
+		}
 
-//				// 3. Tìm Keypoints và Descriptors
-//				// Keypoints: Vị trí các điểm đặc biệt (góc, cạnh, nút bấm...)
-//				// Descriptors: Dữ liệu mô tả các điểm đó
-//				using var descriptors1 = new Mat();
-//				using var descriptors2 = new Mat();
-//				KeyPoint[] keypoints1, keypoints2;
+		public async Task<double> CompareImageSimilarityAsync(string url1, string url2)
+		{
+			try
+			{
+				using var img1 = await LoadImageFromUrlOrPath(url1);
+				using var img2 = await LoadImageFromUrlOrPath(url2);
 
-//				orb.DetectAndCompute(img1, null, out keypoints1, descriptors1);
-//				orb.DetectAndCompute(img2, null, out keypoints2, descriptors2);
+				if (img1.Empty() || img2.Empty()) return 0;
 
-//				// Nếu không tìm thấy điểm đặc trưng nào (ảnh quá mờ hoặc trơn tuột), trả về 0
-//				if (descriptors1.Rows == 0 || descriptors2.Rows == 0)
-//					return 0;
+				// 1. Resize ảnh nếu quá lớn để khử nhiễu và tăng tốc độ
+				PrepareImage(img1);
+				PrepareImage(img2);
 
-//				// 4. So sánh các điểm đặc trưng (Matching)
-//				// Dùng BFMatcher (Brute Force) với chuẩn Hamming (phù hợp cho ORB)
-//				using var matcher = new BFMatcher(NormTypes.Hamming, crossCheck: false);
+				// 2. Dùng AKAZE thay vì ORB
+				// AKAZE tốt hơn cho các vật thể có bề mặt trơn/bóng và thay đổi góc chụp
+				using var detector = AKAZE.Create();
 
-//				// Tìm 2 điểm khớp tốt nhất cho mỗi điểm (k = 2) để lọc nhiễu
-//				var matches = matcher.KnnMatch(descriptors1, descriptors2, k: 2);
+				using var descriptors1 = new Mat();
+				using var descriptors2 = new Mat();
+				KeyPoint[] keypoints1, keypoints2;
 
-//				// 5. Lọc kết quả tốt (Lowe's Ratio Test)
-//				// Chỉ lấy các cặp điểm khớp thực sự tốt, loại bỏ các điểm khớp ngẫu nhiên
-//				var goodMatches = new List<DMatch>();
-//				foreach (var match in matches)
-//				{
-//					if (match.Length >= 2 && match[0].Distance < 0.75 * match[1].Distance)
-//					{
-//						goodMatches.Add(match[0]);
-//					}
-//				}
+				detector.DetectAndCompute(img1, null, out keypoints1, descriptors1);
+				detector.DetectAndCompute(img2, null, out keypoints2, descriptors2);
 
-//				// 6. Tính điểm số (Similarity Score)
-//				// Logic: Số lượng điểm khớp tốt / Tổng số điểm đặc trưng tìm được
-//				// Đây là công thức heuristic đơn giản
-//				double ratio = (double)goodMatches.Count / keypoints1.Length;
+				if (descriptors1.Rows == 0 || descriptors2.Rows == 0) return 0;
 
-//				// Chuẩn hóa thành thang 0-100. 
-//				// Lưu ý: Với máy giặt, match được khoảng 10-15% số điểm đã là rất cao rồi (vì góc chụp khác nhau).
-//				// Ta nhân hệ số để con số thân thiện hơn với người dùng.
-//				double score = Math.Min(ratio * 100 * 3, 100); // Nhân 3 để scale lên (tùy chỉnh ngưỡng này khi test thực tế)
+				// 3. Matching
+				using var matcher = new BFMatcher(NormTypes.Hamming); // AKAZE cũng dùng binary descriptor nên dùng Hamming
+				var matches = matcher.KnnMatch(descriptors1, descriptors2, k: 2);
 
-//				return Math.Round(score, 2);
-//			}
-//			catch (Exception ex)
-//			{
-//				Console.WriteLine($"Lỗi so sánh ảnh: {ex.Message}");
-//				return 0;
-//			}
-//		}
-//	}
-//}
+				// 4. Lọc nhiễu cực mạnh (Strict Filter)
+				var goodMatches = new List<DMatch>();
+				foreach (var match in matches)
+				{
+					// Giảm tỉ lệ xuống 0.7 để chỉ lấy những điểm cực giống nhau
+					if (match.Length >= 2 && match[0].Distance < 0.7 * match[1].Distance)
+					{
+						goodMatches.Add(match[0]);
+					}
+				}
+
+				Console.WriteLine($"Số điểm khớp tìm thấy: {goodMatches.Count}");
+
+				// 5. ĐÁNH GIÁ KẾT QUẢ (LOGIC MỚI)
+
+				// Nếu tìm thấy dưới 4 điểm => Chắc chắn khác nhau
+				if (goodMatches.Count < 4) return 0;
+
+				// Dùng Homography để kiểm tra xem các điểm khớp có tạo thành hình thù đúng logic không
+				// (Ví dụ: 3 cái nút thẳng hàng ở ảnh 1 thì sang ảnh 2 nó cũng phải thẳng hàng, dù bị nghiêng)
+				var srcPts = goodMatches.Select(m => keypoints1[m.QueryIdx].Pt).ToArray();
+				var dstPts = goodMatches.Select(m => keypoints2[m.TrainIdx].Pt).ToArray();
+
+				// Tìm ma trận biến đổi (Chỉ chạy nếu có đủ điểm)
+				if (srcPts.Length >= 4)
+				{
+					using var mask = new Mat();
+					// RANSAC sẽ loại bỏ các điểm khớp "ảo" (outliers)
+					var homography = Cv2.FindHomography(InputArray.Create(srcPts), InputArray.Create(dstPts), HomographyMethods.Ransac, 5.0, mask);
+
+					if (!homography.Empty())
+					{
+						// Đếm số lượng inliers (điểm khớp đúng quy luật hình học)
+						int inliers = Cv2.CountNonZero(mask);
+						Console.WriteLine($"Số điểm khớp đúng hình học (Inliers): {inliers}");
+
+						// LOGIC ĐIỂM SỐ:
+						// Với vật thể 3D xoay góc, chỉ cần khoảng 10-15 inliers là xác nhận GIỐNG NHAU.
+						// Ta map số lượng này sang thang 100.
+
+						double score = Math.Min((double)inliers / 15.0 * 100, 100);
+						return Math.Round(score, 2);
+					}
+				}
+
+				// Fallback nếu không tìm ra homography (ít xảy ra)
+				return Math.Min((double)goodMatches.Count / 20.0 * 100, 100);
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+				return 0;
+			}
+		}
+
+		private void PrepareImage(Mat img)
+		{
+			// Resize về chiều rộng 800px để chuẩn hóa
+			if (img.Width > 800)
+			{
+				double scale = 800.0 / img.Width;
+				Cv2.Resize(img, img, new Size(0, 0), scale, scale);
+			}
+		}
+	}
+}
