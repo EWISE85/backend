@@ -111,12 +111,15 @@ namespace ElecWasteCollection.Application.Services
 
 			// 4. Lấy danh sách ảnh (Nếu tìm thấy Post)
 			var imageUrls = new List<string>();
+
+			double? point = null;
 			if (post != null)
 			{
 				imageUrls = _postImages
 					.Where(img => img.PostId == post.Id)
 					.Select(img => img.ImageUrl)
 					.ToList();
+				point = post.EstimatePoint;
 			}
 
 			// 5. Lấy danh sách thuộc tính (Attributes) - Giống hệt logic hàm dưới
@@ -138,18 +141,15 @@ namespace ElecWasteCollection.Application.Services
 			{
 				ProductId = product.Id,
 				Description = product.Description,
-
-				// Xử lý null an toàn giống hàm dưới
 				BrandId = brand?.BrandId ?? Guid.Empty,
 				BrandName = brand?.Name ?? "N/A",
-
 				CategoryId = category?.Id ?? Guid.Empty,
 				CategoryName = category?.Name ?? "N/A",
-
 				ProductImages = imageUrls, // Đã bổ sung ảnh
 				QrCode = product.QRCode,
 				Status = product.Status,
 				SizeTierName = sizeTier?.Name, // Có thể null
+				EstimatePoint = point, // Có thể null
 				Attributes = attributesList
 			};
 		}
@@ -223,10 +223,7 @@ namespace ElecWasteCollection.Application.Services
 			if (page < 1) page = 1;
 			if (limit < 1) limit = 10;
 
-			// =================================================================================
-			// LUỒNG 1: SẢN PHẨM TỪ TUYẾN THU GOM (Logic cũ - Dựa vào Route/Shift/Vehicle)
-			// Áp dụng cho sản phẩm tạo từ Post (không có SmallCollectionPointId)
-			// =================================================================================
+			
 			var routeModels = new List<ProductComeWarehouseDetailModel>();
 
 			var vehicleIds = _vehicles
@@ -264,17 +261,14 @@ namespace ElecWasteCollection.Application.Services
 				}
 			}
 
-			// =================================================================================
-			// LUỒNG 2: SẢN PHẨM TẠO TRỰC TIẾP TẠI KHO (Logic mới - Dựa vào SmallCollectionPointId)
-			// Áp dụng cho sản phẩm tạo tại kho (Có SmallCollectionPointId, chưa đóng gói)
-			// =================================================================================
+			
 
 			var directProducts = _products
 				.Where(p =>
-					p.SmallCollectionPointId == smallCollectionPointId && // Đúng kho này
-					p.CreateAt == pickUpDate &&                           // Tạo trong ngày này
-					p.PackageId == null &&                                // Chưa đóng gói
-					p.Status == "Nhập kho"                                // Status mặc định khi tạo tại kho
+					p.SmallCollectionPointId == smallCollectionPointId && 
+					p.CreateAt == pickUpDate &&                          
+					p.PackageId == null &&                               
+					p.Status == "Nhập kho"                              
 				)
 				.ToList();
 
@@ -285,17 +279,12 @@ namespace ElecWasteCollection.Application.Services
 			}).ToList();
 
 
-			// =================================================================================
-			// GỘP DỮ LIỆU VÀ TRẢ VỀ
-			// =================================================================================
-
-			// 1. Gộp 2 danh sách
+			
 			var combinedList = routeModels
 				.Concat(directModels)
-				.DistinctBy(x => x.ProductId) // Đảm bảo duy nhất (phòng trường hợp logic trùng lặp)
+				.DistinctBy(x => x.ProductId) 
 				.ToList();
 
-			// 2. Lọc theo Status (Nếu user có truyền vào)
 			if (!string.IsNullOrEmpty(status))
 			{
 				combinedList = combinedList
@@ -382,6 +371,31 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 			product.Status = status;
+			return true;
+		}
+
+		public bool UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status, UserReceivePointFromCollectionPointModel model)
+		{
+			var product = _products.FirstOrDefault(p => p.QRCode == productQrCode);
+			if (product == null)
+			{
+				return false;
+			}
+
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+			if (post == null)
+			{
+				return false;
+			}
+			var pointTransaction = new CreatePointTransactionModel
+			{
+				PostId = post.Id,
+				UserId = post.SenderId,
+				Point = model.Point,
+				Desciption = model.Description,
+			};
+			product.Status = status;
+			_pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
 			return true;
 		}
 	}

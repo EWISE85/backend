@@ -319,7 +319,7 @@ namespace ElecWasteCollection.Application.Data
                 SmallCollectionPointsId = 1,
 				Status = "Đang vận chuyển"
 			}
-		};
+		};   
 
 		// =========================================================================
 		// 6. PRODUCTS - POSTS - ROUTES (15 Items) - DYNAMIC DATES

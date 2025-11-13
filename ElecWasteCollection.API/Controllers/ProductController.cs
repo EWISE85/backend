@@ -26,10 +26,17 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(product);
 		}
 		[HttpPut("receive-at-warehouse/{qrCode}")]
-		public IActionResult ReceiveProductAtWarehouse(string qrCode)
+		public IActionResult ReceiveProductAtWarehouse([FromRoute] string qrCode, [FromBody] UserReceivePointFromCollectionPointRequest request)
 		{
-			var result = _productService.UpdateProductStatusByQrCode(qrCode,"Nhập kho");
-			if (!result)
+			var model = new UserReceivePointFromCollectionPointModel
+			{
+				ProductId = request.ProductId,
+				Description = request.Description,
+				Point = request.Point
+			};
+			var result = _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode,"Nhập kho", model);
+			 
+			if (!result) 
 			{
 				return BadRequest("Failed to update product status.");
 			}
