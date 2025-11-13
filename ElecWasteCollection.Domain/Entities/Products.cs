@@ -19,10 +19,13 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string Description { get; set; }
 
+		public DateOnly? CreateAt { get; set; }
+
 		public string? QRCode { get; set; }
 
 		public string Status { get; set; }
 
+		public int? SmallCollectionPointId { get; set; }
 		public Category Category { get; set; }
 
 		public Category Brand { get; set; }

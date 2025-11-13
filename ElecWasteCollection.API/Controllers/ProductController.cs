@@ -54,6 +54,7 @@ namespace ElecWasteCollection.API.Controllers
 				QrCode = newProduct.QrCode,
 				ParentCategoryId = newProduct.ParentCategoryId,
 				SubCategoryId = newProduct.SubCategoryId,
+				SmallCollectionPointId = newProduct.SmallCollectionPointId,
 				BrandId = newProduct.BrandId,
 				Images = newProduct.Images,
 				Description = newProduct.Description,
