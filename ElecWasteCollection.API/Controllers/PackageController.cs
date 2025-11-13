@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-	[Route("api/packages")]
+	[Route("api/packages/")]
 	[ApiController]
 	public class PackageController : ControllerBase
 	{
@@ -47,6 +47,20 @@ namespace ElecWasteCollection.API.Controllers
 				return NotFound("Package not found.");
 			}
 			return Ok(package);
+		}
+
+		[HttpGet("filter")]
+		public IActionResult GetPackagesByQuery([FromQuery] PackageSearchQueryRequest query)
+		{
+			var model = new PackageSearchQueryModel
+			{
+				Limit = query.Limit,
+				Page = query.Page,
+				SmallCollectionPointsId = query.SmallCollectionPointsId,
+				Status = query.Status
+			};
+			var packages = _packageService.GetPackagesByQuery(model);
+			return Ok(packages);
 		}
 	}
 }

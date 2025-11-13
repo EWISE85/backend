@@ -22,6 +22,7 @@ namespace ElecWasteCollection.Application.Services
             public TimeSlotDetailDto? Slots { get; set; }
         }
 
+        //  PARSE SCHEDULE
         private static bool TryGetWindow(
             string rawSchedule,
             TimeOnly shiftStart,
@@ -57,176 +58,250 @@ namespace ElecWasteCollection.Application.Services
 
             return false;
         }
-
         public async Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request)
         {
             var point = FakeDataSeeder.smallCollectionPoints
                 .FirstOrDefault(p => p.Id == request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
-            var nextDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1));
+            double allowedRadius = request.RadiusKm <= 0 ? 10 : request.RadiusKm;
 
-            var activeShifts = FakeDataSeeder.shifts
-                .Join(FakeDataSeeder.vehicles, s => s.Vehicle_Id, v => v.Id, (s, v) => new { s, v })
-                .Join(FakeDataSeeder.collectors, sv => sv.s.CollectorId, c => c.CollectorId, (sv, c) => new { sv.s, sv.v, c })
-                .Where(x => x.v.Small_Collection_Point == point.Id && x.s.WorkDate == nextDate)
+            var approved = FakeDataSeeder.posts
+                .Where(p =>
+                {
+                    var prod = FakeDataSeeder.products.First(x => x.Id == p.ProductId);
+                    return prod.Status == "Chờ gom nhóm";
+                })
                 .ToList();
 
-            if (!activeShifts.Any())
-                throw new Exception($"Không có ca làm việc nào vào ngày {nextDate} tại trạm này.");
+            if (!approved.Any())
+                throw new Exception("Không có bài 'Chờ gom nhóm'.");
 
-            var approvedPosts = FakeDataSeeder.posts
-                .Where(p => p.Status.ToLower().Contains("duyệt"))
+            var availableDates = approved
+                .Select(p =>
+                {
+                    TryGetWindow(p.ScheduleJson!, TimeOnly.MinValue, TimeOnly.MaxValue,
+                        out var dateStr, out _, out _);
+
+                    return DateOnly.TryParse(dateStr, out var d) ? d : DateOnly.MinValue;
+                })
+                .Where(d => d != DateOnly.MinValue)
+                .Distinct()
+                .OrderBy(d => d)
                 .ToList();
-
-            if (!approvedPosts.Any())
-                throw new Exception("Không có bài đăng đã duyệt nào để gom nhóm.");
 
             var response = new GroupingByPointResponse
             {
                 CollectionPoint = point.Name,
-                ActiveShifts = activeShifts.Count,
                 SavedToDatabase = request.SaveResult
             };
 
+            HashSet<Guid> assignedPosts = new();
             int groupCounter = 1;
 
-            foreach (var shift in activeShifts)
+            foreach (var workDate in availableDates)
             {
-                var vehicle = shift.v;
-                var collector = shift.c;
-                var radius = request.RadiusKm != 0 ? request.RadiusKm : vehicle.Radius_Km;
+                var shiftsToday = FakeDataSeeder.shifts
+                    .Where(s => s.WorkDate == workDate)
+                    .OrderBy(s => s.Shift_Start_Time)
+                    .ToList();
 
-                var postsInRange = approvedPosts
+                if (!shiftsToday.Any())
+                    continue;
+
+                var postsToday = approved
+                    .Where(p =>
+                    {
+                        TryGetWindow(p.ScheduleJson!, TimeOnly.MinValue, TimeOnly.MaxValue,
+                            out var dateStr, out _, out _);
+
+                        return DateOnly.TryParse(dateStr, out var d) && d == workDate;
+                    })
+                    .ToList();
+
+                if (!postsToday.Any()) continue;
+
+                var sortedPosts = postsToday
+                    .Where(p => !assignedPosts.Contains(p.Id))
                     .Select(p =>
                     {
-                        var user = FakeDataSeeder.users.FirstOrDefault(u => u.UserId == p.SenderId);
-                        if (user == null) return null;
+                        var user = FakeDataSeeder.users.First(u => u.UserId == p.SenderId);
+                        var prod = FakeDataSeeder.products.First(pr => pr.Id == p.ProductId);
 
-                        var lat = user.Iat ?? point.Latitude;
-                        var lng = user.Ing ?? point.Longitude;
-                        var distance = GeoHelper.DistanceKm(point.Latitude, point.Longitude, lat, lng);
+                        TryGetWindow(p.ScheduleJson!, TimeOnly.MinValue, TimeOnly.MaxValue,
+                            out var dateStr, out var st, out var ed);
 
-                        var product = FakeDataSeeder.products.FirstOrDefault(pr => pr.Id == p.ProductId);
-                        var sizeTier = FakeDataSeeder.sizeTiers.FirstOrDefault(t => t.SizeTierId == product?.SizeTierId);
-                        double weight = sizeTier?.EstimatedWeight ?? 10;
-                        double volume = sizeTier?.EstimatedVolume ?? 1;
+                        var sizeTier = FakeDataSeeder.sizeTiers.FirstOrDefault(t => t.SizeTierId == prod.SizeTierId);
 
-                        string pickDate;
-                        TimeOnly slotStart;
-                        TimeOnly slotEnd;
-
-                        TryGetWindow(p.ScheduleJson ?? "", TimeOnly.MinValue, TimeOnly.MaxValue, out pickDate, out slotStart, out slotEnd);
+                        double distance = GeoHelper.DistanceKm(
+                            point.Latitude, point.Longitude,
+                            user.Iat ?? point.Latitude,
+                            user.Ing ?? point.Longitude);
 
                         return new
                         {
                             Post = p,
                             User = user,
-                            Lat = lat,
-                            Lng = lng,
-                            Distance = distance,
-                            Weight = weight,
-                            Volume = volume,
-                            SizeTier = sizeTier?.Name ?? "Unknown",
-                            Start = slotStart,
-                            End = slotEnd,
-                            Schedule = p.ScheduleJson
+                            Start = st,
+                            End = ed,
+                            Weight = sizeTier?.EstimatedWeight ?? 10,
+                            Volume = sizeTier?.EstimatedVolume ?? 1,
+                            SizeTierName = sizeTier?.Name ?? "Unknown",
+                            Lat = user.Iat ?? point.Latitude,
+                            Lng = user.Ing ?? point.Longitude,
+                            DistanceFromPoint = distance
                         };
                     })
-                    .Where(x => x != null && x.Distance <= radius)
                     .OrderBy(x => x.Start)
-                    .ThenBy(x => x.Distance)
+                    .ThenBy(x => x.DistanceFromPoint)
                     .ToList();
 
-                if (!postsInRange.Any()) continue;
-
-                double curLat = point.Latitude, curLng = point.Longitude;
-                double speed = vehicle.Vehicle_Type.Contains("lớn") ? 30 : 25;
-                int serviceMinutes = 10;
-
-                var currentTime = TimeOnly.FromDateTime(shift.s.Shift_Start_Time);
-                var shiftEnd = TimeOnly.FromDateTime(shift.s.Shift_End_Time);
-
-                var selectedRoutes = new List<RouteDetail>();
-                var routes = new List<CollectionRoutes>();
-
-                double totalWeight = 0;
-                double totalVolume = 0;
-                int order = 1;
-
-                foreach (var x in postsInRange)
+                //  XỬ LÝ THEO SHIFT
+                foreach (var shift in shiftsToday)
                 {
-                    double travelMinutes = GeoHelper.DistanceKm(curLat, curLng, x.Lat, x.Lng) / speed * 60;
-                    var eta = currentTime.AddMinutes(travelMinutes);
+                    var vehicle = FakeDataSeeder.vehicles.First(v => v.Id == shift.Vehicle_Id);
+                    var collector = FakeDataSeeder.collectors.First(c => c.CollectorId == shift.CollectorId);
 
-                    if (eta < x.Start) eta = x.Start;
+                    double maxKg = vehicle.Capacity_Kg;
+                    double maxM3 = vehicle.Capacity_M3;
+                    double curKg = 0;
+                    double curM3 = 0;
 
-                    if (eta > x.End || eta > shiftEnd)
+                    TimeOnly shiftStart = TimeOnly.FromDateTime(shift.Shift_Start_Time);
+                    TimeOnly shiftEnd = TimeOnly.FromDateTime(shift.Shift_End_Time);
+
+                    var selectedForThisShift = new List<dynamic>();
+
+                    // LỌC BÀI ĐỦ TẢI
+                    foreach (var x in sortedPosts)
+                    {
+                        if (assignedPosts.Contains(x.Post.Id))
+                            continue;
+
+                        if (curKg + x.Weight > maxKg || curM3 + x.Volume > maxM3)
+                            continue;
+
+                        if (x.Start > shiftEnd)
+                            continue;
+
+                        curKg += x.Weight;
+                        curM3 += x.Volume;
+
+                        selectedForThisShift.Add(x);
+                        assignedPosts.Add(x.Post.Id);
+                    }
+
+                    if (!selectedForThisShift.Any())
                         continue;
 
-                    // Cập nhật tổng khối lượng/volume
-                    totalWeight += x.Weight;
-                    totalVolume += x.Volume;
+                    List<CollectionRoutes> routes = new();
+                    List<RouteDetail> displayRoutes = new();
 
-                    routes.Add(new CollectionRoutes
+                    double curLat = point.Latitude;
+                    double curLng = point.Longitude;
+
+                    TimeOnly timeCursor = shiftStart;
+                    double speed = vehicle.Vehicle_Type.Contains("lớn") ? 30 : 25;
+
+                    int order = 1;
+                    var unvisited = new List<dynamic>(selectedForThisShift);
+
+                    while (unvisited.Any())
                     {
-                        CollectionRouteId = Guid.NewGuid(),
-                        PostId = x.Post.Id,
-                        CollectionDate = nextDate,
-                        EstimatedTime = eta,
-                        Actual_Time = new TimeOnly(0, 0),
-                        Status = "Đang lên lịch"
-                    });
+                        var next = unvisited
+                            .Where(x =>
+                            {
+                                double travelMin = GeoHelper.DistanceKm(
+                                    curLat, curLng, x.Lat, x.Lng
+                                ) / speed * 60;
 
-                    selectedRoutes.Add(new RouteDetail
+                                var eta = timeCursor.AddMinutes(travelMin);
+                                if (eta < x.Start) eta = x.Start;
+
+                                return eta <= x.End && eta <= shiftEnd;
+                            })
+                            .OrderBy(x => GeoHelper.DistanceKm(curLat, curLng, x.Lat, x.Lng))
+                            .FirstOrDefault();
+
+                        if (next == null)
+                            break;
+
+                        double travel = GeoHelper.DistanceKm(curLat, curLng, next.Lat, next.Lng) / speed * 60;
+                        var etaReal = timeCursor.AddMinutes(travel);
+                        if (etaReal < next.Start) etaReal = next.Start;
+
+                        displayRoutes.Add(new RouteDetail
+                        {
+                            PickupOrder = order++,
+                            PostId = next.Post.Id,
+                            UserName = next.User.Name,
+                            Address = next.Post.Address,
+                            DistanceKm = Math.Round(next.DistanceFromPoint, 2),
+                            Schedule = next.Post.ScheduleJson,
+                            EstimatedArrival = etaReal.ToString("HH:mm"),
+                            WeightKg = next.Weight,
+                            VolumeM3 = next.Volume,
+                            SizeTier = next.SizeTierName
+                        });
+
+                        //Update Status Product thành 'Chờ thu gom'
+                        var prodToUpdate = FakeDataSeeder.products.FirstOrDefault(p => p.Id == next.Post.ProductId);
+                        if (prodToUpdate != null)
+                        {
+                            prodToUpdate.Status = "Chờ thu gom";
+                        }
+
+                        routes.Add(new CollectionRoutes
+                        {
+                            CollectionRouteId = Guid.NewGuid(),
+                            PostId = next.Post.Id,
+                            CollectionDate = workDate,
+                            EstimatedTime = etaReal,
+                            Status = "Chưa bắt đầu",
+                            CollectionGroupId = FakeDataSeeder.collectionGroups.Count + 1  
+                        });
+
+                        curLat = next.Lat;
+                        curLng = next.Lng;
+                        timeCursor = etaReal.AddMinutes(10);
+
+                        unvisited.Remove(next);
+                    }
+
+                    // TẠO GROUP
+                    var group = new CollectionGroups
                     {
-                        PickupOrder = order++,
-                        PostId = x.Post.Id.GetHashCode(),
-                        UserName = x.User.Name,
-                        DistanceKm = Math.Round(x.Distance, 2),
-                        Address = x.Post.Address,
-                        Schedule = x.Schedule,
-                        EstimatedArrival = eta.ToString("HH:mm"),
-                        WeightKg = x.Weight,
-                        VolumeM3 = x.Volume,
-                        SizeTier = x.SizeTier
+                        Id = FakeDataSeeder.collectionGroups.Count + 1,
+                        Group_Code = $"GRP-{workDate:MMdd}-{groupCounter++}",
+                        Name = $"{vehicle.Vehicle_Type} - {vehicle.Plate_Number}",
+                        Shift_Id = shift.Id,
+                        Created_At = DateTime.Now
+                    };
+
+                    foreach (var rt in routes)
+                    {
+                        rt.CollectionGroupId = group.Id;
+                    }
+
+                    if (request.SaveResult)
+                    {
+                        FakeDataSeeder.collectionGroups.Add(group);
+                        FakeDataSeeder.collectionRoutes.AddRange(routes);
+                    }
+
+                    response.CreatedGroups.Add(new GroupSummary
+                    {
+                        GroupCode = group.Group_Code,
+                        ShiftId = shift.Id,
+                        Vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})",
+                        Collector = collector.Name,
+                        TotalPosts = routes.Count,
+                        TotalWeightKg = curKg,
+                        TotalVolumeM3 = curM3,
+                        GroupDate = workDate,
+                        Routes = displayRoutes
                     });
-
-                    currentTime = eta.AddMinutes(serviceMinutes);
-                    curLat = x.Lat;
-                    curLng = x.Lng;
-
-                    x.Post.Status = "Gom nhóm thành công";
                 }
-
-                if (!routes.Any()) continue;
-
-                var group = new CollectionGroups
-                {
-                    Id = FakeDataSeeder.collectionGroups.Count + 1,
-                    Group_Code = $"GRP-{DateTime.Now:MMddHHmm}-{groupCounter++}",
-                    Name = $"{vehicle.Vehicle_Type} - {vehicle.Plate_Number}",
-                    Shift_Id = shift.s.Id,
-                    Created_At = DateTime.Now
-                };
-
-                if (request.SaveResult)
-                {
-                    FakeDataSeeder.collectionGroups.Add(group);
-                    FakeDataSeeder.collectionRoutes.AddRange(routes);
-                }
-
-                response.CreatedGroups.Add(new GroupSummary
-                {
-                    GroupCode = group.Group_Code,
-                    ShiftId = shift.s.Id,
-                    Vehicle = $"{vehicle.Plate_Number} - {vehicle.Vehicle_Type} ({vehicle.Capacity_Kg}kg / {vehicle.Capacity_M3}m³, radius {radius}km)",
-                    Collector = collector.Name,
-                    TotalPosts = routes.Count,
-                    TotalWeightKg = totalWeight,
-                    TotalVolumeM3 = totalVolume,
-                    Routes = selectedRoutes
-                });
             }
 
             return await Task.FromResult(response);

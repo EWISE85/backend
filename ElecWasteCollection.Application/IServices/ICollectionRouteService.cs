@@ -20,5 +20,8 @@ namespace ElecWasteCollection.Application.IServices
 
         Task<bool> IsUserConfirm(Guid collectionRouteId, bool isConfirm, bool isSkip);
 
+		PagedResult<CollectionRouteModel> GetPagedRoutes(RouteSearchQueryModel parameters);
+
+
 	}
 }

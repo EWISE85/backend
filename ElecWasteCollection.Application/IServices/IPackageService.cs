@@ -12,5 +12,7 @@ namespace ElecWasteCollection.Application.IServices
 		string CreatePackageAsync(CreatePackageModel model);
 
 		PackageDetailModel GetPackageById(string packageId);
+
+		PagedResult<PackageDetailModel> GetPackagesByQuery(PackageSearchQueryModel query);
 	}
 }

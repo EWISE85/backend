@@ -1,11 +1,12 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
 using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-	[Route("api/routes")]
+	[Route("api/routes/")]
 	[ApiController]
 	public class CollectionRouteController : ControllerBase
 	{
@@ -26,10 +27,18 @@ namespace ElecWasteCollection.API.Controllers
 			var routes = _collectionRouteService.GetRoutesByCollectorId(pickUpDate, id);
 			return Ok(routes);
 		}
-		[HttpGet("{pickUpDate}/collection-point/{id}")]
-		public IActionResult GetRoutesByCollectionPointId([FromRoute] DateOnly pickUpDate, [FromRoute] int id)
+		[HttpGet("collection-point/date/filter")]
+		public IActionResult GetRoutesByCollectionPointId([FromQuery] RouteSearchQueryRequest searchQueryRequest)
 		{
-			var routes = _collectionRouteService.GetAllRoutesByDateAndByCollectionPoints(pickUpDate, id);
+			var model = new RouteSearchQueryModel
+			{
+				Page = searchQueryRequest.Page,
+				Limit = searchQueryRequest.Limit,
+				CollectionPointId = searchQueryRequest.CollectionPointId,
+				PickUpDate = searchQueryRequest.PickUpDate,
+				Status = searchQueryRequest.Status
+			};
+			var routes = _collectionRouteService.GetPagedRoutes(model);
 			return Ok(routes);
 		}
 

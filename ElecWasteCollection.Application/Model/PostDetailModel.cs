@@ -43,10 +43,15 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Guid ProductId { get; set; }
 		public string Description { get; set; } // Mô tả SẢN PHẨM (ví dụ: "Tivi hỏng màn")
-		//public string Condition { get; set; } // Tình trạng (từ Product.Condition)
 
+		public Guid CategoryId { get; set; } // Id danh mục sản phẩm
+
+		public string CategoryName { get; set; } // Tên danh mục sản phẩm (ví dụ: "Tivi")
 		public Guid BrandId { get; set; } // Id thương hiệu
 		public string BrandName { get; set; } // Tên thương hiệu (ví dụ: "Samsung")
+
+		public string? QrCode { get; set; } // Mã QR của sản phẩm
+		public string Status { get; set; } // Trạng thái hiện tại của sản phẩm (ví dụ: "Chờ thu gom", "Đã nhập kho", "Hủy")
 
 		// Thông tin kích thước (1 trong 2 sẽ có)
 		public string? SizeTierName { get; set; } // (ví dụ: "Tivi Lớn (Trên 55 inch)")

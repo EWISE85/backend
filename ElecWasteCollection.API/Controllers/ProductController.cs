@@ -1,4 +1,6 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.API.DTOs.Request;
+using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -26,12 +28,45 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPut("receive-at-warehouse/{qrCode}")]
 		public IActionResult ReceiveProductAtWarehouse(string qrCode)
 		{
-			var result = _productService.UpdateProductStatusByQrCode(qrCode,"At_Warehouse");
+			var result = _productService.UpdateProductStatusByQrCode(qrCode,"Nhập kho");
 			if (!result)
 			{
 				return BadRequest("Failed to update product status.");
 			}
 			return Ok(new { message = "Product status updated successfully." });
+		}
+		[HttpGet("incoming-warehouse")]
+		public IActionResult GetProductsComingToWarehouse([FromQuery] int page, [FromQuery] int limit,[FromQuery] DateOnly pickUpDate, [FromQuery] int smallCollectionPointId, [FromQuery] string? status)
+		{
+			var products = _productService.ProductsComeWarehouseByDate(page,limit,pickUpDate, smallCollectionPointId, status);
+			return Ok(products);
+		}
+		[HttpPost("warehouse")]
+		public IActionResult AddProductToWarehouse([FromBody] CreateProductAtWarehouseRequest newProduct)
+		{
+			if (newProduct == null)
+			{
+				return BadRequest("Invalid data.");
+			}
+
+			var model = new CreateProductAtWarehouseModel
+			{
+				QrCode = newProduct.QrCode,
+				ParentCategoryId = newProduct.ParentCategoryId,
+				SubCategoryId = newProduct.SubCategoryId,
+				BrandId = newProduct.BrandId,
+				Images = newProduct.Images,
+				Description = newProduct.Description,
+				Point = newProduct.Point,
+				SenderId = newProduct.SenderId
+			};
+			var result = _productService.AddProduct(model);
+			if (result == null)
+			{
+				return StatusCode(400, "An error occurred while adding the product to warehouse.");
+			}
+
+			return Ok(new { message = "Product added to warehouse successfully.", item = result });
 		}
 	}
 }

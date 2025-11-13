@@ -33,10 +33,16 @@ namespace ElecWasteCollection.Application.Services
 		{
 			// SỬA LỖI: Dùng _collectionRoutes
 			var route = _collectionRoutes.FirstOrDefault(r => r.CollectionRouteId == collectionRouteId);
+			var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
+			if (post == null) return false;
+			var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
+			if (product == null) return false;
+
 			if (route != null)
 			{
 				route.Status = "Hủy bỏ";
 				route.RejectMessage = rejectMessage;
+				product.Status = "Hủy bỏ";
 				return true;
 			}
 			return false;
@@ -305,6 +311,77 @@ namespace ElecWasteCollection.Application.Services
 				// Bắt lỗi nếu data fake bị hỏng (ví dụ: null reference)
 				return null;
 			}
+		}
+		public PagedResult<CollectionRouteModel> GetPagedRoutes(RouteSearchQueryModel parameters)
+		{
+			// Bắt đầu với tất cả các tuyến
+			var query = _collectionRoutes.AsQueryable();
+
+			// 1. Lọc theo Trạm thu gom (CollectionPointId)
+			if (parameters.CollectionPointId.HasValue)
+			{
+				// Join phức tạp: Route -> Group -> Shift -> Vehicle -> Point
+				var vehicleIds = _vehicles
+					.Where(v => v.Small_Collection_Point == parameters.CollectionPointId.Value)
+					.Select(v => v.Id)
+					.ToList();
+
+				var shiftIds = _shifts
+					.Where(s => vehicleIds.Contains(s.Vehicle_Id))
+					.Select(s => s.Id)
+					.ToList();
+
+				var allowedGroupIds = _collectionGroups
+					.Where(g => shiftIds.Contains(g.Shift_Id))
+					.Select(g => g.Id)
+					.ToHashSet(); // Dùng HashSet để tăng tốc độ lọc
+
+				query = query.Where(r => allowedGroupIds.Contains(r.CollectionGroupId));
+			}
+
+			// 2. Lọc theo Ngày (PickUpDate)
+			if (parameters.PickUpDate.HasValue)
+			{
+				query = query.Where(r => r.CollectionDate == parameters.PickUpDate.Value);
+			}
+
+			// 3. Lọc theo Trạng thái (Status)
+			if (!string.IsNullOrEmpty(parameters.Status))
+			{
+				query = query.Where(r => r.Status.Equals(parameters.Status, StringComparison.OrdinalIgnoreCase));
+			}
+
+			// 4. Sắp xếp (Mặc định theo thời gian dự kiến)
+			var sortedQuery = query
+				.OrderBy(r => r.CollectionDate)
+				.ThenBy(r => r.EstimatedTime);
+
+			// 5. Lấy tổng số lượng (trước khi phân trang)
+			int totalItems = sortedQuery.Count();
+
+			// 6. Phân trang
+			int page = parameters.Page <= 0 ? 1 : parameters.Page;
+			int limit = parameters.Limit <= 0 ? 10 : parameters.Limit;
+
+			var pagedData = sortedQuery
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToList(); // Lấy ra danh sách CollectionRoutes
+
+			// 7. Chuyển đổi (Select) sang Model đầy đủ
+			var resultModels = pagedData
+				.Select(route => BuildCollectionRouteModel(route)) // Dùng helper
+				.Where(model => model != null)
+				.ToList();
+
+			// 8. Trả về kết quả phân trang
+			return new PagedResult<CollectionRouteModel>
+			{
+				Data = resultModels,
+				Page = page,
+				Limit = limit,
+				TotalItems = totalItems
+			};
 		}
 	}
 }

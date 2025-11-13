@@ -12,12 +12,16 @@ namespace ElecWasteCollection.Application.IServices
 	{
 		Products? GetById(Guid productId);
 
-		Products? GetByQrCode(string qrcode);
+		ProductComeWarehouseDetailModel? GetByQrCode(string qrcode);
+
+		ProductDetailModel AddProduct(CreateProductAtWarehouseModel createProductRequest);
 
 		bool AddPackageIdToProductByQrCode(string productQrCode, string packageId);
 
 		List<ProductDetailModel> GetProductsByPackageId(string packageId);
 
 		bool UpdateProductStatusByQrCode(string productQrCode, string status);
+
+		PagedResult<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(int page, int limit,DateOnly pickUpDate, int smallCollectionPointId, string status);
 	}
 }

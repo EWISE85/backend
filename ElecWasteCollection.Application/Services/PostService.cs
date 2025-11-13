@@ -647,5 +647,76 @@ namespace ElecWasteCollection.Application.Services
 			// Trả về Task (vì đang dùng fake list)
 			return Task.FromResult(pagedResult);
 		}
+
+		public PostDetailModel AddPostByAdminWarehouse(CreateProductAtWarehouseModel createPostRequest)
+		{
+
+			if (createPostRequest == null)
+			{
+				return null;
+			}
+			var newProduct = new Products
+			{
+				Id = Guid.NewGuid(),
+				CategoryId = createPostRequest.SubCategoryId,
+				BrandId = createPostRequest.BrandId,
+				Description = createPostRequest.Description,
+				QRCode = createPostRequest.QrCode,
+				Status = "Nhập kho"
+			};
+
+			//if (productRequest.SizeTierId.HasValue && productRequest.SizeTierId.Value != Guid.Empty)
+			//{
+			//	newProduct.SizeTierId = productRequest.SizeTierId.Value;
+			//}
+			//else if (productRequest.Attributes != null && productRequest.Attributes.Any())
+			//{
+			//	foreach (var attr in productRequest.Attributes)
+			//	{
+
+			//		double.TryParse(attr.Value, out double parsedValue);
+
+			//		var newProductValue = new ProductValues
+			//		{
+			//			ProductValuesId = Guid.NewGuid(),
+			//			ProductId = newProduct.Id,
+			//			AttributeId = attr.AttributeId,
+			//			Value = parsedValue // Sẽ lưu 0.0 nếu là chữ, an toàn
+			//		};
+			//		productValues.Add(newProductValue);
+			//	}
+			//}
+
+			products.Add(newProduct);
+			var newPost = new Post
+			{
+				Id = Guid.NewGuid(),
+				SenderId = createPostRequest.SenderId,
+				//Name = createPostRequest.Name,
+				Date = DateTime.Now,
+				Description = string.Empty,
+				Address = null,
+				ScheduleJson = null,
+				Status = "Đã duyệt", // Sẽ cập nhật sau
+				ProductId = newProduct.Id,
+				EstimatePoint = 50,
+				CheckMessage = new List<string>()
+
+			};
+			for (int i = 0; i < createPostRequest.Images.Count; i++)
+			{
+				var newPostImage = new PostImages
+				{
+					PostImageId = Guid.NewGuid(),
+					PostId = newPost.Id,
+					ImageUrl = createPostRequest.Images[i],
+					AiDetectedLabelsJson = null
+				};
+				postImages.Add(newPostImage);
+			}
+			posts.Add(newPost);
+			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+			return MapToPostDetailModel(newPost, options);
+		}
 	}
 }

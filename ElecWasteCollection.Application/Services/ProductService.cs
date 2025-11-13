@@ -17,6 +17,19 @@ namespace ElecWasteCollection.Application.Services
 		private readonly List<ProductValues> _productValues = FakeDataSeeder.productValues;
 		private readonly List<Attributes> _attributes = FakeDataSeeder.attributes;
 		private readonly List<Brand> _brands = FakeDataSeeder.brands;
+		private readonly List<CollectionRoutes> _collectionRoutes = FakeDataSeeder.collectionRoutes;
+		private readonly List<CollectionGroups> _collectionGroups = FakeDataSeeder.collectionGroups;
+		private readonly List<Post> _posts = FakeDataSeeder.posts;
+		private readonly List<Shifts> _shifts = FakeDataSeeder.shifts;
+		private readonly List<Vehicles> _vehicles = FakeDataSeeder.vehicles;
+		private readonly List<Category> _categories = FakeDataSeeder.categories;
+		private readonly List<PostImages> _postImages = FakeDataSeeder.postImages;
+		private readonly List<ProductImages> postImages = FakeDataSeeder.productImages;
+		private readonly IPointTransactionService _pointTransactionService;
+		public ProductService(IPointTransactionService pointTransactionService)
+		{
+			_pointTransactionService = pointTransactionService;
+		}
 		public bool AddPackageIdToProductByQrCode(string qrCode, string packageId)
 		{
 			var product = _products.FirstOrDefault(p => p.QRCode == qrCode);
@@ -29,14 +42,114 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
+		public ProductDetailModel AddProduct(CreateProductAtWarehouseModel createProductRequest)
+		{
+			var newProduct = new Products
+			{
+				Id = Guid.NewGuid(),
+				CategoryId = createProductRequest.SubCategoryId,
+				BrandId = createProductRequest.BrandId,
+				Description = createProductRequest.Description,
+				QRCode = createProductRequest.QrCode,
+				Status = "Nhập kho"
+			};
+			_products.Add(newProduct);
+			for (int i = 0; i < createProductRequest.Images.Count; i++)
+			{
+				var newPostImage = new ProductImages
+				{
+					ImageUrl = createProductRequest.Images[i],
+					ProductId = newProduct.Id,
+					ProductImagesId = Guid.NewGuid()
+				};
+				postImages.Add(newPostImage);
+			}
+			var pointTransaction = new CreatePointTransactionModel
+			{
+				UserId = createProductRequest.SenderId,
+				Point = createProductRequest.Point,
+				Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
+			};
+			_pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
+			return new ProductDetailModel
+			{
+				ProductId = newProduct.Id,
+				Description = newProduct.Description,
+				CategoryId = newProduct.CategoryId,
+				BrandId = newProduct.BrandId,
+				BrandName = _brands.FirstOrDefault(b => b.BrandId == newProduct.BrandId)?.Name,
+				CategoryName = _categories.FirstOrDefault(c => c.Id == newProduct.CategoryId)?.Name,
+				QrCode = newProduct.QRCode,
+				Status = newProduct.Status
+			};
+		}
+
 		public Products? GetById(Guid productId)
 		{
 			return _products.FirstOrDefault(p => p.Id == productId);
 		}
 
-		public Products? GetByQrCode(string qrcode)
+		public ProductComeWarehouseDetailModel? GetByQrCode(string qrcode)
 		{
-			return _products.FirstOrDefault(p => p.QRCode == qrcode);
+			// 1. Tìm Product theo QR Code
+			var product = _products.FirstOrDefault(p => p.QRCode == qrcode);
+			if (product == null)
+			{
+				return null;
+			}
+
+			// 2. Tìm Post (Bài đăng) liên quan đến Product này
+			// (Cần bước này để lấy được danh sách ảnh từ bảng _postImages)
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+
+			// 3. Lấy các thông tin tham chiếu (Brand, Category, SizeTier)
+			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
+			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+			var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
+
+			// 4. Lấy danh sách ảnh (Nếu tìm thấy Post)
+			var imageUrls = new List<string>();
+			if (post != null)
+			{
+				imageUrls = _postImages
+					.Where(img => img.PostId == post.Id)
+					.Select(img => img.ImageUrl)
+					.ToList();
+			}
+
+			// 5. Lấy danh sách thuộc tính (Attributes) - Giống hệt logic hàm dưới
+			var attributesList = _productValues
+				.Where(pv => pv.ProductId == product.Id)
+				.Select(pv =>
+				{
+					var attribute = _attributes.FirstOrDefault(a => a.Id == pv.AttributeId);
+					return new ProductValueDetailModel
+					{
+						AttributeName = attribute?.Name ?? "N/A",
+						Value = pv.Value.ToString(),
+					};
+				})
+				.ToList();
+
+			// 6. Trả về model đầy đủ (Mapping chuẩn theo hàm ProductsComeWarehouseByDate)
+			return new ProductComeWarehouseDetailModel
+			{
+				ProductId = product.Id,
+				Description = product.Description,
+
+				// Xử lý null an toàn giống hàm dưới
+				BrandId = brand?.BrandId ?? Guid.Empty,
+				BrandName = brand?.Name ?? "N/A",
+
+				CategoryId = category?.Id ?? Guid.Empty,
+				CategoryName = category?.Name ?? "N/A",
+
+				ProductImages = imageUrls, // Đã bổ sung ảnh
+				QrCode = product.QRCode,
+				Status = product.Status,
+				SizeTierName = sizeTier?.Name, // Có thể null
+				Attributes = attributesList
+			};
 		}
 
 		public List<ProductDetailModel> GetProductsByPackageId(string packageId)
@@ -53,6 +166,8 @@ namespace ElecWasteCollection.Application.Services
 					.FirstOrDefault(st => st.SizeTierId == p.SizeTierId);
 				var brand = _brands
 					.FirstOrDefault(b => b.BrandId == p.BrandId);
+				var category = _categories
+					.FirstOrDefault(c => c.Id == p.CategoryId);
 				// 4. "Join" bằng tay với ProductValues và Attributes
 				var attributesList = _productValues
 					.Where(pv => pv.ProductId == p.Id) // Lấy các value của sản phẩm này
@@ -77,6 +192,9 @@ namespace ElecWasteCollection.Application.Services
 					Description = p.Description,
 					BrandName = brand?.Name,
 					BrandId = brand.BrandId,
+					CategoryId = category.Id,
+					CategoryName = category.Name,
+					QrCode = p.QRCode,
 					SizeTierName = sizeTier?.Name,
 					Attributes = attributesList
 				};
@@ -84,6 +202,129 @@ namespace ElecWasteCollection.Application.Services
 			.ToList();
 
 			return productDetails;
+		}
+
+		public PagedResult<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(int page, int limit, DateOnly pickUpDate, int smallCollectionPointId, string status)
+		{
+			// Helper để trả về kết quả rỗng nhanh gọn
+			PagedResult<ProductComeWarehouseDetailModel> ReturnEmpty()
+			{
+				return new PagedResult<ProductComeWarehouseDetailModel>
+				{
+					Page = page < 1 ? 1 : page,
+					Limit = limit < 1 ? 10 : limit,
+					TotalItems = 0,
+					Data = new List<ProductComeWarehouseDetailModel>()
+				};
+			}
+
+			// Chuẩn hóa input phân trang
+			if (page < 1) page = 1;
+			if (limit < 1) limit = 10;
+
+			// 1. Tìm các Xe (Vehicles) thuộc về trạm thu gom này
+			var vehicleIds = _vehicles
+				.Where(v => v.Small_Collection_Point == smallCollectionPointId)
+				.Select(v => v.Id)
+				.ToList();
+
+			if (!vehicleIds.Any()) return ReturnEmpty();
+
+			// 2. Tìm các Ca làm việc (Shifts) trong ngày đó sử dụng các xe trên
+			var shiftIds = _shifts
+				.Where(s => s.WorkDate == pickUpDate && vehicleIds.Contains(s.Vehicle_Id))
+				.Select(s => s.Id)
+				.ToList();
+
+			if (!shiftIds.Any()) return ReturnEmpty();
+
+			// 3. Tìm các Nhóm (Groups) thuộc các ca làm việc đó
+			var groupIds = _collectionGroups
+				.Where(g => shiftIds.Contains(g.Shift_Id))
+				.Select(g => g.Id)
+				.ToList();
+
+			// 4. Lọc các Tuyến (Routes) thuộc các nhóm đó VÀ đúng ngày
+			var routesOfTheDay = _collectionRoutes
+				.Where(r => r.CollectionDate == pickUpDate && groupIds.Contains(r.CollectionGroupId))
+				.ToList();
+
+			if (!routesOfTheDay.Any()) return ReturnEmpty();
+
+			// 5. Mapping dữ liệu (Tạo model đầy đủ)
+			// Lưu ý: Logic này chạy trong RAM (IEnumerable) vì routesOfTheDay đã ToList() ở trên
+			var query = routesOfTheDay.Select(route =>
+			{
+				var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
+				if (post == null) return null;
+
+				var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
+				if (product == null) return null;
+
+				var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
+				var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+				var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
+
+				var imageUrls = _postImages
+					.Where(img => img.PostId == post.Id)
+					.Select(img => img.ImageUrl)
+					.ToList();
+
+				var attributesList = _productValues
+					.Where(pv => pv.ProductId == product.Id)
+					.Select(pv =>
+					{
+						var attribute = _attributes.FirstOrDefault(a => a.Id == pv.AttributeId);
+						return new ProductValueDetailModel
+						{
+							AttributeName = attribute?.Name ?? "N/A",
+							Value = pv.Value.ToString(),
+						};
+					})
+					.ToList();
+
+				return new ProductComeWarehouseDetailModel
+				{
+					ProductId = product.Id,
+					Description = product.Description,
+					BrandId = brand?.BrandId ?? Guid.Empty,
+					BrandName = brand?.Name ?? "N/A",
+					CategoryId = category?.Id ?? Guid.Empty,
+					CategoryName = category?.Name ?? "N/A",
+					ProductImages = imageUrls,
+					QrCode = product.QRCode,
+					Status = product.Status,
+					SizeTierName = sizeTier?.Name ?? null,
+					Attributes = attributesList
+				};
+			})
+			.Where(model => model != null); // Lọc bỏ null
+
+			// 6. === LỌC STATUS ===
+			if (!string.IsNullOrEmpty(status))
+			{
+				query = query.Where(model => model.Status.Equals(status, StringComparison.OrdinalIgnoreCase));
+			}
+
+			// 7. === PHÂN TRANG ===
+			// Lưu ý: Vì query là IEnumerable (In-Memory), ta cần ép ToList() để lấy số lượng chính xác trước khi Skip
+			var filteredList = query.ToList();
+
+			var totalItems = filteredList.Count;
+
+			var pagedData = filteredList
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToList();
+
+			// 8. Trả về kết quả PagedResult
+			return new PagedResult<ProductComeWarehouseDetailModel>
+			{
+				Page = page,
+				Limit = limit,
+				TotalItems = totalItems,
+				Data = pagedData
+			};
 		}
 
 		public bool UpdateProductStatusByQrCode(string productQrCode, string status)

@@ -34,8 +34,7 @@ namespace ElecWasteCollection.Application.Services
 			};
 			var userPoint = _userPointService.GetPointByUserId(createPointTransactionModel.UserId);
 			pointTransactions.Add(points);
-			userPoint.Points += createPointTransactionModel.Point;
-			var result =  _userPointService.UpdatePointForUser(createPointTransactionModel.UserId, userPoint.Points);
+			var result =  _userPointService.UpdatePointForUser(createPointTransactionModel.UserId, points.Point);
 			return points.PointTransactionId;
 		}
 	}

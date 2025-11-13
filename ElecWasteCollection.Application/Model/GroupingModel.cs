@@ -27,6 +27,8 @@ namespace ElecWasteCollection.Application.Model
         // ⚡ Thêm tổng khối lượng / volume đã gom
         public double TotalWeightKg { get; set; }
         public double TotalVolumeM3 { get; set; }
+        public DateOnly GroupDate { get; set; }
+
 
         public List<RouteDetail> Routes { get; set; } = new();
     }
@@ -34,14 +36,12 @@ namespace ElecWasteCollection.Application.Model
     public class RouteDetail
     {
         public int PickupOrder { get; set; }
-        public int PostId { get; set; }
+        public Guid PostId { get; set; }
         public string UserName { get; set; } = "";
         public double DistanceKm { get; set; }
         public string Address { get; set; } = "";
         public string Schedule { get; set; } = "";
         public string EstimatedArrival { get; set; } = "";
-
-        // ⚡ Thêm chi tiết món đồ
         public double WeightKg { get; set; }
         public double VolumeM3 { get; set; }
         public string SizeTier { get; set; } = "";
