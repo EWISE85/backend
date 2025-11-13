@@ -12,7 +12,7 @@ namespace ElecWasteCollection.Application.IServices
 	{
 		Products? GetById(Guid productId);
 
-		ProductDetailModel? GetByQrCode(string qrcode);
+		ProductComeWarehouseDetailModel? GetByQrCode(string qrcode);
 
 		ProductDetailModel AddProduct(CreateProductAtWarehouseModel createProductRequest);
 

@@ -89,16 +89,35 @@ namespace ElecWasteCollection.Application.Services
 			return _products.FirstOrDefault(p => p.Id == productId);
 		}
 
-		public ProductDetailModel? GetByQrCode(string qrcode)
+		public ProductComeWarehouseDetailModel? GetByQrCode(string qrcode)
 		{
-			var product =  _products.FirstOrDefault(p => p.QRCode == qrcode);
+			// 1. Tìm Product theo QR Code
+			var product = _products.FirstOrDefault(p => p.QRCode == qrcode);
 			if (product == null)
 			{
 				return null;
 			}
-			var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
+
+			// 2. Tìm Post (Bài đăng) liên quan đến Product này
+			// (Cần bước này để lấy được danh sách ảnh từ bảng _postImages)
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+
+			// 3. Lấy các thông tin tham chiếu (Brand, Category, SizeTier)
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+			var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
+
+			// 4. Lấy danh sách ảnh (Nếu tìm thấy Post)
+			var imageUrls = new List<string>();
+			if (post != null)
+			{
+				imageUrls = _postImages
+					.Where(img => img.PostId == post.Id)
+					.Select(img => img.ImageUrl)
+					.ToList();
+			}
+
+			// 5. Lấy danh sách thuộc tính (Attributes) - Giống hệt logic hàm dưới
 			var attributesList = _productValues
 				.Where(pv => pv.ProductId == product.Id)
 				.Select(pv =>
@@ -111,18 +130,25 @@ namespace ElecWasteCollection.Application.Services
 					};
 				})
 				.ToList();
-			return new ProductDetailModel
+
+			// 6. Trả về model đầy đủ (Mapping chuẩn theo hàm ProductsComeWarehouseByDate)
+			return new ProductComeWarehouseDetailModel
 			{
 				ProductId = product.Id,
 				Description = product.Description,
-				CategoryId = category.Id,
-				CategoryName = category.Name,
-				BrandName = brand?.Name,
-				BrandId = brand.BrandId,
+
+				// Xử lý null an toàn giống hàm dưới
+				BrandId = brand?.BrandId ?? Guid.Empty,
+				BrandName = brand?.Name ?? "N/A",
+
+				CategoryId = category?.Id ?? Guid.Empty,
+				CategoryName = category?.Name ?? "N/A",
+
+				ProductImages = imageUrls, // Đã bổ sung ảnh
 				QrCode = product.QRCode,
-				SizeTierName = sizeTier?.Name,
-				Attributes = attributesList,
-				Status = product.Status
+				Status = product.Status,
+				SizeTierName = sizeTier?.Name, // Có thể null
+				Attributes = attributesList
 			};
 		}
 
