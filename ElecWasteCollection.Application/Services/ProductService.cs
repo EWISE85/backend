@@ -181,6 +181,7 @@ namespace ElecWasteCollection.Application.Services
 					CategoryId = category?.Id ?? Guid.Empty,
 					CategoryName = category?.Name ?? "N/A",
 					ProductImages = imageUrls,
+					QrCode = product.QRCode,
 					Status = product.Status,
 					SizeTierName = sizeTier?.Name ?? null,
 					Attributes = attributesList

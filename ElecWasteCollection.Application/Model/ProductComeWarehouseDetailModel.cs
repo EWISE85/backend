@@ -20,6 +20,8 @@ namespace ElecWasteCollection.Application.Model
 		public string BrandName { get; set; } // Tên thương hiệu (ví dụ: "Samsung")
 
 		public List<string> ProductImages { get; set; } // Danh sách ảnh sản phẩm
+
+		public string? QrCode { get; set; } // Mã QR của sản phẩm
 		public string Status { get; set; } // Trạng thái hiện tại của sản phẩm (ví dụ: "Chờ thu gom", "Đã nhập kho", "Hủy")
 
 		// Thông tin kích thước (1 trong 2 sẽ có)
