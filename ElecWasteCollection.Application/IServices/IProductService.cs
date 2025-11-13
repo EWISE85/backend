@@ -21,6 +21,7 @@ namespace ElecWasteCollection.Application.IServices
 		List<ProductDetailModel> GetProductsByPackageId(string packageId);
 
 		bool UpdateProductStatusByQrCode(string productQrCode, string status);
+		bool UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status, UserReceivePointFromCollectionPointModel model );
 
 		PagedResult<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(int page, int limit,DateOnly pickUpDate, int smallCollectionPointId, string status);
 	}
