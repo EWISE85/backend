@@ -864,5 +864,438 @@ namespace ElecWasteCollection.Application.Data
 				Points = 50
 			}
 		};
+
+
+
+		// 🟩🟩🟩 ======================= ADDITIONAL FAKE DATA FOR TESTING GROUPING =======================
+
+		// === TEST DATA FOR GROUPING (QUẬN 1) ===
+
+		static FakeDataSeeder()
+		{
+			// 🧍 1. Users quanh Quận 1
+			users.AddRange(new List<User>
+			{
+				new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000001"), Name = "Nguyễn Văn A", Email = "nguyenvana@example.com", Iat = 10.7820, Ing = 106.7000, Address = "12 Lê Duẩn, Q1", Role = "User" },
+				new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000002"), Name = "Trần Thị B", Email = "tranthib@example.com", Iat = 10.7840, Ing = 106.6950, Address = "15 Võ Thị Sáu, Q3", Role = "User" },
+				new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000003"), Name = "Phạm Minh C", Email = "phamminhc@example.com", Iat = 10.7800, Ing = 106.6920, Address = "25 Nguyễn Đình Chiểu, Q1", Role = "User" },
+				new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000004"), Name = "Lê Thị D", Email = "lethid@example.com", Iat = 10.7780, Ing = 106.6980, Address = "30 Pasteur, Q1", Role = "User" },
+				new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000005"), Name = "Hoàng Văn E", Email = "hoangvane@example.com", Iat = 10.7760, Ing = 106.7030, Address = "45 Nguyễn Huệ, Q1", Role = "User" }
+			});
+
+			// 🚛 2. Trạm nhỏ mới (Quận 1)
+			smallCollectionPoints.Add(new SmallCollectionPoints
+			{
+				Id = 3,
+				Name = "Trạm Thu Gom Quận 1",
+				Address = "12 Lê Duẩn, Quận 1, TP.HCM",
+				Latitude = 10.7800,
+				Longitude = 106.7000,
+				Status = "active",
+				City_Team_Id = 1,
+				Created_At = DateTime.Now.AddDays(-10),
+				Updated_At = DateTime.Now
+			});
+
+            // 🚛 2. Trạm nhỏ mới (Quận 3)
+            smallCollectionPoints.Add(new SmallCollectionPoints
+            {
+                Id = 4,
+                Name = "Trạm Thu Gom Quận 3",
+                Address = "45 Cách Mạng Tháng 8, Quận 3, TP.HCM",
+                Latitude = 10.7825,
+                Longitude = 106.6869,
+                Status = "active",
+                City_Team_Id = 2,
+                Created_At = DateTime.Now.AddDays(-8),
+                Updated_At = DateTime.Now
+            });
+            // 🚗 3. Xe + Collector + Ca làm việc
+
+            // Collector Quận 1 (đã có sẵn)
+            var collectorQ1 = new Collector
+            {
+                CollectorId = Guid.Parse("88888888-aaaa-aaaa-aaaa-aaaaaaaaaaaa"),
+                Name = "Nguyễn Văn A (Q1)",
+                Email = "collector.q1@example.com",
+                Phone = "0909111222",
+                SmallColltionId = 3
+            };
+            collectors.Add(collectorQ1);
+
+            // 👷 Collector 2 - Quận 1
+            var collectorQ1_2 = new Collector
+            {
+                CollectorId = Guid.Parse("99999999-bbbb-bbbb-bbbb-bbbbbbbbbbbb"),
+                Name = "Trần Thị B (Q1)",
+                Email = "collector2.q1@example.com",
+                Phone = "0909333444",
+                SmallColltionId = 3
+            };
+            collectors.Add(collectorQ1_2);
+
+            // 👷 Collector 1 - Quận 3
+            var collectorQ3_1 = new Collector
+            {
+                CollectorId = Guid.Parse("aaaa1111-cccc-cccc-cccc-cccccccccccc"),
+                Name = "Phạm Văn C (Q3)",
+                Email = "collector.q3@example.com",
+                Phone = "0909555666",
+                SmallColltionId = 4
+            };
+            collectors.Add(collectorQ3_1);
+
+            // 👷 Collector 2 - Quận 3
+            var collectorQ3_2 = new Collector
+            {
+                CollectorId = Guid.Parse("bbbb2222-dddd-dddd-dddd-dddddddddddd"),
+                Name = "Lê Thị D (Q3)",
+                Email = "collector2.q3@example.com",
+                Phone = "0909777888",
+                SmallColltionId = 4
+            };
+            collectors.Add(collectorQ3_2);
+
+
+
+            // 🚛 Xe thu gom cho SmallCollectionPoint = 3 (Trạm Quận 1)
+            var vehicleQ1 = new Vehicles
+            {
+                Id = 3,
+                Plate_Number = "51B-99999",
+                Vehicle_Type = "Xe tải 1 tấn",
+                Capacity_Kg = 1000,
+                Capacity_M3 = 6,
+                Radius_Km = 10,
+                Status = "active",
+                Small_Collection_Point = 3
+            };
+            vehicles.Add(vehicleQ1);
+
+            var vehicleQ3 = new Vehicles
+            {
+                Id = 4,
+                Plate_Number = "51B-88888",
+                Vehicle_Type = "Xe ô tô thu gom nhỏ",
+                Capacity_Kg = 150,
+                Capacity_M3 = 1,
+                Radius_Km = 3,
+                Status = "active",
+                Small_Collection_Point = 3
+            };
+            vehicles.Add(vehicleQ3);
+
+            var vehicleQ4 = new Vehicles
+            {
+                Id = 5,
+                Plate_Number = "51B-77777",
+                Vehicle_Type = "Xe điện mini",
+                Capacity_Kg = 200,
+                Capacity_M3 = 2,
+                Radius_Km = 5,
+                Status = "active",
+                Small_Collection_Point = 3
+            };
+            vehicles.Add(vehicleQ4);
+
+
+            // 🚚 Thêm 3 phương tiện cho SmallCollectionPoint = 4 (Trạm Quận 3)
+            var vehicleQ3_1 = new Vehicles
+            {
+                Id = 6,
+                Plate_Number = "51C-12345",
+                Vehicle_Type = "Xe tải điện 3 bánh",
+                Capacity_Kg = 300,
+                Capacity_M3 = 2,
+                Radius_Km = 6,
+                Status = "active",
+                Small_Collection_Point = 4
+            };
+            vehicles.Add(vehicleQ3_1);
+
+            var vehicleQ3_2 = new Vehicles
+            {
+                Id = 7,
+                Plate_Number = "51C-54321",
+                Vehicle_Type = "Xe tải nhỏ 750kg",
+                Capacity_Kg = 750,
+                Capacity_M3 = 4,
+                Radius_Km = 12,
+                Status = "active",
+                Small_Collection_Point = 4
+            };
+            vehicles.Add(vehicleQ3_2);
+
+            var vehicleQ3_3 = new Vehicles
+            {
+                Id = 8,
+                Plate_Number = "51D-11223",
+                Vehicle_Type = "Xe tải trung chuyển 1.5 tấn",
+                Capacity_Kg = 1500,
+                Capacity_M3 = 8,
+                Radius_Km = 20,
+                Status = "maintenance",
+                Small_Collection_Point = 4
+            };
+            vehicles.Add(vehicleQ3_3);
+
+
+
+
+ //🚗 4.Ca làm việc(Shifts)
+
+// ✅ Quận 1
+var shiftQ1_1 = new Shifts
+{
+    Id = 6,
+    CollectorId = collectorQ1.CollectorId,       // Nguyễn Văn A (Q1)
+    Vehicle_Id = 3,                              // Xe tải 1 tấn
+    WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+    Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(8),
+    Shift_End_Time = DateTime.Today.AddDays(1).AddHours(16)
+};
+            shifts.Add(shiftQ1_1);
+
+            var shiftQ1_2 = new Shifts
+            {
+                Id = 7,
+                CollectorId = collectorQ1_2.CollectorId,     // Trần Thị B (Q1)
+                Vehicle_Id = 4,                              // Xe ô tô thu gom nhỏ
+                WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+                Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(18),
+                Shift_End_Time = DateTime.Today.AddDays(1).AddHours(22)
+            };
+            shifts.Add(shiftQ1_2);
+
+
+            // ✅ Quận 3
+            var shiftQ3_1 = new Shifts
+            {
+                Id = 8,
+                CollectorId = collectorQ3_1.CollectorId,     // Phạm Văn C (Q3)
+                Vehicle_Id = 6,                              // Xe tải điện 3 bánh
+                WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+                Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(8),
+                Shift_End_Time = DateTime.Today.AddDays(1).AddHours(16)
+            };
+            shifts.Add(shiftQ3_1);
+
+            var shiftQ3_2 = new Shifts
+            {
+                Id = 9,
+                CollectorId = collectorQ3_2.CollectorId,     // Lê Thị D (Q3)
+                Vehicle_Id = 7,                              // Xe tải nhỏ 750kg
+                WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+                Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(19),
+                Shift_End_Time = DateTime.Today.AddDays(1).AddHours(23)
+            };
+            shifts.Add(shiftQ3_2);
+
+
+            // ✅ Ca ban đêm song song (cả 2 trạm đều có người trực)
+            var shiftQ1_night = new Shifts
+            {
+                Id = 10,
+                CollectorId = collectorQ1.CollectorId,       // Nguyễn Văn A (Q1)
+                Vehicle_Id = 5,                              // Xe điện mini
+                WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+                Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(19),
+                Shift_End_Time = DateTime.Today.AddDays(1).AddHours(23)
+            };
+            shifts.Add(shiftQ1_night);
+
+            var shiftQ3_night = new Shifts
+            {
+                Id = 11,
+                CollectorId = collectorQ3_1.CollectorId,     // Phạm Văn C (Q3)
+                Vehicle_Id = 8,                              // Xe trung chuyển 1.5 tấn
+                WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+                Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(19),
+                Shift_End_Time = DateTime.Today.AddDays(1).AddHours(23)
+            };
+            shifts.Add(shiftQ3_night);
+
+            // 📦 4. Posts “Đã Duyệt” tại Quận 1
+            posts.AddRange(new List<Post>
+			{
+				new Post { Id = Guid.Parse("88888888-0000-0000-0000-000000000001"), SenderId = Guid.Parse("99999999-0000-0000-0000-000000000001"), ProductId = products[0].Id, Name = "Tivi cũ cần thu gom", Address = "12 Lê Duẩn, Q1", ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"08:00\",\"endTime\":\"09:00\"}}]", Status = "Đã Duyệt", EstimatePoint = 100 },
+				new Post { Id = Guid.Parse("88888888-0000-0000-0000-000000000002"), SenderId = Guid.Parse("99999999-0000-0000-0000-000000000002"), ProductId = products[1].Id, Name = "Máy giặt Toshiba hỏng", Address = "15 Võ Thị Sáu, Q3", ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"09:00\",\"endTime\":\"10:00\"}}]", Status = "Đã Duyệt", EstimatePoint = 120 },
+				new Post { Id = Guid.Parse("88888888-0000-0000-0000-000000000003"), SenderId = Guid.Parse("99999999-0000-0000-0000-000000000003"), ProductId = products[2].Id, Name = "PC cũ không dùng nữa", Address = "25 Nguyễn Đình Chiểu, Q1", ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"10:00\",\"endTime\":\"11:00\"}}]", Status = "Đã Duyệt", EstimatePoint = 150 },
+				new Post { Id = Guid.Parse("88888888-0000-0000-0000-000000000004"), SenderId = Guid.Parse("99999999-0000-0000-0000-000000000004"), ProductId = products[3].Id, Name = "Tủ lạnh cần xử lý", Address = "30 Pasteur, Q1", ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"11:00\",\"endTime\":\"12:00\"}}]", Status = "Đã Duyệt", EstimatePoint = 180 },
+				new Post { Id = Guid.Parse("88888888-0000-0000-0000-000000000005"), SenderId = Guid.Parse("99999999-0000-0000-0000-000000000005"), ProductId = products[4].Id, Name = "Laptop hỏng màn hình", Address = "45 Nguyễn Huệ, Q1", ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"13:00\",\"endTime\":\"14:00\"}}]", Status = "Đã Duyệt", EstimatePoint = 100 }
+			});
+
+			// 🧍‍♂️ 6. Người mới gần trạm (0.45 km, trong khung 8h–9h)
+			var newUser = new User 
+			{
+    UserId = Guid.Parse("99999999-0000-0000-0000-000000000006"),
+    Name = "Vũ Minh F",
+    Email = "vuminhf@example.com",
+    Iat = 10.7830, // ~0.45 km tính từ trạm 10.7800
+    Ing = 106.7045,
+    Address = "50 Hai Bà Trưng, Q1",
+    Role = "User"
+};
+users.Add(newUser);
+
+// 📦 7. Bài đăng tương ứng (8h–9h)
+posts.Add(new Post
+{
+    Id = Guid.Parse("88888888-0000-0000-0000-000000000006"),
+    SenderId = newUser.UserId,
+    ProductId = products[0].Id, // lấy 1 sản phẩm nhỏ
+    Name = "Máy in cũ cần thu gom",
+    Address = newUser.Address,
+    ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"08:00\",\"endTime\":\"09:00\"}}]",
+    Status = "Đã Duyệt",
+    EstimatePoint = 110
+});
+
+            // 🟩🟩🟩 ======================= EXTENDED FAKE DATA FOR TESTING GROUPING =======================
+
+            // --- USERS MỚI ---
+            // Quận 1
+            users.AddRange(new List<User>
+{
+    new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000007"), Name = "Ngô Thị G", Email = "ngothig@example.com", Iat = 10.7815, Ing = 106.7010, Address = "20 Nguyễn Huệ, Q1", Role = "User" },
+    new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000008"), Name = "Đặng Văn H", Email = "dangvanh@example.com", Iat = 10.7790, Ing = 106.6995, Address = "18 Pasteur, Q1", Role = "User" }
+});
+
+            // Quận 3
+            users.AddRange(new List<User>
+{
+    new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000009"), Name = "Phan Thị I", Email = "phanthiI@example.com", Iat = 10.7835, Ing = 106.6875, Address = "60 Cách Mạng Tháng 8, Q3", Role = "User" },
+    new User { UserId = Guid.Parse("99999999-0000-0000-0000-000000000010"), Name = "Lý Văn K", Email = "lyvank@example.com", Iat = 10.7810, Ing = 106.6850, Address = "55 Võ Thị Sáu, Q3", Role = "User" }
+});
+
+            // --- COLLECTORS MỚI ---
+            var collectorQ1_3 = new Collector
+            {
+                CollectorId = Guid.Parse("cccc3333-eeee-eeee-eeee-eeeeeeeeeeee"),
+                Name = "Ngô Thị G (Q1)",
+                Email = "collector3.q1@example.com",
+                Phone = "0909123456",
+                SmallColltionId = 3
+            };
+            collectors.Add(collectorQ1_3);
+
+            var collectorQ3_3 = new Collector
+            {
+                CollectorId = Guid.Parse("dddd4444-ffff-ffff-ffff-ffffffffffff"),
+                Name = "Phan Thị I (Q3)",
+                Email = "collector3.q3@example.com",
+                Phone = "0909988776",
+                SmallColltionId = 4
+            };
+            collectors.Add(collectorQ3_3);
+
+            // --- VEHICLES MỚI ---
+            // Trạm Quận 1
+            var vehicleQ1_5 = new Vehicles
+            {
+                Id = 9,
+                Plate_Number = "51B-66666",
+                Vehicle_Type = "Xe tải mini 500kg",
+                Capacity_Kg = 500,
+                Capacity_M3 = 3,
+                Radius_Km = 5,
+                Status = "active",
+                Small_Collection_Point = 3
+            };
+            vehicles.Add(vehicleQ1_5);
+
+            // Trạm Quận 3
+            var vehicleQ3_4 = new Vehicles
+            {
+                Id = 10,
+                Plate_Number = "51D-33445",
+                Vehicle_Type = "Xe điện nhỏ 2 bánh",
+                Capacity_Kg = 120,
+                Capacity_M3 = 1,
+                Radius_Km = 4,
+                Status = "active",
+                Small_Collection_Point = 4
+            };
+            vehicles.Add(vehicleQ3_4);
+
+            // --- SHIFTS MỚI ---
+            var shiftQ1_3 = new Shifts
+            {
+                Id = 12,
+                CollectorId = collectorQ1_3.CollectorId,
+                Vehicle_Id = 9,
+                WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+                Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(14),
+                Shift_End_Time = DateTime.Today.AddDays(1).AddHours(18)
+            };
+            shifts.Add(shiftQ1_3);
+
+            var shiftQ3_3 = new Shifts
+            {
+                Id = 13,
+                CollectorId = collectorQ3_3.CollectorId,
+                Vehicle_Id = 10,
+                WorkDate = DateOnly.FromDateTime(DateTime.Today.AddDays(1)),
+                Shift_Start_Time = DateTime.Today.AddDays(1).AddHours(12),
+                Shift_End_Time = DateTime.Today.AddDays(1).AddHours(16)
+            };
+            shifts.Add(shiftQ3_3);
+
+            // --- POSTS MỚI ---
+            // Quận 1
+            posts.Add(new Post
+            {
+                Id = Guid.Parse("88888888-0000-0000-0000-000000000007"),
+                SenderId = Guid.Parse("99999999-0000-0000-0000-000000000007"),
+                ProductId = products[1].Id,
+                Name = "Ghế sofa cũ cần thu gom",
+                Address = "20 Nguyễn Huệ, Q1",
+                ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"14:00\",\"endTime\":\"15:00\"}}]",
+                Status = "Đã Duyệt",
+                EstimatePoint = 90
+            });
+
+            // Quận 3
+            posts.Add(new Post
+            {
+                Id = Guid.Parse("88888888-0000-0000-0000-000000000008"),
+                SenderId = Guid.Parse("99999999-0000-0000-0000-000000000009"),
+                ProductId = products[2].Id,
+                Name = "Bàn làm việc cũ",
+                Address = "60 Cách Mạng Tháng 8, Q3",
+                ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"12:00\",\"endTime\":\"13:00\"}}]",
+                Status = "Đã Duyệt",
+                EstimatePoint = 130
+            });
+
+            users.Add(new User
+            {
+                UserId = Guid.Parse("99999999-0000-0000-0000-000000000011"),
+                Name = "Trương Văn L",
+                Email = "truongvanl@example.com",
+                Phone = "0912333444",
+                Address = "Ngã 5 Gò Vấp, Quận Gò Vấp, TP.HCM",
+                Iat = 10.8385,     // ~ 8 km từ Q1
+                Ing = 106.6647,
+                Avatar = "https://picsum.photos/id/110/200/200",
+                Role = "User"
+            });
+
+            posts.Add(new Post
+            {
+                Id = Guid.Parse("88888888-0000-0000-0000-000000000009"),
+                SenderId = Guid.Parse("99999999-0000-0000-0000-000000000011"),
+                ProductId = products[0].Id, // dùng tạm 1 product nhỏ
+                Name = "Máy lọc không khí cũ",
+                Address = "Ngã 5 Gò Vấp, Gò Vấp, TP.HCM",
+                ScheduleJson = "[{\"dayName\":\"T4\",\"pickUpDate\":\"2025-11-13\",\"slots\":{\"startTime\":\"15:00\",\"endTime\":\"16:00\"}}]",
+                Status = "Đã Duyệt",
+                EstimatePoint = 95
+            });
+        }
+
+
 	}
+
+
 }
