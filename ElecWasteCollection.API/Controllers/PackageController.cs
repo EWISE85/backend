@@ -62,5 +62,38 @@ namespace ElecWasteCollection.API.Controllers
 			var packages = _packageService.GetPackagesByQuery(model);
 			return Ok(packages);
 		}
+		[HttpPut("{packageId}/status")]
+		public IActionResult SealedPackageStatus([FromRoute] string packageId)
+		{
+			var result = _packageService.UpdatePackageStatus(packageId, "Đã đóng thùng");
+			if (!result)
+			{
+				return BadRequest("Failed to update package status.");
+			}
+			return Ok(new { message = "Package status updated successfully." });
+		}
+		[HttpPut("{packageId}")]
+		public IActionResult UpdatePackage([FromRoute] string packageId, [FromBody] UpdatePackageRequest updatePackage)
+		{
+			if (updatePackage == null)
+			{
+				return BadRequest("Invalid data.");
+			}
+
+			var model = new UpdatePackageModel
+			{
+				PackageId = packageId,
+				PackageName = updatePackage.PackageName,
+				SmallCollectionPointsId = updatePackage.SmallCollectionPointsId,
+				ProductsQrCode = updatePackage.ProductsQrCode
+			};
+			var result = _packageService.UpdatePackageAsync(model);
+			if (!result)
+			{
+				return StatusCode(400, "An error occurred while updating the package.");
+			}
+
+			return Ok(new { message = "Package updated successfully." });
+		}
 	}
 }

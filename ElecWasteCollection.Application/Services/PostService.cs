@@ -24,6 +24,7 @@ namespace ElecWasteCollection.Application.Services
 		private static List<SizeTier> sizeTiers = FakeDataSeeder.sizeTiers;
 		private static List<Attributes> attributes = FakeDataSeeder.attributes;
 		private static List<Brand> _brands = FakeDataSeeder.brands;
+		private static List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
 
 		private readonly double Confidence_AcceptToSave = 30.0;
 
@@ -132,6 +133,14 @@ namespace ElecWasteCollection.Application.Services
 					{
 						postStatus = "Đã Duyệt";
 					}
+					var history = new ProductStatusHistory
+					{
+						ProductId = newProduct.Id,
+						ChangedAt = DateTime.Now,
+						Status = postStatus,
+						StatusDescription = "Yêu cầu được duyệt"
+					};
+					_productStatusHistories.Add(history);
 				}
 				//var containsProfanity = await _profanityChecker.ContainsProfanityAsync(createPostRequest.Name);
 				//if (containsProfanity)
@@ -522,6 +531,14 @@ namespace ElecWasteCollection.Application.Services
 			{
 				post.Name = await _profanityChecker.CensorTextAsync(post.Name);
 				post.Status = "Đã Duyệt";
+				var history = new ProductStatusHistory
+				{
+					ProductId = post.ProductId,
+					ChangedAt = DateTime.Now,
+					Status = post.Status,
+					StatusDescription = "Yêu cầu được duyệt"
+				};
+				_productStatusHistories.Add(history);
 				return true;
 			}
 			return false;

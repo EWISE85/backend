@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Model
 {
-	public class PackageDetailModel
+	public class UpdatePackageModel
 	{
 		public string PackageId { get; set; }
 
@@ -14,9 +14,6 @@ namespace ElecWasteCollection.Application.Model
 
 		public int SmallCollectionPointsId { get; set; }
 
-		public string Status { get; set; }
-
-		public List<ProductDetailModel> Products { get; set; }
+		public List<string> ProductsQrCode { get; set; }
 	}
-	
 }

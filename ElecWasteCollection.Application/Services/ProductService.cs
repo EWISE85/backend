@@ -26,11 +26,12 @@ namespace ElecWasteCollection.Application.Services
 		private readonly List<PostImages> _postImages = FakeDataSeeder.postImages;
 		private readonly List<ProductImages> productImages = FakeDataSeeder.productImages;
 		private readonly IPointTransactionService _pointTransactionService;
+		private readonly List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
 		public ProductService(IPointTransactionService pointTransactionService)
 		{
 			_pointTransactionService = pointTransactionService;
 		}
-		public bool AddPackageIdToProductByQrCode(string qrCode, string packageId)
+		public bool AddPackageIdToProductByQrCode(string qrCode, string? packageId)
 		{
 			var product = _products.FirstOrDefault(p => p.QRCode == qrCode);
 			if (product == null)
@@ -198,7 +199,8 @@ namespace ElecWasteCollection.Application.Services
 					CategoryName = category.Name,
 					QrCode = p.QRCode,
 					SizeTierName = sizeTier?.Name,
-					Attributes = attributesList
+					Attributes = attributesList,
+					Status = p.Status
 				};
 			})
 			.ToList();
@@ -206,26 +208,15 @@ namespace ElecWasteCollection.Application.Services
 			return productDetails;
 		}
 
-		public PagedResult<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(int page, int limit, DateOnly pickUpDate, int smallCollectionPointId, string status)
+		public List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly fromDate, DateOnly toDate, int smallCollectionPointId)
 		{
-			// Helper trả về rỗng
-			PagedResult<ProductComeWarehouseDetailModel> ReturnEmpty()
-			{
-				return new PagedResult<ProductComeWarehouseDetailModel>
-				{
-					Page = page < 1 ? 1 : page,
-					Limit = limit < 1 ? 10 : limit,
-					TotalItems = 0,
-					Data = new List<ProductComeWarehouseDetailModel>()
-				};
-			}
-
-			if (page < 1) page = 1;
-			if (limit < 1) limit = 10;
-
-			
+			// =================================================================================
+			// PHẦN 1: LẤY SẢN PHẨM TỪ TUYẾN THU GOM (Có Route)
+			// Điều kiện: Route thuộc trạm này & Ngày thu gom nằm trong khoảng [fromDate, toDate]
+			// =================================================================================
 			var routeModels = new List<ProductComeWarehouseDetailModel>();
 
+			// 1. Lấy danh sách xe của trạm
 			var vehicleIds = _vehicles
 				.Where(v => v.Small_Collection_Point == smallCollectionPointId)
 				.Select(v => v.Id)
@@ -233,21 +224,31 @@ namespace ElecWasteCollection.Application.Services
 
 			if (vehicleIds.Any())
 			{
-				// Tìm các ca làm việc trong ngày
+				// 2. Lấy Shift liên quan đến các xe này (để tìm Group -> Route)
+				// Lưu ý: Ở đây ta chưa lọc ngày của Shift vội, vì logic chính nằm ở ngày của Route
 				var shiftIds = _shifts
-					.Where(s => s.WorkDate == pickUpDate && vehicleIds.Contains(s.Vehicle_Id))
-					.Select(s => s.Id).ToList();
+					.Where(s => vehicleIds.Contains(s.Vehicle_Id))
+					.Select(s => s.Id)
+					.ToList();
 
 				if (shiftIds.Any())
 				{
-					var groupIds = _collectionGroups.Where(g => shiftIds.Contains(g.Shift_Id)).Select(g => g.Id).ToList();
-
-					var routesOfTheDay = _collectionRoutes
-						.Where(r => r.CollectionDate == pickUpDate && groupIds.Contains(r.CollectionGroupId))
+					var groupIds = _collectionGroups
+						.Where(g => shiftIds.Contains(g.Shift_Id))
+						.Select(g => g.Id)
 						.ToList();
 
-					// Map dữ liệu
-					routeModels = routesOfTheDay.Select(route =>
+					// 3. Lọc Route theo khoảng thời gian
+					var routesInRange = _collectionRoutes
+						.Where(r =>
+							groupIds.Contains(r.CollectionGroupId) &&
+							r.CollectionDate >= fromDate && // Từ ngày
+							r.CollectionDate <= toDate      // Đến ngày
+						)
+						.ToList();
+
+					// 4. Map dữ liệu từ Route -> Post -> Product
+					routeModels = routesInRange.Select(route =>
 					{
 						var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
 						if (post == null) return null;
@@ -261,63 +262,52 @@ namespace ElecWasteCollection.Application.Services
 				}
 			}
 
-			
+			// =================================================================================
+			// PHẦN 2: LẤY SẢN PHẨM TẠO TRỰC TIẾP TẠI KHO
+			// Điều kiện: Thuộc trạm này & Ngày tạo nằm trong khoảng [fromDate, toDate]
+			// =================================================================================
 
 			var directProducts = _products
 				.Where(p =>
-					p.SmallCollectionPointId == smallCollectionPointId && 
-					p.CreateAt == pickUpDate &&                          
-					p.PackageId == null &&                               
-					p.Status == "Nhập kho"                              
+					p.SmallCollectionPointId == smallCollectionPointId && // Đúng trạm
+					p.CreateAt != null &&                                 // Ngày tạo không null
+					p.CreateAt >= fromDate &&                             // Từ ngày
+					p.CreateAt <= toDate &&                               // Đến ngày
+					p.PackageId == null &&                                // Chưa đóng gói
+					p.Status == "Nhập kho"                                // Trạng thái mặc định
 				)
 				.ToList();
 
-			// Map dữ liệu (Post = null vì không có bài đăng)
 			var directModels = directProducts.Select(product =>
 			{
+				// Truyền null vào post vì không có bài đăng
 				return MapToDetailModel(product, null);
 			}).ToList();
 
+			// =================================================================================
+			// PHẦN 3: GỘP DỮ LIỆU VÀ TRẢ VỀ
+			// =================================================================================
 
-			
 			var combinedList = routeModels
 				.Concat(directModels)
 				.DistinctBy(x => x.ProductId) 
+				.OrderByDescending(x => x.Status) 
 				.ToList();
 
-			if (!string.IsNullOrEmpty(status))
-			{
-				combinedList = combinedList
-					.Where(model => model.Status.Equals(status.Trim(), StringComparison.OrdinalIgnoreCase))
-					.ToList();
-			}
-
-			// 3. Phân trang (In-Memory Pagination)
-			var totalItems = combinedList.Count;
-			var pagedData = combinedList
-				.Skip((page - 1) * limit)
-				.Take(limit)
-				.ToList();
-
-			return new PagedResult<ProductComeWarehouseDetailModel>
-			{
-				Page = page,
-				Limit = limit,
-				TotalItems = totalItems,
-				Data = pagedData
-			};
+			return combinedList;
 		}
+
+
 
 		// Hàm Map giữ nguyên như cũ
 		private ProductComeWarehouseDetailModel MapToDetailModel(Products product, Post? post)
 		{
-			// ... (Code mapping y hệt câu trả lời trước)
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
 			var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
 
+			// Lấy ảnh (chỉ có nếu post tồn tại)
 			var imageUrls = new List<string>();
-
 			if (post != null)
 			{
 				imageUrls = _postImages
@@ -325,14 +315,15 @@ namespace ElecWasteCollection.Application.Services
 					.Select(img => img.ImageUrl)
 					.ToList();
 			}
-			else
-			{
+			else {
 				imageUrls = productImages
 					.Where(img => img.ProductId == product.Id)
 					.Select(img => img.ImageUrl)
 					.ToList();
 			}
 
+
+			// Lấy thuộc tính
 			var attributesList = _productValues
 				.Where(pv => pv.ProductId == product.Id)
 				.Select(pv =>
@@ -358,6 +349,7 @@ namespace ElecWasteCollection.Application.Services
 				QrCode = product.QRCode,
 				Status = product.Status,
 				SizeTierName = sizeTier?.Name,
+				EstimatePoint = post.EstimatePoint,
 				Attributes = attributesList
 			};
 		}
@@ -395,8 +387,33 @@ namespace ElecWasteCollection.Application.Services
 				Desciption = model.Description,
 			};
 			product.Status = status;
+			var newHistory = new ProductStatusHistory
+			{
+				ProductStatusHistoryId = Guid.NewGuid(),
+				ProductId = product.Id,
+				ChangedAt = DateTime.UtcNow,
+				StatusDescription = "Sản phẩm đã về đến kho",
+				Status = status
+			};	
 			_pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
 			return true;
+		}
+
+		public List<ProductComeWarehouseDetailModel> GetAllProductsByUserId(Guid userId)
+		{
+			var userPosts = _posts.Where(p => p.SenderId == userId).ToList();
+
+			var productDetails = userPosts.Select(post =>
+			{
+				var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
+				if (product == null) return null;
+
+				return MapToDetailModel(product, post);
+			})
+			.Where(x => x != null)
+			.ToList()!;
+
+			return productDetails;
 		}
 	}
 }

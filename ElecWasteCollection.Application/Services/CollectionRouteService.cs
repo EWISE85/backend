@@ -10,8 +10,6 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class CollectionRouteService : ICollectionRouteService
 	{
-		// === SỬA LỖI: Tiêm (Inject) TẤT CẢ các List<> cần thiết từ FakeDataSeeder ===
-		// Chúng ta sẽ dùng List<> thay vì các Service khác để join
 
 		private readonly List<CollectionRoutes> _collectionRoutes = FakeDataSeeder.collectionRoutes;
 		private readonly List<Collector> _collectors = FakeDataSeeder.collectors;
@@ -23,6 +21,7 @@ namespace ElecWasteCollection.Application.Services
 		private readonly List<PostImages> _postImages = FakeDataSeeder.postImages;
 		private readonly List<Vehicles> _vehicles = FakeDataSeeder.vehicles;
 		private readonly IShippingNotifierService _notifierService; // Dịch vụ này vẫn giữ lại
+		private readonly List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
 
 		public CollectionRouteService(IShippingNotifierService notifierService)
 		{
@@ -43,6 +42,14 @@ namespace ElecWasteCollection.Application.Services
 				route.Status = "Hủy bỏ";
 				route.RejectMessage = rejectMessage;
 				product.Status = "Hủy bỏ";
+				// Thêm lịch sử thay đổi trạng thái
+				_productStatusHistories.Add(new ProductStatusHistory
+				{
+					ProductId = product.Id,
+					ChangedAt = DateTime.Now,
+					StatusDescription = "Sản phẩm không được lấy thành công",
+					Status = product.Status
+				});
 				return true;
 			}
 			return false;
@@ -70,6 +77,15 @@ namespace ElecWasteCollection.Application.Services
 			route.Actual_Time = TimeOnly.FromDateTime(DateTime.Now);
 			product.QRCode = QRCode;
 			product.Status = "Đã thu gom";
+			// Thêm lịch sử thay đổi trạng thái
+			_productStatusHistories.Add(new ProductStatusHistory
+			{
+				ProductId = product.Id,
+				ChangedAt = DateTime.Now,
+				StatusDescription = "Sản phẩm đã được thu gom",
+				Status = "Đã thu gom"
+			});
+
 			return true;
 		}
 
@@ -198,7 +214,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					CollectionRouteId = r.CollectionRouteId,
 					PostId = r.PostId,
-					ItemName = post.Name,
+					//ItemName = post.Name,
 					Collector = collector,
 					Sender = sender,
 					CollectionDate = r.CollectionDate,
@@ -293,7 +309,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					CollectionRouteId = route.CollectionRouteId,
 					PostId = route.PostId,
-					ItemName = post.Name,
+					//ItemName = post.Name,
 					Collector = collector,
 					Sender = sender,
 					CollectionDate = route.CollectionDate,

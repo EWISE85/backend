@@ -42,10 +42,10 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Product status updated successfully." });
 		}
-		[HttpGet("incoming-warehouse")]
-		public IActionResult GetProductsComingToWarehouse([FromQuery] int page, [FromQuery] int limit,[FromQuery] DateOnly pickUpDate, [FromQuery] int smallCollectionPointId, [FromQuery] string? status)
+		[HttpGet("from-data-to-date")]
+		public IActionResult GetProductsComingToWarehouse([FromQuery] DateOnly fromDate, [FromQuery] DateOnly toDate, [FromQuery] int smallCollectionPointId )
 		{
-			var products = _productService.ProductsComeWarehouseByDate(page,limit,pickUpDate, smallCollectionPointId, status);
+			var products = _productService.ProductsComeWarehouseByDate(fromDate, toDate, smallCollectionPointId);
 			return Ok(products);
 		}
 		[HttpPost("warehouse")]
@@ -75,6 +75,13 @@ namespace ElecWasteCollection.API.Controllers
 			}
 
 			return Ok(new { message = "Product added to warehouse successfully.", item = result });
+		}
+
+		[HttpGet("user/{userId}")]
+		public IActionResult GetAllProductsByUserId(Guid userId)
+		{
+			var products = _productService.GetAllProductsByUserId(userId);
+			return Ok(products);
 		}
 	}
 }

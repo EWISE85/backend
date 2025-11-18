@@ -13,7 +13,7 @@ namespace ElecWasteCollection.Application.Model
 
 		public Guid PostId { get; set; }
 
-		public string ItemName { get; set; }
+		//public string ItemName { get; set; }
 
 		public Collector Collector { get; set; }
 

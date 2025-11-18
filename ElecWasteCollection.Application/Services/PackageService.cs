@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static OpenCvSharp.Stitcher;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -14,6 +15,7 @@ namespace ElecWasteCollection.Application.Services
 	{
 		private readonly List<Packages> packages = FakeDataSeeder.packages;
 		private readonly IProductService _productService;
+		private readonly List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
 
 
 		public PackageService( IProductService productService)
@@ -29,7 +31,7 @@ namespace ElecWasteCollection.Application.Services
 				PackageName = model.PackageName,
 				SmallCollectionPointsId = model.SmallCollectionPointsId,
 				CreateAt = DateTime.UtcNow,
-				Status = "Đã đóng thùng"
+				Status = "Đang đóng gói"
 			};
 			packages.Add(newPackage);
 			foreach (var qrCode in model.ProductsQrCode)
@@ -40,6 +42,15 @@ namespace ElecWasteCollection.Application.Services
 				{
 					_productService.AddPackageIdToProductByQrCode(product.QrCode, newPackage.PackageId);
 					_productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
+					var newHistory = new ProductStatusHistory
+					{
+						ProductStatusHistoryId = Guid.NewGuid(),
+						ProductId = product.ProductId,
+						ChangedAt = DateTime.UtcNow,
+						StatusDescription = "Sản phẩm đã được đóng gói",
+						Status = "Đã đóng thùng"
+					};
+
 				}
 			}
 
@@ -61,6 +72,7 @@ namespace ElecWasteCollection.Application.Services
 				PackageId = package.PackageId,
 				PackageName = package.PackageName,
 				SmallCollectionPointsId = package.SmallCollectionPointsId,
+				Status = package.Status,
 				Products = productDetails
 			};
 
@@ -116,6 +128,76 @@ namespace ElecWasteCollection.Application.Services
 				Page = query.Page,
 				Limit = query.Limit,
 			};
+		}
+
+		public bool UpdatePackageAsync(UpdatePackageModel model)
+		{
+			// 1. Tìm gói hàng cần update
+			var package = packages.FirstOrDefault(p => p.PackageId == model.PackageId);
+			if (package == null)
+			{
+				return false;
+			}
+
+			// 2. Update thông tin cơ bản
+			package.PackageName = model.PackageName;
+			package.SmallCollectionPointsId = model.SmallCollectionPointsId;
+
+			// 3. Lấy danh sách sản phẩm HIỆN TẠI đang thuộc về gói này (trong Database/List cũ)
+			var currentProductsInPackage = _productService.GetProductsByPackageId(model.PackageId);
+
+			// Tạo HashSet từ danh sách QR Code MỚI gửi lên để tra cứu cho nhanh
+			var newQrCodesSet = model.ProductsQrCode.ToHashSet();
+
+			// === XỬ LÝ XÓA (REMOVE) ===
+			// Duyệt qua các sản phẩm cũ, nếu cái nào KHÔNG nằm trong danh sách mới -> Đuổi khỏi gói
+			foreach (var existingProduct in currentProductsInPackage)
+			{
+				if (!newQrCodesSet.Contains(existingProduct.QrCode))
+				{
+					// Set lại PackageId = null
+					// Lưu ý: Bạn cần đảm bảo hàm này nhận tham số null, hoặc viết hàm riêng để Remove
+					_productService.AddPackageIdToProductByQrCode(existingProduct.QrCode, null);
+
+					// Trả lại trạng thái ban đầu (ví dụ: "Nhập kho")
+					_productService.UpdateProductStatusByQrCode(existingProduct.QrCode, "Nhập kho");
+
+					var oldHistory = _productStatusHistories.FirstOrDefault(h => h.ProductId == existingProduct.ProductId && h.Status == "Đã đóng thùng");
+					if (oldHistory != null)
+					{
+						_productStatusHistories.Remove(oldHistory);
+					}
+
+					}
+			}
+
+			// === XỬ LÝ THÊM (ADD) HOẶC UPDATE ===
+			// Duyệt danh sách mới gửi lên để gán vào gói
+			foreach (var qrCode in model.ProductsQrCode)
+			{
+				var product = _productService.GetByQrCode(qrCode);
+				if (product != null)
+				{
+					// Gán vào gói hiện tại
+					_productService.AddPackageIdToProductByQrCode(product.QrCode, package.PackageId);
+
+					// Cập nhật trạng thái
+					_productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
+				}
+			}
+			return true;
+		}
+
+		public bool UpdatePackageStatus(string packageId, string status)
+		{
+			var package = packages.FirstOrDefault(p => p.PackageId == packageId);
+			if (package == null)
+			{
+				return false;
+			}
+
+			package.Status = status;
+			return true;
 		}
 	}
 }

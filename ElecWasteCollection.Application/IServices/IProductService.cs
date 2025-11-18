@@ -16,13 +16,16 @@ namespace ElecWasteCollection.Application.IServices
 
 		ProductDetailModel AddProduct(CreateProductAtWarehouseModel createProductRequest);
 
-		bool AddPackageIdToProductByQrCode(string productQrCode, string packageId);
+		bool AddPackageIdToProductByQrCode(string productQrCode, string? packageId);
 
 		List<ProductDetailModel> GetProductsByPackageId(string packageId);
 
 		bool UpdateProductStatusByQrCode(string productQrCode, string status);
 		bool UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status, UserReceivePointFromCollectionPointModel model );
 
-		PagedResult<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(int page, int limit,DateOnly pickUpDate, int smallCollectionPointId, string status);
+		List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly fromDate, DateOnly toDate, int smallCollectionPointId);
+
+		List<ProductComeWarehouseDetailModel> GetAllProductsByUserId(Guid userId);
+
 	}
 }
