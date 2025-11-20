@@ -1,46 +1,4 @@
-﻿//using ElecWasteCollection.Application.Interfaces;
-//using ElecWasteCollection.Application.Model;
-//using Microsoft.AspNetCore.Mvc;
-
-//namespace ElecWasteCollection.API.Controllers
-//{
-//    [ApiController]
-//    [Route("api/grouping")]
-//    public class GroupingController : ControllerBase
-//    {
-//        private readonly IGroupingService _groupingService;
-
-//        public GroupingController(IGroupingService groupingService)
-//        {
-//            _groupingService = groupingService;
-//        }
-
-//        [HttpPost("auto-group")]
-//        public async Task<IActionResult> AutoGroup([FromBody] GroupingByPointRequest request)
-//        {
-//            var result = await _groupingService.GroupByCollectionPointAsync(request);
-//            return Ok(result);
-//        }
-
-//        [HttpPost("pre-assign")]
-//        public async Task<IActionResult> PreAssign([FromBody] PreAssignRequest req)
-//        {
-//            var result = await _groupingService.PreAssignAsync(req);
-//            return Ok(result);
-//        }
-
-//        [HttpPost("assign-day")]
-//        public async Task<IActionResult> AssignDay([FromBody] AssignDayRequest req)
-//        {
-//            var result = await _groupingService.AssignDayAsync(req);
-//            return Ok(new { success = result });
-//        }
-//    }
-//}
-
-
-
-using ElecWasteCollection.Application.Interfaces;
+﻿using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.Model.GroupModel;
 using Microsoft.AspNetCore.Mvc;
 
@@ -78,5 +36,38 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _groupingService.GroupByCollectionPointAsync(request);
             return Ok(result);
         }
+
+        [HttpGet("routes/{groupId}")]
+        public async Task<IActionResult> GetRoutes(int groupId)
+        {
+            var result = await _groupingService.GetRoutesByGroupAsync(groupId);
+            if (!result.Any()) return NotFound("Không có route.");
+            return Ok(result);
+        }
+
+
+        [HttpGet("assign/{pointId}")]
+        public async Task<IActionResult> GetAssign(int pointId)
+        {
+            var result = await _groupingService.GetAssignByPointAsync(pointId);
+            return Ok(result);
+        }
+
+
+        [HttpGet("vehicles")]
+        public async Task<IActionResult> GetVehicles()
+        {
+            var result = await _groupingService.GetVehiclesAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("posts/pending-grouping")]
+        public async Task<IActionResult> GetPendingPosts()
+        {
+            var result = await _groupingService.GetPendingPostsAsync();
+            return Ok(result);
+        }
+
+
     }
 }
