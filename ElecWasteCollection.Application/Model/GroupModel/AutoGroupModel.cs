@@ -21,6 +21,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
     public class GroupSummary
     {
+        public int GroupId { get; set; }
         public string GroupCode { get; set; } = "";
         public int ShiftId { get; set; }
         public string Vehicle { get; set; } = "";

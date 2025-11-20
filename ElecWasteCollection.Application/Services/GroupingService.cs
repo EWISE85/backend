@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.Interfaces;
+using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.GroupModel;
 using ElecWasteCollection.Domain.Entities;
 using static ElecWasteCollection.Application.Data.FakeDataSeeder;
@@ -377,6 +378,7 @@ namespace ElecWasteCollection.Application.Services
                         response.CreatedGroups.Add(new GroupSummary
                         {
                             GroupCode = group.Group_Code,
+                            GroupId = group.Id,
                             ShiftId = shift.Id,
                             Vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})",
                             Collector = collector?.Name ?? "Unknown",
@@ -392,5 +394,127 @@ namespace ElecWasteCollection.Application.Services
 
             return await Task.FromResult(response);
         }
+
+        public async Task<List<StagingAssignDay>> GetAssignByPointAsync(int pointId)
+        {
+            var list = FakeDataSeeder.stagingAssignDays
+                .Where(s => s.PointId == pointId)
+                .OrderBy(s => s.Date)
+                .ToList();
+
+            return await Task.FromResult(list);
+        }
+
+
+        public async Task<List<RouteRecordModel>> GetRoutesByGroupAsync(int groupId)
+        {
+            var routes = FakeDataSeeder.collectionRoutes
+                .Where(r => r.CollectionGroupId == groupId)
+                .OrderBy(r => r.EstimatedTime)
+                .ToList();
+
+            if (!routes.Any())
+                return new List<RouteRecordModel>();
+
+            // --- Lấy group ---
+            var group = FakeDataSeeder.collectionGroups.First(g => g.Id == groupId);
+
+            // --- Lấy shift ---
+            var shift = FakeDataSeeder.shifts.First(s => s.Id == group.Shift_Id);
+            var workDate = shift.WorkDate;
+
+            // --- Tìm point từ staging ---
+            var firstPostId = routes.First().PostId;
+
+            var staging = FakeDataSeeder.stagingAssignDays
+                .First(s => s.Date == workDate && s.PostIds.Contains(firstPostId));
+
+            var point = FakeDataSeeder.smallCollectionPoints.First(p => p.Id == staging.PointId);
+
+            var result = new List<RouteRecordModel>();
+
+            foreach (var r in routes)
+            {
+                var post = FakeDataSeeder.posts.First(p => p.Id == r.PostId);
+                var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
+                var prod = FakeDataSeeder.products.First(pr => pr.Id == post.ProductId);
+                var size = FakeDataSeeder.sizeTiers.FirstOrDefault(t => t.SizeTierId == prod.SizeTierId);
+
+                double dist = GeoHelper.DistanceKm(point.Latitude, point.Longitude,
+                                                   user.Iat ?? 0, user.Ing ?? 0);
+
+                result.Add(new RouteRecordModel
+                {
+                    CollectionRouteId = r.CollectionRouteId,
+                    PostId = r.PostId,
+                    CollectionGroupId = r.CollectionGroupId,
+
+                    CollectionDate = r.CollectionDate,
+                    Status = r.Status,
+
+                    UserName = user.Name,
+                    Address = user.Address,
+
+                    SizeTier = size?.Name ?? "Không có size",
+                    WeightKg = size?.EstimatedWeight ?? 0,
+                    VolumeM3 = size?.EstimatedVolume ?? 0,
+                    DistanceKm = Math.Round(dist, 2),
+                    Schedule = post.ScheduleJson,
+                    EstimatedArrival = r.EstimatedTime.ToString("HH:mm"),
+                    EstimatedTime = r.EstimatedTime.ToString("HH:mm"),
+
+                });
+            }
+
+            return await Task.FromResult(result);
+        }
+
+        public async Task<List<Vehicles>> GetVehiclesAsync()
+        {
+            return await Task.FromResult(
+                FakeDataSeeder.vehicles
+                    .Where(v => v.Status == "active")
+                    .OrderBy(v => v.Id)
+                    .ToList()
+            );
+        }
+
+        public async Task<List<PendingPostModel>> GetPendingPostsAsync()
+        {
+            var posts = FakeDataSeeder.posts
+                .Where(p => FakeDataSeeder.products.Any(pr => pr.Id == p.ProductId && pr.Status == "Chờ gom nhóm"))
+                .ToList();
+
+            var list = new List<PendingPostModel>();
+
+            foreach (var p in posts)
+            {
+                var user = FakeDataSeeder.users.First(u => u.UserId == p.SenderId);
+                var prod = FakeDataSeeder.products.First(pr => pr.Id == p.ProductId);
+                var size = FakeDataSeeder.sizeTiers.FirstOrDefault(t => t.SizeTierId == prod.SizeTierId);
+
+                var cat = FakeDataSeeder.categories.First(c => c.Id == prod.CategoryId);
+                var brand = FakeDataSeeder.brands.First(b => b.BrandId == prod.BrandId);
+
+                list.Add(new PendingPostModel
+                {
+                    PostId = p.Id,
+                    UserName = user.Name,
+                    Address = user.Address,
+
+                    ProductName = $"{brand.Name} {cat.Name}",
+
+                    SizeTier = size?.Name ?? "Không có size",
+                    Weight = size?.EstimatedWeight ?? 0,
+                    Volume = size?.EstimatedVolume ?? 0,
+
+                    ScheduleJson = p.ScheduleJson!,
+                    Status = prod.Status
+                });
+            }
+
+            return await Task.FromResult(list);
+        }
+
     }
 }
