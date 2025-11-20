@@ -37,24 +37,18 @@ namespace ElecWasteCollection.Application.Services
             public List<DateOnly> SpecificDates { get; set; } = new();
         }
 
-        private (double length, double width, double height, double weight, double volume, string dimensionText) GetProductAttributes(Guid productId)
+        private (double length, double width, double height, double weight, double volume, string dimensionText)
+    GetProductAttributes(Guid productId)
         {
-            var vals = FakeDataSeeder.productValues
+            var map = FakeDataSeeder.productValues
                 .Where(v => v.ProductId == productId)
-                .ToList();
+                .ToDictionary(v => v.AttributeId, v => v.Value);
 
-            if (!vals.Any())
-                return (0, 0, 0, 0, 0, "0 x 0 x 0 cm");
-
-            var joined = (from pv in vals
-                          join a in FakeDataSeeder.attributes on pv.AttributeId equals a.Id
-                          select new { a.Name, pv.Value }).ToList();
-
-            double length = joined.FirstOrDefault(x => x.Name.Equals("length", StringComparison.OrdinalIgnoreCase))?.Value ?? 0;
-            double width = joined.FirstOrDefault(x => x.Name.Equals("width", StringComparison.OrdinalIgnoreCase))?.Value ?? 0;
-            double height = joined.FirstOrDefault(x => x.Name.Equals("height", StringComparison.OrdinalIgnoreCase))?.Value ?? 0;
-            double weight = joined.FirstOrDefault(x => x.Name.Equals("weight", StringComparison.OrdinalIgnoreCase))?.Value ?? 0;
-            double volume = joined.FirstOrDefault(x => x.Name.Equals("volume", StringComparison.OrdinalIgnoreCase))?.Value ?? 0;
+            double length = map.GetValueOrDefault(Guid.Parse("a1a1a1a1-0002-0002-0002-000000000001"), 0);
+            double width = map.GetValueOrDefault(Guid.Parse("a1a1a1a1-0002-0002-0002-000000000002"), 0);
+            double height = map.GetValueOrDefault(Guid.Parse("a1a1a1a1-0002-0002-0002-000000000003"), 0);
+            double weight = map.GetValueOrDefault(Guid.Parse("a1a1a1a1-0009-0009-0009-000000000001"), 0);
+            double volume = map.GetValueOrDefault(Guid.Parse("a1a1a1a1-0004-0004-0004-000000000001"), 0);
 
             string dim = $"{length} x {width} x {height} cm";
 
