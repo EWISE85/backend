@@ -12,6 +12,7 @@ namespace ElecWasteCollection.Application.Model
 		public Guid CollectionRouteId { get; set; }
 
 		public Guid PostId { get; set; }
+		public Guid ProductId { get; set; }
 
 		//public string ItemName { get; set; }
 
