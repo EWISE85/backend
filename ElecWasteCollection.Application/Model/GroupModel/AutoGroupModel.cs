@@ -43,8 +43,11 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public double DistanceKm { get; set; }
         public string Schedule { get; set; } = "";
         public string EstimatedArrival { get; set; } = "";
+        public double Length { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public string DimensionText { get; set; } = "";
         public double WeightKg { get; set; }
         public double VolumeM3 { get; set; }
-        public string SizeTier { get; set; } = "";
     }
 }

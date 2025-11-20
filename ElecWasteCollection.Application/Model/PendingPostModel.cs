@@ -12,11 +12,13 @@ namespace ElecWasteCollection.Application.Model
         public string UserName { get; set; } = "";
         public string Address { get; set; } = "";
         public string ProductName { get; set; } = "";
-        public string SizeTier { get; set; } = "";
+        public double Length { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public string DimensionText { get; set; } = "";   
         public double Weight { get; set; }
         public double Volume { get; set; }
         public string ScheduleJson { get; set; } = "";
         public string Status { get; set; } = "";
     }
-
 }
