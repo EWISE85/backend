@@ -1464,6 +1464,15 @@ namespace ElecWasteCollection.Application.Data
             var att_weight = Guid.Parse("a1a1a1a1-0009-0009-0009-000000000001"); // Trọng lượng (kg)
             var att_volume = Guid.Parse("a1a1a1a1-0004-0004-0004-000000000001"); // Khối lượng giặt (kg) hoặc dung tích
 
+            attributes.AddRange(new List<Attributes>
+    {
+        new Attributes { Id = att_length, Name = "length" },
+        new Attributes { Id = att_width,  Name = "width" },
+        new Attributes { Id = att_height, Name = "height" },
+        new Attributes { Id = att_weight, Name = "weight" },
+        new Attributes { Id = att_volume, Name = "volume" }
+    });
+
 
             // ============================================================
             // C) PRODUCTS (KHÔNG CÒN SizeTier)
