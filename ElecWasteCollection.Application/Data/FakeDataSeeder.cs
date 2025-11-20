@@ -539,7 +539,7 @@ namespace ElecWasteCollection.Application.Data
         public static void AddPostsForDay16()
         {
             // 🔥 Tính đúng ngày 16 theo tháng hiện tại 
-            var day16DateTime = _vnNow.AddDays(16 - _vnNow.Day);
+            var day16DateTime = _vnNow.AddDays(22 - _vnNow.Day);
             var day16 = DateOnly.FromDateTime(day16DateTime);
 
             // ==================================================================
