@@ -37,22 +37,19 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
-        [HttpGet("routes/{groupId}")]
-        public async Task<IActionResult> GetRoutes(int groupId)
+        [HttpGet("groups/{collectionPointId}")]
+        public async Task<IActionResult> GetGroupsByCollectionPointAsync(int collectionPointId)
+        {
+            var result = await _groupingService.GetGroupsByPointIdAsync(collectionPointId);
+            return Ok(result);
+        }
+
+        [HttpGet("group/{groupId}")]
+        public async Task<IActionResult> GetGroupDetailAsync(int groupId)
         {
             var result = await _groupingService.GetRoutesByGroupAsync(groupId);
-            if (!result.Any()) return NotFound("Không có route.");
             return Ok(result);
         }
-
-
-        [HttpGet("assign/{pointId}")]
-        public async Task<IActionResult> GetAssign(int pointId)
-        {
-            var result = await _groupingService.GetAssignByPointAsync(pointId);
-            return Ok(result);
-        }
-
 
         [HttpGet("vehicles")]
         public async Task<IActionResult> GetVehicles()
