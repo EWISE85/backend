@@ -1458,20 +1458,24 @@ namespace ElecWasteCollection.Application.Data
             // ============================================================
             //attributes.Clear();
             // Dùng đúng các AttributeId gốc trong hệ thống
+
             var att_length = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000001"); // Chiều dài (cm)
             var att_width = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000002"); // Chiều rộng (cm)
             var att_height = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000003"); // Chiều cao (cm)
             var att_weight = Guid.Parse("a1a1a1a1-0009-0009-0009-000000000001"); // Trọng lượng (kg)
             var att_volume = Guid.Parse("a1a1a1a1-0004-0004-0004-000000000001"); // Khối lượng giặt (kg) hoặc dung tích
 
-            attributes.AddRange(new List<Attributes>
-    {
-        new Attributes { Id = att_length, Name = "length" },
-        new Attributes { Id = att_width,  Name = "width" },
-        new Attributes { Id = att_height, Name = "height" },
-        new Attributes { Id = att_weight, Name = "weight" },
-        new Attributes { Id = att_volume, Name = "volume" }
-    });
+            void EnsureAttribute(Guid id, string name)
+            {
+                if (!attributes.Any(a => a.Id == id))
+                    attributes.Add(new Attributes { Id = id, Name = name });
+            }
+
+            EnsureAttribute(att_length, "length");
+            EnsureAttribute(att_width, "width");
+            EnsureAttribute(att_height, "height");
+            EnsureAttribute(att_weight, "weight");
+            EnsureAttribute(att_volume, "volume");
 
 
             // ============================================================
