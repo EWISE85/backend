@@ -69,6 +69,8 @@ namespace ElecWasteCollection.Application.Data
 		private static readonly Guid st_TuLanh_Lon = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000003");
 		private static readonly Guid st_MayGiat_TrungBinh = Guid.Parse("a1a1a1a1-0003-0003-0003-000000000002");
 		private static readonly Guid st_Laptop_MongNhe = Guid.Parse("a1a1a1a1-0006-0006-0006-000000000001");
+		private static readonly Guid st_ManHinhMayTinh_nho= Guid.Parse("a1a1a1a1-0006-0006-0006-000000000012");
+
 
 		// Brands
 		private static readonly Guid brand_Samsung_Tivi = Guid.Parse("b0100001-0001-0001-0001-000000000001");
@@ -258,7 +260,7 @@ namespace ElecWasteCollection.Application.Data
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_MayGiat, Name = "Lớn (Trên 10kg)", EstimatedWeight = 70, EstimatedVolume = 0.8 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_LoViSong, Name = "Nhỏ (Dưới 20L)", EstimatedWeight = 10, EstimatedVolume = 0.05 },
 			new SizeTier { SizeTierId = Guid.Parse("f3c8c4ef-56f3-433e-b210-3f900248ffae"), CategoryId = cat_LoViSong, Name = "Lớn (Trên 20L)", EstimatedWeight = 15, EstimatedVolume = 0.1 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, Name = "Nhỏ (Dưới 24 inch)", EstimatedWeight = 3, EstimatedVolume = 0.05 },
+			new SizeTier { SizeTierId = st_ManHinhMayTinh_nho, CategoryId = cat_ManHinhMayTinh, Name = "Nhỏ (Dưới 24 inch)", EstimatedWeight = 3, EstimatedVolume = 0.05 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, Name = "Lớn (Từ 24 inch trở lên)", EstimatedWeight = 7, EstimatedVolume = 0.1 },
 			new SizeTier { SizeTierId = st_Laptop_MongNhe, CategoryId = cat_Laptop, Name = "Mỏng nhẹ (Dưới 2kg)", EstimatedWeight = 1.5, EstimatedVolume = 0.01 },
 			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Laptop, Name = "Thường/Gaming (Từ 2kg trở lên)", EstimatedWeight = 3, EstimatedVolume = 0.02 },
@@ -343,7 +345,7 @@ namespace ElecWasteCollection.Application.Data
 			new Products { Id = prodIds[4], CategoryId = cat_MayGiat, SizeTierId = st_MayGiat_TrungBinh, BrandId = brand_Toshiba_MayGiat, PackageId = null, Status = "Đã thu gom", Description = "Kêu to khi vắt", QRCode = "product5" },
 
             // --- HÔM NAY (5-9) ---
-            new Products { Id = prodIds[5], CategoryId = cat_ManHinhMayTinh, SizeTierId = null, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6" },
+            new Products { Id = prodIds[5], CategoryId = cat_ManHinhMayTinh, SizeTierId = st_ManHinhMayTinh_nho, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6" },
 			new Products { Id = prodIds[6], CategoryId = cat_LoViSong, SizeTierId = null, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Không nóng" },
 			new Products { Id = prodIds[7], CategoryId = cat_BinhNuocNong, SizeTierId = null, BrandId = brand_Ariston_Binh, PackageId = null,  Status = "Chờ thu gom", Description = "Rò điện" },
 			new Products { Id = prodIds[8], CategoryId = cat_MayIn, SizeTierId = null, BrandId = brand_HP_MayIn, PackageId = null, Status = "Đã thu gom", Description = "Kẹt giấy liên tục", QRCode = "product9" },

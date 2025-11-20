@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -27,9 +28,13 @@ namespace ElecWasteCollection.Application.Services
 		private readonly List<ProductImages> productImages = FakeDataSeeder.productImages;
 		private readonly IPointTransactionService _pointTransactionService;
 		private readonly List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
-		public ProductService(IPointTransactionService pointTransactionService)
+		private readonly IUserService _userService;
+		private readonly ICollectorService _collectorService;
+		public ProductService(IPointTransactionService pointTransactionService, IUserService userService, ICollectorService collectorService)
 		{
 			_pointTransactionService = pointTransactionService;
+			_userService = userService;
+			_collectorService = collectorService;
 		}
 		public bool AddPackageIdToProductByQrCode(string qrCode, string? packageId)
 		{
@@ -414,6 +419,117 @@ namespace ElecWasteCollection.Application.Services
 			.ToList()!;
 
 			return productDetails;
+		}
+
+		public ProductDetail? GetProductDetailById(Guid productId)
+		{
+			// 1. Tìm Product
+			var product = _products.FirstOrDefault(p => p.Id == productId);
+			if (product == null) return null;
+
+			// 2. Tìm Post
+			var post = _posts.FirstOrDefault(p => p.ProductId == productId);
+			if (post == null) return null;
+
+			// 3. Lấy Category và Brand
+			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
+
+			// 4. Lấy Sender
+			var sender = _userService.GetById(post.SenderId);
+
+			// 5. Xử lý SizeTier / Attributes
+			string? sizeTierName = null;
+			List<ProductValueDetailModel>? productAttributes = null;
+
+			if (product.SizeTierId.HasValue)
+			{
+				sizeTierName = _sizeTiers
+					.FirstOrDefault(st => st.SizeTierId == product.SizeTierId.Value)?.Name;
+			}
+			else
+			{
+				productAttributes = _productValues
+					.Where(pv => pv.ProductId == product.Id)
+					.Join(_attributes,
+						  pv => pv.AttributeId,
+						  attr => attr.Id,
+						  (pv, attr) => new ProductValueDetailModel
+						  {
+							  AttributeName = attr.Name,
+							  Value = pv.Value.ToString()
+						  })
+					.ToList();
+			}
+
+			// 6. Xử lý Schedule
+			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+			List<DailyTimeSlots> schedule = new List<DailyTimeSlots>();
+			if (!string.IsNullOrEmpty(post.ScheduleJson))
+			{
+				try { schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options) ?? new List<DailyTimeSlots>(); }
+				catch (JsonException) { schedule = new List<DailyTimeSlots>(); }
+			}
+
+			// 7. Lấy ảnh
+			var imageUrls = _postImages.Where(pi => pi.PostId == post.Id).Select(pi => pi.ImageUrl).ToList();
+
+			// =================================================================================
+			// 8. TÌM THÔNG TIN LỊCH TRÌNH VÀ COLLECTOR (LOGIC MỚI)
+			// =================================================================================
+
+			Collector? collector = null;
+			DateOnly? pickUpDate = null;
+			TimeOnly? estimatedTime = null;
+
+			// Bước A: Tìm Route dựa trên PostId
+			var route = _collectionRoutes.FirstOrDefault(r => r.PostId == post.Id);
+
+			if (route != null)
+			{
+				// 1. Lấy thông tin ngày giờ từ Route
+				pickUpDate = route.CollectionDate;
+				estimatedTime = route.EstimatedTime;
+
+				// Bước B: Tìm Group để lấy Shift (Route -> Group)
+				var group = _collectionGroups.FirstOrDefault(g => g.Id == route.CollectionGroupId);
+
+				if (group != null)
+				{
+					// Bước C: Tìm Shift để lấy CollectorId (Group -> Shift)
+					var shift = _shifts.FirstOrDefault(s => s.Id == group.Shift_Id);
+
+					if (shift != null)
+					{
+						
+						collector = _collectorService.GetById(shift.CollectorId); 
+					}
+				}
+			}
+
+			// 9. Return kết quả
+			return new ProductDetail
+			{
+				ProductId = product.Id,
+				CategoryId = product.CategoryId,
+				CategoryName = category?.Name ?? "Không rõ",
+				BrandId = product.BrandId,
+				BrandName = brand?.Name ?? "Không rõ",
+				Description = product.Description,
+				ProductImages = imageUrls,
+				Status = post.Status,
+				SizeTierName = sizeTierName,
+				EstimatePoint = post.EstimatePoint,
+				Sender = sender,
+				Address = post.Address,
+				Schedule = schedule,
+				Attributes = productAttributes,
+
+				// === Dữ liệu từ Route/Shift ===
+				Collector = collector,
+				PickUpDate = pickUpDate,
+				EstimatedTime = estimatedTime
+			};
 		}
 	}
 }

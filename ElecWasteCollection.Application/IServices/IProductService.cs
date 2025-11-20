@@ -27,5 +27,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		List<ProductComeWarehouseDetailModel> GetAllProductsByUserId(Guid userId);
 
+		ProductDetail? GetProductDetailById(Guid productId);
+
 	}
 }

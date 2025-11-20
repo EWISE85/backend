@@ -18,6 +18,8 @@ namespace ElecWasteCollection.Application.Model
 
 		public string BrandName { get; set; }
 
+		public string SubCategoryName { get; set; }
+
 		public Collector Collector { get; set; }
 
 		public User Sender { get; set; }

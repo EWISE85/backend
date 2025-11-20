@@ -12,7 +12,6 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public Guid PostId { get; set; }
 
-		//public Guid CollectorId { get; set; }
 		public int CollectionGroupId { get; set; }
 
 		public DateOnly CollectionDate { get; set; }
@@ -21,7 +20,6 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public List<string> ConfirmImages { get; set; }
 
-		//public string LicensePlate { get; set; }
 
 		public string? RejectMessage { get; set; }
 

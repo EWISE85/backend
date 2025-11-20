@@ -23,6 +23,7 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IShippingNotifierService _notifierService; // Dịch vụ này vẫn giữ lại
 		private readonly List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
 		private readonly List<Brand> _brand = FakeDataSeeder.brands;
+		private readonly List<Category> _category = FakeDataSeeder.categories;
 
 		public CollectionRouteService(IShippingNotifierService notifierService)
 		{
@@ -217,6 +218,7 @@ namespace ElecWasteCollection.Application.Services
 					PostId = r.PostId,
 					//ItemName = post.Name,
 					BrandName = _brand.FirstOrDefault(b => b.BrandId == _products.FirstOrDefault(p => p.Id == post.ProductId)?.BrandId)?.Name,
+					SubCategoryName = _category.FirstOrDefault(c => c.Id == _products.FirstOrDefault(p => p.Id == post.ProductId)?.CategoryId)?.Name,
 					ProductId = post.ProductId,
 					Collector = collector,
 					Sender = sender,
@@ -298,6 +300,8 @@ namespace ElecWasteCollection.Application.Services
 				var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
 				if (product == null) return null;
 				var brand = _brand.FirstOrDefault(b => b.BrandId == product.BrandId);
+				if (brand == null) return null;
+				var subCategory = _category.FirstOrDefault(c => c.Id == product.CategoryId).Name;
 
 				// Join để lấy Collector và Vehicle
 				var group = _collectionGroups.FirstOrDefault(g => g.Id == route.CollectionGroupId);
@@ -328,6 +332,7 @@ namespace ElecWasteCollection.Application.Services
 					LicensePlate = vehicle.Plate_Number,
 					Address = post.Address,
 					BrandName = brand.Name,
+					SubCategoryName = subCategory,
 					Status = route.Status
 				};
 			}

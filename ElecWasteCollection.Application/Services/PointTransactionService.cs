@@ -20,12 +20,30 @@ namespace ElecWasteCollection.Application.Services
 			_userPointService = userPointService;
 		}
 
+		public List<PointTransactionModel> GetAllPointHistoryByUserId(Guid id)
+		{
+			var result = pointTransactions.Where(x => x.UserId == id).Select(pt => new PointTransactionModel
+			{
+				PointTransactionId = pt.PointTransactionId,
+				PostId = pt.PostId,
+				ProductId = pt.ProductId,
+				UserId = pt.UserId,
+				Desciption = pt.Desciption,
+				TransactionType = pt.TransactionType,
+				Point = pt.Point,
+				CreatedAt = pt.CreatedAt
+			}).ToList();
+
+			return result;
+		}
+
 		public Guid ReceivePointFromCollectionPoint(CreatePointTransactionModel createPointTransactionModel)
 		{
 			var points = new PointTransactions
 			{
 				PointTransactionId = Guid.NewGuid(),
 				PostId = createPointTransactionModel.PostId,
+				ProductId = createPointTransactionModel.ProductId,
 				UserId = createPointTransactionModel.UserId,
 				Desciption = createPointTransactionModel.Desciption,
 				Point = createPointTransactionModel.Point,

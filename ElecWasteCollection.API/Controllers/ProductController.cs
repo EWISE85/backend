@@ -101,5 +101,15 @@ namespace ElecWasteCollection.API.Controllers
 				return StatusCode(500, new { message = "Lỗi khi gửi thông báo", error = ex.Message });
 			}
 		}
+		[HttpGet("{id}")]
+		public IActionResult GetProductDetailById(Guid id)
+		{
+			var productDetail = _productService.GetProductDetailById(id);
+			if (productDetail == null)
+			{
+				return NotFound("Product not found.");
+			}
+			return Ok(productDetail);
+		}
 	}
 }

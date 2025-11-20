@@ -10,5 +10,7 @@ namespace ElecWasteCollection.Application.IServices
 	public interface IPointTransactionService
 	{
 		Guid ReceivePointFromCollectionPoint(CreatePointTransactionModel createPointTransactionModel);
+
+		List<PointTransactionModel> GetAllPointHistoryByUserId(Guid id);
 	}
 }

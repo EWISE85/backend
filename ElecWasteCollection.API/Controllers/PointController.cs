@@ -35,6 +35,12 @@ namespace ElecWasteCollection.API.Controllers
 			var result = _pointTransactionService.ReceivePointFromCollectionPoint(model);
 			return Ok(result);
 		}
+		[HttpGet("points-transaction/{userId}")]
+		public IActionResult GetPointTransactionByUserId([FromRoute] Guid userId)
+		{
+			var pointTransactions = _pointTransactionService.GetAllPointHistoryByUserId(userId);
+			return Ok(pointTransactions);
+		}
 
 	}
 }
