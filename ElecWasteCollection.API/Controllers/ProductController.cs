@@ -11,9 +11,11 @@ namespace ElecWasteCollection.API.Controllers
 	public class ProductController : ControllerBase
 	{
 		private readonly IProductService _productService;
-		public ProductController(IProductService productService)
+		private readonly IShippingNotifierService _shippingNotifierService;
+		public ProductController(IProductService productService, IShippingNotifierService shippingNotifierService)
 		{
 			_productService = productService;
+			_shippingNotifierService = shippingNotifierService;
 		}
 		[HttpGet("qrcode/{qrcode}")]
 		public IActionResult GetProductByQrCode(string qrcode)
@@ -82,6 +84,22 @@ namespace ElecWasteCollection.API.Controllers
 		{
 			var products = _productService.GetAllProductsByUserId(userId);
 			return Ok(products);
+		}
+		[HttpPost("notify-arrival/{productId}")]
+		public async Task<IActionResult> NotifyCollectorArrival(Guid productId)
+		{
+			try
+			{
+				// 3. Gọi hàm bắn thông báo Real-time
+				await _shippingNotifierService.NotifyUserOfCollectorArrival(productId);
+
+				return Ok(new { message = "Đã gửi thông báo đến khách hàng thành công!" });
+			}
+			catch (Exception ex)
+			{
+				// Xử lý lỗi nếu có
+				return StatusCode(500, new { message = "Lỗi khi gửi thông báo", error = ex.Message });
+			}
 		}
 	}
 }

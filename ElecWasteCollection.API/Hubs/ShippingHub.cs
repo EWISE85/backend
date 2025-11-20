@@ -10,5 +10,11 @@ namespace ElecWasteCollection.API.Hubs
 			await Groups.AddToGroupAsync(Context.ConnectionId, groupName);
 		}
 
+		public async Task JoinRouteGroup(string productId)
+		{
+			// Đưa ConnectionId hiện tại vào group có tên là ID của sản phẩm
+			await Groups.AddToGroupAsync(Context.ConnectionId, productId);
+		}
+
 	}
 }

@@ -112,7 +112,8 @@ namespace ElecWasteCollection.Application.Services
 				var model = new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
-					PackageName = pkg.PackageName, 
+					PackageName = pkg.PackageName,
+					Status = pkg.Status,
 					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
 					Products = productDetails
 				};

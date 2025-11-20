@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Domain.Entities;
 using Microsoft.AspNetCore.SignalR;
 
 namespace ElecWasteCollection.API.Hubs
@@ -17,6 +18,16 @@ namespace ElecWasteCollection.API.Hubs
 			await _hubContext.Clients
 				.Group(shipperGroup)
 				.SendAsync("ReceiveConfirmation", collectionRouteId, status);
+		}
+
+		public async Task NotifyUserOfCollectorArrival(Guid ProductId)
+		{
+			await _hubContext.Clients.Group(ProductId.ToString())
+				.SendAsync("ShowConfirmButton", new
+				{
+					Message = "Nhân viên thu gom đã đến. Vui lòng xác nhận!",
+					ProductId = ProductId
+				});
 		}
 	}
 }
