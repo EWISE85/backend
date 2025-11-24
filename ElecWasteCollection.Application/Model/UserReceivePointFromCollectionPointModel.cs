@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Application.Model
     public class UserReceivePointFromCollectionPointModel
     {
 		public Guid ProductId { get; set; }
-		public string Description { get; set; }
+		public string? Description { get; set; }
 
 		public double Point { get; set; }
 	}

@@ -8,7 +8,7 @@ namespace ElecWasteCollection.Application.Model
 {
     public class CreateProductAtWarehouseModel
     {
-		public Guid SenderId { get; set; }
+		public Guid? SenderId { get; set; }
 		//public string Name { get; set; }
 		public string Description { get; set; }
 

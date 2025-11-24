@@ -73,14 +73,17 @@ namespace ElecWasteCollection.Application.Services
 				};
 				productImages.Add(newPostImage);
 			}
-			var pointTransaction = new CreatePointTransactionModel
+			if(createProductRequest.SenderId != null)
 			{
-				UserId = createProductRequest.SenderId,
-				Point = createProductRequest.Point,
-				ProductId = newProduct.Id,
-				Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
-			};
-			_pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
+				var pointTransaction = new CreatePointTransactionModel
+				{
+					UserId = createProductRequest.SenderId.Value,
+					Point = createProductRequest.Point,
+					ProductId = newProduct.Id,
+					Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
+				};
+				_pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
+			}
 			return new ProductDetailModel
 			{
 				ProductId = newProduct.Id,
@@ -390,13 +393,22 @@ namespace ElecWasteCollection.Application.Services
 			{
 				return false;
 			}
+			var description = "";
+			if(model.Description != null)
+			{
+				description = model.Description;
+			}
+			else
+			{
+				description = "Điểm nhận được khi sản phẩm về đến kho";
+			}
 			var pointTransaction = new CreatePointTransactionModel
 			{
 				PostId = post.Id,
 				UserId = post.SenderId,
 				ProductId = model.ProductId,
 				Point = model.Point,
-				Desciption = model.Description,
+				Desciption = description,
 			};
 			product.Status = status;
 			var newHistory = new ProductStatusHistory
