@@ -734,7 +734,7 @@ namespace ElecWasteCollection.Application.Services
 			var newPost = new Post
 			{
 				Id = Guid.NewGuid(),
-				SenderId = createPostRequest.SenderId,
+				SenderId = createPostRequest.SenderId.Value,
 				//Name = createPostRequest.Name,
 				Date = DateTime.Now,
 				Description = string.Empty,
