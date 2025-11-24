@@ -344,7 +344,7 @@ namespace ElecWasteCollection.Application.Data
 		public static List<Products> products = new List<Products>
 		{
             // --- HÔM QUA (0-4) ---
-            new Products { Id = prodIds[0], CategoryId = cat_Tivi, SizeTierId = st_Tivi_TrungBinh, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đã đóng gói", Description = "Hỏng màn hình", QRCode = "product1" },
+            new Products { Id = prodIds[0], CategoryId = cat_Tivi, SizeTierId = st_Tivi_TrungBinh, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đã đóng thùng", Description = "Hỏng màn hình", QRCode = "product1" },
 			new Products { Id = prodIds[1], CategoryId = cat_TuLanh, SizeTierId = st_TuLanh_Lon, BrandId = brand_Pana_TuLanh, PackageId = null,  Status = "Đã thu gom", Description = "Không lạnh ngăn mát", QRCode = "product2" },
 			new Products { Id = prodIds[2], CategoryId = cat_Laptop, SizeTierId = st_Laptop_MongNhe, BrandId = brand_Acer_Laptop, PackageId = null, Status = "Hủy bỏ", Description = "Khách hủy yêu cầu" },
 			new Products { Id = prodIds[3], CategoryId = cat_QuatDien, SizeTierId = null, BrandId = brand_Asia_Quat, PackageId = null,  Status = "Đã thu gom", Description = "Gãy cánh", QRCode = "product4" },
