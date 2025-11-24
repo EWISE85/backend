@@ -244,11 +244,22 @@ namespace ElecWasteCollection.Application.Services
 		{
 			// SỬA LỖI: Dùng _collectionRoutes
 			var route = _collectionRoutes.FirstOrDefault(r => r.CollectionRouteId == collectionRouteId);
-			if (route != null)
-			{
+			if (route == null) return false;
+			var group = _collectionGroups.FirstOrDefault(g => g.Id == route.CollectionGroupId);
+			if (group == null) return false;
+
+			var shift = _shifts.FirstOrDefault(s => s.Id == group.Shift_Id);
+			if (shift == null) return false;
+
+			Guid collectorId = shift.CollectorId;
+			
 				if (isSkip)
 				{
 					route.Status = "User_Skip";
+					await _notifierService.NotifyShipperOfConfirmation(
+					collectorId.ToString(),
+					collectionRouteId,
+					route.Status);
 					return true;
 				}
 				if (isConfirm)
@@ -260,13 +271,7 @@ namespace ElecWasteCollection.Application.Services
 					route.Status = "User_Reject";
 				}
 
-				var group = _collectionGroups.FirstOrDefault(g => g.Id == route.CollectionGroupId);
-				if (group == null) return false;
-
-				var shift = _shifts.FirstOrDefault(s => s.Id == group.Shift_Id);
-				if (shift == null) return false; 
-
-				Guid collectorId = shift.CollectorId;
+				
 
 				await _notifierService.NotifyShipperOfConfirmation(
 					collectorId.ToString(),
@@ -274,9 +279,9 @@ namespace ElecWasteCollection.Application.Services
 					route.Status);
 
 				return true;
-			}
+			
 
-			return false;
+			
 		}
 
 		// === HÀM HELPER MỚI (để GetAllRoutes và GetRouteById sử dụng) ===
