@@ -543,6 +543,7 @@ namespace ElecWasteCollection.Application.Services
 				Address = post.Address,
 				Schedule = schedule,
 				Attributes = productAttributes,
+				RejectMessage = post.RejectMessage,
 
 				// === Dữ liệu từ Route/Shift ===
 				Collector = collector,
