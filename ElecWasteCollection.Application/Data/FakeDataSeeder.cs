@@ -125,7 +125,7 @@ namespace ElecWasteCollection.Application.Data
         static FakeDataSeeder()
         {
             InitPostImages();
-            InitHistories();
+            
             //AddPostsForDay16();
             //AddPostsForDay22();
 
@@ -492,19 +492,59 @@ namespace ElecWasteCollection.Application.Data
 		// =========================================================================
 		// 8. HISTORY & POINTS
 		// =========================================================================
-		public static List<ProductStatusHistory> productStatusHistories = new();
-
-		static void InitHistories()
+		public static List<ProductStatusHistory> productStatusHistories = new()
 		{
-			foreach (var route in collectionRoutes)
-			{
-				if (route.Status == "Hoàn thành")
-				{
-					var prodId = posts.First(p => p.Id == route.PostId).ProductId;
-					productStatusHistories.Add(new ProductStatusHistory { ProductStatusHistoryId = Guid.NewGuid(), ProductId = prodId, Status = "collected", StatusDescription = "Đã thu gom", ChangedAt = route.CollectionDate.ToDateTime(route.Actual_Time.Value) });
-				}
-			}
-		}
+			new ProductStatusHistory
+	{
+		ProductStatusHistoryId = Guid.NewGuid(),
+		ProductId = prodIds[0],
+		Status = "Chờ duyệt",
+		StatusDescription = "Người dùng tạo yêu cầu thu gom.",
+		ChangedAt = _vnNow.AddDays(-3) // Khớp với ngày tạo Post
+    },
+
+    // 2. Admin duyệt bài - Chuyển sang Chờ thu gom
+    new ProductStatusHistory
+	{
+		ProductStatusHistoryId = Guid.NewGuid(),
+		ProductId = prodIds[0],
+		Status = "Chờ thu gom",
+		StatusDescription = "Admin đã duyệt yêu cầu. Đang điều phối người thu gom.",
+		ChangedAt = _vnNow.AddDays(-2).AddHours(2) // Duyệt sau khi đăng khoảng 1 ngày
+    },
+
+    // 3. Collector đến lấy hàng - Đã thu gom
+    new ProductStatusHistory
+	{
+		ProductStatusHistoryId = Guid.NewGuid(),
+		ProductId = prodIds[0],
+		Status = "Đã thu gom",
+		StatusDescription = "Đã thu gom thành công tại địa chỉ của khách hàng.",
+		ChangedAt = _vnNow.AddDays(-1).AddHours(9) // Thu gom vào khung giờ sáng hôm qua
+    },
+
+    // 4. Mang về kho tập kết - Nhập kho
+    new ProductStatusHistory
+	{
+		ProductStatusHistoryId = Guid.NewGuid(),
+		ProductId = prodIds[0],
+		Status = "Nhập kho",
+		StatusDescription = "Sản phẩm đã được vận chuyển về kho trung tâm.",
+		ChangedAt = _vnNow.AddDays(-1).AddHours(14) // Về kho vào chiều hôm qua
+    },
+
+    // 5. Trạng thái hiện tại - Đã đóng gói (trùng với status trong object Products)
+    new ProductStatusHistory
+	{
+		ProductStatusHistoryId = Guid.NewGuid(),
+		ProductId = prodIds[0],
+		Status = "Đã đóng thùng",
+		StatusDescription = "Sản phẩm đã được phân loại và đóng gói kỹ càng.",
+		ChangedAt = _vnNow.AddHours(-2) // Mới đóng gói cách đây 2 tiếng
+    }
+		};
+		
+		
 
 
         public static List<PointTransactions> points = new List<PointTransactions>()

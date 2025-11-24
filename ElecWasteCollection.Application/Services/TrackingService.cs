@@ -80,20 +80,11 @@ namespace ElecWasteCollection.Application.Services
 		//	return Task.FromResult(sortedTimeline);
 		//}
 
-		public Task<List<CollectionTimelineModel>> GetFullTimelineByPostIdAsync(Guid postId)
+		public Task<List<CollectionTimelineModel>> GetFullTimelineByProductIdAsync(Guid productId)
 		{
-			// 1. Tìm Post gốc
-			var post = _posts.FirstOrDefault(p => p.Id == postId);
-			if (post == null)
-			{
-				// Không tìm thấy post, trả về list rỗng
-				return Task.FromResult(new List<CollectionTimelineModel>());
-			}
+			
 
-			// 2. Lấy ProductId từ Post
-			var productId = post.ProductId;
-
-			// 3. Lấy TẤT CẢ lịch sử của sản phẩm đó
+			
 			var timeline = _productStatusHistories
 				.Where(h => h.ProductId == productId) // Lọc theo ProductId
 				.OrderBy(h => h.ChangedAt)            // Sắp xếp theo thời gian

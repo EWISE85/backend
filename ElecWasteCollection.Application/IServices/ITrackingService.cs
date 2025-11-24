@@ -12,6 +12,6 @@ namespace ElecWasteCollection.Application.IServices
 		//Task<List<CollectionTimelineModel>> GetCollectionTimelineAsync(Guid collectionRouteId);
 		//Task<List<ProductHistoryModel>> GetProductHistoryAsync(Guid productId);
 
-		Task<List<CollectionTimelineModel>> GetFullTimelineByPostIdAsync(Guid postId);
+		Task<List<CollectionTimelineModel>> GetFullTimelineByProductIdAsync(Guid productId);
 	}
 }

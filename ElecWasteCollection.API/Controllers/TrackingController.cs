@@ -25,10 +25,10 @@ namespace ElecWasteCollection.API.Controllers
 		//	var history = await _trackingService.GetProductHistoryAsync(productId);
 		//	return Ok(history);
 		//}
-		[HttpGet("post/{postId}/timeline")]
-		public async Task<IActionResult> GetFullPostTimeline([FromRoute]Guid postId)
+		[HttpGet("product/{productId}/timeline")]
+		public async Task<IActionResult> GetFullPostTimeline([FromRoute]Guid productId)
 		{
-			var timeline = await _trackingService.GetFullTimelineByPostIdAsync(postId);
+			var timeline = await _trackingService.GetFullTimelineByProductIdAsync(productId);
 
 			if (timeline == null || !timeline.Any())
 			{
