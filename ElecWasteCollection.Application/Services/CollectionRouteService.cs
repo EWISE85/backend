@@ -24,6 +24,7 @@ namespace ElecWasteCollection.Application.Services
 		private readonly List<Brand> _brand = FakeDataSeeder.brands;
 		private readonly List<Category> _category = FakeDataSeeder.categories;
 		private readonly List<ProductImages> _productImages = FakeDataSeeder.productImages;
+		private readonly List<UserAddress> _userAddress = FakeDataSeeder.userAddress;
 
 		public CollectionRouteService(IShippingNotifierService notifierService)
 		{
@@ -202,7 +203,7 @@ namespace ElecWasteCollection.Application.Services
 				// SỬA LỖI: Dùng post.SenderId (thay vì post.S)
 				var sender = _users.FirstOrDefault(u => u.UserId == post.SenderId);
 				if (sender == null) return null;
-
+				var userAddress = _userAddress.FirstOrDefault(ua => ua.Address == post.Address);
 				var pickUpImages = _productImages
 					.Where(img => img.ProductId == post.ProductId)
 					.Select(img => img.ImageUrl)
@@ -244,6 +245,8 @@ namespace ElecWasteCollection.Application.Services
 					PickUpItemImages = pickUpImages,
 					LicensePlate = vehicle?.Plate_Number ?? "N/A",
 					Address = post.Address,
+					Iat = userAddress.Iat.Value ,
+					Ing =userAddress.Ing.Value,
 					Status = r.Status
 				};
 			})
