@@ -42,9 +42,9 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		public bool DeleteUserAddress(Guid userId)
+		public bool DeleteUserAddress(Guid userAddressId)
 		{
-			var address = _addresses.FirstOrDefault(a => a.UserId == userId);
+			var address = _addresses.FirstOrDefault(a => a.UserAddressId == userAddressId);
 			if (address == null)
 			{
 				return false; // Address not found
@@ -72,14 +72,14 @@ namespace ElecWasteCollection.Application.Services
 			return response;
 		}
 
-		public bool UpdateUserAddress(Guid userId, CreateUpdateUserAddress update)
+		public bool UpdateUserAddress(Guid userAddressId, CreateUpdateUserAddress update)
 		{
-			var userExists = _user.Any(u => u.UserId == userId);
+			var userExists = _user.Any(u => u.UserId == update.UserId);
 			if (!userExists)
 			{
 				return false; // User does not exist
 			}
-			var address = _addresses.FirstOrDefault(a => a.UserId == userId);
+			var address = _addresses.FirstOrDefault(a => a.UserAddressId == userAddressId);
 			if (address == null)
 			{
 				return false; // Address not found
