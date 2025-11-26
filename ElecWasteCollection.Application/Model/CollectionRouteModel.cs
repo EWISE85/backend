@@ -35,7 +35,9 @@ namespace ElecWasteCollection.Application.Model
 
 		public string Address { get; set; }
 
+		public double Iat { get; set; }
 
+		public double Ing { get; set; }
 
 		public string Status { get; set; }
 	}
