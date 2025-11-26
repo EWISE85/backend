@@ -33,10 +33,10 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "User address added successfully." });
 		}
-		[HttpDelete("{userId}")]
-		public IActionResult DeleteUserAddress([FromRoute] Guid userId)
+		[HttpDelete("{userAddressId}")]
+		public IActionResult DeleteUserAddress([FromRoute] Guid userAddressId)
 		{
-			var result = _userAddressService.DeleteUserAddress(userId);
+			var result = _userAddressService.DeleteUserAddress(userAddressId);
 			if (!result)
 			{
 				return NotFound(new { message = "User address not found." });
@@ -53,8 +53,8 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(address);
 		}
-		[HttpPut("{userId}")]
-		public IActionResult UpdateUserAddress([FromRoute] Guid userId, [FromBody] CreateUpdateUserAddressRequest update)
+		[HttpPut("{userAddressId}")]
+		public IActionResult UpdateUserAddress([FromRoute] Guid userAddressId, [FromBody] CreateUpdateUserAddressRequest update)
 		{
 			var model = new CreateUpdateUserAddress
 			{
@@ -64,7 +64,7 @@ namespace ElecWasteCollection.API.Controllers
 				Ing = update.Ing,
 				isDefault = update.isDefault
 			};
-			var result = _userAddressService.UpdateUserAddress(userId, model);
+			var result = _userAddressService.UpdateUserAddress(userAddressId, model);
 			if (!result)
 			{
 				return NotFound(new { message = "User address not found." });
