@@ -1,6 +1,5 @@
-﻿using ElecWasteCollection.Application.IServices;
-using ElecWasteCollection.Application.Model;
-using ElecWasteCollection.Application.Services;
+﻿using ElecWasteCollection.Application.IServices.IAssignPost;
+using ElecWasteCollection.Application.Model.AssignPost;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
@@ -24,15 +23,51 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpPost("team-ratio")]
-        public async Task<IActionResult> UpdateRatio(TeamRatioConfigRequest req)
-            => Ok(await _ratioService.UpdateRatios(req));
+        public async Task<IActionResult> UpdateRatio([FromBody] TeamRatioConfigRequest req)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var data = await _ratioService.UpdateRatios(req);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
 
         [HttpPost("team")]
-        public async Task<IActionResult> AssignTeam(AssignTeamRequest req)
-            => Ok(await _teamService.AssignPostsToTeamsAsync(req));
+        public async Task<IActionResult> AssignTeam([FromBody] AssignTeamRequest req)
+        {
+            if (!ModelState.IsValid)
+                return ValidationProblem(ModelState);
+
+            try
+            {
+                var data = await _teamService.AssignPostsToTeamsAsync(req);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
 
         [HttpPost("smallpoint/{teamId}")]
         public async Task<IActionResult> AssignSmallPoint(int teamId)
-            => Ok(await _smallPointService.AssignSmallPointsAsync(teamId));
+        {
+            try
+            {
+                var data = await _smallPointService.AssignSmallPointsAsync(teamId);
+                return Ok(data);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { error = ex.Message });
+            }
+        }
     }
 }

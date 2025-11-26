@@ -5,7 +5,9 @@ using ElecWasteCollection.Application.Interfaces;
 
 //using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Services;
+using ElecWasteCollection.Application.Services.AssignPostService;
 using ElecWasteCollection.Infrastructure.ExternalService;
 using ElecWasteCollection.Infrastructure.Implementations;
 using FirebaseAdmin;
@@ -81,9 +83,8 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IPointTransactionService, PointTransactionService>();
 			builder.Services.AddScoped<IUserPointService, UserPointService>();
 			builder.Services.AddScoped<IImageComparisonService, ImageComparisonService>();
-			builder.Services.AddScoped<ITeamRatioService, TeamRatioService>();
-            builder.Services.AddScoped<ITeamAssignService, TeamAssignService>();
-            builder.Services.AddScoped<ISmallPointAssignService, SmallPointAssignService>();
+			builder.Services.AddScoped<ISettingsService, SettingsService>();
+            builder.Services.AddScoped<ITeamRatioService, TeamRatioService>();
 			builder.Services.AddScoped<IUserAddressService, UserAddressService>();
             builder.Services.AddCors(options =>
 			{

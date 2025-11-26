@@ -1,7 +1,9 @@
 ﻿using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
 
 namespace ElecWasteCollection.Application.Services

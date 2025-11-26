@@ -405,7 +405,8 @@ namespace ElecWasteCollection.Application.Services
                             Volume = attributes.volume,
 
                             Lat = userAddress.Iat ?? point.Latitude,
-                            Lng = userAddress.Ing ?? point.Longitude
+                            Lng = userAddress.Ing ?? point.Longitude,
+                            Address = userAddress?.Address ?? p.Address
                         });
                     }
                 }
@@ -474,7 +475,7 @@ namespace ElecWasteCollection.Application.Services
                             PickupOrder = routeNodes.Count + 1,
                             PostId = chosen.Post.Id,
                             UserName = chosen.User.Name,
-                            Address = chosen.User.Address,
+                            Address = chosen.Address,
                             DistanceKm = best.Dist,
                             Schedule = chosen.Post.ScheduleJson,
                             EstimatedArrival = best.ActualStart.ToString("HH:mm"),
