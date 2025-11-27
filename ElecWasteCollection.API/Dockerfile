@@ -1,44 +1,45 @@
-﻿# Stage 1: Build - Sử dụng SDK để khôi phục và biên dịch
+﻿# ======================= Stage 1: Build ===========================
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Sao chép các tệp .csproj và file solution (.sln) nếu có
+# Copy csproj và restore từng dự án để tối ưu cache layer
 COPY ElecWasteCollection.API/*.csproj ./ElecWasteCollection.API/
 COPY ElecWasteCollection.Application/*.csproj ./ElecWasteCollection.Application/
 COPY ElecWasteCollection.Domain/*.csproj ./ElecWasteCollection.Domain/
 COPY ElecWasteCollection.Infrastructure/*.csproj ./ElecWasteCollection.Infrastructure/
+
+# Nếu có file solution (.sln) hãy copy luôn
 # COPY ElecWasteCollection.sln .
 
-# Chạy restore (sử dụng dự án API)
+# Restore (ưu tiên folder API là entrypoint)
 RUN dotnet restore ElecWasteCollection.API/ElecWasteCollection.API.csproj
 
-# Sao chép toàn bộ mã nguồn
+# Copy toàn bộ source (sau restore để tối ưu cache)
 COPY . .
 
-# Chuyển context sang dự án API
+# Chuyển context vào folder API
 WORKDIR /src/ElecWasteCollection.API
 
-# Chạy lệnh PUBLISH
+# Publish (kiểu self-contained false để nhẹ, đã kèm native OpenCvSharp so)
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
-# ---
+# ======================= Stage 2: Runtime ===========================
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-focal AS runtime
+# focal = Ubuntu 20.04, TƯƠNG THÍCH native OpenCvSharp for Linux!
 
-# Stage 2: Runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
-
-# === CẬP NHẬT: CÀI ĐẶT ĐẦY ĐỦ THƯ VIỆN CHO OPENCV ===
+# Cài thư viện native cần thiết cho OpenCvSharp
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgdiplus \
     libgl1-mesa-glx \
     libglib2.0-0 \
     libgtk2.0-0 \
     libxext6 \
-    libxrender1
-# ===================================================
+    libxrender1 \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-# SỬA LỖI CÚ PHÁP: DÙNG --from=build (DẤU BẰNG)
+# Copy from build stage
 COPY --from=build /app/publish .
 
 EXPOSE 8080

@@ -527,7 +527,7 @@ namespace ElecWasteCollection.Application.Services
 				BrandName = brand?.Name ?? "Không rõ",
 				Description = product.Description,
 				ProductImages = imageUrls,
-				Status = post.Status,
+				Status = product.Status,
 				SizeTierName = sizeTierName,
 				EstimatePoint = post.EstimatePoint,
 				Sender = sender,
