@@ -8,6 +8,6 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IImageComparisonService
 	{
-		Task<double> CompareImageSimilarityAsync(string url1, string url2);
+		Task<bool> CompareImagesSimilarityAsync(List<string> urls1, List<string> urls2);
 	}
 }

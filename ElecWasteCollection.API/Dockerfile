@@ -12,15 +12,6 @@ RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libopencv-dev \
-    libgdiplus \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
-    libgtk2.0-0 \
-    libxext6 \
-    libxrender1 \
-    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 COPY --from=build /app/publish .
