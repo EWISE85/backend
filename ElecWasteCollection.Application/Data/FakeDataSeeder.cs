@@ -1,7 +1,6 @@
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
-using OpenCvSharp.Features2D;
 using System;
 using System.Collections.Generic;
 using System.Linq;

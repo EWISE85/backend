@@ -9,17 +9,22 @@
   <ItemGroup>
     <Content Remove="C:\Users\ASUS\.nuget\packages\apiverve.api.profanityfilter\1.1.9\contentFiles\any\net6.0\favicon.ico" />
   </ItemGroup>
+	<ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+		<PackageReference Include="Emgu.CV.runtime.windows" Version="4.12.0.5764" />
+	</ItemGroup>
 
+	<ItemGroup Condition="'$(OS)' == 'Linux'">
+		<PackageReference Include="Emgu.CV.runtime.ubuntu-x64" Version="4.12.0.5764" />
+	</ItemGroup>
   <ItemGroup>
     <PackageReference Include="APIVerve.API.ProfanityFilter" Version="1.1.9" />
+    <PackageReference Include="Emgu.CV" Version="4.12.0.5764" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
 	  <PackageReference Include="FirebaseAdmin" Version="3.4.0" />
 	  <PackageReference Include="Google.Apis.Auth" Version="1.71.0" />
 	  <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
 	  <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
-	  <PackageReference Include="OpenCvSharp4" Version="4.10.0.20240616" />
-	  <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20240616" Condition="'$(OS)' == 'Windows_NT'" />
 	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
   </ItemGroup>
   <ItemGroup>

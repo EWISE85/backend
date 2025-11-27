@@ -227,6 +227,10 @@ namespace ElecWasteCollection.Application.Services
 					UserId = sender.UserId,
 					Name = sender.Name,
 					Email = sender.Email,
+					Avatar = sender.Avatar,
+					Phone = sender.Phone,
+					Role = sender.Role,
+					SmallCollectionPointId = sender.SmallCollectionPointId,
 				};
 				return new CollectionRouteModel
 				{
@@ -312,6 +316,7 @@ namespace ElecWasteCollection.Application.Services
 
 				var sender = _users.FirstOrDefault(u => u.UserId == post.SenderId);
 				if (sender == null) return null;
+				var senderAddress = _userAddress.FirstOrDefault(a => a.Address == post.Address);
 
 				var pickUpImages = _productImages
 					.Where(img => img.ProductId == post.ProductId)
@@ -350,6 +355,10 @@ namespace ElecWasteCollection.Application.Services
 					UserId = sender.UserId,
 					Name = sender.Name,
 					Email = sender.Email,
+					Avatar = sender.Avatar,
+					Phone = sender.Phone,
+					Role = sender.Role,
+					SmallCollectionPointId = sender.SmallCollectionPointId,
 				};
 				return new CollectionRouteModel
 				{
@@ -368,6 +377,8 @@ namespace ElecWasteCollection.Application.Services
 					Address = post.Address,
 					BrandName = brand.Name,
 					SubCategoryName = subCategory,
+					Iat = senderAddress.Iat.Value,
+					Ing = senderAddress.Ing.Value,
 					Status = route.Status
 				};
 			}

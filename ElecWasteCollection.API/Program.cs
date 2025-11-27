@@ -82,7 +82,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IBrandService, BrandService>();
 			builder.Services.AddScoped<IPointTransactionService, PointTransactionService>();
 			builder.Services.AddScoped<IUserPointService, UserPointService>();
-			builder.Services.AddScoped<IImageComparisonService, ImageComparisonService>();
+			//builder.Services.AddScoped<IImageComparisonService, ImageComparisonService>();
 			builder.Services.AddScoped<ISettingsService, SettingsService>();
             builder.Services.AddScoped<ITeamRatioService, TeamRatioService>();
 			builder.Services.AddScoped<IUserAddressService, UserAddressService>();
