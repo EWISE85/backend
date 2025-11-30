@@ -526,7 +526,6 @@ namespace ElecWasteCollection.Application.Services
 				Description = product.Description,
 				ProductImages = imageUrls,
 				Status = product.Status,
-				SizeTierName = sizeTierName,
 				EstimatePoint = post.EstimatePoint,
 				Sender = sender,
 				Address = post.Address,
