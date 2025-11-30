@@ -24,7 +24,6 @@ namespace ElecWasteCollection.Application.Model
 		public Guid SubCategoryId { get; set; }
 		public Guid BrandId { get; set; }
 
-		public Guid? SizeTierId { get; set; }
 
 		public List<ProductValueModel>? Attributes { get; set; }
 	}
@@ -32,6 +31,8 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Guid AttributeId { get; set; }
 
-		public string Value { get; set; }
+		public Guid? OptionId { get; set; }
+
+		public double? Value { get; set; }
 	}
 }

@@ -14,7 +14,7 @@ namespace ElecWasteCollection.Application.Services
 	public class ProductService : IProductService
 	{
 		private readonly List<Products> _products = FakeDataSeeder.products;
-		private readonly List<SizeTier> _sizeTiers = FakeDataSeeder.sizeTiers;
+		//private readonly List<SizeTier> _sizeTiers = FakeDataSeeder.sizeTiers;
 		private readonly List<ProductValues> _productValues = FakeDataSeeder.productValues;
 		private readonly List<Attributes> _attributes = FakeDataSeeder.attributes;
 		private readonly List<Brand> _brands = FakeDataSeeder.brands;
@@ -31,11 +31,13 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ICollectorService _collectorService;
 		private readonly List<PointTransactions> pointTransactions = FakeDataSeeder.points;
 		private readonly List<Packages> _package = FakeDataSeeder.packages;
-		public ProductService(IPointTransactionService pointTransactionService, IUserService userService, ICollectorService collectorService)
+		private readonly IAttributeOptionService _attributeOptionService;
+		public ProductService(IPointTransactionService pointTransactionService, IUserService userService, ICollectorService collectorService, IAttributeOptionService attributeOptionService)
 		{
 			_pointTransactionService = pointTransactionService;
 			_userService = userService;
 			_collectorService = collectorService;
+			_attributeOptionService = attributeOptionService;
 		}
 		public bool AddPackageIdToProductByQrCode(string qrCode, string? packageId)
 		{
@@ -120,7 +122,7 @@ namespace ElecWasteCollection.Application.Services
 			// 3. Lấy các thông tin tham chiếu (Brand, Category, SizeTier)
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
-			var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
+			//var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
 
 			// 4. Lấy danh sách ảnh (Nếu tìm thấy Post)
 			var imageUrls = new List<string>();
@@ -160,7 +162,7 @@ namespace ElecWasteCollection.Application.Services
 				ProductImages = imageUrls, // Đã bổ sung ảnh
 				QrCode = product.QRCode,
 				Status = product.Status,
-				SizeTierName = sizeTier?.Name, // Có thể null
+				//SizeTierName = sizeTier?.Name, // Có thể null
 				EstimatePoint = point, // Có thể null
 				Attributes = attributesList
 			};
@@ -176,8 +178,8 @@ namespace ElecWasteCollection.Application.Services
 			var productDetails = productsInPackage.Select(p =>
 			{
 				// 3. "Join" bằng tay với SizeTiers
-				var sizeTier = _sizeTiers
-					.FirstOrDefault(st => st.SizeTierId == p.SizeTierId);
+				//var sizeTier = _sizeTiers
+				//	.FirstOrDefault(st => st.SizeTierId == p.SizeTierId);
 				var brand = _brands
 					.FirstOrDefault(b => b.BrandId == p.BrandId);
 				var category = _categories
@@ -209,7 +211,7 @@ namespace ElecWasteCollection.Application.Services
 					CategoryId = category.Id,
 					CategoryName = category.Name,
 					QrCode = p.QRCode,
-					SizeTierName = sizeTier?.Name,
+					//SizeTierName = sizeTier?.Name,
 					Attributes = attributesList,
 					IsChecked = p.isChecked,
 					Status = p.Status
@@ -262,10 +264,9 @@ namespace ElecWasteCollection.Application.Services
 					// 4. Map dữ liệu từ Route -> Post -> Product
 					routeModels = routesInRange.Select(route =>
 					{
-						var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
-						if (post == null) return null;
-						var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
+						var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
 						if (product == null) return null;
+						var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
 
 						return MapToDetailModel(product, post);
 					})
@@ -316,7 +317,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
-			var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
+			//var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
 
 			// Lấy ảnh (chỉ có nếu post tồn tại)
 			var imageUrls = new List<string>();
@@ -356,7 +357,7 @@ namespace ElecWasteCollection.Application.Services
 				ProductImages = imageUrls,
 				QrCode = product.QRCode,
 				Status = product.Status,
-				SizeTierName = sizeTier?.Name,
+				//SizeTierName = sizeTier?.Name,
 				EstimatePoint = post?.EstimatePoint,
 				RealPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.Id)?.Point,
 				Attributes = attributesList
@@ -399,7 +400,6 @@ namespace ElecWasteCollection.Application.Services
 			}
 			var pointTransaction = new CreatePointTransactionModel
 			{
-				PostId = post.Id,
 				UserId = post.SenderId,
 				ProductId = model.ProductId,
 				Point = model.Point,
@@ -455,14 +455,6 @@ namespace ElecWasteCollection.Application.Services
 			// 5. Xử lý SizeTier / Attributes
 			string? sizeTierName = null;
 			List<ProductValueDetailModel>? productAttributes = null;
-
-			if (product.SizeTierId.HasValue)
-			{
-				sizeTierName = _sizeTiers
-					.FirstOrDefault(st => st.SizeTierId == product.SizeTierId.Value)?.Name;
-			}
-			else
-			{
 				productAttributes = _productValues
 					.Where(pv => pv.ProductId == product.Id)
 					.Join(_attributes,
@@ -470,11 +462,14 @@ namespace ElecWasteCollection.Application.Services
 						  attr => attr.Id,
 						  (pv, attr) => new ProductValueDetailModel
 						  {
+							  AttributeId = attr.Id,
 							  AttributeName = attr.Name,
+							  OptionId = pv.AttributeOptionId,
+							  OptionName = _attributeOptionService.GetOptionByOptionId(pv.AttributeOptionId ?? Guid.Empty)?.OptionName,
 							  Value = pv.Value.ToString()
 						  })
 					.ToList();
-			}
+			
 
 			// 6. Xử lý Schedule
 			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -488,16 +483,13 @@ namespace ElecWasteCollection.Application.Services
 			// 7. Lấy ảnh
 			var imageUrls = productImages.Where(pi => pi.ProductId == post.ProductId).Select(pi => pi.ImageUrl).ToList();
 
-			// =================================================================================
-			// 8. TÌM THÔNG TIN LỊCH TRÌNH VÀ COLLECTOR (LOGIC MỚI)
-			// =================================================================================
 
 			CollectorResponse? collector = null;
 			DateOnly? pickUpDate = null;
 			TimeOnly? estimatedTime = null;
 
 			// Bước A: Tìm Route dựa trên PostId
-			var route = _collectionRoutes.FirstOrDefault(r => r.PostId == post.Id);
+			var route = _collectionRoutes.FirstOrDefault(r => r.ProductId == product.Id);
 
 			if (route != null)
 			{

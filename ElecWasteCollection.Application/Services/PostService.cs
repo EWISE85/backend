@@ -21,7 +21,6 @@ namespace ElecWasteCollection.Application.Services
 		private static List<ProductValues> productValues = FakeDataSeeder.productValues;
 		private static List<Category> categories = FakeDataSeeder.categories;
 		//private static List<PostImages> postImages = FakeDataSeeder.postImages;
-		private static List<SizeTier> sizeTiers = FakeDataSeeder.sizeTiers;
 		private static List<Attributes> attributes = FakeDataSeeder.attributes;
 		private static List<Brand> _brands = FakeDataSeeder.brands;
 		private static List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
@@ -51,7 +50,7 @@ namespace ElecWasteCollection.Application.Services
 
 			if (productRequest == null)
 			{
-				return null; 
+				return null;
 			}
 
 			try
@@ -65,37 +64,30 @@ namespace ElecWasteCollection.Application.Services
 					isChecked = false,
 					Status = "Chờ Duyệt"
 				};
+				foreach (var attr in productRequest.Attributes)
+				{
 
-				if (productRequest.SizeTierId.HasValue && productRequest.SizeTierId.Value != Guid.Empty)
-				{
-					newProduct.SizeTierId = productRequest.SizeTierId.Value;
-				}
-				else if (productRequest.Attributes != null && productRequest.Attributes.Any())
-				{
-					foreach (var attr in productRequest.Attributes)
+
+
+					var newProductValue = new ProductValues
 					{
-						
-						double.TryParse(attr.Value, out double parsedValue);
-
-						var newProductValue = new ProductValues
-						{
-							ProductValuesId = Guid.NewGuid(),
-							ProductId = newProduct.Id,
-							AttributeId = attr.AttributeId,
-							Value = parsedValue // Sẽ lưu 0.0 nếu là chữ, an toàn
-						};
-						productValues.Add(newProductValue);
-					}
+						ProductValuesId = Guid.NewGuid(),
+						ProductId = newProduct.Id,
+						AttributeId = attr.AttributeId,
+						AttributeOptionId = attr.OptionId,
+						Value = attr.Value
+					};
+					productValues.Add(newProductValue);
 				}
 
-				
+
+
 
 				// --- BƯỚC 3: Tạo Post (Chưa có ảnh, chưa có status) ---
 				var newPost = new Post
 				{
 					Id = Guid.NewGuid(),
 					SenderId = createPostRequest.SenderId,
-					//Name = createPostRequest.Name,
 					Date = DateTime.Now,
 					Description = string.Empty,
 					Address = createPostRequest.Address,
@@ -114,7 +106,7 @@ namespace ElecWasteCollection.Application.Services
 					var categoryName = category?.Name ?? "unknown";
 
 					var checkTasks = createPostRequest.Images
-						.Select(imageUrl => CheckImageCategoryAsync(imageUrl, categoryName)) 
+						.Select(imageUrl => CheckImageCategoryAsync(imageUrl, categoryName))
 						.ToList();
 
 					var results = await Task.WhenAll(checkTasks);
@@ -133,7 +125,7 @@ namespace ElecWasteCollection.Application.Services
 						_productImages.Add(newPostImage);
 					}
 
-					if (results.All(r => r.IsMatch)) 
+					if (results.All(r => r.IsMatch))
 					{
 						postStatus = "Đã Duyệt";
 						newProduct.Status = "Chờ gom nhóm";
@@ -159,24 +151,12 @@ namespace ElecWasteCollection.Application.Services
 						products.Add(newProduct);
 						_productStatusHistories.Add(history);
 					}
-					
 
-					
+
+
 				}
-				//var containsProfanity = await _profanityChecker.ContainsProfanityAsync(createPostRequest.Name);
-				//if (containsProfanity)
-				//{
-				//	newPost.CheckMessage.Add("Tiêu đề bài đăng chứa từ ngữ không phù hợp.");
-				//	postStatus = "Chờ Duyệt";
-				//}
-				//var containsPhoneNumber = await _profanityChecker.ContainsPhoneNumberAsync(createPostRequest.Name);
-				//if (containsPhoneNumber)
-				//{
-				//	newPost.CheckMessage.Add("Tiêu đề bài đăng chứa số điện thoại.");
-				//	postStatus = "Chờ Duyệt";
-				//}
 				newPost.Status = postStatus;
-				posts.Add(newPost); 
+				posts.Add(newPost);
 
 				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 				return MapToPostDetailModel(newPost, options);
@@ -428,7 +408,6 @@ namespace ElecWasteCollection.Application.Services
 			return new PostSummaryModel
 			{
 				Id = post.Id,
-				Name = post.Name,
 				Category = finalCategoryName, // <--- SỬ DỤNG TÊN ĐÃ QUA XỬ LÝ
 				Status = post.Status,
 				Date = post.Date,
@@ -463,28 +442,25 @@ namespace ElecWasteCollection.Application.Services
 				productDetailModel.BrandName = brand?.Name ?? "Không rõ";
 
 				// Kiểm tra xem người dùng dùng SizeTier hay Attributes
-				if (product.SizeTierId.HasValue)
-				{
-					productDetailModel.SizeTierName = sizeTiers
-						.FirstOrDefault(st => st.SizeTierId == product.SizeTierId.Value)?.Name;
-				}
-				else
-				{
-					// Lấy danh sách Attributes chi tiết
-					productDetailModel.Attributes = productValues
-						.Where(pv => pv.ProductId == product.Id)
-						.Join(attributes,
-							  pv => pv.AttributeId,
-							  attr => attr.Id,
-							  (pv, attr) => new ProductValueDetailModel
-							  {
-								  AttributeName = attr.Name,
-								  Value = pv.Value.ToString(),
-								  //// GHI CHÚ: Bảng Attributes của bạn thiếu Unit
-								  //Unit = ""
-							  })
-						.ToList();
-				}
+
+				// Lấy danh sách Attributes chi tiết
+				productDetailModel.Attributes = productValues
+					.Where(pv => pv.ProductId == product.Id)
+					.Join(attributes,
+						  pv => pv.AttributeId,
+						  attr => attr.Id,
+						  (pv, attr) => new ProductValueDetailModel
+						  {
+							  AttributeName = attr.Name,
+							  AttributeId = attr.Id,
+							  OptionId = pv.AttributeOptionId,
+							  OptionName = attr.AttributeOptions?
+					.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId)?
+					.OptionName,
+							  Value = pv.Value.ToString(),
+						  })
+					.ToList();
+
 			}
 
 			// Deserialize Lịch hẹn
@@ -550,7 +526,6 @@ namespace ElecWasteCollection.Application.Services
 			var post = posts.FirstOrDefault(p => p.Id == postId);
 			if (post != null)
 			{
-				post.Name = await _profanityChecker.CensorTextAsync(post.Name);
 				post.Status = "Đã Duyệt";
 				var history = new ProductStatusHistory
 				{
@@ -596,8 +571,9 @@ namespace ElecWasteCollection.Application.Services
 
 		public Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model)
 		{
-			
-			var queryablePosts = posts.Select(post => {
+
+			var queryablePosts = posts.Select(post =>
+			{
 				var product = products.FirstOrDefault(p => p.Id == post.ProductId);
 				var directCategory = categories.FirstOrDefault(c => c.Id == product?.CategoryId);
 				string parentCategoryName = null;
@@ -633,7 +609,6 @@ namespace ElecWasteCollection.Application.Services
 			{
 				string searchLower = model.Search.ToLower();
 				queryablePosts = queryablePosts.Where(p =>
-					p.PostObject.Name.ToLower().Contains(searchLower) ||
 					p.SearchableCategoryName.ToLower().Contains(searchLower)
 				);
 			}
@@ -693,6 +668,6 @@ namespace ElecWasteCollection.Application.Services
 			return Task.FromResult(pagedResult);
 		}
 
-		
+
 	}
 }

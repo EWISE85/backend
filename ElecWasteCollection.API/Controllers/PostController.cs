@@ -38,10 +38,10 @@ namespace ElecWasteCollection.API.Controllers
 					ParentCategoryId = newItem.Product.ParentCategoryId,
 					SubCategoryId = newItem.Product.SubCategoryId,
 					BrandId = newItem.Product.BrandId,
-					SizeTierId = newItem.Product.SizeTierId,
 					Attributes = newItem.Product.Attributes?.Select(attr => new ProductValueModel
 					{
 						AttributeId = attr.AttributeId,
+						OptionId = attr.OptionId,
 						Value = attr.Value
 					}).ToList()
 				}

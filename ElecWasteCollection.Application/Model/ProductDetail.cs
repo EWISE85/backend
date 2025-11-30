@@ -22,7 +22,6 @@ namespace ElecWasteCollection.Application.Model
 
 		public List<string> ProductImages { get; set; } // Danh sách ảnh sản phẩm
 		public string Status { get; set; } // Trạng thái hiện tại của sản phẩm (ví dụ: "Chờ thu gom", "Đã nhập kho", "Hủy")
-		public string? SizeTierName { get; set; } // (ví dụ: "Tivi Lớn (Trên 55 inch)")
 		public double? EstimatePoint { get; set; } // Điểm ước tính dựa trên kích thước
 
 		public double? RealPoints { get; set; } // Điểm thực tế sau khi kiểm tra sản phẩm

@@ -69,10 +69,9 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ICollectorService, CollectorService>();
 			builder.Services.AddScoped<ICollectionRouteService, CollectionRouteService>();
 			builder.Services.AddScoped<ICategoryService, CategoryService>();
-			builder.Services.AddScoped<ISizeTierService, SizeTierService>();
 			builder.Services.AddScoped<ICategoryAttributeService, CategoryAttributeService>();
 			builder.Services.AddSingleton<IProfanityChecker, CustomProfanityChecker>();
-			builder.Services.AddScoped<IGroupingService, GroupingService>();
+			//builder.Services.AddScoped<IGroupingService, GroupingService>();
 			builder.Services.AddScoped<IProductService, ProductService>();
 			builder.Services.AddScoped<ITrackingService, TrackingService>();
 			builder.Services.AddScoped<IShippingNotifierService, SignalRShippingNotifier>();
@@ -86,6 +85,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ISettingsService, SettingsService>();
             builder.Services.AddScoped<ITeamRatioService, TeamRatioService>();
 			builder.Services.AddScoped<IUserAddressService, UserAddressService>();
+			builder.Services.AddScoped<IAttributeOptionService, AttributeOptionService>();
             builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
@@ -128,8 +128,8 @@ namespace ElecWasteCollection.API
 			_ = FakeDataSeeder.products;
 			_ = FakeDataSeeder.productValues;
 			_ = FakeDataSeeder.attributes;
-			_ = FakeDataSeeder.sizeTiers;
 			_ = FakeDataSeeder.categoryAttributes;
+			_ = FakeDataSeeder.attributeOptions;
 			_ = FakeDataSeeder.productImages;
 
 			app.UseCors("AllowAll");

@@ -15,9 +15,7 @@ namespace ElecWasteCollection.Domain.Entities
 	{
 		public Guid PointTransactionId { get; set; }
 
-		public Guid? PostId { get; set; }
-
-		public Guid? ProductId { get; set; }
+		public Guid ProductId { get; set; }
 
 		public Guid UserId { get; set; }
 		public string Desciption { get; set; }

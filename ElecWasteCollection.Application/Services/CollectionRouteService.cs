@@ -35,10 +35,9 @@ namespace ElecWasteCollection.Application.Services
 		{
 			// SỬA LỖI: Dùng _collectionRoutes
 			var route = _collectionRoutes.FirstOrDefault(r => r.CollectionRouteId == collectionRouteId);
-			var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
-			if (post == null) return false;
-			var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
+			var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
 			if (product == null) return false;
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
 
 			if (route != null)
 			{
@@ -68,12 +67,13 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 			// SỬA LỖI: Dùng _posts (List) thay vì _postService
-			var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
-			if (post == null) return false;
+			
 
 			// SỬA LỖI: Dùng _products (List) và post.ProductId
-			var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
+			var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
 			if (product == null) return false;
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+			if (post == null) return false;
 
 			route.Status = "Hoàn thành";
 			route.ConfirmImages = confirmImages;
@@ -197,7 +197,9 @@ namespace ElecWasteCollection.Application.Services
 
 			var results = routes.Select(r =>
 			{
-				var post = _posts.FirstOrDefault(p => p.Id == r.PostId);
+				var product  = _products.FirstOrDefault(p => p.Id == r.ProductId);
+				if (product == null) return null;
+				var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
 				if (post == null) return null;
 
 				// SỬA LỖI: Dùng post.SenderId (thay vì post.S)
@@ -235,7 +237,7 @@ namespace ElecWasteCollection.Application.Services
 				return new CollectionRouteModel
 				{
 					CollectionRouteId = r.CollectionRouteId,
-					PostId = r.PostId,
+					PostId = post.Id,
 					//ItemName = post.Name,
 					BrandName = _brand.FirstOrDefault(b => b.BrandId == _products.FirstOrDefault(p => p.Id == post.ProductId)?.BrandId)?.Name,
 					SubCategoryName = _category.FirstOrDefault(c => c.Id == _products.FirstOrDefault(p => p.Id == post.ProductId)?.CategoryId)?.Name,
@@ -311,7 +313,9 @@ namespace ElecWasteCollection.Application.Services
 		{
 			try
 			{
-				var post = _posts.FirstOrDefault(p => p.Id == route.PostId);
+				var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
+				if (product == null) return null;
+				var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
 				if (post == null) return null;
 
 				var sender = _users.FirstOrDefault(u => u.UserId == post.SenderId);
@@ -323,8 +327,7 @@ namespace ElecWasteCollection.Application.Services
 					.Select(img => img.ImageUrl)
 					.ToList();
 
-				var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
-				if (product == null) return null;
+				
 				var brand = _brand.FirstOrDefault(b => b.BrandId == product.BrandId);
 				if (brand == null) return null;
 				var subCategory = _category.FirstOrDefault(c => c.Id == product.CategoryId).Name;
@@ -363,7 +366,7 @@ namespace ElecWasteCollection.Application.Services
 				return new CollectionRouteModel
 				{
 					CollectionRouteId = route.CollectionRouteId,
-					PostId = route.PostId,
+					PostId = post.Id,
 					//ItemName = post.Name,
 					Collector = collectorResponse,
 					Sender = senderResposne,

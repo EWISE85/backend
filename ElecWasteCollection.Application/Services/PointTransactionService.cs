@@ -43,19 +43,17 @@ namespace ElecWasteCollection.Application.Services
 					//}
 
 					// 2. Nếu chưa có ảnh từ Post, thử lấy ảnh từ Product (ảnh danh mục)
-					if ((images == null || images.Count == 0) && pt.ProductId.HasValue)
-					{
+
 						images = productImages
 							.Where(pi => pi.ProductId == pt.ProductId)
 							.Select(pi => pi.ImageUrl)
 							.ToList();
-					}
+					
 
 					// --- MAPPING MODEL ---
 					return new PointTransactionModel
 					{
 						PointTransactionId = pt.PointTransactionId,
-						PostId = pt.PostId,
 						ProductId = pt.ProductId,
 						UserId = pt.UserId,
 						Desciption = pt.Desciption,
@@ -78,7 +76,6 @@ namespace ElecWasteCollection.Application.Services
 			var points = new PointTransactions
 			{
 				PointTransactionId = Guid.NewGuid(),
-				PostId = createPointTransactionModel.PostId,
 				ProductId = createPointTransactionModel.ProductId,
 				UserId = createPointTransactionModel.UserId,
 				Desciption = createPointTransactionModel.Desciption,

@@ -65,12 +65,7 @@ namespace ElecWasteCollection.Application.Data
 		private static readonly Guid att_KhoiLuongGiat = Guid.Parse("a1a1a1a1-0004-0004-0004-000000000001");
 		private static readonly Guid att_TrongLuong = Guid.Parse("a1a1a1a1-0009-0009-0009-000000000001");
 
-		// SizeTier IDs
-		private static readonly Guid st_Tivi_TrungBinh = Guid.Parse("a1a1a1a1-0001-0001-0001-000000000002");
-		private static readonly Guid st_TuLanh_Lon = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000003");
-		private static readonly Guid st_MayGiat_TrungBinh = Guid.Parse("a1a1a1a1-0003-0003-0003-000000000002");
-		private static readonly Guid st_Laptop_MongNhe = Guid.Parse("a1a1a1a1-0006-0006-0006-000000000001");
-		private static readonly Guid st_ManHinhMayTinh_nho = Guid.Parse("a1a1a1a1-0006-0006-0006-000000000012");
+		
 
 
 		// Brands
@@ -345,24 +340,29 @@ namespace ElecWasteCollection.Application.Data
 			new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_MayHutBui, AttributeId = att_TrongLuong },
 		};
 
-		public static List<SizeTier> sizeTiers = new()
-		{
-			new SizeTier { SizeTierId = size_TiviVua, CategoryId = cat_Tivi, Name = "Nhỏ (Dưới 32 inch)", EstimatedWeight = 5, EstimatedVolume = 0.1 },
-			new SizeTier { SizeTierId = st_Tivi_TrungBinh, CategoryId = cat_Tivi, Name = "Trung bình (32-55 inch)", EstimatedWeight = 15, EstimatedVolume = 0.3 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Tivi, Name = "Lớn (Trên 55 inch)", EstimatedWeight = 30, EstimatedVolume = 0.6 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_TuLanh, Name = "Nhỏ (Mini, Dưới 150L)", EstimatedWeight = 30, EstimatedVolume = 0.5 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_TuLanh, Name = "Trung bình (150-300L)", EstimatedWeight = 50, EstimatedVolume = 1.0 },
-			new SizeTier { SizeTierId = st_TuLanh_Lon, CategoryId = cat_TuLanh, Name = "Lớn (Trên 300L)", EstimatedWeight = 80, EstimatedVolume = 1.5 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_MayGiat, Name = "Nhỏ (Dưới 7kg)", EstimatedWeight = 35, EstimatedVolume = 0.4 },
-			new SizeTier { SizeTierId = st_MayGiat_TrungBinh, CategoryId = cat_MayGiat, Name = "Trung bình (7-10kg)", EstimatedWeight = 50, EstimatedVolume = 0.6 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_MayGiat, Name = "Lớn (Trên 10kg)", EstimatedWeight = 70, EstimatedVolume = 0.8 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_LoViSong, Name = "Nhỏ (Dưới 20L)", EstimatedWeight = 10, EstimatedVolume = 0.05 },
-			new SizeTier { SizeTierId = Guid.Parse("f3c8c4ef-56f3-433e-b210-3f900248ffae"), CategoryId = cat_LoViSong, Name = "Lớn (Trên 20L)", EstimatedWeight = 15, EstimatedVolume = 0.1 },
-			new SizeTier { SizeTierId = st_ManHinhMayTinh_nho, CategoryId = cat_ManHinhMayTinh, Name = "Nhỏ (Dưới 24 inch)", EstimatedWeight = 3, EstimatedVolume = 0.05 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, Name = "Lớn (Từ 24 inch trở lên)", EstimatedWeight = 7, EstimatedVolume = 0.1 },
-			new SizeTier { SizeTierId = st_Laptop_MongNhe, CategoryId = cat_Laptop, Name = "Mỏng nhẹ (Dưới 2kg)", EstimatedWeight = 1.5, EstimatedVolume = 0.01 },
-			new SizeTier { SizeTierId = Guid.NewGuid(), CategoryId = cat_Laptop, Name = "Thường/Gaming (Từ 2kg trở lên)", EstimatedWeight = 3, EstimatedVolume = 0.02 },
-		};
+		public static List<AttributeOptions> attributeOptions = new List<AttributeOptions>
+{
+    // Khối lượng giặt
+    new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_KhoiLuongGiat, OptionName = "Nhỏ hơn 5 kg", EstimateWeight = null, EstimateVolume = null },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_KhoiLuongGiat, OptionName = "Từ 5kg - 7 kg", EstimateWeight = null, EstimateVolume = null },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_KhoiLuongGiat, OptionName = "Lơn hơn 7 kg", EstimateWeight = null, EstimateVolume = null },
+
+    // Trọng lượng (Có thể có các lựa chọn cho trọng lượng sản phẩm)
+    new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_TrongLuong, OptionName = "Nhỏ hơn 5 kg", EstimateWeight = 4.5, EstimateVolume = null },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_TrongLuong, OptionName = "Từ 5kg - 10kg ", EstimateWeight = 9, EstimateVolume = null },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_TrongLuong, OptionName = "Trên 10 kg", EstimateWeight = 20, EstimateVolume = null },
+
+    // Dung tích
+    new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_DungTich, OptionName = "Nhỏ hơn 50 lít", EstimateWeight = 0, EstimateVolume = null },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_DungTich, OptionName = "Từ 50 lít - 100 lít", EstimateWeight = 0, EstimateVolume = null },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_DungTich, OptionName = "Trên 100 lít", EstimateWeight = 0, EstimateVolume = null },
+
+    // Các lựa chọn khác như kích thước màn hình (có thể giả lập theo kích thước màn hình của các thiết bị điện tử)
+    new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_KichThuocManHinh, OptionName = "Nhỏ hơn 32 inch", EstimateWeight = null, EstimateVolume = 0.03 },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_KichThuocManHinh, OptionName = "Từ 32 - 42 inch", EstimateWeight = null, EstimateVolume = 0.05   },
+	new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_KichThuocManHinh, OptionName = "Trên 42 inch", EstimateWeight = null, EstimateVolume = 0.1 },
+};
+
 
 		public static List<Brand> brands = new()
 		{
@@ -436,56 +436,87 @@ namespace ElecWasteCollection.Application.Data
 		public static List<Products> products = new List<Products>
 		{
             // --- HÔM QUA (0-4) ---
-            new Products { Id = prodIds[0], CategoryId = cat_Tivi, SizeTierId = st_Tivi_TrungBinh, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đang vận chuyển", Description = "Hỏng màn hình", QRCode = "product1" },
-			new Products { Id = prodIds[1], CategoryId = cat_TuLanh, SizeTierId = st_TuLanh_Lon, BrandId = brand_Pana_TuLanh, PackageId = null,  Status = "Đã thu gom", Description = "Không lạnh ngăn mát", QRCode = "product2" },
-			new Products { Id = prodIds[2], CategoryId = cat_Laptop, SizeTierId = st_Laptop_MongNhe, BrandId = brand_Acer_Laptop, PackageId = null, Status = "Hủy bỏ", Description = "Khách hủy yêu cầu" },
-			new Products { Id = prodIds[3], CategoryId = cat_QuatDien, SizeTierId = null, BrandId = brand_Asia_Quat, PackageId = null,  Status = "Đã thu gom", Description = "Gãy cánh", QRCode = "product4" },
-			new Products { Id = prodIds[4], CategoryId = cat_MayGiat, SizeTierId = st_MayGiat_TrungBinh, BrandId = brand_Toshiba_MayGiat, PackageId = null, Status = "Đã thu gom", Description = "Kêu to khi vắt", QRCode = "product5" },
+            new Products { Id = prodIds[0], CategoryId = cat_Tivi, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đang vận chuyển", Description = "Hỏng màn hình", QRCode = "product1" },
+			new Products { Id = prodIds[1], CategoryId = cat_TuLanh, BrandId = brand_Pana_TuLanh, PackageId = null,  Status = "Đã thu gom", Description = "Không lạnh ngăn mát", QRCode = "product2" },
+			new Products { Id = prodIds[2], CategoryId = cat_Laptop, BrandId = brand_Acer_Laptop, PackageId = null, Status = "Hủy bỏ", Description = "Khách hủy yêu cầu" },
+			new Products { Id = prodIds[3], CategoryId = cat_QuatDien, BrandId = brand_Asia_Quat, PackageId = null,  Status = "Đã thu gom", Description = "Gãy cánh", QRCode = "product4" },
+			new Products { Id = prodIds[4], CategoryId = cat_MayGiat, BrandId = brand_Toshiba_MayGiat, PackageId = null, Status = "Đã thu gom", Description = "Kêu to khi vắt", QRCode = "product5" },
 
             // --- HÔM NAY (5-9) ---
-            new Products { Id = prodIds[5], CategoryId = cat_ManHinhMayTinh, SizeTierId = st_ManHinhMayTinh_nho, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6" },
-			new Products { Id = prodIds[6], CategoryId = cat_LoViSong, SizeTierId = null, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Không nóng" },
-			new Products { Id = prodIds[7], CategoryId = cat_BinhNuocNong, SizeTierId = null, BrandId = brand_Ariston_Binh, PackageId = null,  Status = "Chờ thu gom", Description = "Rò điện" },
-			new Products { Id = prodIds[8], CategoryId = cat_MayIn, SizeTierId = null, BrandId = brand_HP_MayIn, PackageId = null, Status = "Đã thu gom", Description = "Kẹt giấy liên tục", QRCode = "product9" },
-			new Products { Id = prodIds[9], CategoryId = cat_DienThoai, SizeTierId = null, BrandId = brand_Apple_DienThoai, PackageId = null,  Status = "Chờ thu gom", Description = "Vỡ màn hình" },
+            new Products { Id = prodIds[5], CategoryId = cat_ManHinhMayTinh, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6" },
+			new Products { Id = prodIds[6], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Không nóng" },
+			new Products { Id = prodIds[7], CategoryId = cat_BinhNuocNong, BrandId = brand_Ariston_Binh, PackageId = null,  Status = "Chờ thu gom", Description = "Rò điện" },
+			new Products { Id = prodIds[8], CategoryId = cat_MayIn, BrandId = brand_HP_MayIn, PackageId = null, Status = "Đã thu gom", Description = "Kẹt giấy liên tục", QRCode = "product9" },
+			new Products { Id = prodIds[9], CategoryId = cat_DienThoai, BrandId = brand_Apple_DienThoai, PackageId = null,  Status = "Chờ thu gom", Description = "Vỡ màn hình" },
 
             // --- NGÀY MAI (10-14) ---
-            new Products { Id = prodIds[10], CategoryId = cat_MayHutBui, SizeTierId = null, BrandId = brand_Dyson, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng pin" },
-			new Products { Id = prodIds[11], CategoryId = cat_Loa, SizeTierId = null, BrandId = brand_JBL_Loa, PackageId = null,Status = "Chờ thu gom", Description = "Mất tiếng bass" },
-			new Products { Id = prodIds[12], CategoryId = cat_LoViSong, SizeTierId = null, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng rơ le" },
-			new Products { Id = prodIds[13], CategoryId = cat_MayTinhDeBan, SizeTierId = null, BrandId = brand_Dell_PC, PackageId = null,  Status = "Chờ thu gom", Description = "Main hỏng" },
-			new Products { Id = prodIds[14], CategoryId = cat_NoiComDien, SizeTierId = null, BrandId = brand_Cuckoo, PackageId = null,  Status = "Chờ thu gom", Description = "Không chín cơm" }
+            new Products { Id = prodIds[10], CategoryId = cat_MayHutBui, BrandId = brand_Dyson, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng pin" },
+			new Products { Id = prodIds[11], CategoryId = cat_Loa, BrandId = brand_JBL_Loa, PackageId = null,Status = "Chờ thu gom", Description = "Mất tiếng bass" },
+			new Products { Id = prodIds[12], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng rơ le" },
+			new Products { Id = prodIds[13], CategoryId = cat_MayTinhDeBan, BrandId = brand_Dell_PC, PackageId = null,  Status = "Chờ thu gom", Description = "Main hỏng" },
+			new Products { Id = prodIds[14], CategoryId = cat_NoiComDien, BrandId = brand_Cuckoo, PackageId = null,  Status = "Chờ thu gom", Description = "Không chín cơm" }
 		};
 
 		public static List<ProductValues> productValues = new List<ProductValues>
-		{
-			new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[0], AttributeId = att_KichThuocManHinh, Value = 42 },
-			new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[4], AttributeId = att_KhoiLuongGiat, Value = 9 }
-		};
+{
+    // --- HÔM QUA (0-4) ---
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[0], AttributeId = att_KichThuocManHinh, Value = 42 }, // Tivi - Kích thước màn hình
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[0], AttributeId = att_TrongLuong, Value = 10.5 }, // Tivi - Trọng lượng
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[1], AttributeId = att_TrongLuong, Value = 80 }, // Tủ lạnh - Trọng lượng
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[2], AttributeId = att_KichThuocManHinh, Value = 15.6 }, // Laptop - Kích thước màn hình
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[3], AttributeId = att_KichThuocManHinh, Value = 16 }, // Quạt điện - Kích thước màn hình
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[4], AttributeId = att_KhoiLuongGiat, Value = 9 }, // Máy giặt - Khối lượng giặt
+
+    // --- HÔM NAY (5-9) ---
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[5], AttributeId = att_KichThuocManHinh, Value = 24 }, // Màn hình máy tính - Kích thước màn hình
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[6], AttributeId = att_DungTich, Value = 7 }, // Lò vi sóng - Dung tích
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[7], AttributeId = att_DungTich, Value = 30 }, // Bình nước nóng - Dung tích
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[8], AttributeId = att_KhoiLuongGiat, Value = 3.5 }, // Máy in - Khối lượng giặt
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[9], AttributeId = att_KichThuocManHinh, Value = 6.1 }, // Điện thoại - Kích thước màn hình
+
+    // --- NGÀY MAI (10-14) ---
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[10], AttributeId = att_TrongLuong, Value = 2.5 }, // Máy hút bụi - Trọng lượng
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[11], AttributeId = att_TrongLuong, Value = 1.5 }, // Loa - Trọng lượng
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[12], AttributeId = att_KhoiLuongGiat, Value = 5 }, // Lò vi sóng - Khối lượng giặt
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[13], AttributeId = att_KichThuocManHinh, Value = 22 }, // Máy tính để bàn - Kích thước màn hình
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[14], AttributeId = att_KichThuocManHinh, Value = 1.8 }, // Nồi cơm điện - Kích thước màn hình (giả lập cho nồi cơm điện)
+
+    // --- Các sản phẩm khác ---
+    // Máy giặt sẽ có chiều dài, rộng, cao
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[4], AttributeId = att_ChieuDai, Value = 60 }, // Chiều dài của máy giặt
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[4], AttributeId = att_ChieuRong, Value = 60 }, // Chiều rộng của máy giặt
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[4], AttributeId = att_ChieuCao, Value = 85 }, // Chiều cao của máy giặt
+
+    // Tủ lạnh sẽ có chiều dài, rộng, cao
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[1], AttributeId = att_ChieuDai, Value = 60 }, // Chiều dài của tủ lạnh
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[1], AttributeId = att_ChieuRong, Value = 60 }, // Chiều rộng của tủ lạnh
+    new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodIds[1], AttributeId = att_ChieuCao, Value = 180 }, // Chiều cao của tủ lạnh
+};
+
 
 		public static List<Post> posts = new List<Post>
 		{
             // --- HÔM QUA (-1 day) ---
             // Sử dụng _vnNow.AddDays(-X) để đảm bảo thời gian luôn trôi theo ngày hiện tại
-            new Post { Id = postIds[0], ProductId = prodIds[0], SenderId = users[0].UserId, Name = "Thanh lý Tivi hỏng", Date = _vnNow.AddDays(-3), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 100 },
-			new Post { Id = postIds[1], ProductId = prodIds[1], SenderId = users[1].UserId, Name = "Tủ lạnh cũ cần bỏ", Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "09:30", "10:30"), Address = userAddress[1].Address, EstimatePoint = 200 },
-			new Post { Id = postIds[2], ProductId = prodIds[2], SenderId = users[2].UserId, Name = "Laptop cũ", Date = _vnNow.AddDays(-4), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 150 },
-			new Post { Id = postIds[3], ProductId = prodIds[3], SenderId = users[3].UserId, Name = "Quạt hỏng", Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "13:00", "14:00"), Address = userAddress[3].Address, EstimatePoint = 50 },
-			new Post { Id = postIds[4], ProductId = prodIds[4], SenderId = users[4].UserId, Name = "Máy giặt cũ", Date = _vnNow.AddDays(-5), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "15:00", "16:00"), Address = userAddress[4].Address, EstimatePoint = 180 },
+            new Post { Id = postIds[0], ProductId = prodIds[0], SenderId = users[0].UserId,	 Date = _vnNow.AddDays(-3), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 100 },
+			new Post { Id = postIds[1], ProductId = prodIds[1], SenderId = users[1].UserId,  Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "09:30", "10:30"), Address = userAddress[1].Address, EstimatePoint = 200 },
+			new Post { Id = postIds[2], ProductId = prodIds[2], SenderId = users[2].UserId, Date = _vnNow.AddDays(-4), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 150 },
+			new Post { Id = postIds[3], ProductId = prodIds[3], SenderId = users[3].UserId, Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "13:00", "14:00"), Address = userAddress[3].Address, EstimatePoint = 50 },
+			new Post { Id = postIds[4], ProductId = prodIds[4], SenderId = users[4].UserId, Date = _vnNow.AddDays(-5), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "15:00", "16:00"), Address = userAddress[4].Address, EstimatePoint = 180 },
 
             // --- HÔM NAY (0 day) ---
-            new Post { Id = postIds[5], ProductId = prodIds[5], SenderId = users[0].UserId, Name = "Màn hình máy tính", Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "08:30", "09:30"), Address = userAddress[0].Address, EstimatePoint = 80 },
-			new Post { Id = postIds[6], ProductId = prodIds[6], SenderId = users[0].UserId, Name = "Lò vi sóng hư", Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "10:00", "11:00"), Address = userAddress[0].Address, EstimatePoint = 120 },
-			new Post { Id = postIds[7], ProductId = prodIds[7], SenderId = users[2].UserId, Name = "Bình nước nóng", Date = _vnNow.AddDays(-3), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "14:00", "15:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
-			new Post { Id = postIds[8], ProductId = prodIds[8], SenderId = users[3].UserId, Name = "Máy in văn phòng", Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "09:00", "10:00"), Address = userAddress[3].Address, EstimatePoint = 90 },
-			new Post { Id = postIds[9], ProductId = prodIds[9], SenderId = users[4].UserId, Name = "Điện thoại cũ", Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "16:00", "17:00"), Address = userAddress[4].Address, EstimatePoint = 200 },
+            new Post { Id = postIds[5], ProductId = prodIds[5], SenderId = users[0].UserId,Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "08:30", "09:30"), Address = userAddress[0].Address, EstimatePoint = 80 },
+			new Post { Id = postIds[6], ProductId = prodIds[6], SenderId = users[0].UserId,  Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "10:00", "11:00"), Address = userAddress[0].Address, EstimatePoint = 120 },
+			new Post { Id = postIds[7], ProductId = prodIds[7], SenderId = users[2].UserId, Date = _vnNow.AddDays(-3), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "14:00", "15:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
+			new Post { Id = postIds[8], ProductId = prodIds[8], SenderId = users[3].UserId,  Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "09:00", "10:00"), Address = userAddress[3].Address, EstimatePoint = 90 },
+			new Post { Id = postIds[9], ProductId = prodIds[9], SenderId = users[4].UserId, Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "16:00", "17:00"), Address = userAddress[4].Address, EstimatePoint = 200 },
 
             // --- NGÀY MAI (+1 day) ---
-            new Post { Id = postIds[10], ProductId = prodIds[10], SenderId = users[0].UserId, Name = "Máy hút bụi", Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 110 },
-			new Post { Id = postIds[11], ProductId = prodIds[11], SenderId = users[1].UserId, Name = "Loa cũ", Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "09:00", "10:00"), Address = userAddress[1].Address, EstimatePoint = 70 },
-			new Post { Id = postIds[12], ProductId = prodIds[12], SenderId = users[2].UserId, Name = "Lò vi sóng", Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
-			new Post { Id = postIds[13], ProductId = prodIds[13], SenderId = users[3].UserId, Name = "Máy tính bàn", Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "14:00", "15:00"), Address = userAddress[3].Address, EstimatePoint = 150 },
-			new Post { Id = postIds[14], ProductId = prodIds[14], SenderId = users[4].UserId, Name = "Nồi cơm điện", Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "15:30", "16:30"), Address = userAddress[4].Address, EstimatePoint = 60 }
+            new Post { Id = postIds[10], ProductId = prodIds[10], SenderId = users[0].UserId,Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 110 },
+			new Post { Id = postIds[11], ProductId = prodIds[11], SenderId = users[1].UserId, Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "09:00", "10:00"), Address = userAddress[1].Address, EstimatePoint = 70 },
+			new Post { Id = postIds[12], ProductId = prodIds[12], SenderId = users[2].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
+			new Post { Id = postIds[13], ProductId = prodIds[13], SenderId = users[3].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "14:00", "15:00"), Address = userAddress[3].Address, EstimatePoint = 150 },
+			new Post { Id = postIds[14], ProductId = prodIds[14], SenderId = users[4].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "15:30", "16:30"), Address = userAddress[4].Address, EstimatePoint = 60 }
 		};
 
 		public static List<ProductImages> productImages = new();
@@ -560,25 +591,25 @@ namespace ElecWasteCollection.Application.Data
 		public static List<CollectionRoutes> collectionRoutes = new()
 		{
             // --- HÔM QUA (5 Posts) ---
-            new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[0], CollectionGroupId = 1, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(8, 30), Actual_Time = new TimeOnly(8, 45), Status = "Hoàn thành" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[1], CollectionGroupId = 1, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(10, 0), Actual_Time = new TimeOnly(10, 15), Status = "Hoàn thành" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[2], CollectionGroupId = 2, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(10, 30), Actual_Time = null, Status = "Hủy bỏ", RejectMessage = "Khách hàng vắng mặt" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[3], CollectionGroupId = 2, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(13, 30), Actual_Time = new TimeOnly(13, 45), Status = "Hoàn thành" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[4], CollectionGroupId = 2, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(15, 30), Actual_Time = new TimeOnly(15, 45), Status = "Hoàn thành" },
+            new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[0], CollectionGroupId = 1, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(8, 30), Actual_Time = new TimeOnly(8, 45), Status = "Hoàn thành" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[1], CollectionGroupId = 1, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(10, 0), Actual_Time = new TimeOnly(10, 15), Status = "Hoàn thành" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[2], CollectionGroupId = 2, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(10, 30), Actual_Time = null, Status = "Hủy bỏ", RejectMessage = "Khách hàng vắng mặt" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[3], CollectionGroupId = 2, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(13, 30), Actual_Time = new TimeOnly(13, 45), Status = "Hoàn thành" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[4], CollectionGroupId = 2, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), EstimatedTime = new TimeOnly(15, 30), Actual_Time = new TimeOnly(15, 45), Status = "Hoàn thành" },
 
             // --- HÔM NAY (5 Posts) ---
-            new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[5], CollectionGroupId = 3, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(9, 0), Actual_Time = new TimeOnly(9, 15), Status = "Hoàn thành" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[6], CollectionGroupId = 3, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(10, 30), Actual_Time = null, Status = "Đang tiến hành" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[7], CollectionGroupId = 3, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(14, 30), Actual_Time = null, Status = "Đang tiến hành" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[8], CollectionGroupId = 4, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(9, 30), Actual_Time = new TimeOnly(9, 45), Status = "Hoàn thành" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[9], CollectionGroupId = 4, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(16, 30), Actual_Time = null, Status = "Đang tiến hành" },
+            new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[5], CollectionGroupId = 3, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(9, 0), Actual_Time = new TimeOnly(9, 15), Status = "Hoàn thành" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[6], CollectionGroupId = 3, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(10, 30), Actual_Time = null, Status = "Đang tiến hành" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[7], CollectionGroupId = 3, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(14, 30), Actual_Time = null, Status = "Đang tiến hành" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[8], CollectionGroupId = 4, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(9, 30), Actual_Time = new TimeOnly(9, 45), Status = "Hoàn thành" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[9], CollectionGroupId = 4, CollectionDate = DateOnly.FromDateTime(_vnNow), EstimatedTime = new TimeOnly(16, 30), Actual_Time = null, Status = "Đang tiến hành" },
 
             // --- NGÀY MAI (5 Posts) ---
-            new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[10], CollectionGroupId = 5, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(8, 30), Status = "Chưa bắt đầu" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[11], CollectionGroupId = 5, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(9, 30), Status = "Chưa bắt đầu" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[12], CollectionGroupId = 5, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(10, 30), Status = "Chưa bắt đầu" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[13], CollectionGroupId = 6, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(14, 30), Status = "Chưa bắt đầu" },
-			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), PostId = postIds[14], CollectionGroupId = 6, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(16, 0), Status = "Chưa bắt đầu" }
+            new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[10], CollectionGroupId = 5, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(8, 30), Status = "Chưa bắt đầu" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[11], CollectionGroupId = 5, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(9, 30), Status = "Chưa bắt đầu" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[12], CollectionGroupId = 5, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(10, 30), Status = "Chưa bắt đầu" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[13], CollectionGroupId = 6, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(14, 30), Status = "Chưa bắt đầu" },
+			new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = prodIds[14], CollectionGroupId = 6, CollectionDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), EstimatedTime = new TimeOnly(16, 0), Status = "Chưa bắt đầu" }
 		};
 
 		// =========================================================================
@@ -641,7 +672,7 @@ namespace ElecWasteCollection.Application.Data
 
 		public static List<PointTransactions> points = new List<PointTransactions>()
 		{
-		  new PointTransactions{ PointTransactionId = Guid.NewGuid(), PostId = posts[0].Id, CreatedAt = _vnNow.AddDays(-3), Point = 100, Desciption = "Thu gom thành công", UserId = posts[0].SenderId, ProductId = products[0].Id, TransactionType = "Earned"  },
+		  new PointTransactions{ PointTransactionId = Guid.NewGuid(), CreatedAt = _vnNow.AddDays(-3), Point = 100, Desciption = "Thu gom thành công", UserId = posts[0].SenderId, ProductId = products[0].Id, TransactionType = "Earned"  },
 		};
 
 		public static List<UserPoints> userPoints = new()
@@ -1547,275 +1578,7 @@ namespace ElecWasteCollection.Application.Data
 
 
 
-		public static void AddPostsForDay27()
-		{
-			// ============================================================
-			// 🔥 LẤY NGÀY 27 TRONG THÁNG HIỆN TẠI
-			// ============================================================
-			var day27DateTime = _vnNow.AddDays(27 - _vnNow.Day);
-			var day27 = DateOnly.FromDateTime(day27DateTime);
-
-			// ============================================================
-			// A) USERS MỚI
-			// ============================================================
-			var extraUsers = new List<User>
-{
-	new User {
-		UserId = Guid.NewGuid(), Name = "User Test 01", Email = "u01@test.com", Phone = "0901111111",
-		Avatar = "https://picsum.photos/id/31/200/200",
-		Role = "User"
-	},
-	new User {
-		UserId = Guid.NewGuid(), Name = "User Test 02", Email = "u02@test.com", Phone = "0902222222",
-		Avatar = "https://picsum.photos/id/32/200/200",
-		Role = "User"
-	},
-	new User {
-		UserId = Guid.NewGuid(), Name = "User Test 03", Email = "u03@test.com", Phone = "0903333333",
-		Avatar = "https://picsum.photos/id/33/200/200",
-		Role = "User"
-	},
-	new User {
-		UserId = Guid.NewGuid(), Name = "User Test 04", Email = "u04@test.com", Phone = "0904444444",
-		Avatar = "https://picsum.photos/id/34/200/200",
-		Role = "User"
-	}
-};
-
-
-			users.AddRange(extraUsers);
-
-			var u1 = extraUsers[0].UserId;
-			var u2 = extraUsers[1].UserId;
-			var u3 = extraUsers[2].UserId;
-			var u4 = extraUsers[3].UserId;
-			var extraUserAddress = new List<UserAddress>
-			{
-				new UserAddress
-				{
-					UserAddressId = Guid.NewGuid(),
-					UserId = u1,
-					Address = "Park 1 – Vinhomes GP",
-					Iat = 10.842500,
-					Ing = 106.831500,
-					isDefault = true
-				},
-				new UserAddress
-				{
-					UserAddressId = Guid.NewGuid(),
-					UserId = u2,
-					Address = "Park 2 – Vinhomes GP",
-					Iat = 10.843200,
-					Ing = 106.832200,
-					isDefault = true
-				},
-				new UserAddress
-				{
-					UserAddressId = Guid.NewGuid(),
-					UserId = u3,
-					Address = "Park 3 – Vinhomes GP",
-					Iat = 10.842900,
-					Ing = 106.833000,
-					isDefault = true
-				},
-				new UserAddress
-				{
-					UserAddressId = Guid.NewGuid(),
-					UserId = u4,
-					Address = "Park 5 – Vinhomes GP",
-					Iat = 10.843600,
-					Ing = 106.833400,
-					isDefault = true
-				}
-			};
-			userAddress.AddRange(extraUserAddress);
-
-			// ============================================================
-			// B) ATTRIBUTE MASTER (KHÔNG TRÙNG ID)
-			// ============================================================
-			var att_length = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000001");
-			var att_width = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000002");
-			var att_height = Guid.Parse("a1a1a1a1-0002-0002-0002-000000000003");
-			var att_weight = Guid.Parse("a1a1a1a1-0009-0009-0009-000000000001");
-			var att_volume = Guid.Parse("a1a1a1a1-0004-0004-0004-000000000001");
-
-			void EnsureAttribute(Guid id, string name)
-			{
-				if (!attributes.Any(a => a.Id == id))
-					attributes.Add(new Attributes { Id = id, Name = name });
-			}
-
-			EnsureAttribute(att_length, "length");
-			EnsureAttribute(att_width, "width");
-			EnsureAttribute(att_height, "height");
-			EnsureAttribute(att_weight, "weight");
-			EnsureAttribute(att_volume, "volume");
-
-			// ============================================================
-			// C) PRODUCTS
-			// ============================================================
-			var prodA = Guid.NewGuid();
-			var prodB = Guid.NewGuid();
-			var prodC = Guid.NewGuid();
-			var prodD = Guid.NewGuid();
-
-			products.AddRange(new List<Products>
-	{
-		new Products { Id = prodA, CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong,
-			Status = "Chờ gom nhóm", Description = "Lò vi sóng hỏng" },
-
-		new Products { Id = prodB, CategoryId = cat_DienThoai, BrandId = brand_Apple_DienThoai,
-			Status = "Chờ gom nhóm", Description = "Điện thoại vỡ" },
-
-		new Products { Id = prodC, CategoryId = cat_QuatDien, BrandId = brand_Asia_Quat,
-			Status = "Chờ gom nhóm", Description = "Quạt không quay" },
-
-		new Products { Id = prodD, CategoryId = cat_MayHutBui, BrandId = brand_Dyson,
-			Status = "Chờ gom nhóm", Description = "Máy hút bụi yếu" }
-	});
-
-			// ============================================================
-			// D) PRODUCT VALUES
-			// ============================================================
-			productValues.AddRange(new List<ProductValues>
-	{
-        // PROD A
-        new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodA, AttributeId = att_length, Value = 50 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodA, AttributeId = att_width,  Value = 30 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodA, AttributeId = att_height, Value = 25 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodA, AttributeId = att_weight, Value = 12 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodA, AttributeId = att_volume, Value = 0.0375 },
-
-        // PROD B
-        new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodB, AttributeId = att_length, Value = 15 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodB, AttributeId = att_width,  Value = 7 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodB, AttributeId = att_height, Value = 1 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodB, AttributeId = att_weight, Value = 0.3 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodB, AttributeId = att_volume, Value = 0.000105 },
-
-        // PROD C
-        new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodC, AttributeId = att_length, Value = 40 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodC, AttributeId = att_width,  Value = 40 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodC, AttributeId = att_height, Value = 120 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodC, AttributeId = att_weight, Value = 5 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodC, AttributeId = att_volume, Value = 0.192 },
-
-        // PROD D
-        new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodD, AttributeId = att_length, Value = 30 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodD, AttributeId = att_width,  Value = 25 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodD, AttributeId = att_height, Value = 25 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodD, AttributeId = att_weight, Value = 6 },
-		new ProductValues { ProductValuesId = Guid.NewGuid(), ProductId = prodD, AttributeId = att_volume, Value = 0.01875 }
-	});
-
-			// ============================================================
-			// E) POSTS NGÀY 27
-			// ============================================================
-			var postA = Guid.NewGuid();
-			var postB = Guid.NewGuid();
-			var postC = Guid.NewGuid();
-			var postD = Guid.NewGuid();
-
-			posts.AddRange(new List<Post>
-	{
-		new Post {
-			Id = postA, ProductId = prodA, SenderId = u1,
-			Name = "Lò vi sóng – thu gom ngày 27",
-			Date = day27DateTime, Status = "Đã duyệt",
-			ScheduleJson = CreateScheduleJson(day27, "17:00", "18:00"),
-			Address = extraUserAddress[0].Address, EstimatePoint = 100
-		},
-
-		new Post {
-			Id = postB, ProductId = prodB, SenderId = u2,
-			Name = "Điện thoại – thu gom ngày 27",
-			Date = day27DateTime, Status = "Đã duyệt",
-			ScheduleJson = CreateScheduleJson(day27, "18:00", "20:00"),
-			Address = extraUserAddress[1].Address, EstimatePoint = 120
-		},
-
-		new Post {
-			Id = postC, ProductId = prodC, SenderId = u3,
-			Name = "Quạt điện – thu gom ngày 27",
-			Date = day27DateTime, Status = "Đã duyệt",
-			ScheduleJson = CreateScheduleJson(day27, "18:00", "21:00"),
-			Address = extraUserAddress[2].Address, EstimatePoint = 90
-		},
-
-		new Post {
-			Id = postD, ProductId = prodD, SenderId = u4,
-			Name = "Máy hút bụi – thu gom ngày 27",
-			Date = day27DateTime, Status = "Đã duyệt",
-			ScheduleJson = CreateScheduleJson(day27, "19:00", "20:00"),
-			Address = extraUserAddress[3].Address, EstimatePoint = 140
-		}
-	});
-
-
-			//============================================================
-			//F) IMAGE
-			//============================================================
-			productImages.Add(new ProductImages { ProductImagesId = Guid.NewGuid(), ProductId = prodA, ImageUrl = "https://picsum.photos/id/41/200/200", AiDetectedLabelsJson = "[]" });
-			productImages.Add(new ProductImages { ProductImagesId = Guid.NewGuid(), ProductId = prodB, ImageUrl = "https://picsum.photos/id/42/200/200", AiDetectedLabelsJson = "[]" });
-			productImages.Add(new ProductImages { ProductImagesId = Guid.NewGuid(), ProductId = prodC, ImageUrl = "https://picsum.photos/id/43/200/200", AiDetectedLabelsJson = "[]" });
-			productImages.Add(new ProductImages { ProductImagesId = Guid.NewGuid(), ProductId = prodD, ImageUrl = "https://picsum.photos/id/44/200/200", AiDetectedLabelsJson = "[]" });
-
-			// ============================================================
-			// G) SHIFT NGÀY 27
-			// ============================================================
-			var shiftId1 = shifts.Count + 1;
-			var shiftId2 = shifts.Count + 2;
-
-			shifts.Add(new Shifts
-			{
-				Id = shiftId1,
-				CollectorId = collector_Dung_Id,
-				Vehicle_Id = 1,
-				WorkDate = day27,
-				Shift_Start_Time = day27DateTime.Date.AddHours(16),
-				Shift_End_Time = day27DateTime.Date.AddHours(22)
-			});
-
-			shifts.Add(new Shifts
-			{
-				Id = shiftId2,
-				CollectorId = collector_Tuan_Id,
-				Vehicle_Id = 2,
-				WorkDate = day27,
-				Shift_Start_Time = day27DateTime.Date.AddHours(16),
-				Shift_End_Time = day27DateTime.Date.AddHours(22)
-			});
-
-			// ============================================================
-			// H) GROUP NGÀY 27
-			// ============================================================
-			collectionGroups.Add(new CollectionGroups
-			{
-				Id = collectionGroups.Count + 1,
-				Shift_Id = shiftId1,
-				Group_Code = $"DAY27-S1-DUNG",
-				Name = "Tuyến Ngày 27 – Dũng",
-				Created_At = _vnNow
-			});
-
-			collectionGroups.Add(new CollectionGroups
-			{
-				Id = collectionGroups.Count + 2,
-				Shift_Id = shiftId2,
-				Group_Code = $"DAY27-S2-TUAN",
-				Name = "Tuyến Ngày 27 – Tuấn",
-				Created_At = _vnNow
-			});
-
-			collectionGroups.Add(new CollectionGroups
-			{
-				Id = collectionGroups.Count + 2,
-				Shift_Id = shiftId2,
-				Group_Code = $"DAY27-S2-TUAN",
-				Name = "Tuyến Ngày 27 – Tuấn",
-				Created_At = _vnNow
-			});
-		}
+		
 
         public static List<UnassignedTeamItem> UnassignedTeamPosts { get; set; } = new();
         public static List<OutOfRangeSmallPointItem> OutOfRangeSmallPointPosts { get; set; } = new();
@@ -1996,7 +1759,6 @@ namespace ElecWasteCollection.Application.Data
     {
         new Post {
             Id = postA, ProductId = prodA, SenderId = u1,
-            Name = "Tivi – thu gom ngày 30",
             Date = day30DateTime, Status = "Đã duyệt",
             ScheduleJson = CreateScheduleJson(day30, "14:00", "15:00"),
             Address = extraUserAddress[0].Address, EstimatePoint = 150
@@ -2004,7 +1766,6 @@ namespace ElecWasteCollection.Application.Data
 
         new Post {
             Id = postB, ProductId = prodB, SenderId = u2,
-            Name = "Máy giặt – thu gom ngày 30",
             Date = day30DateTime, Status = "Đã duyệt",
             ScheduleJson = CreateScheduleJson(day30, "15:00", "17:00"),
             Address = extraUserAddress[1].Address, EstimatePoint = 180
@@ -2012,7 +1773,6 @@ namespace ElecWasteCollection.Application.Data
 
         new Post {
             Id = postC, ProductId = prodC, SenderId = u3,
-            Name = "Lò vi sóng – thu gom ngày 30",
             Date = day30DateTime, Status = "Đã duyệt",
             ScheduleJson = CreateScheduleJson(day30, "16:00", "18:00"),
             Address = extraUserAddress[2].Address, EstimatePoint = 110
@@ -2020,7 +1780,6 @@ namespace ElecWasteCollection.Application.Data
 
         new Post {
             Id = postD, ProductId = prodD, SenderId = u4,
-            Name = "Điện thoại – thu gom ngày 30",
             Date = day30DateTime, Status = "Đã duyệt",
             ScheduleJson = CreateScheduleJson(day30, "18:00", "19:00"),
             Address = extraUserAddress[3].Address, EstimatePoint = 70

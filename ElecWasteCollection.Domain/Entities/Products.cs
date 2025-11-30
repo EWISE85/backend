@@ -10,12 +10,12 @@ namespace ElecWasteCollection.Domain.Entities
 	{
 		public Guid Id { get; set; }
 		public Guid CategoryId { get; set; }
-		public Guid? SizeTierId { get; set; }
 		public Guid BrandId { get; set; }
+
+		public Guid UserId { get; set; }
 
 		public string? PackageId { get; set; }
 
-		public SizeTier SizeTier { get; set; }
 
 		public string Description { get; set; }
 

@@ -15,7 +15,6 @@ namespace ElecWasteCollection.Domain.Entities
 		public Guid ProductId { get; set; }
 
 		public string Description { get; set; }
-		public string Name { get; set; }
 		public DateTime Date { get; set; }
 		public string? Address { get; set; }
 		public string? ScheduleJson { get; set; }

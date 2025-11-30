@@ -11,7 +11,6 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Guid Id { get; set; }
 		public User Sender { get; set; } // Gửi đầy đủ thông tin người đăng
-		//public string Name { get; set; } // Tiêu đề bài đăng
 
 		public string ParentCategory { get; set; } // Tên Parent Category
 
@@ -54,7 +53,6 @@ namespace ElecWasteCollection.Application.Model
 		public string Status { get; set; } // Trạng thái hiện tại của sản phẩm (ví dụ: "Chờ thu gom", "Đã nhập kho", "Hủy")
 
 		// Thông tin kích thước (1 trong 2 sẽ có)
-		public string? SizeTierName { get; set; } // (ví dụ: "Tivi Lớn (Trên 55 inch)")
 
 		public bool IsChecked { get; set; }
 		public List<ProductValueDetailModel>? Attributes { get; set; } // (ví dụ: "Nặng: 55 kg")
@@ -62,8 +60,13 @@ namespace ElecWasteCollection.Application.Model
 
 	public class ProductValueDetailModel
 	{
+		public Guid AttributeId { get; set; } // Id của thuộc tính (ví dụ: "Trọng lượng")
 		public string AttributeName { get; set; } // "Trọng lượng"
-		public string Value { get; set; } // "55"
-		public string Unit { get; set; } // "kg"
+
+		public Guid? OptionId { get; set; }
+
+		public string? OptionName { get; set; }
+
+		public string? Value { get; set; } // "55"
 	}
 }
