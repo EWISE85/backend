@@ -13,65 +13,109 @@ namespace ElecWasteCollection.Application.Services
     {
         private const double SERVICE_TIME_MINUTES = 15;
         private const double AVG_TRAVEL_MINUTES = 15;
-
         private const double SPEED_KM_H_LARGE = 30;
         private const double SPEED_KM_H_SMALL = 25;
 
         private readonly List<UserAddress> _userAddress = FakeDataSeeder.userAddress;
-        private sealed class TimeSlotDetailDto
-        {
-            public string? StartTime { get; set; }
-            public string? EndTime { get; set; }
-        }
 
-        private sealed class DailyTimeSlotsDto
-        {
-            public string? DayName { get; set; }
-            public string? PickUpDate { get; set; }
-            public TimeSlotDetailDto? Slots { get; set; }
-        }
+        private readonly Guid _attTrongLuong = FakeDataSeeder.ID_TrongLuong;
+        private readonly Guid _attKhoiLuongGiat = FakeDataSeeder.ID_KhoiLuongGiat;
 
-        private class PostScheduleInfo
-        {
-            public DateOnly MinDate { get; set; }
-            public DateOnly MaxDate { get; set; }
-            public List<DateOnly> SpecificDates { get; set; } = new();
-        }
+        private readonly Guid _attChieuDai = FakeDataSeeder.ID_ChieuDai;
+        private readonly Guid _attChieuRong = FakeDataSeeder.ID_ChieuRong;
+        private readonly Guid _attChieuCao = FakeDataSeeder.ID_ChieuCao;
+
+        private readonly Guid _attDungTich = FakeDataSeeder.ID_DungTich;
+        private readonly Guid _attKichThuocManHinh = FakeDataSeeder.ID_KichThuocManHinh;
+
+        private sealed class TimeSlotDetailDto { public string? StartTime { get; set; } public string? EndTime { get; set; } }
+        private sealed class DailyTimeSlotsDto { public string? DayName { get; set; } public string? PickUpDate { get; set; } public TimeSlotDetailDto? Slots { get; set; } }
+        private class PostScheduleInfo { public DateOnly MinDate { get; set; } public DateOnly MaxDate { get; set; } public List<DateOnly> SpecificDates { get; set; } = new(); }
 
         private (double length, double width, double height, double weight, double volume, string dimensionText)
-            GetProductAttributes(Guid productId)
+          GetProductAttributes(Guid productId)
         {
-            var map = FakeDataSeeder.productValues
-                .Where(v => v.ProductId == productId)
-                .ToDictionary(v => v.AttributeId, v => v.Value);
+            var pValues = FakeDataSeeder.productValues.Where(v => v.ProductId == productId).ToList();
+            var allOptions = FakeDataSeeder.attributeOptions;
 
-            double length = map.GetValueOrDefault(att_ChieuDai, 0) ?? 0;
-            double width = map.GetValueOrDefault(att_ChieuRong, 0) ?? 0;
-            double height = map.GetValueOrDefault(att_ChieuCao, 0) ?? 0;
+            double weight = 0;
 
-            double weight = map.GetValueOrDefault(att_TrongLuong, 0) ?? 0;
-            double volume = length * width * height;
+            var weightAttributeIds = new[] { _attTrongLuong, _attKhoiLuongGiat, _attDungTich };
 
-            string dim = $"{length} x {width} x {height} cm";
+            foreach (var attId in weightAttributeIds)
+            {
+                var pVal = pValues.FirstOrDefault(v => v.AttributeId == attId);
 
-            return (length, width, height, weight, volume, dim);
+                if (pVal != null && pVal.AttributeOptionId.HasValue)
+                {
+                    var opt = allOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
+
+                    if (opt != null && opt.EstimateWeight.HasValue && opt.EstimateWeight.Value > 0)
+                    {
+                        weight = opt.EstimateWeight.Value;
+                        break;
+                    }
+                }
+            }
+
+            if (weight <= 0) weight = 1; 
+
+            double length = pValues.FirstOrDefault(v => v.AttributeId == _attChieuDai)?.Value ?? 0;
+            double width = pValues.FirstOrDefault(v => v.AttributeId == _attChieuRong)?.Value ?? 0;
+            double height = pValues.FirstOrDefault(v => v.AttributeId == _attChieuCao)?.Value ?? 0;
+
+            double volume = 0;
+            string dimText = "";
+
+            if (length > 0 && width > 0 && height > 0)
+            {
+                volume = length * width * height; 
+                dimText = $"{length} x {width} x {height} cm";
+            }
+            else
+            {
+                var volumeAttributeIds = new[] { _attKichThuocManHinh, _attDungTich, _attKhoiLuongGiat, _attTrongLuong };
+
+                foreach (var attId in volumeAttributeIds)
+                {
+                    var pVal = pValues.FirstOrDefault(v => v.AttributeId == attId);
+
+                    if (pVal != null && pVal.AttributeOptionId.HasValue)
+                    {
+                        var opt = allOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
+                        if (opt != null && opt.EstimateVolume.HasValue && opt.EstimateVolume.Value > 0)
+                        {
+                            volume = opt.EstimateVolume.Value * 1_000_000;
+                            dimText = $"~ {opt.OptionName}";
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (volume <= 0)
+            {
+                volume = 1000;
+                dimText = "Không xác định";
+            }
+
+            return (length, width, height, weight, volume, dimText);
         }
-
 
         private static bool TryParseScheduleInfo(string raw, out PostScheduleInfo info)
         {
             info = new PostScheduleInfo();
-            if (string.IsNullOrWhiteSpace(raw)) return false;
+            if (string.IsNullOrWhiteSpace(raw))
+                return false;
 
             try
             {
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
-
-                if (days == null || !days.Any()) return false;
+                if (days == null || !days.Any())
+                    return false;
 
                 var valid = new List<DateOnly>();
-
                 foreach (var d in days)
                 {
                     if (DateOnly.TryParse(d.PickUpDate, out var date) &&
@@ -84,14 +128,13 @@ namespace ElecWasteCollection.Application.Services
                     }
                 }
 
-                if (!valid.Any()) return false;
+                if (!valid.Any())
+                    return false;
 
                 valid.Sort();
-
                 info.SpecificDates = valid;
                 info.MinDate = valid.First();
                 info.MaxDate = valid.Last();
-
                 return true;
             }
             catch
@@ -99,20 +142,16 @@ namespace ElecWasteCollection.Application.Services
                 return false;
             }
         }
-
         private static bool TryGetTimeWindowForDate(string raw, DateOnly target, out TimeOnly start, out TimeOnly end)
         {
             start = TimeOnly.MinValue;
             end = TimeOnly.MaxValue;
-
             try
             {
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
-
                 var match = days?.FirstOrDefault(d =>
                     DateOnly.TryParse(d.PickUpDate, out var dt) && dt == target);
-
                 if (match?.Slots != null &&
                     TimeOnly.TryParse(match.Slots.StartTime, out var s) &&
                     TimeOnly.TryParse(match.Slots.EndTime, out var e))
@@ -121,33 +160,29 @@ namespace ElecWasteCollection.Application.Services
                     end = e;
                     return true;
                 }
-
                 return false;
             }
-            catch { return false; }
+            catch
+            {
+                return false;
+            }
         }
 
         public async Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request)
         {
-            var point = FakeDataSeeder.smallCollectionPoints
-                .FirstOrDefault(p => p.Id == request.CollectionPointId)
+            var point = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.Id == request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm.");
 
             double maxRadius = FakeDataSeeder.vehicles.Max(v => v.Radius_Km);
 
-            var rawPosts = FakeDataSeeder.posts
-                .Where(p =>
-                {
-                    if (p.AssignedSmallPointId != request.CollectionPointId)
-                        return false;
+            var rawPosts = FakeDataSeeder.posts.Where(p =>
+            {
+                if (p.AssignedSmallPointId != request.CollectionPointId) return false;
+                var prod = FakeDataSeeder.products.FirstOrDefault(x => x.Id == p.ProductId);
+                return prod != null && prod.Status == "Chờ gom nhóm";
+            }).ToList();
 
-                    var prod = FakeDataSeeder.products.FirstOrDefault(x => x.Id == p.ProductId);
-                    return prod != null && prod.Status == "Chờ gom nhóm";
-                })
-                .ToList();
-
-            if (!rawPosts.Any())
-                throw new Exception("Không có bài đăng nào của trạm này.");
+            if (!rawPosts.Any()) throw new Exception("Không có bài đăng nào của trạm này.");
 
             var pool = new List<dynamic>();
 
@@ -159,14 +194,11 @@ namespace ElecWasteCollection.Application.Services
                     var att = GetProductAttributes(p.ProductId);
 
                     var userAddress = _userAddress.FirstOrDefault(ua => ua.UserId == user.UserId);
-
                     double lat = userAddress?.Iat ?? point.Latitude;
                     double lng = userAddress?.Ing ?? point.Longitude;
-
                     double dist = GeoHelper.DistanceKm(point.Latitude, point.Longitude, lat, lng);
 
-                    if (dist > maxRadius)
-                        continue;
+                    if (dist > maxRadius) continue;
 
                     pool.Add(new
                     {
@@ -184,63 +216,50 @@ namespace ElecWasteCollection.Application.Services
                 }
             }
 
-            var distinctDates = pool
-                .SelectMany(x => (List<DateOnly>)x.Schedule.SpecificDates)
-                .Distinct()
-                .OrderBy(x => x)
-                .ToList();
+            var distinctDates = pool.SelectMany(x => (List<DateOnly>)x.Schedule.SpecificDates).Distinct().OrderBy(x => x).ToList();
 
-            var res = new PreAssignResponse
-            {
-                CollectionPoint = point.Name,
-                LoadThresholdPercent = request.LoadThresholdPercent
-            };
+            var res = new PreAssignResponse { CollectionPoint = point.Name, LoadThresholdPercent = request.LoadThresholdPercent };
 
             foreach (var date in distinctDates)
             {
-                var candidates = pool
-                    .Where(x => ((List<DateOnly>)x.Schedule.SpecificDates).Contains(date))
-                    .OrderBy(x => x.Schedule.MaxDate)
-                    .ThenBy(x => x.Schedule.MinDate)
-                    .ToList();
+                var candidates = pool.Where(x => ((List<DateOnly>)x.Schedule.SpecificDates).Contains(date))
+                    .OrderBy(x => x.Schedule.MaxDate).ThenBy(x => x.Schedule.MinDate).ToList();
 
                 if (!candidates.Any()) continue;
 
                 var shiftsToday = FakeDataSeeder.shifts.Where(s => s.WorkDate == date).ToList();
-
-                double totalWorkMinutes =
-                    shiftsToday.Any()
-                        ? shiftsToday.Sum(s => (s.Shift_End_Time - s.Shift_Start_Time).TotalMinutes)
-                        : 8 * 60;
-
+                double totalWorkMinutes = shiftsToday.Any() ? shiftsToday.Sum(s => (s.Shift_End_Time - s.Shift_Start_Time).TotalMinutes) : 8 * 60;
                 double estimatedMinutesPerPost = SERVICE_TIME_MINUTES + AVG_TRAVEL_MINUTES;
                 int maxPosts = (int)(totalWorkMinutes / estimatedMinutesPerPost);
 
                 var feasible = candidates.Take(maxPosts).ToList();
 
                 double totalWeightNeed = feasible.Sum(x => (double)x.Weight);
+                double totalVolumeNeedM3 = feasible.Sum(x => (double)x.Volume) / 1_000_000.0;
 
-                var vehicles = FakeDataSeeder.vehicles
-                    .Where(v => v.Status == "active")
-                    .OrderBy(v => v.Capacity_Kg)
-                    .ToList();
+                var vehicles = FakeDataSeeder.vehicles.Where(v => v.Status == "active").OrderBy(v => v.Capacity_Kg).ToList();
 
-                var suggested = vehicles
-                    .FirstOrDefault(v => totalWeightNeed <= v.Capacity_Kg * (request.LoadThresholdPercent / 100.0))
-                    ?? vehicles.Last();
+                var suggested = vehicles.FirstOrDefault(v =>
+                    totalWeightNeed <= v.Capacity_Kg * (request.LoadThresholdPercent / 100.0) &&
+                    totalVolumeNeedM3 <= v.Capacity_M3 * (request.LoadThresholdPercent / 100.0)
+                ) ?? vehicles.Last();
 
-                double allowedKg = suggested.Capacity_Kg * (request.LoadThresholdPercent / 100.0);
+                double ratio = request.LoadThresholdPercent / 100.0;
+                double allowedKg = suggested.Capacity_Kg * ratio;
+                double allowedM3 = suggested.Capacity_M3 * ratio;
 
                 double curKg = 0;
+                double curM3 = 0;
                 var selected = new List<PreAssignPost>();
                 var removeList = new List<dynamic>();
 
                 foreach (var item in feasible)
                 {
-                    if (curKg + item.Weight <= allowedKg)
+                    double itemM3 = item.Volume / 1_000_000.0;
+                    if (curKg + item.Weight <= allowedKg && curM3 + itemM3 <= allowedM3)
                     {
                         curKg += item.Weight;
-
+                        curM3 += itemM3;
                         selected.Add(new PreAssignPost
                         {
                             PostId = item.Post.Id,
@@ -252,15 +271,13 @@ namespace ElecWasteCollection.Application.Services
                             Height = item.Height,
                             DimensionText = item.DimensionText,
                             Weight = item.Weight,
-                            Volume = Math.Round(item.Volume / 1_000_000.0, 3)
+                            Volume = Math.Round(itemM3, 4)
                         });
-
                         removeList.Add(item);
                     }
                 }
 
-                foreach (var x in removeList)
-                    pool.Remove(x);
+                foreach (var x in removeList) pool.Remove(x);
 
                 if (selected.Any())
                 {
@@ -269,30 +286,19 @@ namespace ElecWasteCollection.Application.Services
                         WorkDate = date,
                         OriginalPostCount = selected.Count,
                         TotalWeight = Math.Round(selected.Sum(x => x.Weight), 2),
-                        TotalVolume = Math.Round(selected.Sum(x => x.Volume), 2),
-                        SuggestedVehicle = new SuggestedVehicle
-                        {
-                            Id = suggested.Id,
-                            Plate_Number = suggested.Plate_Number,
-                            Vehicle_Type = suggested.Vehicle_Type,
-                            Capacity_Kg = suggested.Capacity_Kg,
-                            AllowedCapacityKg = allowedKg
-                        },
+                        TotalVolume = Math.Round(selected.Sum(x => x.Volume), 4),
+                        SuggestedVehicle = new SuggestedVehicle { Id = suggested.Id, Plate_Number = suggested.Plate_Number, Vehicle_Type = suggested.Vehicle_Type, Capacity_Kg = suggested.Capacity_Kg, AllowedCapacityKg = allowedKg },
                         Posts = selected
                     });
                 }
-
-                if (!pool.Any())
-                    break;
+                if (!pool.Any()) break;
             }
-
             return await Task.FromResult(res);
         }
 
         public async Task<bool> AssignDayAsync(AssignDayRequest request)
         {
-            var vehicle = FakeDataSeeder.vehicles
-                .FirstOrDefault(v => v.Id == request.VehicleId)
+            var vehicle = FakeDataSeeder.vehicles.FirstOrDefault(v => v.Id == request.VehicleId)
                 ?? throw new Exception("Xe không tồn tại.");
 
             if (!FakeDataSeeder.smallCollectionPoints.Any(p => p.Id == request.CollectionPointId))
@@ -318,67 +324,35 @@ namespace ElecWasteCollection.Application.Services
                 Date = request.WorkDate,
                 PointId = request.CollectionPointId,
                 VehicleId = request.VehicleId,
-                ProductIds = request.ProductIds  
+                ProductIds = request.ProductIds
             });
 
             return await Task.FromResult(true);
         }
-       public async Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request)
+
+        public async Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request)
         {
-            var point = FakeDataSeeder.smallCollectionPoints
-                .FirstOrDefault(p => p.Id == request.CollectionPointId)
-                ?? throw new Exception("Không tìm thấy trạm.");
+            var point = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.Id == request.CollectionPointId) ?? throw new Exception("Không tìm thấy trạm.");
+            var staging = FakeDataSeeder.stagingAssignDays.Where(s => s.PointId == request.CollectionPointId).OrderBy(s => s.Date).ToList();
+            if (!staging.Any()) throw new Exception("Chưa có dữ liệu Assign. Hãy chạy AssignDay trước.");
 
-            var staging = FakeDataSeeder.stagingAssignDays
-                .Where(s => s.PointId == request.CollectionPointId)
-                .OrderBy(s => s.Date)
-                .ToList();
-
-            if (!staging.Any())
-                throw new Exception("Chưa có dữ liệu Assign. Hãy chạy AssignDay trước.");
-
-            var response = new GroupingByPointResponse
-            {
-                CollectionPoint = point.Name,
-                SavedToDatabase = request.SaveResult
-            };
-
+            var response = new GroupingByPointResponse { CollectionPoint = point.Name, SavedToDatabase = request.SaveResult };
             int groupCounter = 1;
 
             foreach (var assignDay in staging)
             {
                 var workDate = assignDay.Date;
-
-                var posts = FakeDataSeeder.posts
-                    .Where(p => assignDay.ProductIds.Contains(p.ProductId))
-                    .ToList();
-
+                var posts = FakeDataSeeder.posts.Where(p => assignDay.ProductIds.Contains(p.ProductId)).ToList();
                 if (!posts.Any()) continue;
 
-                var shifts = FakeDataSeeder.shifts
-                    .Where(s => s.WorkDate == workDate)
-                    .OrderBy(s => s.Shift_Start_Time)
-                    .ToList();
+                var shifts = FakeDataSeeder.shifts.Where(s => s.WorkDate == workDate).OrderBy(s => s.Shift_Start_Time).ToList();
+                if (!shifts.Any()) throw new Exception($"Ngày {workDate} chưa có ca làm việc.");
 
-                if (!shifts.Any())
-                    throw new Exception($"Ngày {workDate} chưa có ca làm việc.");
+                var vehicle = FakeDataSeeder.vehicles.First(v => v.Id == assignDay.VehicleId);
 
-                var vehicle = FakeDataSeeder.vehicles
-                    .First(v => v.Id == assignDay.VehicleId);
-
-                var oldRoutes = FakeDataSeeder.collectionRoutes
-                    .Where(r => r.CollectionDate == workDate &&
-                                assignDay.ProductIds.Contains(r.ProductId))
-                    .ToList();
-
+                var oldRoutes = FakeDataSeeder.collectionRoutes.Where(r => r.CollectionDate == workDate && assignDay.ProductIds.Contains(r.ProductId)).ToList();
                 var oldGroupIds = oldRoutes.Select(r => r.CollectionGroupId).Distinct().ToList();
-
-                foreach (var gid in oldGroupIds)
-                {
-                    FakeDataSeeder.collectionRoutes.RemoveAll(r => r.CollectionGroupId == gid);
-                    FakeDataSeeder.collectionGroups.RemoveAll(g => g.Id == gid);
-                }
-
+                foreach (var gid in oldGroupIds) { FakeDataSeeder.collectionRoutes.RemoveAll(r => r.CollectionGroupId == gid); FakeDataSeeder.collectionGroups.RemoveAll(g => g.Id == gid); }
                 int? reuseGroupId = oldGroupIds.Any() ? oldGroupIds.Min() : null;
                 bool reusedFirst = false;
 
@@ -389,9 +363,7 @@ namespace ElecWasteCollection.Application.Services
                     var user = FakeDataSeeder.users.First(u => u.UserId == p.SenderId);
                     var att = GetProductAttributes(p.ProductId);
                     var address = _userAddress.FirstOrDefault(a => a.UserId == p.SenderId);
-
-                    if (address == null)
-                        continue; 
+                    if (address == null) continue;
 
                     if (TryGetTimeWindowForDate(p.ScheduleJson!, workDate, out var st, out var en))
                     {
@@ -415,19 +387,15 @@ namespace ElecWasteCollection.Application.Services
                 }
 
                 if (!unassigned.Any()) continue;
+
                 foreach (var shift in shifts)
                 {
                     if (!unassigned.Any()) break;
-
                     var collector = FakeDataSeeder.users.FirstOrDefault(u => u.UserId == shift.CollectorId);
-
-                    double speed = (vehicle.Vehicle_Type.Contains("lớn")
-                        ? SPEED_KM_H_LARGE
-                        : SPEED_KM_H_SMALL) / 60.0;
+                    double speed = (vehicle.Vehicle_Type.Contains("lớn") ? SPEED_KM_H_LARGE : SPEED_KM_H_SMALL) / 60.0;
 
                     double curKg = 0, curM3 = 0;
                     double curLat = point.Latitude, curLng = point.Longitude;
-
                     TimeOnly cursor = TimeOnly.FromDateTime(shift.Shift_Start_Time);
                     var shiftEnd = TimeOnly.FromDateTime(shift.Shift_End_Time);
 
@@ -436,37 +404,23 @@ namespace ElecWasteCollection.Application.Services
 
                     while (unassigned.Any())
                     {
-                        var best = unassigned
-                            .Select(n =>
-                            {
-                                double dist = GeoHelper.DistanceKm(curLat, curLng, n.Lat, n.Lng);
-                                double travel = dist / speed;
-                                TimeOnly arr = cursor.AddMinutes(travel);
-                                TimeOnly actual = arr < n.Start ? n.Start : arr;
+                        var best = unassigned.Select(n =>
+                        {
+                            double dist = GeoHelper.DistanceKm(curLat, curLng, n.Lat, n.Lng);
+                            double travel = dist / speed;
+                            TimeOnly arr = cursor.AddMinutes(travel);
+                            TimeOnly actual = arr < n.Start ? n.Start : arr;
 
-                                bool ok =
-                                    (curKg + n.Weight <= vehicle.Capacity_Kg) &&
-                                    (curM3 + n.Volume <= vehicle.Capacity_M3) &&
-                                    actual <= n.End &&
-                                    actual.AddMinutes(SERVICE_TIME_MINUTES) <= shiftEnd;
+                            bool ok = (curKg + n.Weight <= vehicle.Capacity_Kg) && (curM3 + n.Volume <= vehicle.Capacity_M3) &&
+                                      actual <= n.End && actual.AddMinutes(SERVICE_TIME_MINUTES) <= shiftEnd;
 
-                                return new
-                                {
-                                    Node = n,
-                                    Dist = Math.Round(dist, 2),
-                                    Arrival = actual,
-                                    Valid = ok
-                                };
-                            })
-                            .Where(x => x.Valid)
-                            .OrderBy(x => x.Arrival)
-                            .ThenBy(x => x.Dist)
-                            .FirstOrDefault();
+                            return new { Node = n, Dist = Math.Round(dist, 2), Arrival = actual, Valid = ok };
+                        })
+                        .Where(x => x.Valid).OrderBy(x => x.Arrival).ThenBy(x => x.Dist).FirstOrDefault();
 
                         if (best == null) break;
 
                         var chosen = best.Node;
-
                         routeNodes.Add(new RouteDetail
                         {
                             PickupOrder = routeNodes.Count + 1,
@@ -484,23 +438,10 @@ namespace ElecWasteCollection.Application.Services
                             VolumeM3 = chosen.Volume
                         });
 
-                        saveRoutes.Add(new CollectionRoutes
-                        {
-                            CollectionRouteId = Guid.NewGuid(),
-                            ProductId = chosen.Post.ProductId,
-                            CollectionDate = workDate,
-                            EstimatedTime = best.Arrival,
-                            DistanceKm = best.Dist,
-                            Status = "Chưa bắt đầu"
-                        });
+                        saveRoutes.Add(new CollectionRoutes { CollectionRouteId = Guid.NewGuid(), ProductId = chosen.Post.ProductId, CollectionDate = workDate, EstimatedTime = best.Arrival, DistanceKm = best.Dist, Status = "Chưa bắt đầu" });
 
-                        curKg += chosen.Weight;
-                        curM3 += chosen.Volume;
-                        curLat = chosen.Lat;
-                        curLng = chosen.Lng;
-
+                        curKg += chosen.Weight; curM3 += chosen.Volume; curLat = chosen.Lat; curLng = chosen.Lng;
                         cursor = best.Arrival.AddMinutes(SERVICE_TIME_MINUTES);
-
                         unassigned.Remove(chosen);
                     }
 
@@ -508,55 +449,20 @@ namespace ElecWasteCollection.Application.Services
 
                     int newGroupId;
                     string newGroupCode;
+                    if (!reusedFirst && reuseGroupId.HasValue) { newGroupId = reuseGroupId.Value; newGroupCode = $"GRP-{workDate:MMdd}-1"; reusedFirst = true; }
+                    else { newGroupId = FakeDataSeeder.collectionGroups.Count + 1; newGroupCode = $"GRP-{workDate:MMdd}-{groupCounter++}"; }
 
-                    if (!reusedFirst && reuseGroupId.HasValue)
-                    {
-                        newGroupId = reuseGroupId.Value;
-                        newGroupCode = $"GRP-{workDate:MMdd}-1";
-                        reusedFirst = true;
-                    }
-                    else
-                    {
-                        newGroupId = FakeDataSeeder.collectionGroups.Count + 1;
-                        newGroupCode = $"GRP-{workDate:MMdd}-{groupCounter++}";
-                    }
+                    var group = new CollectionGroups { Id = newGroupId, Group_Code = newGroupCode, Shift_Id = shift.Id, Name = $"{vehicle.Vehicle_Type} - {vehicle.Plate_Number}", Created_At = DateTime.Now };
+                    foreach (var rt in saveRoutes) rt.CollectionGroupId = group.Id;
 
-                    var group = new CollectionGroups
-                    {
-                        Id = newGroupId,
-                        Group_Code = newGroupCode,
-                        Shift_Id = shift.Id,
-                        Name = $"{vehicle.Vehicle_Type} - {vehicle.Plate_Number}",
-                        Created_At = DateTime.Now
-                    };
+                    if (request.SaveResult) { FakeDataSeeder.collectionGroups.Add(group); FakeDataSeeder.collectionRoutes.AddRange(saveRoutes); }
 
-                    foreach (var rt in saveRoutes)
-                        rt.CollectionGroupId = group.Id;
-
-                    if (request.SaveResult)
-                    {
-                        FakeDataSeeder.collectionGroups.Add(group);
-                        FakeDataSeeder.collectionRoutes.AddRange(saveRoutes);
-                    }
-
-                    response.CreatedGroups.Add(new GroupSummary
-                    {
-                        GroupId = group.Id,
-                        GroupCode = group.Group_Code,
-                        Collector = collector?.Name ?? "Unknown",
-                        Vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})",
-                        ShiftId = shift.Id,
-                        GroupDate = workDate,
-                        TotalPosts = routeNodes.Count,
-                        TotalWeightKg = Math.Round(curKg, 2),
-                        TotalVolumeM3 = Math.Round(curM3, 2),
-                        Routes = routeNodes
-                    });
+                    response.CreatedGroups.Add(new GroupSummary { GroupId = group.Id, GroupCode = group.Group_Code, Collector = collector?.Name ?? "Unknown", Vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})", ShiftId = shift.Id, GroupDate = workDate, TotalPosts = routeNodes.Count, TotalWeightKg = Math.Round(curKg, 2), TotalVolumeM3 = Math.Round(curM3, 3), Routes = routeNodes });
                 }
             }
-
             return await Task.FromResult(response);
         }
+
         public async Task<object> GetRoutesByGroupAsync(int groupId)
         {
             var group = FakeDataSeeder.collectionGroups
@@ -620,7 +526,7 @@ namespace ElecWasteCollection.Application.Services
                     weightKg = att.weight,
                     volumeM3 = att.volume,
                     distanceKm = r.DistanceKm,
-schedule = JsonSerializer.Deserialize<object>(post.ScheduleJson!),
+                    schedule = JsonSerializer.Deserialize<object>(post.ScheduleJson!),
                     estimatedArrival = r.EstimatedTime.ToString("HH:mm")
                 });
             }
