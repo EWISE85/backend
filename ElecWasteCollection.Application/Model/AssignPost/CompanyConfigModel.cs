@@ -19,6 +19,7 @@ namespace ElecWasteCollection.Application.Model.AssignPost
     {
         public int CompanyId { get; set; }
         public string CompanyName { get; set; }
+        public double RatioPercent { get; set; }
         public List<SmallPointDto> SmallPoints { get; set; }
     }
 

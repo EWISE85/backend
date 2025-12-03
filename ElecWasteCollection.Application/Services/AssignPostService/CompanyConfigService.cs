@@ -56,6 +56,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 {
                     CompanyId = company.CompanyId,
                     CompanyName = companyName,
+                    RatioPercent = company.RatioPercent,
                     SmallPoints = smallPointDtos
                 };
             }).ToList();
@@ -97,6 +98,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 {
                     CompanyId = company.CompanyId,
                     CompanyName = companyName,
+                    RatioPercent = company.RatioPercent,
                     SmallPoints = smallPoints
                 };
             }).ToList();

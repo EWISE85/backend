@@ -299,5 +299,44 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 };
             }).ToList();
         }
+        public async Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(int companyId)
+        {
+            await Task.Yield();
+
+            var company = FakeDataSeeder.CompanyConfigs
+                .FirstOrDefault(c => c.CompanyId == companyId)
+                ?? throw new Exception("Company not found.");
+
+            var realCompany = FakeDataSeeder.collectionTeams
+                .FirstOrDefault(t => t.Id == companyId);
+
+            string companyName = realCompany?.Name ?? $"Company {companyId}";
+
+            var smallPoints = company.SmallPoints.Select(cfgSp =>
+            {
+                var realSP = FakeDataSeeder.smallCollectionPoints
+                    .FirstOrDefault(p => p.Id == cfgSp.SmallPointId);
+
+                return new SmallPointDto
+                {
+                    SmallPointId = cfgSp.SmallPointId,
+                    Name = realSP?.Name,
+                    Lat = realSP?.Latitude ?? 0,
+                    Lng = realSP?.Longitude ?? 0,
+                    RadiusKm = cfgSp.RadiusKm,
+                    MaxRoadDistanceKm = cfgSp.MaxRoadDistanceKm,
+                    Active = cfgSp.Active
+                };
+            }).ToList();
+
+            return new CompanyConfigDto
+            {
+                CompanyId = company.CompanyId,
+                CompanyName = companyName,
+                RatioPercent = company.RatioPercent,
+                SmallPoints = smallPoints
+            };
+        }
+
     }
 }
