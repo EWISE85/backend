@@ -111,6 +111,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 post.CollectionCompanyId = chosen.CompanyId;
                 post.AssignedSmallPointId = chosen.SmallPointId;
+                //
+                post.DistanceToPointKm = chosen.RoadKm;
 
                 string fRoad = $"{Math.Round(chosen.RoadKm, 2):0.00} km";
                 string fRadius = $"{Math.Round(chosen.HaversineKm, 2):0.00} km";
