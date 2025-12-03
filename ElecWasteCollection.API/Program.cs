@@ -89,6 +89,7 @@ namespace ElecWasteCollection.API
 
             builder.Services.AddHttpClient<MapboxDirectionsClient>();
             builder.Services.AddSingleton<IMapboxDistanceCacheService, MapboxDistanceCacheService>();
+			builder.Services.AddHttpClient<MapboxMatrixClient>();
 
 			builder.Services.AddScoped<IAttributeOptionService, AttributeOptionService>();
 			builder.Services.AddScoped<IExcelImportService, ExcelImportService>();

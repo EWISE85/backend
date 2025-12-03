@@ -52,5 +52,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public string Vehicle_Type { get; set; } = "";
         public double Capacity_Kg { get; set; }
         public double AllowedCapacityKg { get; set; }
+        public double Capacity_M3 { get; set; }
+        public double AllowedCapacityM3 { get; set; }
     }
 }

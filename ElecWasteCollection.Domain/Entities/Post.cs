@@ -28,5 +28,6 @@ namespace ElecWasteCollection.Domain.Entities
 
         public int? CollectionCompanyId { get; set; }
         public int? AssignedSmallPointId { get; set; }
+        public double? DistanceToPointKm { get; set; }
     }
 }
