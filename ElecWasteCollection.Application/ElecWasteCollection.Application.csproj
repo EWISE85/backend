@@ -19,6 +19,7 @@
 	</ItemGroup>
   <ItemGroup>
     <PackageReference Include="APIVerve.API.ProfanityFilter" Version="1.1.9" />
+    <PackageReference Include="ClosedXML" Version="0.105.0" />
     <PackageReference Include="Emgu.CV" Version="4.12.0.5764" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />

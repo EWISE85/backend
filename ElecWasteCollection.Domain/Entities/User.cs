@@ -14,6 +14,12 @@ namespace ElecWasteCollection.Domain.Entities
 		Admin,
 		AdminCompany
 	}
+	public enum UserStatus
+	{
+		Active,
+		Inactive,
+		Suspended
+	}
 	public class User
 	{
 		public Guid UserId { get; set; }
@@ -34,5 +40,9 @@ namespace ElecWasteCollection.Domain.Entities
 		public string Role { get; set; }
 
 		public int SmallCollectionPointId { get; set; }
+
+		public int CollectionCompanyId { get; set; }
+
+		public string Status { get; set; }
 	}
 }

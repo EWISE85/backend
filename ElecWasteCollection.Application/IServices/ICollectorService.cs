@@ -10,8 +10,19 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface ICollectorService
 	{
+		Task<bool> AddNewCollector(User collector);
+		Task<bool> UpdateCollector(User collector);
+		Task<bool> DeleteCollector(Guid collectorId);
+
+
 		CollectorResponse? GetById(Guid id);
 
 		List<CollectorResponse> GetAll();
+
+		List<CollectorResponse> GetCollectorByCompanyId(int companyId);
+
+		List<CollectorResponse> GetCollectorByWareHouseId(int wareHouseId);
+
+		Task<ImportResult> CheckAndUpdateCollectorAsync(User collector, string collectorUsername, string password);
 	}
 }

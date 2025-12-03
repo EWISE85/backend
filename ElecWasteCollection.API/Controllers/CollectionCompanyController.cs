@@ -1,0 +1,57 @@
+﻿using ElecWasteCollection.Application.IServices;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ElecWasteCollection.API.Controllers
+{
+	[Route("api/collection-company")]
+	[ApiController]
+	public class CollectionCompanyController : ControllerBase
+	{
+		private readonly IExcelImportService _excelImportService;
+		private readonly ICollectionCompanyService _collectionCompanyService;
+		public CollectionCompanyController(
+			IExcelImportService excelImportService,
+			ICollectionCompanyService collectionCompanyService)
+		{
+			_excelImportService = excelImportService;
+			_collectionCompanyService = collectionCompanyService;
+		}
+		[HttpPost("import-excel")]
+		public async Task<IActionResult> ImportCollectionCompanies(IFormFile file)
+		{
+			if (file == null || file.Length == 0)
+			{
+				return BadRequest("No file uploaded.");
+			}
+
+			using var stream = file.OpenReadStream();
+			var result = await _excelImportService.ImportAsync(stream, "Company");
+
+			if (result.Success)
+			{
+				return Ok(result);
+			}
+			else
+			{
+				return BadRequest(result);
+			}
+		}
+		[HttpGet()]
+		public async Task<IActionResult> GetAllCollectionCompanies()
+		{
+			var result = await _collectionCompanyService.GetAllCollectionCompaniesAsync();
+			return Ok(result);
+		}
+		[HttpGet("{companyId}")]
+		public  IActionResult GetCollectionCompanyById([FromRoute] int companyId)
+		{
+			var result =  _collectionCompanyService.GetCompanyById(companyId);
+			if (result == null)
+			{
+				return NotFound();
+			}
+			return Ok(result);
+		}
+	}
+}

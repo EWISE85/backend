@@ -38,7 +38,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public void AddUser(User user)
 		{
-			throw new NotImplementedException();
+			users.Add(user);
 		}
 
 		public  User GetById(Guid id)
@@ -110,7 +110,9 @@ namespace ElecWasteCollection.Application.Services
 				Phone = user.Phone,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				Points = points
+				Points = points,
+				CollectionCompanyId = user.CollectionCompanyId,
+				SmallCollectionPointId = user.SmallCollectionPointId
 			};
 			return userProfile;
 		}

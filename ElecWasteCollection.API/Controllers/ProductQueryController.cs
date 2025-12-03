@@ -1,54 +1,57 @@
 ﻿using ElecWasteCollection.Application.IServices.IAssignPost;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/product-query")]
-public class ProductQueryController : ControllerBase
+namespace ElecWasteCollection.API.Controllers
 {
-    private readonly IProductQueryService _productQueryService;
 
-    public ProductQueryController(IProductQueryService productQueryService)
+    [ApiController]
+    [Route("api/product-query")]
+    public class ProductQueryController : ControllerBase
     {
-        _productQueryService = productQueryService;
+        private readonly IProductQueryService _productQueryService;
+
+        public ProductQueryController(IProductQueryService productQueryService)
+        {
+            _productQueryService = productQueryService;
+        }
+
+        [HttpGet("company/{companyId}")]
+        public async Task<IActionResult> GetCompanyProducts(
+            int companyId,
+            [FromQuery] string workDate)
+        {
+            if (!DateOnly.TryParse(workDate, out var date))
+                return BadRequest("workDate không hợp lệ. Định dạng yyyy-MM-dd");
+
+            var result = await _productQueryService.GetCompanyProductsAsync(companyId, date);
+            return Ok(result);
+        }
+
+        [HttpGet("small-point/{smallPointId}")]
+        public async Task<IActionResult> GetSmallPointProducts(
+            int smallPointId,
+            [FromQuery] string workDate)
+        {
+            if (!DateOnly.TryParse(workDate, out var date))
+                return BadRequest("workDate không hợp lệ. Định dạng yyyy-MM-dd");
+
+            var result = await _productQueryService.GetSmallPointProductsAsync(smallPointId, date);
+            return Ok(result);
+        }
+
+        [HttpGet("companies-with-points")]
+        public async Task<IActionResult> GetCompaniesWithPoints()
+        {
+            var result = await _productQueryService.GetCompaniesWithSmallPointsAsync();
+            return Ok(result);
+        }
+
+        [HttpGet("{companyId}/smallpoints")]
+        public async Task<IActionResult> GetSmallPoints(int companyId)
+        {
+            var result = await _productQueryService.GetSmallPointsByCompanyIdAsync(companyId);
+            return Ok(result);
+        }
     }
-
-    [HttpGet("company/{companyId}")]
-    public async Task<IActionResult> GetCompanyProducts(
-        int companyId,
-        [FromQuery] string workDate)
-    {
-        if (!DateOnly.TryParse(workDate, out var date))
-            return BadRequest("workDate không hợp lệ. Định dạng yyyy-MM-dd");
-
-        var result = await _productQueryService.GetCompanyProductsAsync(companyId, date);
-        return Ok(result);
-    }
-
-    [HttpGet("small-point/{smallPointId}")]
-    public async Task<IActionResult> GetSmallPointProducts(
-        int smallPointId,
-        [FromQuery] string workDate)
-    {
-        if (!DateOnly.TryParse(workDate, out var date))
-            return BadRequest("workDate không hợp lệ. Định dạng yyyy-MM-dd");
-
-        var result = await _productQueryService.GetSmallPointProductsAsync(smallPointId, date);
-        return Ok(result);
-    }
-
-    [HttpGet("companies-with-points")]
-    public async Task<IActionResult> GetCompaniesWithPoints()
-    {
-        var result = await _productQueryService.GetCompaniesWithSmallPointsAsync();
-        return Ok(result);
-    }
-
-    [HttpGet("{companyId}/smallpoints")]
-    public async Task<IActionResult> GetSmallPoints(int companyId)
-    {
-        var result = await _productQueryService.GetSmallPointsByCompanyIdAsync(companyId);
-        return Ok(result); 
-    }
-
 
 }

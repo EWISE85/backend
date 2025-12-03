@@ -122,13 +122,13 @@ namespace ElecWasteCollection.Application.Data
         private static readonly Guid collector_Tuan_Id = Guid.Parse("c011ec70-b861-468f-b648-812e90f01a7e");
         public static List<User> users = new()
         {
-            new User { UserId = Guid.Parse("7f5c8b33-1b52-4d11-91b0-932c3d243c71"), Name = "Trần Huỳnh Bảo Ngọc", Email = "ngocthbse183850@fpt.edu.vn", Phone = "0901234567", Avatar = "https://picsum.photos/id/1011/200/200",Role = "User" },
-            new User { UserId = Guid.Parse("b73a62a7-8b90-43cf-9ad7-2abf96f34a52"), Name = "Lê Thị Mai", Email = "le.thi.mai@example.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1025/200/200", Role = "User" },
-            new User { UserId = Guid.Parse("e9b4b9de-b3b0-49ad-b90c-74c24a26b57a"), Name = "Nguyễn Minh Khôi", Email = "nguyen.minh.khoi@example.com", Phone = "0908123456", Avatar = "https://picsum.photos/id/1033/200/200", Role = "User" },
-            new User { UserId = Guid.Parse("72b4ad6a-0b5b-45a3-bb6b-6e1790c84b45"), Name = "Phạm Thị Hằng", Email = "pham.thi.hang@example.com", Phone = "0911222333",  Avatar = "https://picsum.photos/id/1045/200/200",  Role = "User" },
-            new User { UserId = Guid.Parse("c40deff9-163b-49e8-b967-238f22882b63"), Name = "Đỗ Quốc Bảo", Email = "do.quoc.bao@example.com", Phone = "0977222333",  Avatar = "https://picsum.photos/id/1059/200/200",Role = "User" },
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Name = "Admin thu gom nhỏ", Email = "adminthugomnho@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = "AdminWarehouse", SmallCollectionPointId = 1 },
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b95"), Name = "Admin lớn nhất ", Email = "adminthugomlon@gmail.com", Phone = "0977922333", Avatar = "https://picsum.photos/id/1059/200/200", Role = "SuperAdmin", SmallCollectionPointId = 0 },
+            new User { UserId = Guid.Parse("7f5c8b33-1b52-4d11-91b0-932c3d243c71"), Name = "Trần Huỳnh Bảo Ngọc", Email = "ngocthbse183850@fpt.edu.vn", Phone = "0901234567", Avatar = "https://picsum.photos/id/1011/200/200",Role = "User",Status = UserStatus.Active.ToString()},
+            new User { UserId = Guid.Parse("b73a62a7-8b90-43cf-9ad7-2abf96f34a52"), Name = "Lê Thị Mai", Email = "le.thi.mai@example.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1025/200/200", Role = "User",Status = UserStatus.Active.ToString() },
+            new User { UserId = Guid.Parse("e9b4b9de-b3b0-49ad-b90c-74c24a26b57a"), Name = "Nguyễn Minh Khôi", Email = "nguyen.minh.khoi@example.com", Phone = "0908123456", Avatar = "https://picsum.photos/id/1033/200/200", Role = "User",Status = UserStatus.Active.ToString() },
+            new User { UserId = Guid.Parse("72b4ad6a-0b5b-45a3-bb6b-6e1790c84b45"), Name = "Phạm Thị Hằng", Email = "pham.thi.hang@example.com", Phone = "0911222333",  Avatar = "https://picsum.photos/id/1045/200/200",  Role = "User",Status = UserStatus.Active.ToString() },
+            new User { UserId = Guid.Parse("c40deff9-163b-49e8-b967-238f22882b63"), Name = "Đỗ Quốc Bảo", Email = "do.quoc.bao@example.com", Phone = "0977222333",  Avatar = "https://picsum.photos/id/1059/200/200",Role = "User,Status = UserStatus.Active.ToString()" },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Name = "Admin thu gom nhỏ", Email = "adminthugomnho@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = "AdminWarehouse", SmallCollectionPointId = 1,Status = UserStatus.Active.ToString() },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b95"), Name = "Admin lớn nhất ", Email = "adminthugomlon@gmail.com", Phone = "0977922333", Avatar = "https://picsum.photos/id/1059/200/200", Role = "SuperAdmin", SmallCollectionPointId = 0 ,Status = UserStatus.Active.ToString()},
             new User
     {
         UserId = collector_Dung_Id,
@@ -137,7 +137,9 @@ namespace ElecWasteCollection.Application.Data
         Phone = "0905999888",
         Avatar = "https://picsum.photos/id/1062/200/200",
         SmallCollectionPointId = 1, // Thuộc trạm 1 (Vinhomes)
-		Role = UserRole.Collector.ToString()
+        CollectionCompanyId =  1,
+		Role = UserRole.Collector.ToString(),
+        Status = UserStatus.Active.ToString()
     },
     new User
     {
@@ -147,6 +149,7 @@ namespace ElecWasteCollection.Application.Data
         Phone = "0905111222",
         Avatar = "https://picsum.photos/id/1063/200/200",
         SmallCollectionPointId = 1, // Thuộc trạm 1 (Vinhomes)
+        CollectionCompanyId =  1,
 		Role = UserRole.Collector.ToString()
 
     }
@@ -358,6 +361,7 @@ namespace ElecWasteCollection.Application.Data
     new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_DungTich, OptionName = "Nhỏ hơn 50 lít", EstimateWeight = 0, EstimateVolume = null },
     new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_DungTich, OptionName = "Từ 50 lít - 100 lít", EstimateWeight = 0, EstimateVolume = null },
     new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_DungTich, OptionName = "Trên 100 lít", EstimateWeight = 0, EstimateVolume = null },
+
 
     // Các lựa chọn khác như kích thước màn hình (có thể giả lập theo kích thước màn hình của các thiết bị điện tử)
     new AttributeOptions { OptionId = Guid.NewGuid(), AttributeId = att_KichThuocManHinh, OptionName = "Nhỏ hơn 32 inch", EstimateWeight = null, EstimateVolume = 0.03 },
@@ -716,33 +720,36 @@ namespace ElecWasteCollection.Application.Data
         Address = "Thủ Đức",
         Latitude = 10.8520,
         Longitude = 106.7540,
-        Status = "active",
-        City_Team_Id = 1,
+        Status = "Active",
+		CompanyId = 1,
         Created_At = _vnNow.AddDays(-1),
-        Updated_At = _vnNow
-    },
+        Updated_At = _vnNow,
+		OpenTime = "07:00 - 18:00"
+	},
     new SmallCollectionPoints {
         Id = 2,
         Name = "Điểm B - Quận 9",
         Address = "Quận 9",
         Latitude = 10.8452,
         Longitude = 106.7825,
-        Status = "active",
-        City_Team_Id = 1,
+        Status = "Active",
+		CompanyId = 1,
         Created_At = _vnNow.AddDays(-1),
-        Updated_At = _vnNow
-    },
+        Updated_At = _vnNow,
+		OpenTime = "07:00 - 18:00"
+	},
     new SmallCollectionPoints {
         Id = 3,
         Name = "Điểm C - Bình Thạnh",
         Address = "Bình Thạnh",
         Latitude = 10.8040,
         Longitude = 106.7070,
-        Status = "active",
-        City_Team_Id = 2,
+        Status = "Active",
+		CompanyId = 2,
         Created_At = _vnNow.AddDays(-1),
-        Updated_At = _vnNow
-    }
+        Updated_At = _vnNow,
+		OpenTime = "07:00 - 18:00"
+	}
 };
 
         // ======================================================================
@@ -2077,10 +2084,10 @@ namespace ElecWasteCollection.Application.Data
     {
         Id = 1,
         Name = "EcoGreen Collection Co.",
-        Contact_Person = "Nguyễn Văn Minh",
+		CompanyEmail = "NguyễnVănMinh@gmail.com",
         Phone = "0901 234 567",
-        City = "Thủ Đức",
-        Status = "active",
+        Address = "Thủ Đức",
+        Status = "Active",
         Created_At = _vnNow.AddDays(-10),
         Updated_At = _vnNow
     },
@@ -2088,10 +2095,10 @@ namespace ElecWasteCollection.Application.Data
     {
         Id = 2,
         Name = "UrbanClean Recycling Corp.",
-        Contact_Person = "Trần Thị Hạnh",
+		CompanyEmail = "TrầnThịHạnh@gmail.com",
         Phone = "0987 654 321",
-        City = "Bình Thạnh",
-        Status = "active",
+		Address = "Bình Thạnh",
+        Status = "Active",
         Created_At = _vnNow.AddDays(-12),
         Updated_At = _vnNow
     }
@@ -2338,9 +2345,9 @@ namespace ElecWasteCollection.Application.Data
             // Đảm bảo Collection Points
             if (!smallCollectionPoints.Any(x => x.Id == 1))
             {
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 1, Name = "Điểm A - Thủ Đức", Latitude = 10.8520, Longitude = 106.7540, City_Team_Id = 1 });
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 2, Name = "Điểm B - Quận 9", Latitude = 10.8452, Longitude = 106.7825, City_Team_Id = 1 });
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 3, Name = "Điểm C - Bình Thạnh", Latitude = 10.8040, Longitude = 106.7070, City_Team_Id = 2 });
+                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 1, Name = "Điểm A - Thủ Đức", Latitude = 10.8520, Longitude = 106.7540, CompanyId = 1, OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 2, Name = "Điểm B - Quận 9", Latitude = 10.8452, Longitude = 106.7825, CompanyId = 1, OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 3, Name = "Điểm C - Bình Thạnh", Latitude = 10.8040, Longitude = 106.7070, CompanyId = 2, OpenTime = "07:00 - 18:00" });
             }
 
             // Shifts

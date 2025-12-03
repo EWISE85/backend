@@ -91,7 +91,11 @@ namespace ElecWasteCollection.API
             builder.Services.AddSingleton<IMapboxDistanceCacheService, MapboxDistanceCacheService>();
 
 			builder.Services.AddScoped<IAttributeOptionService, AttributeOptionService>();
-            builder.Services.AddCors(options =>
+			builder.Services.AddScoped<IExcelImportService, ExcelImportService>();
+			builder.Services.AddScoped<ICollectionCompanyService, CollectionCompanyService>();
+			builder.Services.AddScoped<IAccountService, AccountService>();
+			builder.Services.AddScoped<ISmallCollectionService, SmallCollectionService>();
+			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
 				{
