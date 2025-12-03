@@ -75,6 +75,43 @@ namespace ElecWasteCollection.Application.Services
 			return Task.FromResult(false);
 		}
 
+		public Task<PagedResultModel<SmallCollectionPointsResponse>> GetPagedSmallCollectionPointsAsync(SmallCollectionSearchModel model)
+		{
+			var query = _smallCollectionPoints.AsQueryable();
+
+			if (model.CompanyId.HasValue)
+			{
+				query = query.Where(s => s.CompanyId == model.CompanyId.Value);
+			}
+
+			if (!string.IsNullOrEmpty(model.Status))
+			{
+				query = query.Where(s => s.Status == model.Status);
+			}
+
+			var totalItems = query.Count();
+
+			var items = query
+				.Skip((model.Page - 1) * model.Limit)
+				.Take(model.Limit)
+				.Select(point => new SmallCollectionPointsResponse
+				{
+					Id = point.Id,
+					CompanyId = point.CompanyId,
+					Name = point.Name,
+					Address = point.Address,
+					Latitude = point.Latitude,
+					Longitude = point.Longitude,
+					OpenTime = point.OpenTime,
+					Status = point.Status
+				})
+				.ToList();
+			var pagedResult = new PagedResultModel<SmallCollectionPointsResponse>(items, model.Page, model.Limit, totalItems);
+
+
+			return Task.FromResult(pagedResult);
+		}
+
 		public SmallCollectionPointsResponse? GetSmallCollectionById(int smallCollectionPointId)
 		{
 			var point = _smallCollectionPoints.FirstOrDefault(s => s.Id == smallCollectionPointId);

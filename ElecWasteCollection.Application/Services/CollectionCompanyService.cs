@@ -143,6 +143,34 @@ namespace ElecWasteCollection.Application.Services
 			return null;
 		}
 
+		public Task<PagedResultModel<CollectionCompanyResponse>> GetPagedCompanyAsync(CompanySearchModel model)
+		{
+			var query = _teams.AsQueryable();
+
+			if (!string.IsNullOrEmpty(model.Status))
+			{
+				query = query.Where(c => c.Status == model.Status);
+			}
+
+			var totalItems = query.Count();
+			var items = query.Skip((model.Page - 1) * model.Limit)
+							 .Take(model.Limit)
+							 .Select(team => new CollectionCompanyResponse
+							 {
+								 Id = team.Id,
+								 Name = team.Name,
+								 CompanyEmail = team.CompanyEmail,
+								 Phone = team.Phone,
+								 City = team.Address,
+								 Status = team.Status
+							 }).ToList();
+
+			var pagedResult = new PagedResultModel<CollectionCompanyResponse>(items, model.Page, model.Limit, totalItems);
+
+			return Task.FromResult(pagedResult);
+		}
+
+
 		public Task<bool> UpdateCompany(CollectionTeams collectionTeams)
 		{
 			var team = _teams.FirstOrDefault(t => t.Id == collectionTeams.Id);

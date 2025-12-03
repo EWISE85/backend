@@ -1,4 +1,6 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.API.DTOs.Request;
+using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -53,6 +55,19 @@ namespace ElecWasteCollection.API.Controllers
 			}
 		}
 
+		[HttpGet("filter")]
+		public async Task<IActionResult> GetPagedSmallCollectionPoints([FromQuery] SmallCollectionSearchRequest request)
+		{
+			var model = new SmallCollectionSearchModel
+			{
+				CompanyId = request.CompanyId,
+				Limit = request.Limit,
+				Page = request.Page,
+				Status = request.Status
+			};
+			var result = await _smallCollectionService.GetPagedSmallCollectionPointsAsync(model);
+			return Ok(result);
+		}
 
 	}
 

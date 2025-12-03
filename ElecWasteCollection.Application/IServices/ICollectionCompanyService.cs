@@ -17,5 +17,8 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<ImportResult> CheckAndUpdateCompanyAsync(CollectionTeams collectionTeams, string adminUsername, string password);
 		CollectionCompanyResponse? GetCompanyById(int collectionCompanyId);
+
+		Task<PagedResultModel<CollectionCompanyResponse>> GetPagedCompanyAsync(CompanySearchModel model);
+
 	}
 }

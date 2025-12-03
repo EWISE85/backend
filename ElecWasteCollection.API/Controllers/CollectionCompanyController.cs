@@ -1,4 +1,6 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.API.DTOs.Request;
+using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -51,6 +53,18 @@ namespace ElecWasteCollection.API.Controllers
 			{
 				return NotFound();
 			}
+			return Ok(result);
+		}
+		[HttpGet("filter")]
+		public async Task<IActionResult> GetPagedCollectionCompanies([FromQuery] CompanySearchRequest request)
+		{
+			var model = new CompanySearchModel
+			{
+				Limit = request.Limit,
+				Page = request.Page,
+				Status = request.Status
+			};
+			var result = await _collectionCompanyService.GetPagedCompanyAsync(model);
 			return Ok(result);
 		}
 	}

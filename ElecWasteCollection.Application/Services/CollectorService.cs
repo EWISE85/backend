@@ -147,5 +147,42 @@ namespace ElecWasteCollection.Application.Services
 			}
 			return Task.FromResult(false);
 		}
+
+		public Task<PagedResultModel<CollectorResponse>> GetPagedCollectorsAsync(CollectorSearchModel model)
+		{
+			var query = collectors.AsQueryable();
+
+			if (!string.IsNullOrEmpty(model.Status))
+			{
+				query = query.Where(c => c.Status == model.Status);
+			}
+			if (model.CompanyId.HasValue)
+			{
+				query = query.Where(c => c.CollectionCompanyId == model.CompanyId.Value);
+			}
+			if (model.SmallCollectionId.HasValue)
+			{
+				query = query.Where(c => c.SmallCollectionPointId == model.SmallCollectionId.Value);
+			}
+
+			var totalItems = query.Count();
+
+			var items = query
+				.Skip((model.Page - 1) * model.Limit)
+				.Take(model.Page)
+				.Select(c => new CollectorResponse
+				{
+					CollectorId = c.UserId,
+					Name = c.Name,
+					Email = c.Email,
+					Phone = c.Phone,
+					Avatar = c.Avatar,
+					SmallCollectionPointId = c.SmallCollectionPointId
+				})
+				.ToList();
+			var pagedResult = new PagedResultModel<CollectorResponse>(items, model.Page, model.Limit, totalItems);
+
+			return Task.FromResult(pagedResult);
+		}
 	}
 }

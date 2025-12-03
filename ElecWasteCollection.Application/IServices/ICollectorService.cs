@@ -24,5 +24,7 @@ namespace ElecWasteCollection.Application.IServices
 		List<CollectorResponse> GetCollectorByWareHouseId(int wareHouseId);
 
 		Task<ImportResult> CheckAndUpdateCollectorAsync(User collector, string collectorUsername, string password);
+
+		Task<PagedResultModel<CollectorResponse>> GetPagedCollectorsAsync(CollectorSearchModel model);
 	}
 }

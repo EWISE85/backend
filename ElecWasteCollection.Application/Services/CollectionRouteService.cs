@@ -253,6 +253,7 @@ namespace ElecWasteCollection.Application.Services
 					Address = post.Address,
 					Iat = userAddress.Iat.Value ,
 					Ing =userAddress.Ing.Value,
+					DistanceKm = r.DistanceKm,
 					Status = r.Status
 				};
 			})
@@ -382,6 +383,7 @@ namespace ElecWasteCollection.Application.Services
 					SubCategoryName = subCategory,
 					Iat = senderAddress.Iat.Value,
 					Ing = senderAddress.Ing.Value,
+					DistanceKm = route.DistanceKm,
 					Status = route.Status
 				};
 			}

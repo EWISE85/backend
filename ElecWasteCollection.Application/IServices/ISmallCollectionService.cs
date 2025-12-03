@@ -20,5 +20,7 @@ namespace ElecWasteCollection.Application.IServices
 		SmallCollectionPointsResponse? GetSmallCollectionById(int smallCollectionPointId);
 
 		Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(SmallCollectionPoints smallCollectionPoints, string adminUsername, string adminPassword);
+
+		Task<PagedResultModel<SmallCollectionPointsResponse>> GetPagedSmallCollectionPointsAsync(SmallCollectionSearchModel model);
 	}
 }

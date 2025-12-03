@@ -39,6 +39,8 @@ namespace ElecWasteCollection.Application.Model
 
 		public double Ing { get; set; }
 
+		public double DistanceKm { get; set; }
+
 		public string Status { get; set; }
 	}
 }
