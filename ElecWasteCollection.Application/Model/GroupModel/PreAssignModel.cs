@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Model.GroupModel
@@ -27,19 +28,16 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public double TotalVolume { get; set; }
 
         public SuggestedVehicle? SuggestedVehicle { get; set; }
-        public List<PreAssignPost> Posts { get; set; } = new();
+        public List<PreAssignProduct> Products { get; set; } = new();
     }
 
-    public class PreAssignPost
+    public class PreAssignProduct
     {
         public Guid PostId { get; set; }
         public Guid ProductId { get; set; }
 
         public string UserName { get; set; } = "";
         public string Address { get; set; } = "";
-        public double Length { get; set; }
-        public double Width { get; set; }
-        public double Height { get; set; }
         public string DimensionText { get; set; } = "";  
         public double Weight { get; set; }
         public double Volume { get; set; }

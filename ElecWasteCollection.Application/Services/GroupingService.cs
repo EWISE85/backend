@@ -52,7 +52,7 @@ namespace ElecWasteCollection.Application.Services
             public List<DateOnly> SpecificDates { get; set; } = new();
         }
 
-        private (double length, double width, double height, double weight, double volume, string dimensionText)GetProductAttributes(Guid productId)
+        private (double length, double width, double height, double weight, double volume, string dimensionText) GetProductAttributes(Guid productId)
         {
             var pValues = FakeDataSeeder.productValues.Where(v => v.ProductId == productId).ToList();
             var allOptions = FakeDataSeeder.attributeOptions;
@@ -304,7 +304,7 @@ namespace ElecWasteCollection.Application.Services
 
                 double curKg = 0;
                 double curM3 = 0;
-                var selected = new List<PreAssignPost>();
+                var selected = new List<PreAssignProduct>();
                 var removeList = new List<dynamic>(); 
 
                 foreach (var item in feasibleTimeBound)
@@ -317,15 +317,12 @@ namespace ElecWasteCollection.Application.Services
                         curKg += itemKg;
                         curM3 += itemM3;
 
-                        selected.Add(new PreAssignPost
+                        selected.Add(new PreAssignProduct
                         {
                             PostId = item.Post.Id,
                             ProductId = item.Post.ProductId,
                             UserName = item.UserName,
                             Address = item.Address,
-                            Length = item.Length,
-                            Width = item.Width,
-                            Height = item.Height,
                             DimensionText = item.DimensionText,
                             Weight = itemKg,
                             Volume = Math.Round(itemM3, 5) 
@@ -355,7 +352,7 @@ namespace ElecWasteCollection.Application.Services
                             Capacity_M3 = Math.Round((double)suggested.Capacity_M3, 4),
                             AllowedCapacityM3 = Math.Round(allowedM3, 4)
                         },
-                        Posts = selected
+                        Products = selected
                     });
                 }
 
