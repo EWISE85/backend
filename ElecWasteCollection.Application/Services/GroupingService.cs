@@ -462,6 +462,9 @@ namespace ElecWasteCollection.Application.Services
                     if (address == null || !TryGetTimeWindowForDate(p.ScheduleJson!, workDate, out var st, out var en))
                         continue;
 
+                    var product = FakeDataSeeder.products.First(pr => pr.Id == p.ProductId);
+                    var cat = FakeDataSeeder.categories.FirstOrDefault(c => c.Id == product.CategoryId);
+                    var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
                     var att = GetProductAttributes(p.ProductId);
                     locations.Add((address.Iat ?? point.Latitude, address.Ing ?? point.Longitude));
 
@@ -479,6 +482,8 @@ namespace ElecWasteCollection.Application.Services
                         Post = p,
                         User = user,
                         Address = address,
+                        CategoryName = cat?.Name ?? "Unknown",
+                        BrandName = brand?.Name ?? "Unknown",
                         Att = new
                         {
                             Length = att.length,
@@ -552,9 +557,8 @@ namespace ElecWasteCollection.Application.Services
                         DistanceKm = Math.Round(distMeters / 1000.0, 2),
                         EstimatedArrival = arrival.ToString("HH:mm"),
                         Schedule = JsonSerializer.Deserialize<object>(data.Post.ScheduleJson!),
-                        Length = data.Att.Length,
-                        Width = data.Att.Width,
-                        Height = data.Att.Height,
+                        CategoryName = data.CategoryName,
+                        BrandName = data.BrandName,
                         DimensionText = data.Att.DimensionText,
                         WeightKg = data.Att.Weight,
                         VolumeM3 = data.Att.Volume 
@@ -643,9 +647,12 @@ namespace ElecWasteCollection.Application.Services
             foreach (var r in routes)
             {
                 var post = FakeDataSeeder.posts.FirstOrDefault(p => p.ProductId == r.ProductId)
-                    ?? throw new Exception("Không tìm thấy Post cho Product"); var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
-
+                    ?? throw new Exception("Không tìm thấy Post cho Product");
+                var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
                 var userAddress = _userAddress.First(a => a.UserId == user.UserId);
+                var product = FakeDataSeeder.products.First(pr => pr.Id == r.ProductId);
+                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.Id == product.CategoryId);
+                var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 
                 var att = GetProductAttributes(post.ProductId);
 
@@ -659,9 +666,8 @@ namespace ElecWasteCollection.Application.Services
                     postId = post.Id,
                     userName = user.Name,
                     address = userAddress.Address,
-                    length = att.length,
-                    width = att.width,
-                    height = att.height,
+                    categoryName = category?.Name ?? "Unknown",
+                    brandName = brand?.Name ?? "Unknown",
                     dimensionText = att.dimensionText,
                     weightKg = att.weight,
                     volumeM3 = att.volume, 
