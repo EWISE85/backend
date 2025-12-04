@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -32,12 +33,14 @@ namespace ElecWasteCollection.Application.Services
 		private readonly List<PointTransactions> pointTransactions = FakeDataSeeder.points;
 		private readonly List<Packages> _package = FakeDataSeeder.packages;
 		private readonly IAttributeOptionService _attributeOptionService;
-		public ProductService(IPointTransactionService pointTransactionService, IUserService userService, ICollectorService collectorService, IAttributeOptionService attributeOptionService)
+		private readonly ILogger<ProductService> _logger;
+		public ProductService(IPointTransactionService pointTransactionService, IUserService userService, ICollectorService collectorService, IAttributeOptionService attributeOptionService, ILogger<ProductService> logger)
 		{
 			_pointTransactionService = pointTransactionService;
 			_userService = userService;
 			_collectorService = collectorService;
 			_attributeOptionService = attributeOptionService;
+			_logger = logger;
 		}
 		public bool AddPackageIdToProductByQrCode(string qrCode, string? packageId)
 		{
@@ -112,13 +115,17 @@ namespace ElecWasteCollection.Application.Services
 			var product = _products.FirstOrDefault(p => p.QRCode == qrcode);
 			if (product == null)
 			{
+				_logger.LogWarning("Product not found for QR code: {QRCode}", qrcode);
 				return null;
 			}
 
 			// 2. Tìm Post (Bài đăng) liên quan đến Product này
 			// (Cần bước này để lấy được danh sách ảnh từ bảng _postImages)
 			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
-
+			if (post == null)
+			{
+				_logger.LogWarning("Post not found for Product ID: {ProductId}", product.Id);
+			}
 			// 3. Lấy các thông tin tham chiếu (Brand, Category, SizeTier)
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
