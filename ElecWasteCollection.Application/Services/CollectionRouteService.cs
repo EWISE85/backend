@@ -295,14 +295,10 @@ namespace ElecWasteCollection.Application.Services
 				{
 					route.Status = "User_Reject";
 				}
-
-				
-
 				await _notifierService.NotifyShipperOfConfirmation(
 					collectorId.ToString(),
 					collectionRouteId,
 					route.Status);
-
 				return true;
 			
 

@@ -136,19 +136,7 @@ namespace ElecWasteCollection.Application.Services
 				point = post.EstimatePoint;
 			
 
-			// 5. Lấy danh sách thuộc tính (Attributes) - Giống hệt logic hàm dưới
-			var attributesList = _productValues
-				.Where(pv => pv.ProductId == product.Id)
-				.Select(pv =>
-				{
-					var attribute = _attributes.FirstOrDefault(a => a.Id == pv.AttributeId);
-					return new ProductValueDetailModel
-					{
-						AttributeName = attribute?.Name ?? "N/A",
-						Value = pv.Value.ToString(),
-					};
-				})
-				.ToList();
+			
 
 			// 6. Trả về model đầy đủ (Mapping chuẩn theo hàm ProductsComeWarehouseByDate)
 			return new ProductComeWarehouseDetailModel
@@ -164,7 +152,7 @@ namespace ElecWasteCollection.Application.Services
 				Status = product.Status,
 				//SizeTierName = sizeTier?.Name, // Có thể null
 				EstimatePoint = point, // Có thể null
-				Attributes = attributesList
+				
 			};
 		}
 
@@ -329,19 +317,7 @@ namespace ElecWasteCollection.Application.Services
 			
 
 
-			// Lấy thuộc tính
-			var attributesList = _productValues
-				.Where(pv => pv.ProductId == product.Id)
-				.Select(pv =>
-				{
-					var attribute = _attributes.FirstOrDefault(a => a.Id == pv.AttributeId);
-					return new ProductValueDetailModel
-					{
-						AttributeName = attribute?.Name ?? "N/A",
-						Value = pv.Value.ToString(),
-					};
-				})
-				.ToList();
+			
 
 
 
@@ -360,7 +336,6 @@ namespace ElecWasteCollection.Application.Services
 				//SizeTierName = sizeTier?.Name,
 				EstimatePoint = post?.EstimatePoint,
 				RealPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.Id)?.Point,
-				Attributes = attributesList
 			};
 		}
 

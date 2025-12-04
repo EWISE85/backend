@@ -28,6 +28,5 @@ namespace ElecWasteCollection.Application.Model
 		public string? SizeTierName { get; set; } // (ví dụ: "Tivi Lớn (Trên 55 inch)")
 		public double? EstimatePoint { get; set; } // Điểm ước tính dựa trên kích thước
 		public double? RealPoint { get; set; } // Điểm thực tế khi nhập kho
-		public List<ProductValueDetailModel>? Attributes { get; set; } // (ví dụ: "Nặng: 55 kg")
 	}
 }
