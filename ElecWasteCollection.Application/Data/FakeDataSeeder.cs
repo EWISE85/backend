@@ -1,3 +1,4 @@
+using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
@@ -109,7 +110,8 @@ namespace ElecWasteCollection.Application.Data
             //AddFullGroupingDemoData();
 
             //SeedGroupingServiceTestData();
-            AddPostsFor_15_12();
+            //AddPostsFor_15_12();
+            AddPostsFor_07_12();
 
             //AddPostsForDay30();
 
@@ -2435,6 +2437,254 @@ namespace ElecWasteCollection.Application.Data
         public static Guid ID_DungTich => att_DungTich;
         public static Guid ID_KhoiLuongGiat => att_KhoiLuongGiat;
         public static Guid ID_TrongLuong => att_TrongLuong;
+
+         public static void AddPostsFor_07_12()
+        {
+            Console.WriteLine("=== FakeData: Loading ROBUST posts for 07/12/2025 ===");
+
+            // ============================================================
+            // 1. CẤU HÌNH THỜI GIAN & DATA POOL
+            // ============================================================
+            // Sửa ngày thành 07/12/2025
+            var targetDate = new DateOnly(2025, 12, 7);
+            var targetDateTime = targetDate.ToDateTime(new TimeOnly(0, 0));
+            Random rnd = new Random();
+
+            // Pool các category phổ biến để test
+            var categoryPool = new List<Guid> { cat_Tivi, cat_MayGiat, cat_TuLanh, cat_LoViSong, cat_DienThoai, cat_Laptop };
+
+            // Map Brand theo Category để đảm bảo data hợp lệ
+            var brandMap = brands.GroupBy(x => x.CategoryId).ToDictionary(g => g.Key, g => g.ToList());
+
+            // ============================================================
+            // 2. TẠO USERS (20 Users mới)
+            // ============================================================
+            var newUsers = Enumerable.Range(1, 20)
+                .Select(i => new User
+                {
+                    UserId = Guid.NewGuid(),
+                    Name = $"Khách hàng {i} (07/12)", // Update text
+                    Email = $"khach{i}.0712@test.com", // Update email
+                    Phone = $"09000712{i:D2}",        // Update phone
+                    Avatar = $"https://picsum.photos/id/{i + 10}/200/200",
+                    Role = "User"
+                })
+                .ToList();
+
+            users.AddRange(newUsers);
+
+            // ============================================================
+            // 3. TẠO USER ADDRESSES
+            // ============================================================
+            List<(double lat, double lng)> coords = new()
+    {
+        (10.8510,106.7530),(10.8445,106.7855),(10.8021,106.7074),(10.8404,106.6800),
+        (10.8550,106.7700),(10.8200,106.7000),(10.8300,106.7200),(10.8450,106.7600),
+        (10.8555,106.7500),(10.8480,106.7400),(10.8600,106.7800),(10.8250,106.7100),
+        (10.8150,106.7050),(10.8350,106.6900),(10.8425,106.7350),(10.8605,106.7605),
+        (10.8453,106.7657),(10.8302,106.7461),(10.8531,106.7512),(10.8266,106.7022)
+    };
+
+            var newUserAddresses = newUsers.Select((u, idx) => new UserAddress
+            {
+                UserAddressId = Guid.NewGuid(),
+                UserId = u.UserId,
+                Address = $"Địa chỉ {idx + 1} - Phường Linh Trung (Test 07/12)", // Update text
+                Iat = coords[idx % coords.Count].lat,
+                Ing = coords[idx % coords.Count].lng,
+                isDefault = true
+            }).ToList();
+
+            userAddress.AddRange(newUserAddresses);
+
+            // ============================================================
+            // 4. TẠO PRODUCTS
+            // ============================================================
+            var newProducts = new List<Products>();
+
+            for (int i = 0; i < 20; i++)
+            {
+                // Chọn Category ngẫu nhiên
+                var catId = categoryPool[rnd.Next(categoryPool.Count)];
+
+                // Chọn Brand tương ứng
+                var validBrands = brandMap.ContainsKey(catId) ? brandMap[catId] : brands.Take(1).ToList();
+                var brand = validBrands[rnd.Next(validBrands.Count)];
+
+                // Lấy ID cố định nếu có, không thì new Guid
+                var prodId = (i < FakeProductGuids.Count) ? FakeProductGuids[i] : Guid.NewGuid();
+
+                newProducts.Add(new Products
+                {
+                    Id = prodId,
+                    CategoryId = catId,
+                    BrandId = brand.BrandId,
+                    Status = "Chờ gom nhóm",
+                    Description = $"Sản phẩm {brand.Name} cũ - {i + 1} (Test Logic 07/12)", // Update text
+                });
+            }
+            products.AddRange(newProducts);
+
+            // ============================================================
+            // 5. TẠO PRODUCT VALUES (QUAN TRỌNG: LOGIC OPTION & NHẬP TAY)
+            // ============================================================
+
+            // Tỷ lệ 50% sản phẩm có nhập kích thước tay, 50% không nhập
+            bool[] hasDimensions = Enumerable.Repeat(true, 10).Concat(Enumerable.Repeat(false, 10))
+                                             .OrderBy(x => rnd.Next()).ToArray();
+
+            for (int i = 0; i < newProducts.Count; i++)
+            {
+                var p = newProducts[i];
+                bool enterDimensions = hasDimensions[i];
+
+                var requiredAttrs = categoryAttributes.Where(ca => ca.CategoryId == p.CategoryId).ToList();
+
+                // Đảm bảo luôn có các attribute cơ bản trong danh sách cần fake
+                var basicAttrs = new List<Guid> { att_ChieuDai, att_ChieuRong, att_ChieuCao, att_TrongLuong, att_KichThuocManHinh, att_DungTich, att_KhoiLuongGiat };
+
+                foreach (var basicId in basicAttrs)
+                {
+                    if (categoryAttributes.Any(ca => ca.CategoryId == p.CategoryId && ca.AttributeId == basicId))
+                    {
+                        if (!requiredAttrs.Any(x => x.AttributeId == basicId))
+                            requiredAttrs.Add(new CategoryAttributes { AttributeId = basicId, CategoryId = p.CategoryId });
+                    }
+                }
+
+                foreach (var attr in requiredAttrs)
+                {
+                    // --- A. LOGIC TRỌNG LƯỢNG / DUNG TÍCH (Luôn lấy từ Option) ---
+                    if (attr.AttributeId == att_TrongLuong ||
+                        attr.AttributeId == att_KhoiLuongGiat ||
+                        attr.AttributeId == att_DungTich ||
+                        attr.AttributeId == att_KichThuocManHinh)
+                    {
+                        var opts = attributeOptions.Where(o => o.AttributeId == attr.AttributeId).ToList();
+
+                        if (opts.Any())
+                        {
+                            var selectedOpt = opts[rnd.Next(opts.Count)];
+                            productValues.Add(new ProductValues
+                            {
+                                ProductValuesId = Guid.NewGuid(),
+                                ProductId = p.Id,
+                                AttributeId = attr.AttributeId,
+                                AttributeOptionId = selectedOpt.OptionId,
+                                Value = null
+                            });
+                        }
+                    }
+                    // --- B. LOGIC KÍCH THƯỚC (Dài, Rộng, Cao) ---
+                    else if (attr.AttributeId == att_ChieuDai ||
+                             attr.AttributeId == att_ChieuRong ||
+                             attr.AttributeId == att_ChieuCao)
+                    {
+                        if (enterDimensions)
+                        {
+                            double val = 0;
+                            if (attr.AttributeId == att_ChieuDai) val = rnd.Next(40, 120);
+                            else if (attr.AttributeId == att_ChieuRong) val = rnd.Next(30, 80);
+                            else if (attr.AttributeId == att_ChieuCao) val = rnd.Next(20, 100);
+
+                            productValues.Add(new ProductValues
+                            {
+                                ProductValuesId = Guid.NewGuid(),
+                                ProductId = p.Id,
+                                AttributeId = attr.AttributeId,
+                                Value = val,
+                                AttributeOptionId = null
+                            });
+                        }
+                    }
+                }
+            }
+
+            // ============================================================
+            // 6. TẠO POSTS (Giờ: 8h - 12h)
+            // ============================================================
+            for (int i = 0; i < 20; i++)
+            {
+                int startHour = rnd.Next(8, 12);
+                int endHour = startHour + 1;
+
+                // 07/12/2025 là CHỦ NHẬT -> dayName: CN
+                string scheduleJson = $@"
+[
+  {{
+    ""dayName"": ""CN"",
+    ""pickUpDate"": ""2025-12-07"",
+    ""slots"": {{ ""startTime"": ""{startHour:D2}:00"", ""endTime"": ""{endHour:D2}:00"" }}
+  }}
+]";
+
+                posts.Add(new Post
+                {
+                    Id = Guid.NewGuid(),
+                    SenderId = newUsers[i].UserId,
+                    ProductId = newProducts[i].Id,
+                    Status = "Đã duyệt",
+                    Address = newUserAddresses[i].Address,
+                    ScheduleJson = scheduleJson,
+                    Date = targetDateTime.AddHours(startHour),
+                    EstimatePoint = 100
+                });
+
+                productImages.Add(new ProductImages
+                {
+                    ProductImagesId = Guid.NewGuid(),
+                    ProductId = newProducts[i].Id,
+                    ImageUrl = $"https://picsum.photos/id/{i + 50}/300/300",
+                    AiDetectedLabelsJson = "[]"
+                });
+            }
+
+            // ============================================================
+            // 7. INFRASTRUCTURE (Points, Shifts, Groups, Configs)
+            // ============================================================
+
+            // Đảm bảo Collection Points
+            if (!smallCollectionPoints.Any(x => x.Id == 1))
+            {
+                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 1, Name = "Điểm A - Thủ Đức", Latitude = 10.8520, Longitude = 106.7540, CompanyId = 1, OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 2, Name = "Điểm B - Quận 9", Latitude = 10.8452, Longitude = 106.7825, CompanyId = 1, OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 3, Name = "Điểm C - Bình Thạnh", Latitude = 10.8040, Longitude = 106.7070, CompanyId = 2, OpenTime = "07:00 - 18:00" });
+            }
+
+            // Shifts
+            int nextShiftId = shifts.Any() ? shifts.Max(s => s.Id) + 1 : 1;
+
+            // 1. Ca của Dũng (SmallPoint 1)
+            shifts.Add(new Shifts { Id = nextShiftId, CollectorId = collector_Dung_Id, Vehicle_Id = 1, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+
+            // 2. Ca của Tuấn (SmallPoint 1)
+            shifts.Add(new Shifts { Id = nextShiftId + 1, CollectorId = collector_Tuan_Id, Vehicle_Id = 2, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+
+            // 3. Ca của Trường (SmallPoint 2 - Quận 9)
+            shifts.Add(new Shifts { Id = nextShiftId + 2, CollectorId = collector_Truong_Id, Vehicle_Id = 3, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16) });
+
+
+            // Groups
+            int nextGroupId = collectionGroups.Any() ? collectionGroups.Max(g => g.Id) + 1 : 1;
+
+            // 1. Group Dũng
+            collectionGroups.Add(new CollectionGroups { Id = nextGroupId, Shift_Id = nextShiftId, Group_Code = "0712-S1-DUNG", Name = "Tuyến Dũng 07/12", Created_At = _vnNow });
+
+            // 2. Group Tuấn
+            collectionGroups.Add(new CollectionGroups { Id = nextGroupId + 1, Shift_Id = nextShiftId + 1, Group_Code = "0712-S2-TUAN", Name = "Tuyến Tuấn 07/12", Created_At = _vnNow });
+
+            // 3. Group Trường
+            collectionGroups.Add(new CollectionGroups { Id = nextGroupId + 2, Shift_Id = nextShiftId + 2, Group_Code = "0712-S3-TRUONG", Name = "Tuyến Trường 07/12 (Q9)", Created_At = _vnNow });
+
+            // Configs
+            CompanyConfigs = new List<CompanyConfigItem>
+    {
+        new CompanyConfigItem { CompanyId = 1, RatioPercent = 60, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = 1, RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true }, new SmallPointConfigItem { SmallPointId = 2, RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true } } },
+        new CompanyConfigItem { CompanyId = 2, RatioPercent = 40, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = 3, RadiusKm = 12, MaxRoadDistanceKm = 20, Active = true } } }
+    };
+
+            Console.WriteLine("[FakeData] SUCCESS: Loaded 20 posts (50% Manual Size / 50% Option Size) for 07/12.");
+        }
 
 
     }
