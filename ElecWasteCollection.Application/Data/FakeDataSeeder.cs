@@ -127,9 +127,16 @@ namespace ElecWasteCollection.Application.Data
             new User { UserId = Guid.Parse("b73a62a7-8b90-43cf-9ad7-2abf96f34a52"), Name = "Lê Thị Mai", Email = "le.thi.mai@example.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1025/200/200", Role = "User",Status = UserStatus.Active.ToString() },
             new User { UserId = Guid.Parse("e9b4b9de-b3b0-49ad-b90c-74c24a26b57a"), Name = "Nguyễn Minh Khôi", Email = "nguyen.minh.khoi@example.com", Phone = "0908123456", Avatar = "https://picsum.photos/id/1033/200/200", Role = "User",Status = UserStatus.Active.ToString() },
             new User { UserId = Guid.Parse("72b4ad6a-0b5b-45a3-bb6b-6e1790c84b45"), Name = "Phạm Thị Hằng", Email = "pham.thi.hang@example.com", Phone = "0911222333",  Avatar = "https://picsum.photos/id/1045/200/200",  Role = "User",Status = UserStatus.Active.ToString() },
-            new User { UserId = Guid.Parse("c40deff9-163b-49e8-b967-238f22882b63"), Name = "Đỗ Quốc Bảo", Email = "do.quoc.bao@example.com", Phone = "0977222333",  Avatar = "https://picsum.photos/id/1059/200/200",Role = "User,Status = UserStatus.Active.ToString()" },
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Name = "Admin thu gom nhỏ", Email = "adminthugomnho@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = "AdminWarehouse", SmallCollectionPointId = 1,Status = UserStatus.Active.ToString() },
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b95"), Name = "Admin lớn nhất ", Email = "adminthugomlon@gmail.com", Phone = "0977922333", Avatar = "https://picsum.photos/id/1059/200/200", Role = "SuperAdmin", SmallCollectionPointId = 0 ,Status = UserStatus.Active.ToString()},
+            new User { UserId = Guid.Parse("c40deff9-163b-49e8-b967-238f22882b63"), Name = "Đỗ Quốc Bảo", Email = "do.quoc.bao@example.com", Phone = "0977222333",  Avatar = "https://picsum.photos/id/1059/200/200",Role = "User",Status = UserStatus.Active.ToString()},
+
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Name = "Admin thu gom kho điểm A - Thủ Đức", Email = "adminthugomnho12@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = 1,Status = UserStatus.Active.ToString(), CollectionCompanyId = 1  },
+			new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882a12"), Name = "Admin thu gom kho điểm B - Quân 9", Email = "adminthugomnho23@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = 2,Status = UserStatus.Active.ToString(), CollectionCompanyId = 1  },
+			new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b72"), Name = "Admin thu gom kho điểm C - Bình thạnh", Email = "adminthugomnho233@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = 3,Status = UserStatus.Active.ToString(), CollectionCompanyId = 2 },
+
+
+			new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882d12"), Name = "Admin công ty eco", Email = "NguyễnVănMinh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = 0,Status = UserStatus.Active.ToString(), CollectionCompanyId = 1  },
+			 new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882c98"), Name = "Admin công ty urban", Email = "TrầnThịHạnh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = 0,Status = UserStatus.Active.ToString(), CollectionCompanyId = 2  },
+			new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b95"), Name = "Admin lớn nhất ", Email = "adminthugomlon@gmail.com", Phone = "0977922333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.Admin.ToString(), SmallCollectionPointId = 0 ,Status = UserStatus.Active.ToString()},
             new User
     {
         UserId = collector_Dung_Id,
@@ -200,8 +207,14 @@ namespace ElecWasteCollection.Application.Data
             new Account { AccountId = Guid.NewGuid(), UserId = collector_Dung_Id, Username = "collector.dung", PasswordHash = "123456"},
             new Account { AccountId = Guid.NewGuid(), UserId = collector_Tuan_Id, Username = "collector.tuan", PasswordHash = "123456"},
             new Account { AccountId = Guid.NewGuid(), UserId = collector_Truong_Id, Username = "collector.truong", PasswordHash = "123456"},
-            new Account { AccountId = Guid.NewGuid(), UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Username = "adminwarehouse", PasswordHash = "123456"},
-        };
+            new Account { AccountId = Guid.NewGuid(), UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Username = "a-thuduc", PasswordHash = "123456"},
+
+			new Account { AccountId = Guid.NewGuid(), UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882a12"), Username = "b-thuduc", PasswordHash = "123456"},
+			new Account { AccountId = Guid.NewGuid(), UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b72"), Username = "c-thuduc", PasswordHash = "123456"},
+
+			new Account { AccountId = Guid.NewGuid(), UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882d12"), Username = "ecogreen", PasswordHash = "123456"},
+			new Account { AccountId = Guid.NewGuid(), UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882c98"), Username = "urbanclean", PasswordHash = "123456"},
+		};
         public static List<UserAddress> userAddress = new()
         {
             new UserAddress
