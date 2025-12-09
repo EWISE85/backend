@@ -110,8 +110,8 @@ namespace ElecWasteCollection.Application.Data
             //AddFullGroupingDemoData();
 
             //SeedGroupingServiceTestData();
-            //AddPostsFor_15_12();
-            AddPostsFor_07_12();
+            AddPostsFor_15_12();
+            //AddPostsFor_07_12();
 
             //AddPostsForDay30();
 
