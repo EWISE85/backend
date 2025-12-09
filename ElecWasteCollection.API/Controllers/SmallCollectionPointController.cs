@@ -69,6 +69,13 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(result);
 		}
 
+		[HttpGet("active")]
+		public IActionResult GetActiveSmallCollectionPoints()
+		{
+			var result = _smallCollectionService.GetSmallCollectionPointActive();
+			return Ok(result);
+		}
+
 	}
 
 }

@@ -132,6 +132,24 @@ namespace ElecWasteCollection.Application.Services
 			return null;
 		}
 
+		public List<SmallCollectionPointsResponse> GetSmallCollectionPointActive()
+		{
+			return _smallCollectionPoints
+				.Where(s => s.Status == SmallCollectionPointStatus.Active.ToString())
+				.Select(point => new SmallCollectionPointsResponse
+				{
+					Id = point.SmallCollectionPointsId,
+					CompanyId = point.CompanyId,
+					Name = point.Name,
+					Address = point.Address,
+					Latitude = point.Latitude,
+					Longitude = point.Longitude,
+					OpenTime = point.OpenTime,
+					Status = point.Status
+				})
+				.ToList();
+		}
+
 		public List<SmallCollectionPointsResponse> GetSmallCollectionPointByCompanyId(string companyId)
 		{
 			var point = _smallCollectionPoints.FirstOrDefault(s => s.CompanyId == companyId);

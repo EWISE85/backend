@@ -26,21 +26,19 @@ namespace ElecWasteCollection.Application.Services
 		private static List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
 		private static List<ProductImages> _productImages = FakeDataSeeder.productImages;
 
-		private readonly double Confidence_AcceptToSave = 30.0;
-
-		private const string ImaggaApiKey = "acc_ce5bd491054d90a";
-		private const string ImaggaApiSecret = "400755667ba59ce75cba7da768ad1b99";
-		private const double ConfidenceThreshold = 80.0;
+		
 		private static readonly HttpClient _httpClient = new HttpClient();
 		private readonly IUserService _userService;
 		private readonly IProfanityChecker _profanityChecker;
 		private readonly IProductService _productService;
+		private readonly IImageRecognitionService _imageRecognitionService;
 
-		public PostService(IUserService userService, IProfanityChecker profanityChecker, IProductService productService)
+		public PostService(IUserService userService, IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService)
 		{
 			_userService = userService;
 			_profanityChecker = profanityChecker;
 			_productService = productService;
+			_imageRecognitionService = imageRecognitionService;
 		}
 
 		public async Task<PostDetailModel> AddPost(CreatePostModel createPostRequest)
@@ -106,12 +104,11 @@ namespace ElecWasteCollection.Application.Services
 					var categoryName = category?.Name ?? "unknown";
 
 					var checkTasks = createPostRequest.Images
-						.Select(imageUrl => CheckImageCategoryAsync(imageUrl, categoryName))
+						.Select(async imageUrl => await _imageRecognitionService.AnalyzeImageCategoryAsync(imageUrl, categoryName))
 						.ToList();
 
 					var results = await Task.WhenAll(checkTasks);
 
-					// Lưu ảnh vào bảng PostImages
 					for (int i = 0; i < createPostRequest.Images.Count; i++)
 					{
 						var imageResult = results[i];
@@ -168,178 +165,7 @@ namespace ElecWasteCollection.Application.Services
 			}
 		}
 
-		// lưu các tag không liên quan luôn
-		private async Task<Helper.ImaggaCheckResult> CheckImageCategoryAsync(string imageUrl, string category)
-		{
-			List<string> acceptedEnglishTags = CategoryConverter.GetAcceptedEnglishTags(category);
-			var basicAuthValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{ImaggaApiKey}:{ImaggaApiSecret}"));
-			var requestUrl = $"https://api.imagga.com/v2/tags?image_url={Uri.EscapeDataString(imageUrl)}";
-
-			using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-			request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basicAuthValue);
-
-			try
-			{
-				var response = await _httpClient.SendAsync(request);
-				if (!response.IsSuccessStatusCode)
-				{
-					var statusCode = response.StatusCode;
-					var errorContent = await response.Content.ReadAsStringAsync();
-
-					// Ghi log lỗi này ra Console hoặc Debugger
-					Console.WriteLine($"[IMAGGA API FAILED] Status: {statusCode}");
-					Console.WriteLine($"[IMAGGA API FAILED] Response: {errorContent}");
-					return new Helper.ImaggaCheckResult { IsMatch = false, DetectedTagsJson = null };
-				}
-
-				var jsonResponse = await response.Content.ReadAsStringAsync();
-				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-				var imaggaData = JsonSerializer.Deserialize<ImaggaResponse>(jsonResponse, options);
-				var tags = imaggaData?.Result?.Tags;
-
-				var allProcessedLabels = new List<LabelModel>();
-				bool overallImageMatch = false;
-
-				if (tags != null)
-				{
-					foreach (var tag in tags)
-					{
-						if (!tag.Tag.TryGetValue("en", out var tagName)) continue;
-
-						tagName = tagName.ToLower();
-						double confidence = Math.Round(tag.Confidence, 2);
-
-						// 1. Kiểm tra xem tag có "Phù hợp" hay không
-						bool isTagMatch = acceptedEnglishTags.Contains(tagName);
-
-						// 2. Quyết định status của TOÀN BỘ ẢNH (vẫn cần ngưỡng 80%)
-						if (!overallImageMatch && isTagMatch && confidence >= ConfidenceThreshold)
-						{
-							overallImageMatch = true;
-						}
-
-						// 3. Chỉ lưu các tag có confidence > 30% (để loại bỏ nhiễu)
-						if (confidence > Confidence_AcceptToSave)
-						{
-							allProcessedLabels.Add(new LabelModel
-							{
-								Tag = tagName,
-								Confidence = confidence,
-								// Gán status "Phù hợp" hoặc "Không phù hợp"
-								Status = isTagMatch ? "Phù hợp với danh mục" : "Không phù hợp với danh mục"
-							});
-						}
-					}
-				}
-
-				// === PHẦN QUAN TRỌNG NHẤT (SẮP XẾP ƯU TIÊN) ===
-
-				// Sắp xếp danh sách:
-				// 1. Ưu tiên 1: Lấy các tag "Phù hợp" lên đầu
-				// 2. Ưu tiên 2: Sắp xếp các tag đó theo confidence giảm dần
-				var finalLabelsToShow = allProcessedLabels
-					.OrderByDescending(l => l.Status == "Phù hợp với danh mục") // <-- Ưu tiên 1
-					.ThenByDescending(l => l.Confidence)           // <-- Ưu tiên 2
-					.Take(5) // <-- Lấy 5 tag hàng đầu (sẽ bao gồm tag "Phù hợp" trước)
-					.ToList();
-				// ===============================================
-
-				return new Helper.ImaggaCheckResult
-				{
-					IsMatch = overallImageMatch, // Status của toàn bộ ảnh
-					DetectedTagsJson = JsonSerializer.Serialize(finalLabelsToShow) // JSON của 5 tag đã ưu tiên
-				};
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"[FATAL ERROR] Error processing image {imageUrl}: {ex.Message}");
-				return new Helper.ImaggaCheckResult { IsMatch = false, DetectedTagsJson = null };
-			}
-		}
-
-
-		/*chỉ lưu các tag có liên quan*/
-
-		/*private async Task<Helper.ImaggaCheckResult> CheckImageCategoryAsync(string imageUrl, string category)
-		{
-			List<string> acceptedEnglishTags = CategoryConverter.GetAcceptedEnglishTags(category);
-
-			var basicAuthValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{ImaggaApiKey}:{ImaggaApiSecret}"));
-			var requestUrl = $"https://api.imagga.com/v2/tags?image_url={Uri.EscapeDataString(imageUrl)}";
-
-			using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-			request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basicAuthValue);
-
-			try
-			{
-				var response = await _httpClient.SendAsync(request);
-				if (!response.IsSuccessStatusCode)
-				{
-					return new Helper.ImaggaCheckResult { IsMatch = false, DetectedTagsJson = null };
-				}
-
-				var jsonResponse = await response.Content.ReadAsStringAsync();
-				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-				var imaggaData = JsonSerializer.Deserialize<ImaggaResponse>(jsonResponse, options);
-
-				var tags = imaggaData?.Result?.Tags;
-
-				var processedLabels = new List<LabelModel>();
-				bool overallImageMatch = false;
-
-				if (tags != null)
-				{
-
-					var relevantTags = new List<LabelModel>();
-
-					foreach (var tag in tags)
-					{
-						if (!tag.Tag.TryGetValue("en", out var tagName)) continue;
-
-						tagName = tagName.ToLower();
-						double confidence = tag.Confidence;
-
-						bool isTagMatch = acceptedEnglishTags.Contains(tagName);
-
-						if (isTagMatch && confidence > 30.0)
-						{
-							relevantTags.Add(new LabelModel
-							{
-								Tag = tagName,
-								Confidence = Math.Round(confidence, 2),
-								Status = "Phù hợp" // Bây giờ 100% sẽ là "Phù hợp"
-							});
-
-							// Kiểm tra ngưỡng 80% để quyết định duyệt Post
-							if (!overallImageMatch && confidence >= ConfidenceThreshold)
-							{
-								overallImageMatch = true;
-							}
-						}
-					}
-
-					// 4. Sắp xếp và Giới hạn:
-					// Lấy Top 5 tag "Phù hợp" có confidence cao nhất
-					processedLabels = relevantTags
-						.OrderByDescending(l => l.Confidence)
-						.Take(5) // Chỉ lấy 5 tag liên quan nhất
-						.ToList();
-				}
-
-				return new Helper.ImaggaCheckResult
-				{
-					IsMatch = overallImageMatch,
-					DetectedTagsJson = JsonSerializer.Serialize(processedLabels) // Chỉ lưu 5 tag "Phù hợp"
-				};
-			}
-			catch (Exception ex)
-			{
-				Console.WriteLine($"[FATAL ERROR] Error processing image {imageUrl}: {ex.Message}");
-				return new Helper.ImaggaCheckResult { IsMatch = false, DetectedTagsJson = null };
-			}
-		}*/
-
-
+		
 		public List<PostSummaryModel> GetAll()
 		{
 			return posts.Select(post => MapToPostSummaryModel(post)).ToList();

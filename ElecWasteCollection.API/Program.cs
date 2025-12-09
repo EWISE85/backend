@@ -10,6 +10,7 @@ using ElecWasteCollection.Application.Services;
 using ElecWasteCollection.Application.Services.AssignPostService;
 using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
+using ElecWasteCollection.Infrastructure.ExternalService.Imagga;
 using ElecWasteCollection.Infrastructure.Implementations;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
@@ -85,7 +86,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IBrandService, BrandService>();
 			builder.Services.AddScoped<IPointTransactionService, PointTransactionService>();
 			builder.Services.AddScoped<IUserPointService, UserPointService>();
-			builder.Services.AddScoped<IImageComparisonService, ImageComparisonService>();
+			builder.Services.AddScoped<IImageComparisonService, EmguImageQualityService>();
 			builder.Services.AddScoped<IUserAddressService, UserAddressService>();
             builder.Services.AddScoped<ICompanyConfigService, CompanyConfigService>();
             builder.Services.AddScoped<IProductAssignService, ProductAssignService>();
@@ -100,6 +101,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ICollectionCompanyService, CollectionCompanyService>();
 			builder.Services.AddScoped<IAccountService, AccountService>();
 			builder.Services.AddScoped<ISmallCollectionService, SmallCollectionService>();
+			builder.Services.AddScoped<IImageRecognitionService, ImaggaImageService>();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
@@ -110,7 +112,7 @@ namespace ElecWasteCollection.API
 						  .SetIsOriginAllowed(_ => true);
 				});
 			});
-
+			builder.Services.Configure<ImaggaSettings>(builder.Configuration.GetSection("ImaggaAuth"));
 			var jwtSettings = builder.Configuration.GetSection("Jwt");
 			var secretKey = jwtSettings["SecretKey"];
 			builder.Services.AddAuthentication(options =>

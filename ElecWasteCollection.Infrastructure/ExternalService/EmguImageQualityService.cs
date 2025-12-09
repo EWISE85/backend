@@ -1,26 +1,27 @@
 ﻿using ElecWasteCollection.Application.IServices;
-using Emgu.CV;
+using ElecWasteCollection.Application.Services;
 using Emgu.CV.CvEnum;
 using Emgu.CV.Features2D;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
+using Emgu.CV;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 
-namespace ElecWasteCollection.Application.Services
+namespace ElecWasteCollection.Infrastructure.ExternalService
 {
-	public class ImageComparisonService : IImageComparisonService
+	public class EmguImageQualityService : IImageComparisonService
 	{
-		private readonly ILogger<ImageComparisonService> _logger;
+		private readonly ILogger<EmguImageQualityService> _logger;
 		private readonly HttpClient _httpClient;
 
 		// Constructor
-		public ImageComparisonService(ILogger<ImageComparisonService> logger)
+		public EmguImageQualityService(ILogger<EmguImageQualityService> logger)
 		{
 			_logger = logger;
 			_httpClient = new HttpClient();
@@ -141,26 +142,28 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> CompareImagesSimilarityAsync(List<string> urls1, List<string> urls2)
 		{
-			if (urls1 == null || urls1.Count == 0 || urls2 == null || urls2.Count == 0)
+			if (urls1 == null || !urls1.Any() || urls2 == null || !urls2.Any())
 			{
 				return false;
 			}
 
-			double maxSimilarity = 0;
-
+			// Cách 1: Tối ưu đơn giản - Thoát ngay khi tìm thấy (Vẫn chạy tuần tự nhưng nhanh hơn nếu may mắn)
 			foreach (var urlA in urls1)
 			{
 				foreach (var urlB in urls2)
 				{
 					double similarity = await ComputeSimilarityAsync(urlA, urlB);
-					if (similarity > maxSimilarity)
+
+					// Nếu tìm thấy 1 cặp giống > 80% thì return True luôn, không cần check các cặp còn lại
+					if (similarity > 80)
 					{
-						maxSimilarity = similarity;
+						_logger.LogInformation($"Match found between {urlA} and {urlB} with score {similarity}");
+						return true;
 					}
 				}
 			}
 
-			return maxSimilarity > 80;
+			return false;
 		}
 
 		private void PrepareImage(Mat img)
@@ -172,5 +175,4 @@ namespace ElecWasteCollection.Application.Services
 			}
 		}
 	}
-
 }
