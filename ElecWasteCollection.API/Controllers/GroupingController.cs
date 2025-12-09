@@ -72,6 +72,35 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
+        [HttpPost("reassign-collector")]
+        public async Task<IActionResult> ReassignCollector([FromBody] ReassignGroupRequest request)
+        {
+            try
+            {
+                // Service bây giờ trả về object ReassignGroupResponse
+                var result = await _groupingService.ReassignGroupAsync(request);
+
+                // Trả về JSON phẳng cho Client dễ dùng
+                return Ok(new
+                {
+                    Success = true,
+                    Message = result.Message,
+                    GroupId = result.GroupId,
+                    CollectorName = result.CollectorName
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = ex.Message,
+                    GroupId = 0,
+                    CollectorName = (string?)null
+                });
+            }
+        }
+
 
     }
 }

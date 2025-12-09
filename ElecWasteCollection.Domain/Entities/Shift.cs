@@ -8,5 +8,7 @@
         public DateOnly WorkDate { get; set; }
         public DateTime Shift_Start_Time { get; set; }
         public DateTime Shift_End_Time { get; set; }
+
+        public string Status { get; set; }
     }
 }

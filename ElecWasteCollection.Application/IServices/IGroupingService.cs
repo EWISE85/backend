@@ -1,7 +1,6 @@
 ﻿using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.GroupModel;
 using ElecWasteCollection.Domain.Entities;
-using static ElecWasteCollection.Application.Data.FakeDataSeeder;
 
 namespace ElecWasteCollection.Application.Interfaces
 {
@@ -15,6 +14,6 @@ namespace ElecWasteCollection.Application.Interfaces
         Task<List<Vehicles>> GetVehiclesAsync();
         Task<List<PendingPostModel>> GetPendingPostsAsync();
         Task<List<Vehicles>> GetVehiclesBySmallPointAsync(int smallPointId);
-
+        Task<ReassignGroupResponse> ReassignGroupAsync(ReassignGroupRequest request);
     }
 }
