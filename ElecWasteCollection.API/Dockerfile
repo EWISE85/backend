@@ -1,46 +1,48 @@
-﻿# Dùng base image .NET SDK để build ứng dụng
+﻿# --- GIAI ĐOẠN 1: BUILD ---
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Copy các file csproj và phục hồi các gói NuGet
+# Copy các file dự án
 COPY ElecWasteCollection.API/*.csproj ./ElecWasteCollection.API/
 COPY ElecWasteCollection.Application/*.csproj ./ElecWasteCollection.Application/
 COPY ElecWasteCollection.Domain/*.csproj ./ElecWasteCollection.Domain/
 COPY ElecWasteCollection.Infrastructure/*.csproj ./ElecWasteCollection.Infrastructure/
-RUN dotnet restore ElecWasteCollection.API/ElecWasteCollection.API.csproj
 
-# Copy toàn bộ mã nguồn vào container
+# QUAN TRỌNG: Thêm -r linux-x64 vào đây để nó tải đúng gói EmguCV cho Linux
+RUN dotnet restore ElecWasteCollection.API/ElecWasteCollection.API.csproj -r linux-x64
+
+# Copy toàn bộ source code
 COPY . .
 
-# Build và publish ứng dụng
 WORKDIR /src/ElecWasteCollection.API
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
-# Dùng base image .NET Runtime cho runtime environment
+# Publish với cùng runtime identifier đã restore
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false -r linux-x64 --self-contained false --no-restore
+
+# --- GIAI ĐOẠN 2: RUNTIME ---
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 
-# Cài đặt các thư viện OpenCV và Emgu.CV runtime
+# Cài đặt các thư viện hệ thống cần thiết cho EmguCV & System.Drawing
+# libgdiplus: Cho System.Drawing
+# libgl1-mesa-glx, libglib2.0-0: Cho OpenCV native
 RUN apt-get update && apt-get install -y \
-    libopencv-dev \
-    libpng-dev \
-    libjpeg-dev \
-    libtiff-dev \
-    libdcmtk-dev \
-    libfftw3-dev \
-    libopencv-core-dev \
-    libopencv-imgproc-dev
+    libgdiplus \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    libsm6 \
+    libxext6 \
+    libxrender-dev \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Thêm thư mục chứa các thư viện .so vào biến môi trường LD_LIBRARY_PATH
-ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH
+# Fix lỗi không tìm thấy thư viện GDI+
+RUN ln -s /usr/lib/x86_64-linux-gnu/libgdiplus.so /usr/lib/libgdiplus.so
 
-# Chuyển thư mục làm việc đến /app
+# Bắt buộc: Tắt kiểm tra support System.Drawing trên .NET 8 Linux
+ENV DOTNET_SYSTEM_DRAWING_CHECK_SUPPORTED=false
+
 WORKDIR /app
-
-# Copy các file đã build từ bước trước vào container
 COPY --from=build /app/publish .
 
-# Mở cổng 8080 cho ứng dụng
 EXPOSE 8080
-
-# Chạy ứng dụng khi container khởi động
 ENTRYPOINT ["dotnet", "ElecWasteCollection.API.dll"]
