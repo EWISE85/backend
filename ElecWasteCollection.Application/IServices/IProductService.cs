@@ -27,6 +27,8 @@ namespace ElecWasteCollection.Application.IServices
 
 		List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 
+		List<ProductComeWarehouseDetailModel> FilterProductByCompanyIdAndDate(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
+
 		List<ProductComeWarehouseDetailModel> GetAllProductsByUserId(Guid userId);
 
 		ProductDetail? GetProductDetailById(Guid productId);

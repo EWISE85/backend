@@ -4,6 +4,7 @@ using Emgu.CV.CvEnum;
 using Emgu.CV.Features2D;
 using Emgu.CV.Structure;
 using Emgu.CV.Util;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -15,10 +16,13 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class ImageComparisonService : IImageComparisonService
 	{
+		private readonly ILogger<ImageComparisonService> _logger;
 		private readonly HttpClient _httpClient;
 
-		public ImageComparisonService()
+		// Constructor
+		public ImageComparisonService(ILogger<ImageComparisonService> logger)
 		{
+			_logger = logger;
 			_httpClient = new HttpClient();
 			// Giả lập Browser để tránh bị chặn bởi một số server (như Tiki, Shopee)
 			_httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
@@ -28,24 +32,30 @@ namespace ElecWasteCollection.Application.Services
 		{
 			try
 			{
-				// Trường hợp 1: Input là URL (http/https)
+				_logger.LogInformation($"Loading image from {input}");
+
 				if (input.StartsWith("http", StringComparison.OrdinalIgnoreCase))
 				{
 					var imageBytes = await _httpClient.GetByteArrayAsync(input);
-					// Sử dụng Imdecode để đọc byte array thành ảnh
 					Mat img = new Mat();
 					CvInvoke.Imdecode(imageBytes, ImreadModes.Grayscale, img);
+					_logger.LogInformation("Image loaded successfully.");
 					return img;
 				}
-				// Trường hợp 2: Input là đường dẫn file local
 				else
 				{
-					return CvInvoke.Imread(input, ImreadModes.Grayscale);
+					var img = CvInvoke.Imread(input, ImreadModes.Grayscale);
+					if (img.IsEmpty)
+					{
+						_logger.LogWarning("Failed to load image from local path.");
+					}
+					return img;
 				}
 			}
-			catch (Exception)
+			catch (Exception ex)
 			{
-				return new Mat(); // Trả về Mat rỗng nếu lỗi
+				_logger.LogError($"Error loading image: {ex.Message}");
+				return new Mat();  // Trả về Mat rỗng nếu lỗi
 			}
 		}
 
@@ -56,14 +66,16 @@ namespace ElecWasteCollection.Application.Services
 				using var img1 = await LoadImageFromUrlOrPath(url1);
 				using var img2 = await LoadImageFromUrlOrPath(url2);
 
-				if (img1.IsEmpty || img2.IsEmpty) return 0;
+				if (img1.IsEmpty || img2.IsEmpty)
+				{
+					_logger.LogWarning("One of the images is empty, skipping comparison.");
+					return 0;
+				}
 
-				// 1. Resize ảnh nếu quá lớn để khử nhiễu và tăng tốc độ
+				_logger.LogInformation("Resizing images...");
 				PrepareImage(img1);
 				PrepareImage(img2);
 
-				// 2. Dùng AKAZE thay vì ORB
-				// AKAZE tốt hơn cho các vật thể có bề mặt trơn/bóng và thay đổi góc chụp
 				using var detector = new AKAZE();
 				using var descriptors1 = new Mat();
 				using var descriptors2 = new Mat();
@@ -73,9 +85,12 @@ namespace ElecWasteCollection.Application.Services
 				detector.DetectAndCompute(img1, null, keypoints1, descriptors1, false);
 				detector.DetectAndCompute(img2, null, keypoints2, descriptors2, false);
 
-				if (descriptors1.Rows == 0 || descriptors2.Rows == 0) return 0;
+				if (descriptors1.Rows == 0 || descriptors2.Rows == 0)
+				{
+					_logger.LogWarning("No descriptors found.");
+					return 0;
+				}
 
-				// 3. Matching
 				using var matcher = new BFMatcher(DistanceType.Hamming, false);
 				var matches = new VectorOfVectorOfDMatch();
 				matcher.KnnMatch(descriptors1, descriptors2, matches, 2);
@@ -90,15 +105,17 @@ namespace ElecWasteCollection.Application.Services
 					}
 				}
 
-				Console.WriteLine($"Số điểm khớp tìm thấy: {goodMatches.Count}");
+				_logger.LogInformation($"Good matches found: {goodMatches.Count}");
 
-				// 5. ĐÁNH GIÁ KẾT QUẢ (LOGIC MỚI)
-				if (goodMatches.Count < 4) return 0;
+				if (goodMatches.Count < 4)
+				{
+					_logger.LogWarning("Not enough good matches.");
+					return 0;
+				}
 
 				var srcPts = goodMatches.Select(m => new PointF(keypoints1[m.QueryIdx].Point.X, keypoints1[m.QueryIdx].Point.Y)).ToArray();
 				var dstPts = goodMatches.Select(m => new PointF(keypoints2[m.TrainIdx].Point.X, keypoints2[m.TrainIdx].Point.Y)).ToArray();
 
-				// Tìm ma trận biến đổi (Chỉ chạy nếu có đủ điểm)
 				if (srcPts.Length >= 4)
 				{
 					using var mask = new Mat();
@@ -107,18 +124,17 @@ namespace ElecWasteCollection.Application.Services
 					if (!homography.IsEmpty)
 					{
 						int inliers = CvInvoke.CountNonZero(mask);
-						Console.WriteLine($"Số điểm khớp đúng hình học (Inliers): {inliers}");
+						_logger.LogInformation($"Inliers count: {inliers}");
 						double score = Math.Min((double)inliers / 15.0 * 100, 100);
 						return Math.Round(score, 2);
 					}
 				}
 
-				// Fallback nếu không tìm ra homography (ít xảy ra)
 				return Math.Min((double)goodMatches.Count / 20.0 * 100, 100);
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine(ex.Message);
+				_logger.LogError($"Error in similarity computation: {ex.Message}");
 				return 0;
 			}
 		}
@@ -149,7 +165,6 @@ namespace ElecWasteCollection.Application.Services
 
 		private void PrepareImage(Mat img)
 		{
-			// Resize về chiều rộng 800px để chuẩn hóa
 			if (img.Width > 800)
 			{
 				double scale = 800.0 / img.Width;
@@ -157,4 +172,5 @@ namespace ElecWasteCollection.Application.Services
 			}
 		}
 	}
+
 }

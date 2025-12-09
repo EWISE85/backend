@@ -546,5 +546,10 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 
 		}
+
+		public List<ProductComeWarehouseDetailModel> FilterProductByCompanyIdAndDate(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

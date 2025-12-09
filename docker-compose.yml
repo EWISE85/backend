@@ -4,12 +4,12 @@ services:
   api:
     build:
       context: .
-      # Nếu Dockerfile nằm trong thư mục gốc, chỉ cần ghi: dockerfile: Dockerfile
-      # Nếu Dockerfile nằm trong thư mục API, đường dẫn này là đúng:
-      dockerfile: ElecWasteCollection.API/Dockerfile 
+      dockerfile: ElecWasteCollection.API/Dockerfile
     container_name: elecwastecollection-api-container
     ports:
-      - "5000:8080" # Map cổng 5000 máy chủ (host) đến 8080 container
+      - "5000:8080" # Map cổng 5000 máy chủ (host) đến cổng 8080 trong container
     environment:
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
+    volumes:
+      - /root/.aspnet/DataProtection-Keys:/root/.aspnet/DataProtection-Keys # Nếu có cần volume cho Data Protection keys
