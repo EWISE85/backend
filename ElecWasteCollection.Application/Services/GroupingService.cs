@@ -438,6 +438,7 @@ namespace ElecWasteCollection.Application.Services
 
                 var vehicle = FakeDataSeeder.vehicles.First(v => v.Id == assignDay.VehicleId);
                 var mainShift = shifts.First();
+                mainShift.Status = "Scheduled";
 
                 var oldRoutes = FakeDataSeeder.collectionRoutes
                     .Where(r => r.CollectionDate == workDate && assignDay.ProductIds.Contains(r.ProductId)).ToList();
@@ -614,6 +615,7 @@ namespace ElecWasteCollection.Application.Services
                 ?? throw new Exception("Không tìm thấy group.");
 
             var shift = FakeDataSeeder.shifts.First(s => s.Id == group.Shift_Id);
+
 
             var routes = FakeDataSeeder.collectionRoutes
                 .Where(r => r.CollectionGroupId == groupId)
@@ -828,6 +830,78 @@ namespace ElecWasteCollection.Application.Services
             }
 
             return await Task.FromResult(result);
+        }
+        public async Task<ReassignGroupResponse> ReassignGroupAsync(ReassignGroupRequest request)
+        {
+            var group = FakeDataSeeder.collectionGroups.FirstOrDefault(g => g.Id == request.GroupId)
+                ?? throw new Exception("Không tìm thấy nhóm thu gom.");
+
+            var oldShift = FakeDataSeeder.shifts.FirstOrDefault(s => s.Id == group.Shift_Id)
+                ?? throw new Exception("Không tìm thấy ca làm việc gắn với group này.");
+
+            var workDate = oldShift.WorkDate;
+            var vehicleId = oldShift.Vehicle_Id; 
+
+            var vehicleObj = FakeDataSeeder.vehicles.FirstOrDefault(v => v.Id == vehicleId)
+                ?? throw new Exception("Không tìm thấy thông tin xe.");
+            int currentPointId = vehicleObj.Small_Collection_Point;
+
+            var newCollector = FakeDataSeeder.users.FirstOrDefault(u => u.UserId == request.NewCollectorId)
+                ?? throw new Exception("Nhân viên mới không tồn tại.");
+
+            var otherShifts = FakeDataSeeder.shifts
+                .Where(s => s.WorkDate == workDate && s.CollectorId == request.NewCollectorId)
+                .ToList();
+
+            foreach (var shift in otherShifts)
+            {
+                var v = FakeDataSeeder.vehicles.FirstOrDefault(x => x.Id == shift.Vehicle_Id);
+                if (v != null && v.Small_Collection_Point != currentPointId)
+                {
+                    throw new Exception($"Nhân viên {newCollector.Name} đang có lịch làm việc tại trạm khác (Trạm ID: {v.Small_Collection_Point}) vào ngày này.");
+                }
+            }
+            var existingShiftOnThisVehicle = otherShifts.FirstOrDefault(s => s.Vehicle_Id == vehicleId);
+
+            int targetShiftId;
+
+            if (existingShiftOnThisVehicle != null)
+            {
+
+                targetShiftId = existingShiftOnThisVehicle.Id;
+            }
+            else
+            {
+
+
+                int newShiftId = FakeDataSeeder.shifts.Any() ? FakeDataSeeder.shifts.Max(s => s.Id) + 1 : 1;
+
+                var newShift = new Shifts
+                {
+                    Id = newShiftId,
+                    CollectorId = request.NewCollectorId,
+                    Vehicle_Id = vehicleId,              
+                    WorkDate = workDate,                  
+                    Shift_Start_Time = oldShift.Shift_Start_Time, 
+                    Shift_End_Time = oldShift.Shift_End_Time,
+                    Status = "Replacement"                
+                };
+
+                FakeDataSeeder.shifts.Add(newShift);
+                targetShiftId = newShiftId;
+            }
+
+            group.Shift_Id = targetShiftId;
+
+            group.Name = $"{vehicleObj.Vehicle_Type} - {vehicleObj.Plate_Number} ({newCollector.Name})";
+
+            return new ReassignGroupResponse
+            {
+                Success = true,
+                Message = "Thay thế nhân viên thành công.",
+                GroupId = group.Id,
+                CollectorName = newCollector.Name
+            };
         }
     }
 }
