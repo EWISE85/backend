@@ -1,0 +1,21 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace ElecWasteCollection.Application.Model
+{
+	public class SystemConfigModel
+	{
+		public Guid SystemConfigId { get; set; }
+
+		public string Key { get; set; }
+
+		public string Value { get; set; }
+
+		public string DisplayName { get; set; }
+
+		public string GroupName { get; set; }
+	}
+}

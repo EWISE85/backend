@@ -116,11 +116,56 @@ namespace ElecWasteCollection.Application.Data
             //AddPostsForDay30();
 
         }
+		public static List<SystemConfig> systemConfigs = new()
+{
+    // Config 1: Bản đồ
+    new SystemConfig
+	{
+		SystemConfigId = Guid.NewGuid(),
+		Key = "QR_SCAN_RADIUS_METERS",
+        Value = "500",
+		DisplayName = "Bán kính hiện QR (mét)",
+        Status = SystemConfigStatus.Active.ToString(),
+		GroupName = "MAP"
+	},
 
-        // =========================================================================
-        // 4. USERS
-        // =========================================================================
-        private static readonly Guid collector_Dung_Id = Guid.Parse("6df4af85-6a59-4a0a-8513-1d7859fbd789");
+    // Config 2: Quy trình thu gom
+    new SystemConfig
+	{
+		SystemConfigId = Guid.NewGuid(),
+		Key = "MAX_PICKUP_DURATION_MINUTES",
+		Value = "15",
+		DisplayName = "Số phút tối đa cho phép thu gom",
+		Status = SystemConfigStatus.Active.ToString(),
+		GroupName = "PICKUP"
+	},
+
+    // Config 3: AI
+    new SystemConfig
+	{
+		SystemConfigId = Guid.NewGuid(),
+		Key = "AI_AUTO_APPROVE_THRESHOLD",
+		Value = "80",
+		DisplayName = "Phần trăm AI tự duyệt",
+		Status = SystemConfigStatus.Active.ToString(),
+		GroupName = "AI_CHECK"
+	},
+
+    // Config 4: Quy trình xử lý gói hàng
+    new SystemConfig
+	{
+		SystemConfigId = Guid.NewGuid(),
+		Key = "DAYS_TO_MARK_MISSING",
+		Value = "2",
+		DisplayName = "Thời hạn tự động báo 'Thiếu' sau khi mở gói (ngày)",
+		Status = SystemConfigStatus.Active.ToString(),
+		GroupName = "WORKFLOW_CONFIG"
+	},
+};
+		// =========================================================================
+		// 4. USERS
+		// =========================================================================
+		private static readonly Guid collector_Dung_Id = Guid.Parse("6df4af85-6a59-4a0a-8513-1d7859fbd789");
         private static readonly Guid collector_Tuan_Id = Guid.Parse("c011ec70-b861-468f-b648-812e90f01a7e");
         private static readonly Guid collector_Truong_Id = Guid.Parse("d290f1ee-6c54-4b01-90e6-d701748f0851");
         private static readonly Guid collector_Dang_Id = Guid.Parse("aa99bb88-cc77-dd66-ee55-ff4433221100");

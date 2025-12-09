@@ -102,6 +102,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IAccountService, AccountService>();
 			builder.Services.AddScoped<ISmallCollectionService, SmallCollectionService>();
 			builder.Services.AddScoped<IImageRecognitionService, ImaggaImageService>();
+			builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
