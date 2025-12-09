@@ -17,7 +17,7 @@ namespace ElecWasteCollection.API.Controllers
 
         [HttpGet("company/{companyId}")]
         public async Task<IActionResult> GetCompanyProducts(
-            int companyId,
+            string companyId,
             [FromQuery] string workDate)
         {
             if (!DateOnly.TryParse(workDate, out var date))
@@ -29,7 +29,7 @@ namespace ElecWasteCollection.API.Controllers
 
         [HttpGet("small-point/{smallPointId}")]
         public async Task<IActionResult> GetSmallPointProducts(
-            int smallPointId,
+            string smallPointId,
             [FromQuery] string workDate)
         {
             if (!DateOnly.TryParse(workDate, out var date))
@@ -47,14 +47,14 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("{companyId}/smallpoints")]
-        public async Task<IActionResult> GetSmallPoints(int companyId)
+        public async Task<IActionResult> GetSmallPoints(string companyId)
         {
             var result = await _productQueryService.GetSmallPointsByCompanyIdAsync(companyId);
             return Ok(result);
         }
 
         [HttpGet("config/company/{companyId}")]
-        public async Task<IActionResult> GetCompanyConfigById(int companyId)
+        public async Task<IActionResult> GetCompanyConfigById(string companyId)
         {
             var result = await _productQueryService.GetCompanyConfigByCompanyIdAsync(companyId);
             return Ok(result);

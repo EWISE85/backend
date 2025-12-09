@@ -65,12 +65,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var companyDtos = request.Companies.Select(company =>
             {
                 var realCompany = FakeDataSeeder.collectionTeams
-                    .FirstOrDefault(t => t.Id == company.CompanyId);
+                    .FirstOrDefault(t => t.CollectionCompanyId == company.CompanyId);
 
                 var smallPointDtos = company.SmallPoints.Select(cfgSp =>
                 {
                     var realSP = FakeDataSeeder.smallCollectionPoints
-                        .FirstOrDefault(p => p.Id == cfgSp.SmallPointId);
+                        .FirstOrDefault(p => p.SmallCollectionPointsId == cfgSp.SmallPointId);
 
                     return new SmallPointDto
                     {
@@ -105,14 +105,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var companyDtos = FakeDataSeeder.CompanyConfigs.Select(company =>
             {
                 var realCompany = FakeDataSeeder.collectionTeams
-                    .FirstOrDefault(t => t.Id == company.CompanyId);
+                    .FirstOrDefault(t => t.CollectionCompanyId == company.CompanyId);
 
                 string companyName = realCompany?.Name ?? $"Company {company.CompanyId}";
 
                 var smallPoints = company.SmallPoints.Select(cfgSp =>
                 {
                     var realSP = FakeDataSeeder.smallCollectionPoints
-                        .FirstOrDefault(p => p.Id == cfgSp.SmallPointId);
+                        .FirstOrDefault(p => p.SmallCollectionPointsId == cfgSp.SmallPointId);
 
                     return new SmallPointDto
                     {

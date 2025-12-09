@@ -19,7 +19,7 @@ namespace ElecWasteCollection.Application.Services
 				.Where(up => up.UserId == userId)
 				.Select(up => new UserPointModel
 				{
-					Id = up.Id,
+					Id = up.UserPointId,
 					UserId = up.UserId,
 					Points = up.Points
 				})

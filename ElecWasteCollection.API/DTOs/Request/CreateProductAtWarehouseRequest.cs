@@ -6,7 +6,7 @@
 		//public string Name { get; set; }
 		public string Description { get; set; }
 
-		public int SmallCollectionPointId { get; set; }
+		public string SmallCollectionPointId { get; set; }
 
 		public List<string> Images { get; set; }
 

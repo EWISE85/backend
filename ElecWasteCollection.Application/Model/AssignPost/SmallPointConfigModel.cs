@@ -8,7 +8,7 @@ namespace ElecWasteCollection.Application.Model.AssignPost
 {
     public class SmallPointConfigItem
     {
-        public int SmallPointId { get; set; }
+        public string SmallPointId { get; set; }
         public double RadiusKm { get; set; }
         public double MaxRoadDistanceKm { get; set; }
         public bool Active { get; set; }

@@ -20,7 +20,7 @@ namespace ElecWasteCollection.Application.Model.AssignPost
     }
     public class CompanyConfigDto
     {
-        public int CompanyId { get; set; }
+        public string CompanyId { get; set; }
         public string CompanyName { get; set; }
         public double RatioPercent { get; set; }
         public List<SmallPointDto> SmallPoints { get; set; }
@@ -29,7 +29,7 @@ namespace ElecWasteCollection.Application.Model.AssignPost
 
     public class CompanyConfigItem
     {
-        public int CompanyId { get; set; }
+        public string CompanyId { get; set; }
         public double RatioPercent { get; set; }
         public List<SmallPointConfigItem> SmallPoints { get; set; } = new();
         public double MinRange { get; set; }

@@ -8,9 +8,9 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 {
     public class AssignDayRequest
     {
-        public int CollectionPointId { get; set; }
+        public string CollectionPointId { get; set; }
         public DateOnly WorkDate { get; set; }
-        public int VehicleId { get; set; }
+        public string VehicleId { get; set; }
         public List<Guid> ProductIds { get; set; } = new();
     }
 

@@ -17,5 +17,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public double? Ing { get; set; }
 
 		public bool isDefault { get; set; }
+
+		public User User { get; set; }
 	}
 }

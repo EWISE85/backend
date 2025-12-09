@@ -8,12 +8,20 @@ namespace ElecWasteCollection.Domain.Entities
 {
 	public class Category
 	{
-		public Guid Id { get; set; }
+		public Guid CategoryId { get; set; }
 
 		public string Name { get; set; }
 
 		public Guid? ParentCategoryId { get; set; }
 
+		public  Category ParentCategory { get; set; }
+
 		public virtual ICollection<Brand> Brands { get; set; }
+
+		public virtual ICollection<CategoryAttributes> CategoryAttributes { get; set; }
+
+		public virtual ICollection<Category> SubCategories { get; set; }
+
+		public virtual ICollection<Products> Products { get; set; }
 	}
 }

@@ -21,8 +21,8 @@ namespace ElecWasteCollection.Application.Model
 
 		public double Points { get; set; }
 
-		public double? SmallCollectionPointId { get; set; }
+		public string? SmallCollectionPointId { get; set; }
 
-		public double? CollectionCompanyId { get; set; }
+		public string? CollectionCompanyId { get; set; }
 	}
 }

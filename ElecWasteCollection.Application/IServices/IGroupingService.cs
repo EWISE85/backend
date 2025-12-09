@@ -9,11 +9,11 @@ namespace ElecWasteCollection.Application.Interfaces
         Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request);
         Task<bool> AssignDayAsync(AssignDayRequest request);
         Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request);
-        Task<List<object>> GetGroupsByPointIdAsync(int collectionPointId);
+        Task<List<object>> GetGroupsByPointIdAsync(string collectionPointId);
         Task<object> GetRoutesByGroupAsync(int groupId);
         Task<List<Vehicles>> GetVehiclesAsync();
         Task<List<PendingPostModel>> GetPendingPostsAsync();
-        Task<List<Vehicles>> GetVehiclesBySmallPointAsync(int smallPointId);
+        Task<List<Vehicles>> GetVehiclesBySmallPointAsync(string smallPointId);
         Task<ReassignGroupResponse> ReassignGroupAsync(ReassignGroupRequest request);
     }
 }

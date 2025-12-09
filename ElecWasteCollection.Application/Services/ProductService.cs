@@ -58,7 +58,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var newProduct = new Products
 			{
-				Id = Guid.NewGuid(),
+				ProductId = Guid.NewGuid(),
 				CategoryId = createProductRequest.SubCategoryId,
 				BrandId = createProductRequest.BrandId,
 				Description = createProductRequest.Description,
@@ -74,7 +74,7 @@ namespace ElecWasteCollection.Application.Services
 				var newPostImage = new ProductImages
 				{
 					ImageUrl = createProductRequest.Images[i],
-					ProductId = newProduct.Id,
+					ProductId = newProduct.ProductId,
 					ProductImagesId = Guid.NewGuid()
 				};
 				productImages.Add(newPostImage);
@@ -85,19 +85,19 @@ namespace ElecWasteCollection.Application.Services
 				{
 					UserId = createProductRequest.SenderId.Value,
 					Point = createProductRequest.Point,
-					ProductId = newProduct.Id,
+					ProductId = newProduct.ProductId,
 					Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
 				};
 				_pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
 			}
 			return new ProductDetailModel
 			{
-				ProductId = newProduct.Id,
+				ProductId = newProduct.ProductId,
 				Description = newProduct.Description,
 				CategoryId = newProduct.CategoryId,
 				BrandId = newProduct.BrandId,
 				BrandName = _brands.FirstOrDefault(b => b.BrandId == newProduct.BrandId)?.Name,
-				CategoryName = _categories.FirstOrDefault(c => c.Id == newProduct.CategoryId)?.Name,
+				CategoryName = _categories.FirstOrDefault(c => c.CategoryId == newProduct.CategoryId)?.Name,
 				QrCode = newProduct.QRCode,
 				IsChecked = newProduct.isChecked,
 				Status = newProduct.Status
@@ -106,7 +106,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public Products? GetById(Guid productId)
 		{
-			return _products.FirstOrDefault(p => p.Id == productId);
+			return _products.FirstOrDefault(p => p.ProductId == productId);
 		}
 
 		public ProductComeWarehouseDetailModel? GetByQrCode(string qrcode)
@@ -121,14 +121,14 @@ namespace ElecWasteCollection.Application.Services
 
 			// 2. Tìm Post (Bài đăng) liên quan đến Product này
 			// (Cần bước này để lấy được danh sách ảnh từ bảng _postImages)
-			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
 			if (post == null)
 			{
-				_logger.LogWarning("Post not found for Product ID: {ProductId}", product.Id);
+				_logger.LogWarning("Post not found for Product ID: {ProductId}", product.ProductId);
 			}
 			// 3. Lấy các thông tin tham chiếu (Brand, Category, SizeTier)
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
-			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+			var category = _categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
 			//var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
 
 			// 4. Lấy danh sách ảnh (Nếu tìm thấy Post)
@@ -148,11 +148,11 @@ namespace ElecWasteCollection.Application.Services
 			// 6. Trả về model đầy đủ (Mapping chuẩn theo hàm ProductsComeWarehouseByDate)
 			return new ProductComeWarehouseDetailModel
 			{
-				ProductId = product.Id,
+				ProductId = product.ProductId,
 				Description = product.Description,
 				BrandId = brand?.BrandId ?? Guid.Empty,
 				BrandName = brand?.Name ?? "N/A",
-				CategoryId = category?.Id ?? Guid.Empty,
+				CategoryId = category?.CategoryId ?? Guid.Empty,
 				CategoryName = category?.Name ?? "N/A",
 				ProductImages = imageUrls, // Đã bổ sung ảnh
 				QrCode = product.QRCode,
@@ -178,15 +178,15 @@ namespace ElecWasteCollection.Application.Services
 				var brand = _brands
 					.FirstOrDefault(b => b.BrandId == p.BrandId);
 				var category = _categories
-					.FirstOrDefault(c => c.Id == p.CategoryId);
+					.FirstOrDefault(c => c.CategoryId == p.CategoryId);
 				// 4. "Join" bằng tay với ProductValues và Attributes
 				var attributesList = _productValues
-					.Where(pv => pv.ProductId == p.Id) // Lấy các value của sản phẩm này
+					.Where(pv => pv.ProductId == p.ProductId) // Lấy các value của sản phẩm này
 					.Select(pv =>
 					{
 						// Với mỗi value, tìm attribute tương ứng
 						var attribute = _attributes
-							.FirstOrDefault(a => a.Id == pv.AttributeId);
+							.FirstOrDefault(a => a.AttributeId == pv.AttributeId);
 
 						return new ProductValueDetailModel
 						{
@@ -199,11 +199,11 @@ namespace ElecWasteCollection.Application.Services
 				// 5. Xây dựng model hoàn chỉnh
 				return new ProductDetailModel
 				{
-					ProductId = p.Id,
+					ProductId = p.ProductId,
 					Description = p.Description,
 					BrandName = brand?.Name,
 					BrandId = brand.BrandId,
-					CategoryId = category.Id,
+					CategoryId = category.CategoryId,
 					CategoryName = category.Name,
 					QrCode = p.QRCode,
 					//SizeTierName = sizeTier?.Name,
@@ -217,7 +217,7 @@ namespace ElecWasteCollection.Application.Services
 			return productDetails;
 		}
 
-		public List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly fromDate, DateOnly toDate, int smallCollectionPointId)
+		public List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId)
 		{
 			// =================================================================================
 			// PHẦN 1: LẤY SẢN PHẨM TỪ TUYẾN THU GOM (Có Route)
@@ -228,7 +228,7 @@ namespace ElecWasteCollection.Application.Services
 			// 1. Lấy danh sách xe của trạm
 			var vehicleIds = _vehicles
 				.Where(v => v.Small_Collection_Point == smallCollectionPointId)
-				.Select(v => v.Id)
+				.Select(v => v.VehicleId)
 				.ToList();
 
 			if (vehicleIds.Any())
@@ -237,14 +237,14 @@ namespace ElecWasteCollection.Application.Services
 				// Lưu ý: Ở đây ta chưa lọc ngày của Shift vội, vì logic chính nằm ở ngày của Route
 				var shiftIds = _shifts
 					.Where(s => vehicleIds.Contains(s.Vehicle_Id))
-					.Select(s => s.Id)
+					.Select(s => s.ShiftId)
 					.ToList();
 
 				if (shiftIds.Any())
 				{
 					var groupIds = _collectionGroups
 						.Where(g => shiftIds.Contains(g.Shift_Id))
-						.Select(g => g.Id)
+						.Select(g => g.CollectionGroupId)
 						.ToList();
 
 					// 3. Lọc Route theo khoảng thời gian
@@ -259,9 +259,9 @@ namespace ElecWasteCollection.Application.Services
 					// 4. Map dữ liệu từ Route -> Post -> Product
 					routeModels = routesInRange.Select(route =>
 					{
-						var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
+						var product = _products.FirstOrDefault(p => p.ProductId == route.ProductId);
 						if (product == null) return null;
-						var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+						var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
 
 						return MapToDetailModel(product, post);
 					})
@@ -311,38 +311,31 @@ namespace ElecWasteCollection.Application.Services
 		private ProductComeWarehouseDetailModel MapToDetailModel(Products product, Post? post)
 		{
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
-			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+			var category = _categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
 			//var sizeTier = _sizeTiers.FirstOrDefault(st => st.SizeTierId == product.SizeTierId);
 
 			// Lấy ảnh (chỉ có nếu post tồn tại)
 			var imageUrls = new List<string>();
 			
 				imageUrls = productImages
-					.Where(img => img.ProductId == product.Id)
+					.Where(img => img.ProductId == product.ProductId)
 					.Select(img => img.ImageUrl)
 					.ToList();
-			
-
-
-			
-
-
-
 
 			return new ProductComeWarehouseDetailModel
 			{
-				ProductId = product.Id,
+				ProductId = product.ProductId,
 				Description = product.Description,
 				BrandId = brand?.BrandId ?? Guid.Empty,
 				BrandName = brand?.Name ?? "N/A",
-				CategoryId = category?.Id ?? Guid.Empty,
+				CategoryId = category?.CategoryId ?? Guid.Empty,
 				CategoryName = category?.Name ?? "N/A",
 				ProductImages = imageUrls,
 				QrCode = product.QRCode,
 				Status = product.Status,
 				//SizeTierName = sizeTier?.Name,
 				EstimatePoint = post?.EstimatePoint,
-				RealPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.Id)?.Point,
+				RealPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.ProductId)?.Point,
 			};
 		}
 
@@ -366,7 +359,7 @@ namespace ElecWasteCollection.Application.Services
 				return false;
 			}
 
-			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
 			if (post == null)
 			{
 				return false;
@@ -391,7 +384,7 @@ namespace ElecWasteCollection.Application.Services
 			var newHistory = new ProductStatusHistory
 			{
 				ProductStatusHistoryId = Guid.NewGuid(),
-				ProductId = product.Id,
+				ProductId = product.ProductId,
 				ChangedAt = DateTime.UtcNow,
 				StatusDescription = "Sản phẩm đã về đến kho",
 				Status = status
@@ -406,7 +399,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var productDetails = userPosts.Select(post =>
 			{
-				var product = _products.FirstOrDefault(p => p.Id == post.ProductId);
+				var product = _products.FirstOrDefault(p => p.ProductId == post.ProductId);
 				if (product == null) return null;
 
 				return MapToDetailModel(product, post);
@@ -420,7 +413,7 @@ namespace ElecWasteCollection.Application.Services
 		public ProductDetail? GetProductDetailById(Guid productId)
 		{
 			// 1. Tìm Product
-			var product = _products.FirstOrDefault(p => p.Id == productId);
+			var product = _products.FirstOrDefault(p => p.ProductId == productId);
 			if (product == null) return null;
 
 			// 2. Tìm Post
@@ -428,7 +421,7 @@ namespace ElecWasteCollection.Application.Services
 			if (post == null) return null;
 
 			// 3. Lấy Category và Brand
-			var category = _categories.FirstOrDefault(c => c.Id == product.CategoryId);
+			var category = _categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
 			var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 
 			// 4. Lấy Sender
@@ -438,13 +431,13 @@ namespace ElecWasteCollection.Application.Services
 			string? sizeTierName = null;
 			List<ProductValueDetailModel>? productAttributes = null;
 				productAttributes = _productValues
-					.Where(pv => pv.ProductId == product.Id)
+					.Where(pv => pv.ProductId == product.ProductId)
 					.Join(_attributes,
 						  pv => pv.AttributeId,
-						  attr => attr.Id,
+						  attr => attr.AttributeId,
 						  (pv, attr) => new ProductValueDetailModel
 						  {
-							  AttributeId = attr.Id,
+							  AttributeId = attr.AttributeId,
 							  AttributeName = attr.Name,
 							  OptionId = pv.AttributeOptionId,
 							  OptionName = _attributeOptionService.GetOptionByOptionId(pv.AttributeOptionId ?? Guid.Empty)?.OptionName,
@@ -471,7 +464,7 @@ namespace ElecWasteCollection.Application.Services
 			TimeOnly? estimatedTime = null;
 
 			// Bước A: Tìm Route dựa trên PostId
-			var route = _collectionRoutes.FirstOrDefault(r => r.ProductId == product.Id);
+			var route = _collectionRoutes.FirstOrDefault(r => r.ProductId == product.ProductId);
 
 			if (route != null)
 			{
@@ -480,12 +473,12 @@ namespace ElecWasteCollection.Application.Services
 				estimatedTime = route.EstimatedTime;
 
 				// Bước B: Tìm Group để lấy Shift (Route -> Group)
-				var group = _collectionGroups.FirstOrDefault(g => g.Id == route.CollectionGroupId);
+				var group = _collectionGroups.FirstOrDefault(g => g.CollectionGroupId == route.CollectionGroupId);
 
 				if (group != null)
 				{
 					// Bước C: Tìm Shift để lấy CollectorId (Group -> Shift)
-					var shift = _shifts.FirstOrDefault(s => s.Id == group.Shift_Id);
+					var shift = _shifts.FirstOrDefault(s => s.ShiftId == group.Shift_Id);
 
 					if (shift != null)
 					{
@@ -495,12 +488,12 @@ namespace ElecWasteCollection.Application.Services
 				}
 			}
 
-			var realPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.Id)?.Point;
+			var realPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.ProductId)?.Point;
 
 			// 9. Return kết quả
 			return new ProductDetail
 			{
-				ProductId = product.Id,
+				ProductId = product.ProductId,
 				CategoryId = product.CategoryId,
 				CategoryName = category?.Name ?? "Không rõ",
 				BrandId = product.BrandId,
@@ -528,7 +521,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public bool UpdateProductStatusByProductId(Guid productId, string status)
 		{
-			var product = _products.FirstOrDefault(p => p.Id == productId);
+			var product = _products.FirstOrDefault(p => p.ProductId == productId);
 			if (product == null)
 			{
 				return false;

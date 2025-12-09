@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 {
     public class PreAssignRequest
     {
-        public int CollectionPointId { get; set; }
+        public string CollectionPointId { get; set; }
         public double LoadThresholdPercent { get; set; } = 80;
     }
 
@@ -45,7 +45,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
     public class SuggestedVehicle
     {
-        public int Id { get; set; }
+        public string Id { get; set; }
         public string Plate_Number { get; set; } = "";
         public string Vehicle_Type { get; set; } = "";
         public double Capacity_Kg { get; set; }

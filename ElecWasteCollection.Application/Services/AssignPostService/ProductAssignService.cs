@@ -40,7 +40,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             }
 
             var products = FakeDataSeeder.products
-                .Where(p => productIds.Contains(p.Id))
+                .Where(p => productIds.Contains(p.ProductId))
                 .ToList();
 
             if (!products.Any())
@@ -48,10 +48,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             foreach (var product in products)
             {
-                var post = FakeDataSeeder.posts.First(p => p.ProductId == product.Id);
+                var post = FakeDataSeeder.posts.First(p => p.ProductId == product.ProductId);
                 var userAddress = FakeDataSeeder.userAddress.First(a => a.UserId == post.SenderId);
 
-                double magicNumber = GetStableHashRatio(product.Id);
+                double magicNumber = GetStableHashRatio(product.ProductId);
 
                 var targetCompany = sortedConfig.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange);
 
@@ -83,7 +83,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 if (chosenCandidate == null)
                 {
                     result.TotalUnassigned++;
-                    result.Details.Add(new { productId = product.Id, status = "no_candidate_available" });
+                    result.Details.Add(new { productId = product.ProductId, status = "no_candidate_available" });
                 }
                 else
                 {
@@ -99,7 +99,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     result.Details.Add(new
                     {
-                        productId = product.Id,
+                        productId = product.ProductId,
                         companyId = chosenCandidate.CompanyId,
                         smallPointId = chosenCandidate.SmallPointId,
                         roadKm = $"{Math.Round(chosenCandidate.RoadKm, 2):0.00} km",
@@ -120,7 +120,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             foreach (var sp in company.SmallPoints.Where(s => s.Active))
             {
-                var small = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.Id == sp.SmallPointId);
+                var small = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.SmallCollectionPointsId == sp.SmallPointId);
                 if (small == null) continue;
 
                 double hvDistance = GeoHelper.DistanceKm(small.Latitude, small.Longitude, address.Iat.Value, address.Ing.Value);
@@ -164,20 +164,20 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 if (!dates.Contains(workDate))
                     continue;
 
-                var product = FakeDataSeeder.products.First(pr => pr.Id == post.ProductId);
+                var product = FakeDataSeeder.products.First(pr => pr.ProductId == post.ProductId);
                 if (product.Status != "Chờ gom nhóm") continue;
 
                 var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
                 var address = FakeDataSeeder.userAddress
                     .FirstOrDefault(a => a.UserId == user.UserId)?.Address;
 
-                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.Id == product.CategoryId);
+                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
                 var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 
                 result.Add(new ProductByDateModel
                 {
-                    ProductId = product.Id,
-                    PostId = post.Id,
+                    ProductId = product.ProductId,
+                    PostId = post.PostId,
                     CategoryName = category?.Name ?? "Unknown Category", 
                     BrandName = brand?.Name ?? "Unknown Brand",      
                     UserName = user.Name,

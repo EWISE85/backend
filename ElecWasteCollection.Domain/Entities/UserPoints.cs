@@ -8,10 +8,12 @@ namespace ElecWasteCollection.Domain.Entities
 {
 	public class UserPoints
 	{
-		public Guid Id { get; set; }
+		public Guid UserPointId { get; set; }
 
 		public Guid UserId { get; set; }
 
 		public double Points { get; set; }
+
+		public User User { get; set; }
 	}
 }

@@ -8,7 +8,7 @@ namespace ElecWasteCollection.Domain.Entities
 {
 	public class CategoryAttributes
 	{
-		public Guid Id { get; set; }
+		public Guid CategoryAttributeId { get; set; }
 
 		public Guid CategoryId { get; set; }
 

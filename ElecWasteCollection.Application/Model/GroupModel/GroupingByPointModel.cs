@@ -16,7 +16,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
     public class GroupingByPointRequest
     {
-        public int CollectionPointId { get; set; }
+        public string CollectionPointId { get; set; }
 
         public bool SaveResult { get; set; } = false;
     }

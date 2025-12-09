@@ -19,7 +19,7 @@ namespace ElecWasteCollection.Application.Services
 				.Where(c => c.ParentCategoryId == null)
 				.Select(c => new CategoryModel
 				{
-					Id = c.Id,
+					Id = c.CategoryId,
 					Name = c.Name,
 					ParentCategoryId = c.ParentCategoryId
 				})
@@ -34,7 +34,7 @@ namespace ElecWasteCollection.Application.Services
 			var subCategories = categories
 				.Select(c => new CategoryModel
 				{
-					Id = c.Id,
+					Id = c.CategoryId,
 					Name = c.Name,
 					ParentCategoryId = c.ParentCategoryId
 				})
@@ -48,7 +48,7 @@ namespace ElecWasteCollection.Application.Services
 				.Where(c => c.ParentCategoryId == parentId)
 				.Select(c => new CategoryModel
 				{
-					Id = c.Id,
+					Id = c.CategoryId,
 					Name = c.Name,
 					ParentCategoryId = c.ParentCategoryId
 				})

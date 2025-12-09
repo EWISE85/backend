@@ -10,13 +10,13 @@ namespace ElecWasteCollection.Application.IServices
 {
     public interface ICollectionCompanyService
     {
-		Task<bool> AddNewCompany(CollectionTeams collectionTeams);
-		Task<bool> UpdateCompany(CollectionTeams collectionTeams);
-		Task<bool> DeleteCompany(int collectionCompanyId);
+		Task<bool> AddNewCompany(CollectionCompany collectionTeams);
+		Task<bool> UpdateCompany(CollectionCompany collectionTeams);
+		Task<bool> DeleteCompany(string collectionCompanyId);
 		Task<List<CollectionCompanyResponse>> GetAllCollectionCompaniesAsync();
 
-		Task<ImportResult> CheckAndUpdateCompanyAsync(CollectionTeams collectionTeams, string adminUsername, string password);
-		CollectionCompanyResponse? GetCompanyById(int collectionCompanyId);
+		Task<ImportResult> CheckAndUpdateCompanyAsync(CollectionCompany collectionTeams, string adminUsername, string password);
+		CollectionCompanyResponse? GetCompanyById(string collectionCompanyId);
 
 		Task<PagedResultModel<CollectionCompanyResponse>> GetPagedCompanyAsync(CompanySearchModel model);
 

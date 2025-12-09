@@ -9,8 +9,8 @@ namespace ElecWasteCollection.Application.Model.AssignPost
     public class ProductAssignCandidate
     {
         public Guid ProductId { get; set; }
-        public int CompanyId { get; set; }
-        public int SmallPointId { get; set; }
+        public string CompanyId { get; set; }
+        public string SmallPointId { get; set; }
         public double HaversineKm { get; set; }
 
         public double RoadKm { get; set; }

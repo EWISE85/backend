@@ -18,6 +18,6 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public double? EstimateVolume { get; set; } // (m³)
 
-		public Attribute Attribute { get; set; }
+		public Attributes Attribute { get; set; }
 	}
 }

@@ -45,7 +45,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Product status updated successfully." });
 		}
 		[HttpGet("from-date-to-date")]
-		public IActionResult GetProductsComingToWarehouse([FromQuery] DateOnly fromDate, [FromQuery] DateOnly toDate, [FromQuery] int smallCollectionPointId )
+		public IActionResult GetProductsComingToWarehouse([FromQuery] DateOnly fromDate, [FromQuery] DateOnly toDate, [FromQuery] string smallCollectionPointId )
 		{
 			var products = _productService.ProductsComeWarehouseByDate(fromDate, toDate, smallCollectionPointId);
 			return Ok(products);

@@ -83,7 +83,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             return (weight, volume / 1_000_000.0);
         }
 
-        public async Task<GetCompanyProductsResponse> GetCompanyProductsAsync(int companyId, DateOnly workDate)
+        public async Task<GetCompanyProductsResponse> GetCompanyProductsAsync(string companyId, DateOnly workDate)
         {
             var config = FakeDataSeeder.CompanyConfigs.FirstOrDefault(c => c.CompanyId == companyId)
                 ?? throw new Exception("Company not found.");
@@ -97,12 +97,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 })
                 .ToList();
 
-            var products = posts.Select(p => FakeDataSeeder.products.First(x => x.Id == p.ProductId)).ToList();
+            var products = posts.Select(p => FakeDataSeeder.products.First(x => x.ProductId == p.ProductId)).ToList();
 
             var response = new GetCompanyProductsResponse
             {
                 CompanyId = companyId,
-                CompanyName = FakeDataSeeder.collectionTeams.FirstOrDefault(t => t.Id == companyId)?.Name ?? $"Team {companyId}",
+                CompanyName = FakeDataSeeder.collectionTeams.FirstOrDefault(t => t.CollectionCompanyId == companyId)?.Name ?? $"Team {companyId}",
                 WorkDate = workDate.ToString("yyyy-MM-dd"),
                 TotalProducts = products.Count
             };
@@ -112,8 +112,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             foreach (var grp in grouped)
             {
-                int spId = grp.Key ?? 0;
-                var sp = FakeDataSeeder.smallCollectionPoints.First(s => s.Id == spId);
+                var spId = grp.Key ?? "0";
+                var sp = FakeDataSeeder.smallCollectionPoints.First(s => s.SmallCollectionPointsId == spId);
                 var spConfig = config.SmallPoints.FirstOrDefault(s => s.SmallPointId == spId);
 
                 var spDto = new SmallPointProductGroupDto
@@ -126,22 +126,22 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 foreach (var post in grp)
                 {
-                    var product = FakeDataSeeder.products.First(x => x.Id == post.ProductId);
+                    var product = FakeDataSeeder.products.First(x => x.ProductId == post.ProductId);
                     var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
                     var address = FakeDataSeeder.userAddress.First(a => a.UserId == user.UserId);
 
-                    var category = FakeDataSeeder.categories.FirstOrDefault(c => c.Id == product.CategoryId);
+                    var category = FakeDataSeeder.categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
                     var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 
-                    var metrics = GetProductMetrics(product.Id);
+                    var metrics = GetProductMetrics(product.ProductId);
 
                     double radiusKm = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, address.Iat.Value, address.Ing.Value);
                     double roadKm = await _distance.GetRoadDistanceKm(sp.Latitude, sp.Longitude, address.Iat.Value, address.Ing.Value);
 
                     spDto.Products.Add(new ProductDetailDto
                     {
-                        PostId = post.Id,
-                        ProductId = product.Id,
+                        PostId = post.PostId,
+                        ProductId = product.ProductId,
                         SenderId = user.UserId,
                         UserName = user.Name,
                         Address = address.Address,
@@ -172,7 +172,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             return response;
         }
 
-        public async Task<SmallPointProductGroupDto> GetSmallPointProductsAsync(int smallPointId, DateOnly workDate)
+        public async Task<SmallPointProductGroupDto> GetSmallPointProductsAsync(string smallPointId, DateOnly workDate)
         {
             var posts = FakeDataSeeder.posts
                 .Where(p => p.AssignedSmallPointId == smallPointId)
@@ -183,7 +183,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 })
                 .ToList();
 
-            var sp = FakeDataSeeder.smallCollectionPoints.First(s => s.Id == smallPointId);
+            var sp = FakeDataSeeder.smallCollectionPoints.First(s => s.SmallCollectionPointsId == smallPointId);
 
             var configItem = FakeDataSeeder.CompanyConfigs
                 .SelectMany(c => c.SmallPoints)
@@ -199,22 +199,22 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             foreach (var post in posts)
             {
-                var product = FakeDataSeeder.products.First(p => p.Id == post.ProductId);
+                var product = FakeDataSeeder.products.First(p => p.ProductId == post.ProductId);
                 var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
                 var address = FakeDataSeeder.userAddress.First(a => a.UserId == user.UserId);
 
-                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.Id == product.CategoryId);
+                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
                 var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 
-                var metrics = GetProductMetrics(product.Id);
+                var metrics = GetProductMetrics(product.ProductId);
 
                 double radiusKm = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, address.Iat.Value, address.Ing.Value);
                 double roadKm = await _distance.GetRoadDistanceKm(sp.Latitude, sp.Longitude, address.Iat.Value, address.Ing.Value);
 
                 spDto.Products.Add(new ProductDetailDto
                 {
-                    PostId = post.Id,
-                    ProductId = product.Id,
+                    PostId = post.PostId,
+                    ProductId = product.ProductId,
                     SenderId = post.SenderId,
                     UserName = user.Name,
                     Address = address.Address,
@@ -258,12 +258,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             return FakeDataSeeder.CompanyConfigs.Select(company =>
             {
-                var realCompany = FakeDataSeeder.collectionTeams.FirstOrDefault(t => t.Id == company.CompanyId);
+                var realCompany = FakeDataSeeder.collectionTeams.FirstOrDefault(t => t.CollectionCompanyId == company.CompanyId);
                 string companyName = realCompany?.Name ?? $"Company {company.CompanyId}";
 
                 var smallPoints = company.SmallPoints.Select(cfgSp =>
                 {
-                    var realSP = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.Id == cfgSp.SmallPointId);
+                    var realSP = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.SmallCollectionPointsId == cfgSp.SmallPointId);
 
                     return new SmallPointDto
                     {
@@ -286,7 +286,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             }).ToList();
         }
 
-        public async Task<List<SmallPointDto>> GetSmallPointsByCompanyIdAsync(int companyId)
+        public async Task<List<SmallPointDto>> GetSmallPointsByCompanyIdAsync(string companyId)
         {
             await Task.Yield();
 
@@ -295,7 +295,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             return company.SmallPoints.Select(cfgSp =>
             {
-                var realSP = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.Id == cfgSp.SmallPointId);
+                var realSP = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.SmallCollectionPointsId == cfgSp.SmallPointId);
 
                 return new SmallPointDto
                 {
@@ -309,7 +309,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 };
             }).ToList();
         }
-        public async Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(int companyId)
+        public async Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(string companyId)
         {
             await Task.Yield();
 
@@ -318,14 +318,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 ?? throw new Exception("Company not found.");
 
             var realCompany = FakeDataSeeder.collectionTeams
-                .FirstOrDefault(t => t.Id == companyId);
+                .FirstOrDefault(t => t.CollectionCompanyId == companyId);
 
             string companyName = realCompany?.Name ?? $"Company {companyId}";
 
             var smallPoints = company.SmallPoints.Select(cfgSp =>
             {
                 var realSP = FakeDataSeeder.smallCollectionPoints
-                    .FirstOrDefault(p => p.Id == cfgSp.SmallPointId);
+                    .FirstOrDefault(p => p.SmallCollectionPointsId == cfgSp.SmallPointId);
 
                 return new SmallPointDto
                 {

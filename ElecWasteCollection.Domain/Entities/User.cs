@@ -29,20 +29,33 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string? Phone { get; set; }
 
-		//public string? Address { get; set; }
-
 		public string? Avatar { get; set; }
-
-		//public double? Iat { get; set; }
-
-		//public double? Ing { get; set; }
 
 		public string Role { get; set; }
 
-		public int SmallCollectionPointId { get; set; }
+		public string? SmallCollectionPointId { get; set; }
 
-		public int CollectionCompanyId { get; set; }
+		public string? CollectionCompanyId { get; set; }
 
 		public string Status { get; set; }
+
+		public CollectionCompany? CollectionCompany { get; set; }
+
+		public SmallCollectionPoints? SmallCollectionPoint { get; set; }
+
+		public virtual ICollection<UserAddress> UserAddresses { get; set; } = new List<UserAddress>();
+
+		public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
+
+		public virtual ICollection<UserPoints> UserPoints { get; set; } = new List<UserPoints>();
+
+		public virtual ICollection<Products> Products { get; set; } = new List<Products>();
+
+		public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
+
+		public virtual ICollection<PointTransactions> PointTransactions { get; set; } = new List<PointTransactions>();
+
+		public virtual ICollection<Shifts> Shifts { get; set; } = new List<Shifts>();
+
 	}
 }

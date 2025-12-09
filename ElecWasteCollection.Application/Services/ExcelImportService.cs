@@ -81,12 +81,12 @@ namespace ElecWasteCollection.Application.Services
 				var email = worksheet.Cell(row, 3).Value.ToString();
 				var phone = worksheet.Cell(row, 4).Value.ToString();
 				var avatar = worksheet.Cell(row, 5).Value.ToString();
-				var smallCollectionPointId = int.TryParse(worksheet.Cell(row, 6).Value.ToString(), out var collectionId) ? collectionId : 0;
-				var companyId = int.TryParse(worksheet.Cell(row, 7).Value.ToString(), out var compId) ? compId : 0;
+				var smallCollectionPointId = worksheet.Cell(row, 6).Value.ToString();
+				var companyId = worksheet.Cell(row, 7).Value.ToString();
 				var status = worksheet.Cell(row, 7).Value.ToString();
 				var collectorUsername = worksheet.Cell(row, 8).Value.ToString();
 				var collectorPassword = worksheet.Cell(row, 9).Value.ToString();
-				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || smallCollectionPointId == 0)
+				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || smallCollectionPointId == "0")
 				{
 					result.Messages.Add($"Dữ liệu không hợp lệ ở dòng {row}.");
 					continue;
@@ -121,13 +121,13 @@ namespace ElecWasteCollection.Application.Services
 				var latitude = double.TryParse(worksheet.Cell(row, 4).Value.ToString(), out var lat) ? lat : 0;
 				var longitude = double.TryParse(worksheet.Cell(row, 5).Value.ToString(), out var lon) ? lon : 0;
 				var openTime = worksheet.Cell(row, 6).Value.ToString();
-				var companyId = int.TryParse(worksheet.Cell(row, 7).Value.ToString(), out var compId) ? compId : 0;
+				var companyId = worksheet.Cell(row, 7).Value.ToString();
 				var status = worksheet.Cell(row, 8).Value.ToString();
 				var adminUsername = worksheet.Cell(row, 9).Value.ToString();
 				var adminPassword = worksheet.Cell(row, 10).Value.ToString();
 
 				// Validate required fields
-				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(address) || companyId == 0)
+				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(address) || companyId == "0")
 				{
 					result.Messages.Add($"Dữ liệu không hợp lệ ở dòng {row}.");
 					continue;
@@ -135,7 +135,7 @@ namespace ElecWasteCollection.Application.Services
 
 				var smallCollectionPoint = new SmallCollectionPoints
 				{
-					Id = int.Parse(id),
+					SmallCollectionPointsId = id,
 					Name = name,
 					Address = address,
 					Latitude = latitude,
@@ -166,9 +166,9 @@ namespace ElecWasteCollection.Application.Services
 				var status = worksheet.Cell(row, 6).Value.ToString();
 				var adminUsername = worksheet.Cell(row, 7).Value.ToString();
 				var adminPassword = worksheet.Cell(row, 8).Value.ToString();
-				var company = new CollectionTeams
+				var company = new CollectionCompany
 				{
-					Id = int.Parse(id),
+					CollectionCompanyId = id,
 					Name = name,
 					CompanyEmail = companyEmail,
 					Phone = phone,

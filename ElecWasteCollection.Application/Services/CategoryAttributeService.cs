@@ -17,7 +17,7 @@ namespace ElecWasteCollection.Application.Services
 		public List<CategoryAttributeModel> GetCategoryAttributesByCategoryId(Guid categoryId)
 		{
 			// Tạo dictionary để truy vấn nhanh chóng thuộc tính theo AttributeId
-			var attributeDictionary = _attributes.ToDictionary(a => a.Id, a => a.Name);
+			var attributeDictionary = _attributes.ToDictionary(a => a.AttributeId, a => a.Name);
 
 			var categoryAttributes = _categoriesAttribute
 				.Where(ca => ca.CategoryId == categoryId)

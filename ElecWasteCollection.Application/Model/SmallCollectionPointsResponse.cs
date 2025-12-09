@@ -8,7 +8,7 @@ namespace ElecWasteCollection.Application.Model
 {
 	public class SmallCollectionPointsResponse
 	{
-		public int Id { get; set; }
+		public string Id { get; set; }
 		public string Name { get; set; } = null!;
 		public string Address { get; set; } = null!;
 		public double Latitude { get; set; }
@@ -18,6 +18,6 @@ namespace ElecWasteCollection.Application.Model
 
 		public string Status { get; set; } = null!;
 	
-		public int CompanyId { get; set; }
+		public string CompanyId { get; set; }
 	}
 }
