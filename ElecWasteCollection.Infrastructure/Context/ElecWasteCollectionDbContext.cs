@@ -317,7 +317,6 @@ namespace ElecWasteCollection.Infrastructure.Context
 			{
 				entity.ToTable("Shifts");
 				entity.HasKey(e => e.ShiftId);
-				entity.Property(e => e.Vehicle_Id).IsRequired();
 
 				entity.HasOne(e => e.Collector)
 					  .WithMany(u => u.Shifts)
