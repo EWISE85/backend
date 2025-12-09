@@ -10,16 +10,16 @@
     <Content Remove="C:\Users\ASUS\.nuget\packages\apiverve.api.profanityfilter\1.1.9\contentFiles\any\net6.0\favicon.ico" />
   </ItemGroup>
 	<ItemGroup Condition="'$(OS)' == 'Windows_NT'">
-		<PackageReference Include="Emgu.CV.runtime.windows" Version="4.12.0.5764" />
+		<PackageReference Include="Emgu.CV.runtime.windows" Version="4.9.0.5494" />
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Emgu.CV.runtime.ubuntu-x64" Version="4.12.0.5764" />
+		<PackageReference Include="Emgu.CV.runtime.ubuntu-x64" Version="4.9.0.5494" />
 	</ItemGroup>
   <ItemGroup>
     <PackageReference Include="APIVerve.API.ProfanityFilter" Version="1.1.9" />
     <PackageReference Include="ClosedXML" Version="0.105.0" />
-    <PackageReference Include="Emgu.CV" Version="4.12.0.5764" />
+    <PackageReference Include="Emgu.CV" Version="4.9.0.5494" />
     <PackageReference Include="Google.OrTools" Version="9.14.6206" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
@@ -27,6 +27,7 @@
 	  <PackageReference Include="Google.Apis.Auth" Version="1.71.0" />
 	  <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
 	  <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.1" />
+	  <PackageReference Include="SixLabors.ImageSharp" Version="3.1.12" />
 	  <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="8.14.0" />
   </ItemGroup>
   <ItemGroup>
