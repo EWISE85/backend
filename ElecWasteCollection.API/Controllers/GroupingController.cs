@@ -77,10 +77,8 @@ namespace ElecWasteCollection.API.Controllers
         {
             try
             {
-                // Service bây giờ trả về object ReassignGroupResponse
                 var result = await _groupingService.ReassignGroupAsync(request);
 
-                // Trả về JSON phẳng cho Client dễ dùng
                 return Ok(new
                 {
                     Success = true,
