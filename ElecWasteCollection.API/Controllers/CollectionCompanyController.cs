@@ -46,7 +46,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(result);
 		}
 		[HttpGet("{companyId}")]
-		public  IActionResult GetCollectionCompanyById([FromRoute] int companyId)
+		public  IActionResult GetCollectionCompanyById([FromRoute] string companyId)
 		{
 			var result =  _collectionCompanyService.GetCompanyById(companyId);
 			if (result == null)

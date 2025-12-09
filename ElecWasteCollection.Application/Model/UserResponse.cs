@@ -18,6 +18,6 @@ namespace ElecWasteCollection.Application.Model
 
 		public string Role { get; set; }
 
-		public int SmallCollectionPointId { get; set; }
+		public string SmallCollectionPointId { get; set; }
 	}
 }

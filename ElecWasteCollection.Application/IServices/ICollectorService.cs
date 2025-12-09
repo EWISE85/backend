@@ -19,9 +19,9 @@ namespace ElecWasteCollection.Application.IServices
 
 		List<CollectorResponse> GetAll();
 
-		List<CollectorResponse> GetCollectorByCompanyId(int companyId);
+		List<CollectorResponse> GetCollectorByCompanyId(string companyId);
 
-		List<CollectorResponse> GetCollectorByWareHouseId(int wareHouseId);
+		List<CollectorResponse> GetCollectorByWareHouseId(string wareHouseId);
 
 		Task<ImportResult> CheckAndUpdateCollectorAsync(User collector, string collectorUsername, string password);
 

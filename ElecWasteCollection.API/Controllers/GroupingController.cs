@@ -38,7 +38,7 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("groups/{collectionPointId}")]
-        public async Task<IActionResult> GetGroupsByCollectionPointAsync(int collectionPointId)
+        public async Task<IActionResult> GetGroupsByCollectionPointAsync(string collectionPointId)
         {
             var result = await _groupingService.GetGroupsByPointIdAsync(collectionPointId);
             return Ok(result);
@@ -66,7 +66,7 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("vehicles/{SmallCollectionPointId}")]
-        public async Task<IActionResult> GetVehiclesBySmallPointAsync(int SmallCollectionPointId)
+        public async Task<IActionResult> GetVehiclesBySmallPointAsync(string SmallCollectionPointId)
         {
             var result = await _groupingService.GetVehiclesBySmallPointAsync(SmallCollectionPointId);
             return Ok(result);

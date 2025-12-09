@@ -57,7 +57,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				var newProduct = new Products
 				{
-					Id = Guid.NewGuid(),
+					ProductId = Guid.NewGuid(),
 					CategoryId = productRequest.SubCategoryId,
 					BrandId = productRequest.BrandId,
 					Description = createPostRequest.Description,
@@ -72,7 +72,7 @@ namespace ElecWasteCollection.Application.Services
 					var newProductValue = new ProductValues
 					{
 						ProductValuesId = Guid.NewGuid(),
-						ProductId = newProduct.Id,
+						ProductId = newProduct.ProductId,
 						AttributeId = attr.AttributeId,
 						AttributeOptionId = attr.OptionId,
 						Value = attr.Value
@@ -86,14 +86,14 @@ namespace ElecWasteCollection.Application.Services
 				// --- BƯỚC 3: Tạo Post (Chưa có ảnh, chưa có status) ---
 				var newPost = new Post
 				{
-					Id = Guid.NewGuid(),
+					PostId = Guid.NewGuid(),
 					SenderId = createPostRequest.SenderId,
 					Date = DateTime.Now,
 					Description = string.Empty,
 					Address = createPostRequest.Address,
 					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
 					Status = postStatus, // Sẽ cập nhật sau
-					ProductId = newProduct.Id,
+					ProductId = newProduct.ProductId,
 					EstimatePoint = 50,
 					CheckMessage = new List<string>()
 
@@ -102,7 +102,7 @@ namespace ElecWasteCollection.Application.Services
 
 				if (createPostRequest.Images != null && createPostRequest.Images.Any())
 				{
-					var category = categories.FirstOrDefault(c => c.Id == productRequest.SubCategoryId);
+					var category = categories.FirstOrDefault(c => c.CategoryId == productRequest.SubCategoryId);
 					var categoryName = category?.Name ?? "unknown";
 
 					var checkTasks = createPostRequest.Images
@@ -118,7 +118,7 @@ namespace ElecWasteCollection.Application.Services
 						var newPostImage = new ProductImages
 						{
 							ProductImagesId = Guid.NewGuid(),
-							ProductId = newProduct.Id,
+							ProductId = newProduct.ProductId,
 							ImageUrl = createPostRequest.Images[i],
 							AiDetectedLabelsJson = imageResult.DetectedTagsJson
 						};
@@ -131,7 +131,7 @@ namespace ElecWasteCollection.Application.Services
 						newProduct.Status = "Chờ gom nhóm";
 						var history = new ProductStatusHistory
 						{
-							ProductId = newProduct.Id,
+							ProductId = newProduct.ProductId,
 							ChangedAt = DateTime.Now,
 							Status = "Chờ gom nhóm",
 							StatusDescription = "Yêu cầu được duyệt"
@@ -143,7 +143,7 @@ namespace ElecWasteCollection.Application.Services
 					{
 						var history = new ProductStatusHistory
 						{
-							ProductId = newProduct.Id,
+							ProductId = newProduct.ProductId,
 							ChangedAt = DateTime.Now,
 							Status = "Chờ Duyệt",
 							StatusDescription = "Yêu cầu đã được gửi"
@@ -347,7 +347,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public PostDetailModel GetById(Guid id)
 		{
-			var post = posts.FirstOrDefault(p => p.Id == id);
+			var post = posts.FirstOrDefault(p => p.ProductId == id);
 			if (post == null)
 			{
 				return null;
@@ -369,10 +369,10 @@ namespace ElecWasteCollection.Application.Services
 			if (post == null) return null;
 
 			var sender = _userService.GetById(post.SenderId);
-			var product = products.FirstOrDefault(p => p.Id == post.ProductId);
+			var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
 
 			// Bước 1: Lấy category được gán trực tiếp (VD: "Tivi")
-			var directCategory = categories.FirstOrDefault(c => c.Id == product?.CategoryId);
+			var directCategory = categories.FirstOrDefault(c => c.CategoryId == product?.CategoryId);
 
 			string finalCategoryName = "Không rõ";
 
@@ -382,7 +382,7 @@ namespace ElecWasteCollection.Application.Services
 				if (directCategory.ParentCategoryId != null)
 				{
 					// Bước 3: Nếu có cha, tìm và lấy tên của cha
-					var parentCategory = categories.FirstOrDefault(c => c.Id == directCategory.ParentCategoryId);
+					var parentCategory = categories.FirstOrDefault(c => c.CategoryId == directCategory.ParentCategoryId);
 					if (parentCategory != null)
 					{
 						finalCategoryName = parentCategory.Name; // Chỉ lấy tên cha
@@ -407,7 +407,7 @@ namespace ElecWasteCollection.Application.Services
 
 			return new PostSummaryModel
 			{
-				Id = post.Id,
+				Id = post.PostId,
 				Category = finalCategoryName, // <--- SỬ DỤNG TÊN ĐÃ QUA XỬ LÝ
 				Status = post.Status,
 				Date = post.Date,
@@ -423,20 +423,20 @@ namespace ElecWasteCollection.Application.Services
 			if (post == null) return null;
 
 			var sender = _userService.GetById(post.SenderId);
-			var product = products.FirstOrDefault(p => p.Id == post.ProductId);
+			var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
 
 			string categoryName = "Không rõ";
 			var productDetailModel = new ProductDetailModel(); // Model lồng
-			var parentCategoryId = categories.FirstOrDefault(c => c.Id == product.CategoryId)?.ParentCategoryId;
-			var parentCategory = categories.FirstOrDefault(c => c.Id == parentCategoryId);
+			var parentCategoryId = categories.FirstOrDefault(c => c.CategoryId == product.CategoryId)?.ParentCategoryId;
+			var parentCategory = categories.FirstOrDefault(c => c.CategoryId == parentCategoryId);
 
 			if (product != null)
 			{
-				var category = categories.FirstOrDefault(c => c.Id == product.CategoryId);
+				var category = categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
 				categoryName = category?.Name ?? "Không rõ";
 				var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 				// Xây dựng ProductDetailModel
-				productDetailModel.ProductId = product.Id;
+				productDetailModel.ProductId = product.ProductId;
 				productDetailModel.Description = product.Description;
 				productDetailModel.BrandId = product.BrandId;
 				productDetailModel.BrandName = brand?.Name ?? "Không rõ";
@@ -445,14 +445,14 @@ namespace ElecWasteCollection.Application.Services
 
 				// Lấy danh sách Attributes chi tiết
 				productDetailModel.Attributes = productValues
-					.Where(pv => pv.ProductId == product.Id)
+					.Where(pv => pv.ProductId == product.ProductId)
 					.Join(attributes,
 						  pv => pv.AttributeId,
-						  attr => attr.Id,
+						  attr => attr.AttributeId,
 						  (pv, attr) => new ProductValueDetailModel
 						  {
 							  AttributeName = attr.Name,
-							  AttributeId = attr.Id,
+							  AttributeId = attr.AttributeId,
 							  OptionId = pv.AttributeOptionId,
 							  OptionName = attr.AttributeOptions?
 					.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId)?
@@ -473,7 +473,7 @@ namespace ElecWasteCollection.Application.Services
 				}
 				catch (JsonException ex)
 				{
-					Console.WriteLine($"[JSON ERROR] Could not deserialize schedule for Post ID {post.Id}: {ex.Message}");
+					Console.WriteLine($"[JSON ERROR] Could not deserialize schedule for Post ID {post.PostId}: {ex.Message}");
 				}
 			}
 			var allProductImages = _productImages.Where(pi => pi.ProductId == post.ProductId).ToList();
@@ -501,7 +501,7 @@ namespace ElecWasteCollection.Application.Services
 			// 4. Tạo PostModel chi tiết
 			return new PostDetailModel
 			{
-				Id = post.Id,
+				Id = post.PostId,
 				//Name = post.Name,
 				ParentCategory = parentCategory.Name,
 				SubCategory = categoryName,
@@ -523,7 +523,7 @@ namespace ElecWasteCollection.Application.Services
 		}
 		public async Task<bool> ApprovePost(Guid postId)
 		{
-			var post = posts.FirstOrDefault(p => p.Id == postId);
+			var post = posts.FirstOrDefault(p => p.PostId == postId);
 			if (post != null)
 			{
 				post.Status = "Đã Duyệt";
@@ -535,11 +535,11 @@ namespace ElecWasteCollection.Application.Services
 					StatusDescription = "Yêu cầu được duyệt"
 				};
 				_productStatusHistories.Add(history);
-				var product = products.FirstOrDefault(p => p.Id == post.ProductId);
+				var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
 				if (product != null)
 				{
 					product.Status = "Chờ gom nhóm";
-					_productService.UpdateProductStatusByProductId(product.Id, product.Status);
+					_productService.UpdateProductStatusByProductId(product.ProductId, product.Status);
 
 				}
 				return true;
@@ -554,12 +554,12 @@ namespace ElecWasteCollection.Application.Services
 			{
 				return false;
 			}
-			var post = posts.FirstOrDefault(p => p.Id == postId);
+			var post = posts.FirstOrDefault(p => p.PostId == postId);
 			if (post != null)
 			{
 				post.Status = "Đã Từ Chối";
 				post.RejectMessage = rejectMessage;
-				var product = products.FirstOrDefault(p => p.Id == post.ProductId);
+				var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
 				if (product != null)
 				{
 					product.Status = "Đã Từ Chối";
@@ -574,15 +574,15 @@ namespace ElecWasteCollection.Application.Services
 
 			var queryablePosts = posts.Select(post =>
 			{
-				var product = products.FirstOrDefault(p => p.Id == post.ProductId);
-				var directCategory = categories.FirstOrDefault(c => c.Id == product?.CategoryId);
+				var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
+				var directCategory = categories.FirstOrDefault(c => c.CategoryId == product?.CategoryId);
 				string parentCategoryName = null;
 
 				if (directCategory != null)
 				{
 					if (directCategory.ParentCategoryId != null)
 					{
-						var parentCategory = categories.FirstOrDefault(c => c.Id == directCategory.ParentCategoryId);
+						var parentCategory = categories.FirstOrDefault(c => c.CategoryId == directCategory.ParentCategoryId);
 						parentCategoryName = parentCategory?.Name;
 					}
 					else

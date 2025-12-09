@@ -31,7 +31,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var result = new ImportResult();
 
-			var existingCompany = _smallCollectionPoints.FirstOrDefault(s => s.Id == smallCollectionPoints.Id);
+			var existingCompany = _smallCollectionPoints.FirstOrDefault(s => s.SmallCollectionPointsId == smallCollectionPoints.SmallCollectionPointsId);
 			if (existingCompany != null)
 			{
 				await UpdateSmallCollectionPoint(smallCollectionPoints);
@@ -48,7 +48,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
-					SmallCollectionPointId = smallCollectionPoints.Id,
+					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,
 				};
 				_userService.AddUser(newAdminWarehouse);
 				var adminAccount = new Account
@@ -64,9 +64,9 @@ namespace ElecWasteCollection.Application.Services
 			return result;
 		}
 
-		public Task<bool> DeleteSmallCollectionPoint(int smallCollectionPointId)
+		public Task<bool> DeleteSmallCollectionPoint(string smallCollectionPointId)
 		{
-			var point = _smallCollectionPoints.FirstOrDefault(s => s.Id == smallCollectionPointId);
+			var point = _smallCollectionPoints.FirstOrDefault(s => s.SmallCollectionPointsId == smallCollectionPointId);
 			if (point != null)
 			{
 				point.Status = SmallCollectionPointStatus.Inactive.ToString();
@@ -79,9 +79,9 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var query = _smallCollectionPoints.AsQueryable();
 
-			if (model.CompanyId.HasValue)
+			if (model.CompanyId != null)
 			{
-				query = query.Where(s => s.CompanyId == model.CompanyId.Value);
+				query = query.Where(s => s.CompanyId == model.CompanyId);
 			}
 
 			if (!string.IsNullOrEmpty(model.Status))
@@ -96,7 +96,7 @@ namespace ElecWasteCollection.Application.Services
 				.Take(model.Limit)
 				.Select(point => new SmallCollectionPointsResponse
 				{
-					Id = point.Id,
+					Id = point.SmallCollectionPointsId,
 					CompanyId = point.CompanyId,
 					Name = point.Name,
 					Address = point.Address,
@@ -112,14 +112,14 @@ namespace ElecWasteCollection.Application.Services
 			return Task.FromResult(pagedResult);
 		}
 
-		public SmallCollectionPointsResponse? GetSmallCollectionById(int smallCollectionPointId)
+		public SmallCollectionPointsResponse? GetSmallCollectionById(string smallCollectionPointId)
 		{
-			var point = _smallCollectionPoints.FirstOrDefault(s => s.Id == smallCollectionPointId);
+			var point = _smallCollectionPoints.FirstOrDefault(s => s.SmallCollectionPointsId == smallCollectionPointId);
 			if (point != null)
 			{
 				return new SmallCollectionPointsResponse
 				{
-					Id = point.Id,
+					Id = point.SmallCollectionPointsId,
 					CompanyId = point.CompanyId,
 					Name = point.Name,
 					Address = point.Address,
@@ -132,7 +132,7 @@ namespace ElecWasteCollection.Application.Services
 			return null;
 		}
 
-		public List<SmallCollectionPointsResponse> GetSmallCollectionPointByCompanyId(int companyId)
+		public List<SmallCollectionPointsResponse> GetSmallCollectionPointByCompanyId(string companyId)
 		{
 			var point = _smallCollectionPoints.FirstOrDefault(s => s.CompanyId == companyId);
 			if (point != null)
@@ -141,7 +141,7 @@ namespace ElecWasteCollection.Application.Services
 					.Where(s => s.CompanyId == companyId)
 					.Select(point => new SmallCollectionPointsResponse
 					{
-						Id = point.Id,
+						Id = point.SmallCollectionPointsId,
 						CompanyId = point.CompanyId,
 						Name = point.Name,
 						Address = point.Address,
@@ -157,7 +157,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public Task<bool> UpdateSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints)
 		{
-			var point = _smallCollectionPoints.FirstOrDefault(s => s.Id == smallCollectionPoints.Id);
+			var point = _smallCollectionPoints.FirstOrDefault(s => s.SmallCollectionPointsId == smallCollectionPoints.SmallCollectionPointsId);
 			if (point != null)
 			{
 				point.Name = smallCollectionPoints.Name;

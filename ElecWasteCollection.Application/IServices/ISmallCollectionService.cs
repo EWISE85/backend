@@ -13,11 +13,11 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> AddNewSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints);
 		Task<bool> UpdateSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints);
 
-		Task<bool> DeleteSmallCollectionPoint(int smallCollectionPointId);
+		Task<bool> DeleteSmallCollectionPoint(string smallCollectionPointId);
 
-		List<SmallCollectionPointsResponse> GetSmallCollectionPointByCompanyId(int companyId);
+		List<SmallCollectionPointsResponse> GetSmallCollectionPointByCompanyId(string companyId);
 
-		SmallCollectionPointsResponse? GetSmallCollectionById(int smallCollectionPointId);
+		SmallCollectionPointsResponse? GetSmallCollectionById(string smallCollectionPointId);
 
 		Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(SmallCollectionPoints smallCollectionPoints, string adminUsername, string adminPassword);
 

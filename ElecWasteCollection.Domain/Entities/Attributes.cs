@@ -9,12 +9,15 @@ namespace ElecWasteCollection.Domain.Entities
 {
 	public class Attributes
 	{
-		public Guid Id { get; set; }
+		public Guid AttributeId { get; set; }
 
 		public string Name { get; set; }
 
 		public virtual ICollection<AttributeOptions> AttributeOptions { get; set; }
 
-		//public string ValueType { get; set; }
+		public virtual ICollection<CategoryAttributes> CategoryAttributes { get; set; }
+
+		public virtual ICollection<ProductValues> ProductValues { get; set; }
+
 	}
 }

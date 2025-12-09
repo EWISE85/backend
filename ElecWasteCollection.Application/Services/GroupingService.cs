@@ -192,7 +192,7 @@ namespace ElecWasteCollection.Application.Services
         public async Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request)
         {
             var point = FakeDataSeeder.smallCollectionPoints
-                .FirstOrDefault(p => p.Id == request.CollectionPointId)
+                .FirstOrDefault(p => p.SmallCollectionPointsId == request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
             var pointVehicles = FakeDataSeeder.vehicles
@@ -210,7 +210,7 @@ namespace ElecWasteCollection.Application.Services
                     p.AssignedSmallPointId != request.CollectionPointId)
                     return false;
 
-                var prod = FakeDataSeeder.products.FirstOrDefault(x => x.Id == p.ProductId);
+                var prod = FakeDataSeeder.products.FirstOrDefault(x => x.ProductId == p.ProductId);
                 return prod != null && prod.Status == "Chờ gom nhóm";
             }).ToList();
 
@@ -263,7 +263,7 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var date in distinctDates)
             {
-                var vehicleIdsInPoint = pointVehicles.Select(v => v.Id).ToList();
+                var vehicleIdsInPoint = pointVehicles.Select(v => v.VehicleId).ToList();
                 var shiftsToday = FakeDataSeeder.shifts
                     .Where(s => s.WorkDate == date && vehicleIdsInPoint.Contains(s.Vehicle_Id))
                     .ToList();
@@ -288,7 +288,7 @@ namespace ElecWasteCollection.Application.Services
 
                 var activeVehicleIds = shiftsToday.Select(s => s.Vehicle_Id).Distinct().ToList();
                 var availableVehicles = pointVehicles
-                    .Where(v => activeVehicleIds.Contains(v.Id))
+                    .Where(v => activeVehicleIds.Contains(v.VehicleId))
                     .OrderBy(v => v.Capacity_Kg)
                     .ToList();
 
@@ -346,7 +346,7 @@ namespace ElecWasteCollection.Application.Services
                         TotalVolume = Math.Round(selected.Sum(x => x.Volume), 5),
                         SuggestedVehicle = new SuggestedVehicle
                         {
-                            Id = suggested.Id,
+                            Id = suggested.VehicleId,
                             Plate_Number = suggested.Plate_Number,
                             Vehicle_Type = suggested.Vehicle_Type,
                             Capacity_Kg = suggested.Capacity_Kg,
@@ -366,7 +366,7 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<bool> AssignDayAsync(AssignDayRequest request)
         {
-            var vehicle = FakeDataSeeder.vehicles.FirstOrDefault(v => v.Id == request.VehicleId)
+            var vehicle = FakeDataSeeder.vehicles.FirstOrDefault(v => v.VehicleId == request.VehicleId)
                 ?? throw new Exception("Xe không tồn tại.");
 
             if (vehicle.Small_Collection_Point != request.CollectionPointId)
@@ -374,7 +374,7 @@ namespace ElecWasteCollection.Application.Services
                 throw new Exception($"Xe {vehicle.Plate_Number} không thuộc trạm này.");
             }
 
-            if (!FakeDataSeeder.smallCollectionPoints.Any(p => p.Id == request.CollectionPointId))
+            if (!FakeDataSeeder.smallCollectionPoints.Any(p => p.SmallCollectionPointsId == request.CollectionPointId))
                 throw new Exception("Trạm không tồn tại.");
 
             if (request.ProductIds == null || !request.ProductIds.Any())
@@ -405,7 +405,7 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request)
         {
-            var point = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.Id == request.CollectionPointId)
+            var point = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.SmallCollectionPointsId == request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm.");
 
             var staging = FakeDataSeeder.stagingAssignDays
@@ -436,7 +436,7 @@ namespace ElecWasteCollection.Application.Services
 
                 if (!shifts.Any()) throw new Exception($"Ngày {workDate} xe {assignDay.VehicleId} chưa có lịch làm việc.");
 
-                var vehicle = FakeDataSeeder.vehicles.First(v => v.Id == assignDay.VehicleId);
+                var vehicle = FakeDataSeeder.vehicles.First(v => v.VehicleId == assignDay.VehicleId);
                 var mainShift = shifts.First();
                 mainShift.Status = "Scheduled";
 
@@ -446,7 +446,7 @@ namespace ElecWasteCollection.Application.Services
                 foreach (var gid in oldGroupIds)
                 {
                     FakeDataSeeder.collectionRoutes.RemoveAll(r => r.CollectionGroupId == gid);
-                    FakeDataSeeder.collectionGroups.RemoveAll(g => g.Id == gid);
+                    FakeDataSeeder.collectionGroups.RemoveAll(g => g.CollectionGroupId == gid);
                 }
 
                 var locations = new List<(double lat, double lng)>();
@@ -463,8 +463,8 @@ namespace ElecWasteCollection.Application.Services
                     if (address == null || !TryGetTimeWindowForDate(p.ScheduleJson!, workDate, out var st, out var en))
                         continue;
 
-                    var product = FakeDataSeeder.products.First(pr => pr.Id == p.ProductId);
-                    var cat = FakeDataSeeder.categories.FirstOrDefault(c => c.Id == product.CategoryId);
+                    var product = FakeDataSeeder.products.First(pr => pr.ProductId == p.ProductId);
+                    var cat = FakeDataSeeder.categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
                     var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
                     var att = GetProductAttributes(p.ProductId);
                     locations.Add((address.Iat ?? point.Latitude, address.Ing ?? point.Longitude));
@@ -520,9 +520,9 @@ namespace ElecWasteCollection.Application.Services
                 int newGroupId = FakeDataSeeder.collectionGroups.Count + 1;
                 var group = new CollectionGroups
                 {
-                    Id = newGroupId,
+                    CollectionGroupId = newGroupId,
                     Group_Code = $"GRP-{workDate:MMdd}-{groupCounter++}",
-                    Shift_Id = mainShift.Id,
+                    Shift_Id = mainShift.ShiftId,
                     Name = $"{vehicle.Vehicle_Type} - {vehicle.Plate_Number}",
                     Created_At = DateTime.Now
                 };
@@ -568,7 +568,7 @@ namespace ElecWasteCollection.Application.Services
                     saveRoutes.Add(new CollectionRoutes
                     {
                         CollectionRouteId = Guid.NewGuid(),
-                        CollectionGroupId = group.Id,
+                        CollectionGroupId = group.CollectionGroupId,
                         ProductId = data.Post.ProductId,
                         CollectionDate = workDate,
                         EstimatedTime = arrival,
@@ -592,11 +592,11 @@ namespace ElecWasteCollection.Application.Services
 
                 response.CreatedGroups.Add(new GroupSummary
                 {
-                    GroupId = group.Id,
+                    GroupId = group.CollectionGroupId,
                     GroupCode = group.Group_Code,
                     Collector = collectorName,
                     Vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})",
-                    ShiftId = mainShift.Id,
+                    ShiftId = mainShift.ShiftId,
                     GroupDate = workDate,
                     TotalPosts = routeNodes.Count,
                     TotalWeightKg = Math.Round(totalKg, 2),
@@ -611,10 +611,10 @@ namespace ElecWasteCollection.Application.Services
         public async Task<object> GetRoutesByGroupAsync(int groupId)
         {
             var group = FakeDataSeeder.collectionGroups
-                .FirstOrDefault(g => g.Id == groupId)
+                .FirstOrDefault(g => g.CollectionGroupId == groupId)
                 ?? throw new Exception("Không tìm thấy group.");
 
-            var shift = FakeDataSeeder.shifts.First(s => s.Id == group.Shift_Id);
+            var shift = FakeDataSeeder.shifts.First(s => s.ShiftId == group.Shift_Id);
 
 
             var routes = FakeDataSeeder.collectionRoutes
@@ -633,10 +633,10 @@ namespace ElecWasteCollection.Application.Services
                 .First(s => s.Date == workDate && s.ProductIds.Contains(firstProductId));
 
             var point = FakeDataSeeder.smallCollectionPoints
-                .First(p => p.Id == staging.PointId);
+                .First(p => p.SmallCollectionPointsId == staging.PointId);
 
             var vehicle = FakeDataSeeder.vehicles
-                .First(v => v.Id == staging.VehicleId);
+                .First(v => v.VehicleId == staging.VehicleId);
 
             var collector = FakeDataSeeder.users
                 .FirstOrDefault(c => c.UserId == shift.CollectorId);
@@ -652,8 +652,8 @@ namespace ElecWasteCollection.Application.Services
                     ?? throw new Exception("Không tìm thấy Post cho Product");
                 var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
                 var userAddress = _userAddress.First(a => a.UserId == user.UserId);
-                var product = FakeDataSeeder.products.First(pr => pr.Id == r.ProductId);
-                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.Id == product.CategoryId);
+                var product = FakeDataSeeder.products.First(pr => pr.ProductId == r.ProductId);
+                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
                 var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
 
                 var att = GetProductAttributes(post.ProductId);
@@ -665,7 +665,7 @@ namespace ElecWasteCollection.Application.Services
                 {
                     pickupOrder = order++,
                     productId = post.ProductId,
-                    postId = post.Id,
+                    postId = post.PostId,
                     userName = user.Name,
                     address = userAddress.Address,
                     categoryName = category?.Name ?? "Unknown",
@@ -681,7 +681,7 @@ namespace ElecWasteCollection.Application.Services
 
             var result = new
             {
-                groupId = group.Id,
+                groupId = group.CollectionGroupId,
                 groupCode = group.Group_Code,
                 shiftId = group.Shift_Id,
                 vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})",
@@ -696,7 +696,7 @@ namespace ElecWasteCollection.Application.Services
 
             return await Task.FromResult(result);
         }
-        public async Task<List<object>> GetGroupsByPointIdAsync(int pointId)
+        public async Task<List<object>> GetGroupsByPointIdAsync(string pointId)
         {
             var stagings = FakeDataSeeder.stagingAssignDays
                 .Where(s => s.PointId == pointId)
@@ -721,8 +721,8 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var gid in groupIds)
             {
-                var group = FakeDataSeeder.collectionGroups.First(g => g.Id == gid);
-                var shift = FakeDataSeeder.shifts.First(s => s.Id == group.Shift_Id);
+                var group = FakeDataSeeder.collectionGroups.First(g => g.CollectionGroupId == gid);
+                var shift = FakeDataSeeder.shifts.First(s => s.ShiftId == group.Shift_Id);
 
                 var routes = FakeDataSeeder.collectionRoutes
                     .Where(r => r.CollectionGroupId == gid)
@@ -736,7 +736,7 @@ namespace ElecWasteCollection.Application.Services
                     .First(s => s.Date == shift.WorkDate &&
                                 s.ProductIds.Contains(firstProductId));
 
-                var vehicle = FakeDataSeeder.vehicles.First(v => v.Id == staging.VehicleId);
+                var vehicle = FakeDataSeeder.vehicles.First(v => v.VehicleId == staging.VehicleId);
 
                 var collector = FakeDataSeeder.users
                     .FirstOrDefault(c => c.UserId == shift.CollectorId);
@@ -754,7 +754,7 @@ namespace ElecWasteCollection.Application.Services
 
                 result.Add(new
                 {
-                    groupId = group.Id,
+                    groupId = group.CollectionGroupId,
                     groupCode = group.Group_Code,
                     shiftId = group.Shift_Id,
                     groupDate = shift.WorkDate.ToString("yyyy-MM-dd"),
@@ -774,16 +774,16 @@ namespace ElecWasteCollection.Application.Services
             return await Task.FromResult(
                 FakeDataSeeder.vehicles
                     .Where(v => v.Status == "active")
-                    .OrderBy(v => v.Id)
+                    .OrderBy(v => v.VehicleId)
                     .ToList()
             );
         }
 
-        public async Task<List<Vehicles>> GetVehiclesBySmallPointAsync(int smallPointId)
+        public async Task<List<Vehicles>> GetVehiclesBySmallPointAsync(string smallPointId)
         {
             var vehicles = FakeDataSeeder.vehicles
                 .Where(v => v.Status == "active" && v.Small_Collection_Point == smallPointId)
-                .OrderBy(v => v.Id)
+                .OrderBy(v => v.VehicleId)
                 .ToList();
 
             return await Task.FromResult(vehicles);
@@ -794,7 +794,7 @@ namespace ElecWasteCollection.Application.Services
             var posts = FakeDataSeeder.posts
                 .Where(p =>
                     FakeDataSeeder.products.Any(pr =>
-                        pr.Id == p.ProductId &&
+                        pr.ProductId == p.ProductId &&
                         pr.Status == "Chờ gom nhóm"))
                 .ToList();
 
@@ -803,17 +803,17 @@ namespace ElecWasteCollection.Application.Services
             foreach (var p in posts)
             {
                 var user = FakeDataSeeder.users.First(u => u.UserId == p.SenderId);
-                var product = FakeDataSeeder.products.First(pr => pr.Id == p.ProductId);
+                var product = FakeDataSeeder.products.First(pr => pr.ProductId == p.ProductId);
                 var address = _userAddress.First(a => a.UserId == user.UserId);
 
                 var brand = FakeDataSeeder.brands.First(b => b.BrandId == product.BrandId);
-                var cat = FakeDataSeeder.categories.First(c => c.Id == product.CategoryId);
+                var cat = FakeDataSeeder.categories.First(c => c.CategoryId == product.CategoryId);
 
                 var att = GetProductAttributes(p.ProductId);
 
                 result.Add(new PendingPostModel
                 {
-                    PostId = p.Id,
+                    PostId = p.PostId,
                     ProductId = p.ProductId,
                     UserName = user.Name,
                     Address = address.Address,
@@ -833,18 +833,18 @@ namespace ElecWasteCollection.Application.Services
         }
         public async Task<ReassignGroupResponse> ReassignGroupAsync(ReassignGroupRequest request)
         {
-            var group = FakeDataSeeder.collectionGroups.FirstOrDefault(g => g.Id == request.GroupId)
+            var group = FakeDataSeeder.collectionGroups.FirstOrDefault(g => g.CollectionGroupId == request.GroupId)
                 ?? throw new Exception("Không tìm thấy nhóm thu gom.");
 
-            var oldShift = FakeDataSeeder.shifts.FirstOrDefault(s => s.Id == group.Shift_Id)
+            var oldShift = FakeDataSeeder.shifts.FirstOrDefault(s => s.ShiftId == group.Shift_Id)
                 ?? throw new Exception("Không tìm thấy ca làm việc gắn với group này.");
 
             var workDate = oldShift.WorkDate;
             var vehicleId = oldShift.Vehicle_Id; 
 
-            var vehicleObj = FakeDataSeeder.vehicles.FirstOrDefault(v => v.Id == vehicleId)
+            var vehicleObj = FakeDataSeeder.vehicles.FirstOrDefault(v => v.VehicleId == vehicleId)
                 ?? throw new Exception("Không tìm thấy thông tin xe.");
-            int currentPointId = vehicleObj.Small_Collection_Point;
+            var currentPointId = vehicleObj.Small_Collection_Point;
 
             var newCollector = FakeDataSeeder.users.FirstOrDefault(u => u.UserId == request.NewCollectorId)
                 ?? throw new Exception("Nhân viên mới không tồn tại.");
@@ -855,7 +855,7 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var shift in otherShifts)
             {
-                var v = FakeDataSeeder.vehicles.FirstOrDefault(x => x.Id == shift.Vehicle_Id);
+                var v = FakeDataSeeder.vehicles.FirstOrDefault(x => x.VehicleId == shift.Vehicle_Id);
                 if (v != null && v.Small_Collection_Point != currentPointId)
                 {
                     throw new Exception($"Nhân viên {newCollector.Name} đang có lịch làm việc tại trạm khác (Trạm ID: {v.Small_Collection_Point}) vào ngày này.");
@@ -863,22 +863,22 @@ namespace ElecWasteCollection.Application.Services
             }
             var existingShiftOnThisVehicle = otherShifts.FirstOrDefault(s => s.Vehicle_Id == vehicleId);
 
-            int targetShiftId;
+            var targetShiftId = "";
 
             if (existingShiftOnThisVehicle != null)
             {
 
-                targetShiftId = existingShiftOnThisVehicle.Id;
+                targetShiftId = existingShiftOnThisVehicle.ShiftId;
             }
             else
             {
 
 
-                int newShiftId = FakeDataSeeder.shifts.Any() ? FakeDataSeeder.shifts.Max(s => s.Id) + 1 : 1;
+                int newShiftId = FakeDataSeeder.shifts.Any() ? FakeDataSeeder.shifts.Max(s => int.Parse(s.ShiftId)) + 1 : 1;
 
                 var newShift = new Shifts
                 {
-                    Id = newShiftId,
+                    ShiftId = newShiftId.ToString(),
                     CollectorId = request.NewCollectorId,
                     Vehicle_Id = vehicleId,              
                     WorkDate = workDate,                  
@@ -888,7 +888,7 @@ namespace ElecWasteCollection.Application.Services
                 };
 
                 FakeDataSeeder.shifts.Add(newShift);
-                targetShiftId = newShiftId;
+                targetShiftId = newShiftId.ToString();
             }
 
             group.Shift_Id = targetShiftId;
@@ -899,7 +899,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 Success = true,
                 Message = "Thay thế nhân viên thành công.",
-                GroupId = group.Id,
+                GroupId = group.CollectionGroupId,
                 CollectorName = newCollector.Name
             };
         }

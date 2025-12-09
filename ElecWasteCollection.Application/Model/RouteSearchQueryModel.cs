@@ -12,7 +12,7 @@ namespace ElecWasteCollection.Application.Model
 
 		public int Limit { get; set; }
 
-		public int? CollectionPointId { get; set; }
+		public string? CollectionPointId { get; set; }
 		public DateOnly? PickUpDate { get; set; }
 
 		public string? Status { get; set; }

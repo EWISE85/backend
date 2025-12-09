@@ -8,11 +8,13 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Services;
 using ElecWasteCollection.Application.Services.AssignPostService;
+using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
 using ElecWasteCollection.Infrastructure.Implementations;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
@@ -57,6 +59,8 @@ namespace ElecWasteCollection.API
 					}
 				});
 			});
+			builder.Services.AddDbContext<ElecWasteCollectionDbContext>(opt =>
+				opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 			if (FirebaseApp.DefaultInstance == null)
 			{
 				FirebaseApp.Create(new AppOptions()

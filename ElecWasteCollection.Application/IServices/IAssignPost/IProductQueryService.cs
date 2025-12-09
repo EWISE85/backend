@@ -4,10 +4,10 @@ namespace ElecWasteCollection.Application.IServices.IAssignPost
 {
     public interface IProductQueryService
     {
-        Task<GetCompanyProductsResponse> GetCompanyProductsAsync(int companyId, DateOnly workDate);
-        Task<SmallPointProductGroupDto> GetSmallPointProductsAsync(int smallPointId, DateOnly workDate);
+        Task<GetCompanyProductsResponse> GetCompanyProductsAsync(string companyId, DateOnly workDate);
+        Task<SmallPointProductGroupDto> GetSmallPointProductsAsync(string smallPointId, DateOnly workDate);
         Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync();
-        Task<List<SmallPointDto>> GetSmallPointsByCompanyIdAsync(int companyId);
-        Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(int companyId); 
+        Task<List<SmallPointDto>> GetSmallPointsByCompanyIdAsync(string companyId);
+        Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(string companyId); 
     }
 }

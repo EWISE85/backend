@@ -12,7 +12,7 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class CollectionCompanyService : ICollectionCompanyService
 	{
-		private readonly List<CollectionTeams> _teams = FakeDataSeeder.collectionTeams;
+		private readonly List<CollectionCompany> _teams = FakeDataSeeder.collectionTeams;
 		private readonly IAccountService _accountService;
 		private readonly IUserService _userService;
 		public CollectionCompanyService(IAccountService accountService, IUserService userService)
@@ -21,17 +21,17 @@ namespace ElecWasteCollection.Application.Services
 			_userService = userService;
 		}
 
-		public Task<bool> AddNewCompany(CollectionTeams collectionTeams)
+		public Task<bool> AddNewCompany(CollectionCompany collectionTeams)
 		{
 			_teams.Add(collectionTeams);
 			return Task.FromResult(true);
 		}
 
-		public async Task<ImportResult> CheckAndUpdateCompanyAsync(CollectionTeams collectionTeams, string adminUsername, string password)
+		public async Task<ImportResult> CheckAndUpdateCompanyAsync(CollectionCompany collectionTeams, string adminUsername, string password)
 		{
 			var result = new ImportResult();
 
-			var existingCompany = _teams.FirstOrDefault(t => t.Id == collectionTeams.Id);
+			var existingCompany = _teams.FirstOrDefault(t => t.CollectionCompanyId == collectionTeams.CollectionCompanyId);
 			if (existingCompany != null)
 			{
 				bool isUpdated = false;
@@ -82,7 +82,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = "Admin " + collectionTeams.Name,
 					Email = collectionTeams.CompanyEmail,
 					Role = UserRole.AdminCompany.ToString(),
-					CollectionCompanyId = collectionTeams.Id,
+					CollectionCompanyId = collectionTeams.CollectionCompanyId,
 				};
 				 _userService.AddUser(newAdminCompany);
 				var adminAccount = new Account
@@ -99,9 +99,9 @@ namespace ElecWasteCollection.Application.Services
 		}
 
 
-		public Task<bool> DeleteCompany(int collectionCompanyId)
+		public Task<bool> DeleteCompany(string collectionCompanyId)
 		{
-			var team = _teams.FirstOrDefault(t => t.Id == collectionCompanyId);
+			var team = _teams.FirstOrDefault(t => t.CollectionCompanyId == collectionCompanyId);
 			if (team != null)
 			{
 				team.Status = CompanyStatus.Inactive.ToString();
@@ -114,7 +114,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var response = _teams.Select(team => new CollectionCompanyResponse
 			{
-				Id = team.Id,
+				Id = team.CollectionCompanyId,
 				Name = team.Name,
 				CompanyEmail = team.CompanyEmail,
 				Phone = team.Phone,
@@ -125,14 +125,14 @@ namespace ElecWasteCollection.Application.Services
 			return Task.FromResult(response);
 		}
 
-		public CollectionCompanyResponse? GetCompanyById(int collectionCompanyId)
+		public CollectionCompanyResponse? GetCompanyById(string collectionCompanyId)
 		{
-			var response = _teams.FirstOrDefault(team => team.Id == collectionCompanyId);
+			var response = _teams.FirstOrDefault(team => team.CollectionCompanyId == collectionCompanyId);
 			if (response != null)
 			{
 				return new CollectionCompanyResponse
 				{
-					Id = response.Id,
+					Id = response.CollectionCompanyId,
 					Name = response.Name,
 					CompanyEmail = response.CompanyEmail,
 					Phone = response.Phone,
@@ -157,7 +157,7 @@ namespace ElecWasteCollection.Application.Services
 							 .Take(model.Limit)
 							 .Select(team => new CollectionCompanyResponse
 							 {
-								 Id = team.Id,
+								 Id = team.CollectionCompanyId,
 								 Name = team.Name,
 								 CompanyEmail = team.CompanyEmail,
 								 Phone = team.Phone,
@@ -171,9 +171,9 @@ namespace ElecWasteCollection.Application.Services
 		}
 
 
-		public Task<bool> UpdateCompany(CollectionTeams collectionTeams)
+		public Task<bool> UpdateCompany(CollectionCompany collectionTeams)
 		{
-			var team = _teams.FirstOrDefault(t => t.Id == collectionTeams.Id);
+			var team = _teams.FirstOrDefault(t => t.CollectionCompanyId == collectionTeams.CollectionCompanyId);
 			if (team != null)
 			{
 				team.Address = collectionTeams.Address;

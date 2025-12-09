@@ -25,5 +25,9 @@ namespace ElecWasteCollection.Domain.Entities
         public double DistanceKm { get; set; }
 
         public string Status { get; set; }
+
+		public Products Product { get; set; }
+
+		public CollectionGroups CollectionGroup { get; set; }
 	}
 }

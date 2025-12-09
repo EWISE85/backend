@@ -12,12 +12,13 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public Guid ProductId { get; set; }
 
-		public Products Product { get; set; }
-
 		public string Status { get; set; }
 
 		public string StatusDescription { get; set; }
 
 		public DateTime ChangedAt { get; set; }
+
+		public Products Product { get; set; }
+
 	}
 }

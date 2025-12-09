@@ -19,13 +19,13 @@ namespace ElecWasteCollection.API.Controllers
 			_excelImportService = excelImportService;
 		}
 		[HttpGet("company/{companyId}")]
-		public IActionResult GetByCompanyId([FromRoute] int companyId)
+		public IActionResult GetByCompanyId([FromRoute] string companyId)
 		{
 			var result = _smallCollectionService.GetSmallCollectionPointByCompanyId(companyId);
 			return Ok(result);
 		}
 		[HttpGet("{smallCollectionPointId}")]
-		public IActionResult GetById([FromRoute] int smallCollectionPointId)
+		public IActionResult GetById([FromRoute] string smallCollectionPointId)
 		{
 			var result = _smallCollectionService.GetSmallCollectionById(smallCollectionPointId);
 			if (result == null)

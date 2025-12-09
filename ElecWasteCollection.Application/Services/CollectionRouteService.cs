@@ -33,11 +33,10 @@ namespace ElecWasteCollection.Application.Services
 
 		public bool CancelCollection(Guid collectionRouteId, string rejectMessage)
 		{
-			// SỬA LỖI: Dùng _collectionRoutes
 			var route = _collectionRoutes.FirstOrDefault(r => r.CollectionRouteId == collectionRouteId);
-			var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
+			var product = _products.FirstOrDefault(p => p.ProductId == route.ProductId);
 			if (product == null) return false;
-			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
 
 			if (route != null)
 			{
@@ -47,7 +46,7 @@ namespace ElecWasteCollection.Application.Services
 				// Thêm lịch sử thay đổi trạng thái
 				_productStatusHistories.Add(new ProductStatusHistory
 				{
-					ProductId = product.Id,
+					ProductId = product.ProductId,
 					ChangedAt = DateTime.Now,
 					StatusDescription = "Sản phẩm không được lấy thành công",
 					Status = product.Status
@@ -70,9 +69,9 @@ namespace ElecWasteCollection.Application.Services
 			
 
 			// SỬA LỖI: Dùng _products (List) và post.ProductId
-			var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
+			var product = _products.FirstOrDefault(p => p.ProductId == route.ProductId);
 			if (product == null) return false;
-			var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+			var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
 			if (post == null) return false;
 
 			route.Status = "Hoàn thành";
@@ -83,7 +82,7 @@ namespace ElecWasteCollection.Application.Services
 			// Thêm lịch sử thay đổi trạng thái
 			_productStatusHistories.Add(new ProductStatusHistory
 			{
-				ProductId = product.Id,
+				ProductId = product.ProductId,
 				ChangedAt = DateTime.Now,
 				StatusDescription = "Sản phẩm đã được thu gom",
 				Status = "Đã thu gom"
@@ -110,18 +109,18 @@ namespace ElecWasteCollection.Application.Services
 			return results;
 		}
 
-		public List<CollectionRouteModel> GetAllRoutesByDateAndByCollectionPoints(DateOnly PickUpDate, int collectionPointId)
+		public List<CollectionRouteModel> GetAllRoutesByDateAndByCollectionPoints(DateOnly PickUpDate, string collectionPointId)
 		{
 			// 1. Tìm các xe thuộc điểm thu gom
 			var vehicleIds = _vehicles
 				.Where(v => v.Small_Collection_Point == collectionPointId)
-				.Select(v => v.Id)
+				.Select(v => v.VehicleId)
 				.ToList();
 
 			// 2. Tìm các ca làm việc VÀO NGÀY ĐÓ dùng các xe đó
 			var shiftIds = _shifts
 				.Where(s => vehicleIds.Contains(s.Vehicle_Id) && s.WorkDate == PickUpDate)
-				.Select(s => s.Id)
+				.Select(s => s.ShiftId)
 				.ToList();
 
 			if (!shiftIds.Any())
@@ -133,7 +132,7 @@ namespace ElecWasteCollection.Application.Services
 			// 3. Tìm các nhóm thuộc các ca làm việc đó
 			var groupIds = _collectionGroups
 				.Where(g => shiftIds.Contains(g.Shift_Id))
-				.Select(g => g.Id)
+				.Select(g => g.CollectionGroupId)
 				.ToList();
 
 			// 4. Tìm các tuyến đường thuộc các nhóm đó
@@ -179,7 +178,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var shiftIds = _shifts
 				.Where(s => s.CollectorId == collectorId && s.WorkDate == PickUpDate)
-				.Select(s => s.Id)
+				.Select(s => s.ShiftId)
 				.ToList();
 
 			if (!shiftIds.Any())
@@ -189,7 +188,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var groupIds = _collectionGroups
 				.Where(g => shiftIds.Contains(g.Shift_Id))
-				.Select(g => g.Id)
+				.Select(g => g.CollectionGroupId)
 				.ToList();
 
 			var routes = _collectionRoutes
@@ -197,9 +196,9 @@ namespace ElecWasteCollection.Application.Services
 
 			var results = routes.Select(r =>
 			{
-				var product  = _products.FirstOrDefault(p => p.Id == r.ProductId);
+				var product  = _products.FirstOrDefault(p => p.ProductId == r.ProductId);
 				if (product == null) return null;
-				var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+				var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
 				if (post == null) return null;
 
 				// SỬA LỖI: Dùng post.SenderId (thay vì post.S)
@@ -211,9 +210,9 @@ namespace ElecWasteCollection.Application.Services
 					.Select(img => img.ImageUrl)
 					.ToList();
 
-				var group = _collectionGroups.FirstOrDefault(g => g.Id == r.CollectionGroupId);
-				var shift = _shifts.FirstOrDefault(s => s.Id == group.Shift_Id);
-				var vehicle = _vehicles.FirstOrDefault(v => v.Id == shift.Vehicle_Id);
+				var group = _collectionGroups.FirstOrDefault(g => g.CollectionGroupId == r.CollectionGroupId);
+				var shift = _shifts.FirstOrDefault(s => s.ShiftId == group.Shift_Id);
+				var vehicle = _vehicles.FirstOrDefault(v => v.VehicleId == shift.Vehicle_Id);
 
 				var collectorResponse = new CollectorResponse
 				{
@@ -237,10 +236,10 @@ namespace ElecWasteCollection.Application.Services
 				return new CollectionRouteModel
 				{
 					CollectionRouteId = r.CollectionRouteId,
-					PostId = post.Id,
+					PostId = post.PostId,
 					//ItemName = post.Name,
-					BrandName = _brand.FirstOrDefault(b => b.BrandId == _products.FirstOrDefault(p => p.Id == post.ProductId)?.BrandId)?.Name,
-					SubCategoryName = _category.FirstOrDefault(c => c.Id == _products.FirstOrDefault(p => p.Id == post.ProductId)?.CategoryId)?.Name,
+					BrandName = _brand.FirstOrDefault(b => b.BrandId == _products.FirstOrDefault(p => p.ProductId == post.ProductId)?.BrandId)?.Name,
+					SubCategoryName = _category.FirstOrDefault(c => c.CategoryId == _products.FirstOrDefault(p => p.ProductId == post.ProductId)?.CategoryId)?.Name,
 					ProductId = post.ProductId,
 					Collector = collectorResponse,
 					Sender = senderResposne,
@@ -270,10 +269,10 @@ namespace ElecWasteCollection.Application.Services
 			// SỬA LỖI: Dùng _collectionRoutes
 			var route = _collectionRoutes.FirstOrDefault(r => r.CollectionRouteId == collectionRouteId);
 			if (route == null) return false;
-			var group = _collectionGroups.FirstOrDefault(g => g.Id == route.CollectionGroupId);
+			var group = _collectionGroups.FirstOrDefault(g => g.CollectionGroupId == route.CollectionGroupId);
 			if (group == null) return false;
 
-			var shift = _shifts.FirstOrDefault(s => s.Id == group.Shift_Id);
+			var shift = _shifts.FirstOrDefault(s => s.ShiftId == group.Shift_Id);
 			if (shift == null) return false;
 
 			Guid collectorId = shift.CollectorId;
@@ -310,9 +309,9 @@ namespace ElecWasteCollection.Application.Services
 		{
 			try
 			{
-				var product = _products.FirstOrDefault(p => p.Id == route.ProductId);
+				var product = _products.FirstOrDefault(p => p.ProductId == route.ProductId);
 				if (product == null) return null;
-				var post = _posts.FirstOrDefault(p => p.ProductId == product.Id);
+				var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
 				if (post == null) return null;
 
 				var sender = _users.FirstOrDefault(u => u.UserId == post.SenderId);
@@ -327,19 +326,19 @@ namespace ElecWasteCollection.Application.Services
 				
 				var brand = _brand.FirstOrDefault(b => b.BrandId == product.BrandId);
 				if (brand == null) return null;
-				var subCategory = _category.FirstOrDefault(c => c.Id == product.CategoryId).Name;
+				var subCategory = _category.FirstOrDefault(c => c.CategoryId == product.CategoryId).Name;
 
 				// Join để lấy Collector và Vehicle
-				var group = _collectionGroups.FirstOrDefault(g => g.Id == route.CollectionGroupId);
+				var group = _collectionGroups.FirstOrDefault(g => g.CollectionGroupId == route.CollectionGroupId);
 				if (group == null) return null;
 
-				var shift = _shifts.FirstOrDefault(s => s.Id == group.Shift_Id);
+				var shift = _shifts.FirstOrDefault(s => s.ShiftId == group.Shift_Id);
 				if (shift == null) return null;
 
 				var collector = _users.FirstOrDefault(c => c.UserId == shift.CollectorId);
 				if (collector == null) return null;
 
-				var vehicle = _vehicles.FirstOrDefault(v => v.Id == shift.Vehicle_Id);
+				var vehicle = _vehicles.FirstOrDefault(v => v.VehicleId == shift.Vehicle_Id);
 				if (vehicle == null) return null;
 				var collectorResponse = new CollectorResponse
 				{
@@ -363,7 +362,7 @@ namespace ElecWasteCollection.Application.Services
 				return new CollectionRouteModel
 				{
 					CollectionRouteId = route.CollectionRouteId,
-					PostId = post.Id,
+					PostId = post.PostId,
 					//ItemName = post.Name,
 					Collector = collectorResponse,
 					Sender = senderResposne,
@@ -395,22 +394,22 @@ namespace ElecWasteCollection.Application.Services
 			var query = _collectionRoutes.AsQueryable();
 
 			// 1. Lọc theo Trạm thu gom (CollectionPointId)
-			if (parameters.CollectionPointId.HasValue)
+			if (parameters.CollectionPointId != null)
 			{
 				// Join phức tạp: Route -> Group -> Shift -> Vehicle -> Point
 				var vehicleIds = _vehicles
-					.Where(v => v.Small_Collection_Point == parameters.CollectionPointId.Value)
-					.Select(v => v.Id)
+					.Where(v => v.Small_Collection_Point == parameters.CollectionPointId)
+					.Select(v => v.VehicleId)
 					.ToList();
 
 				var shiftIds = _shifts
 					.Where(s => vehicleIds.Contains(s.Vehicle_Id))
-					.Select(s => s.Id)
+					.Select(s => s.ShiftId)
 					.ToList();
 
 				var allowedGroupIds = _collectionGroups
 					.Where(g => shiftIds.Contains(g.Shift_Id))
-					.Select(g => g.Id)
+					.Select(g => g.CollectionGroupId)
 					.ToHashSet(); // Dùng HashSet để tăng tốc độ lọc
 
 				query = query.Where(r => allowedGroupIds.Contains(r.CollectionGroupId));

@@ -20,8 +20,6 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public Products Product { get; set; }
 
-		public Attribute? Attribute { get; set; }
-
-		public AttributeOptions? AttributeOption { get; set; }
+		public Attributes? Attribute { get; set; }
 	}
 }

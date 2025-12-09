@@ -97,7 +97,7 @@ namespace ElecWasteCollection.Application.Services
 			return response;
 		}
 
-		public List<CollectorResponse> GetCollectorByCompanyId(int companyId)
+		public List<CollectorResponse> GetCollectorByCompanyId(string companyId)
 		{
 			var response = collectors
 				.Where(c => c.CollectionCompanyId == companyId && c.Role == UserRole.Collector.ToString())
@@ -114,7 +114,7 @@ namespace ElecWasteCollection.Application.Services
 			return response;
 		}
 
-		public List<CollectorResponse> GetCollectorByWareHouseId(int wareHouseId)
+		public List<CollectorResponse> GetCollectorByWareHouseId(string wareHouseId)
 		{
 			var response = collectors
 				.Where(c => c.SmallCollectionPointId == wareHouseId && c.Role == UserRole.Collector.ToString())
@@ -156,13 +156,13 @@ namespace ElecWasteCollection.Application.Services
 			{
 				query = query.Where(c => c.Status == model.Status);
 			}
-			if (model.CompanyId.HasValue)
+			if (model.CompanyId != null)
 			{
-				query = query.Where(c => c.CollectionCompanyId == model.CompanyId.Value);
+				query = query.Where(c => c.CollectionCompanyId == model.CompanyId);
 			}
-			if (model.SmallCollectionId.HasValue)
+			if (model.SmallCollectionId != null)
 			{
-				query = query.Where(c => c.SmallCollectionPointId == model.SmallCollectionId.Value);
+				query = query.Where(c => c.SmallCollectionPointId == model.SmallCollectionId);
 			}
 
 			var totalItems = query.Count();

@@ -6,7 +6,7 @@
 
 		public string PackageName { get; set; }
 
-		public int SmallCollectionPointsId { get; set; }
+		public string SmallCollectionPointsId { get; set; }
 
 		public List<string> ProductsQrCode { get; set; }
 	}

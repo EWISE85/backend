@@ -24,7 +24,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(collectors);
 		}
 		[HttpGet("small-collection-point/{SmallCollectionPointId}")]
-		public IActionResult GetCollectors([FromRoute] int SmallCollectionPointId)
+		public IActionResult GetCollectors([FromRoute] string SmallCollectionPointId)
 		{
 			var collectors = _collectorService.GetCollectorByWareHouseId(SmallCollectionPointId);
 			return Ok(collectors);
@@ -36,7 +36,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(collectors);
 		}
 		[HttpGet("company/{companyId}")]
-		public IActionResult GetCollectorsByCompany([FromRoute] int companyId)
+		public IActionResult GetCollectorsByCompany([FromRoute] string companyId)
 		{
 			var collectors = _collectorService.GetCollectorByCompanyId(companyId);
 			return Ok(collectors);

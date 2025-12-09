@@ -23,7 +23,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
     {
         public int GroupId { get; set; }
         public string GroupCode { get; set; } = "";
-        public int ShiftId { get; set; }
+        public string ShiftId { get; set; }
         public string Vehicle { get; set; } = "";
         public string Collector { get; set; } = "";
         public DateOnly GroupDate { get; set; }

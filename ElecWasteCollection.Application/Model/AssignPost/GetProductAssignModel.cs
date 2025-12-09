@@ -8,7 +8,7 @@ namespace ElecWasteCollection.Application.Model.AssignPost
 {
     public class GetCompanyProductsResponse
     {
-        public int CompanyId { get; set; }
+        public string CompanyId { get; set; }
         public string CompanyName { get; set; } = string.Empty;
         public string WorkDate { get; set; } = string.Empty;
 
@@ -21,7 +21,7 @@ namespace ElecWasteCollection.Application.Model.AssignPost
 
     public class SmallPointProductGroupDto
     {
-        public int? SmallPointId { get; set; }
+        public string? SmallPointId { get; set; }
         public string SmallPointName { get; set; } = string.Empty;
 
         public double RadiusMaxConfigKm { get; set; }

@@ -25,5 +25,9 @@ namespace ElecWasteCollection.Domain.Entities
 		public double Point { get; set; }
 
 		public DateTime CreatedAt { get; set; }
+
+		public Products Product { get; set; }
+
+		public User User { get; set; }
 	}
 }

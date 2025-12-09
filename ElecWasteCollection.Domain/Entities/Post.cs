@@ -8,7 +8,7 @@ namespace ElecWasteCollection.Domain.Entities
 {
 	public class Post
 	{
-		public Guid Id { get; set; }
+		public Guid PostId { get; set; }
 
 		public Guid SenderId { get; set; }
 
@@ -24,10 +24,16 @@ namespace ElecWasteCollection.Domain.Entities
 		public List<string>? CheckMessage { get; set; }
 		public string? RejectMessage { get; set; }
 		public string Status { get; set; }
-		//public ICollection<PostImages> Images { get; set; }
-
-        public int? CollectionCompanyId { get; set; }
-        public int? AssignedSmallPointId { get; set; }
+        public string? CollectionCompanyId { get; set; }
+        public string? AssignedSmallPointId { get; set; }
         public double? DistanceToPointKm { get; set; }
-    }
+
+		public Products Product { get; set; }
+
+		public User Sender { get; set; }
+
+		public CollectionCompany? CollectionCompany { get; set; }
+
+		public SmallCollectionPoints? AssignedSmallPoint { get; set; }
+	}
 }

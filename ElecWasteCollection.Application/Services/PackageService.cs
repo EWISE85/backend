@@ -83,7 +83,7 @@ namespace ElecWasteCollection.Application.Services
 			var filteredData = packages.AsEnumerable();
 
 
-			if (query.SmallCollectionPointsId > 0)
+			if (query.SmallCollectionPointsId != null)
 			{
 				filteredData = filteredData.Where(p => p.SmallCollectionPointsId == query.SmallCollectionPointsId);
 			}

@@ -11,9 +11,9 @@ namespace ElecWasteCollection.Domain.Entities
 		Active,
 		Inactive,
 	}
-	public class CollectionTeams
+	public class CollectionCompany
     {
-        public int Id { get; set; }
+        public string CollectionCompanyId { get; set; }
         public string Name { get; set; } = null!;
         public string CompanyEmail { get; set; } = null!;
         public string Phone { get; set; } = null!;
@@ -21,5 +21,11 @@ namespace ElecWasteCollection.Domain.Entities
         public string Status { get; set; } = null!;
         public DateTime Created_At { get; set; }
         public DateTime Updated_At { get; set; }
-    }
+
+        public virtual ICollection<User> Users { get; set; } = new List<User>();
+
+		public virtual ICollection<SmallCollectionPoints> SmallCollectionPoints { get; set; } = new List<SmallCollectionPoints>();
+
+		public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
+	}
 }

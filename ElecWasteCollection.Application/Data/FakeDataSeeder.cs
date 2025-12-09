@@ -132,14 +132,14 @@ namespace ElecWasteCollection.Application.Data
             new User { UserId = Guid.Parse("72b4ad6a-0b5b-45a3-bb6b-6e1790c84b45"), Name = "Phạm Thị Hằng", Email = "pham.thi.hang@example.com", Phone = "0911222333",  Avatar = "https://picsum.photos/id/1045/200/200",  Role = "User",Status = UserStatus.Active.ToString() },
             new User { UserId = Guid.Parse("c40deff9-163b-49e8-b967-238f22882b63"), Name = "Đỗ Quốc Bảo", Email = "do.quoc.bao@example.com", Phone = "0977222333",  Avatar = "https://picsum.photos/id/1059/200/200",Role = "User",Status = UserStatus.Active.ToString()},
 
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Name = "Admin thu gom kho điểm A - Thủ Đức", Email = "adminthugomnho12@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = 1,Status = UserStatus.Active.ToString(), CollectionCompanyId = 1  },
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882a12"), Name = "Admin thu gom kho điểm B - Quân 9", Email = "adminthugomnho23@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = 2,Status = UserStatus.Active.ToString(), CollectionCompanyId = 1  },
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b72"), Name = "Admin thu gom kho điểm C - Bình thạnh", Email = "adminthugomnho233@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = 3,Status = UserStatus.Active.ToString(), CollectionCompanyId = 2 },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b65"), Name = "Admin thu gom kho điểm A - Thủ Đức", Email = "adminthugomnho12@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = "1",Status = UserStatus.Active.ToString(), CollectionCompanyId = "1"  },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882a12"), Name = "Admin thu gom kho điểm B - Quân 9", Email = "adminthugomnho23@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = "2",Status = UserStatus.Active.ToString(), CollectionCompanyId = "1"  },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b72"), Name = "Admin thu gom kho điểm C - Bình thạnh", Email = "adminthugomnho233@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = "3",Status = UserStatus.Active.ToString(), CollectionCompanyId = "2" },
 
 
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882d12"), Name = "Admin công ty eco", Email = "NguyễnVănMinh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = 0,Status = UserStatus.Active.ToString(), CollectionCompanyId = 1  },
-             new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882c98"), Name = "Admin công ty urban", Email = "TrầnThịHạnh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = 0,Status = UserStatus.Active.ToString(), CollectionCompanyId = 2  },
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b95"), Name = "Admin hệ thống ", Email = "superadmin@gmail.com", Phone = "0977922333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.Admin.ToString(), SmallCollectionPointId = 0 ,Status = UserStatus.Active.ToString(), CollectionCompanyId = 0 },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882d12"), Name = "Admin công ty eco", Email = "NguyễnVănMinh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = "0",Status = UserStatus.Active.ToString(), CollectionCompanyId =" 1"  },
+             new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882c98"), Name = "Admin công ty urban", Email = "TrầnThịHạnh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = "0",Status = UserStatus.Active.ToString(), CollectionCompanyId = "2"  },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b95"), Name = "Admin hệ thống ", Email = "superadmin@gmail.com", Phone = "0977922333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.Admin.ToString(), SmallCollectionPointId = "0" ,Status = UserStatus.Active.ToString(), CollectionCompanyId = "0" },
             new User
     {
         UserId = collector_Dung_Id,
@@ -147,8 +147,8 @@ namespace ElecWasteCollection.Application.Data
         Email = "ngo.van.dung@ewc.vn",
         Phone = "0905999888",
         Avatar = "https://picsum.photos/id/1062/200/200",
-        SmallCollectionPointId = 1, // Thuộc trạm 1 (Vinhomes)
-        CollectionCompanyId =  1,
+        SmallCollectionPointId = "1", // Thuộc trạm 1 (Vinhomes)
+        CollectionCompanyId =  "1",
         Role = UserRole.Collector.ToString(),
         Status = UserStatus.Active.ToString()
     },
@@ -159,8 +159,8 @@ namespace ElecWasteCollection.Application.Data
     Email = "nguyen.nhat.truong@ewc.vn",
     Phone = "0905333444",
     Avatar = "https://picsum.photos/id/1070/200/200",
-    SmallCollectionPointId = 2, // Thuộc trạm 2 (Quận 9)
-    CollectionCompanyId = 1,    // Thuộc công ty 1
+    SmallCollectionPointId = "2", // Thuộc trạm 2 (Quận 9)
+    CollectionCompanyId = "1",    // Thuộc công ty 1
     Role = UserRole.Collector.ToString(),
     Status = UserStatus.Active.ToString()
 },
@@ -171,8 +171,8 @@ namespace ElecWasteCollection.Application.Data
         Email = "le.minh.tuan@ewc.vn",
         Phone = "0905111222",
         Avatar = "https://picsum.photos/id/1063/200/200",
-        SmallCollectionPointId = 1, // Thuộc trạm 1 (Vinhomes)
-        CollectionCompanyId =  1,
+        SmallCollectionPointId = "1", // Thuộc trạm 1 (Vinhomes)
+        CollectionCompanyId =  "1",
         Role = UserRole.Collector.ToString()
 
     },
@@ -183,8 +183,8 @@ namespace ElecWasteCollection.Application.Data
         Email = "ngo.quang.dang@ewc.vn",
         Phone = "0908888999",
         Avatar = "https://picsum.photos/id/1074/200/200",
-        SmallCollectionPointId = 1, // Vẫn phải thuộc 1 trạm nào đó (ví dụ Trạm 1)
-        CollectionCompanyId = 1,    // Thuộc công ty EcoGreen
+        SmallCollectionPointId = "1", // Vẫn phải thuộc 1 trạm nào đó (ví dụ Trạm 1)
+        CollectionCompanyId = "1",    // Thuộc công ty EcoGreen
         Role = UserRole.Collector.ToString(),
         Status = UserStatus.Active.ToString()
     }
@@ -319,82 +319,82 @@ namespace ElecWasteCollection.Application.Data
         // =========================================================================
         public static List<Category> categories = new()
         {
-            new Category { Id = parent1_Id, Name = "Đồ gia dụng lớn", ParentCategoryId = null },
-            new Category { Id = cat_TuLanh, Name = "Tủ lạnh", ParentCategoryId = parent1_Id },
-            new Category { Id = cat_MayGiat, Name = "Máy giặt", ParentCategoryId = parent1_Id },
-            new Category { Id = Guid.Parse("11111111-1111-1111-1111-000000000003"), Name = "Máy sấy quần áo", ParentCategoryId = parent1_Id },
-            new Category { Id = Guid.Parse("11111111-1111-1111-1111-000000000004"), Name = "Máy rửa bát", ParentCategoryId = parent1_Id },
-            new Category { Id = Guid.Parse("11111111-1111-1111-1111-000000000005"), Name = "Máy điều hòa", ParentCategoryId = parent1_Id },
-            new Category { Id = cat_BinhNuocNong, Name = "Bình nước nóng", ParentCategoryId = parent1_Id },
-            new Category { Id = Guid.Parse("11111111-1111-1111-1111-000000000007"), Name = "Lò nướng", ParentCategoryId = parent1_Id },
-            new Category { Id = cat_LoViSong, Name = "Lò vi sóng", ParentCategoryId = parent1_Id },
-            new Category { Id = parent2_Id, Name = "Đồ điện tử Tiêu dùng & Giải trí", ParentCategoryId = null },
-            new Category { Id = cat_Tivi, Name = "Tivi", ParentCategoryId = parent2_Id },
-            new Category { Id = cat_ManHinhMayTinh, Name = "Màn hình máy tính", ParentCategoryId = parent2_Id },
-            new Category { Id = cat_Loa, Name = "Dàn âm thanh (Loa, Amply)", ParentCategoryId = parent2_Id },
-            new Category { Id = Guid.Parse("22222222-2222-2222-2222-000000000004"), Name = "Máy chơi game (Console)", ParentCategoryId = parent2_Id },
-            new Category { Id = Guid.Parse("22222222-2222-2222-2222-000000000005"), Name = "Đầu đĩa (DVD, VCD, Blu-ray)", ParentCategoryId = parent2_Id },
-            new Category { Id = parent3_Id, Name = "Thiết bị IT và Viễn thông", ParentCategoryId = null },
-            new Category { Id = cat_MayTinhDeBan, Name = "Máy tính để bàn (PC)", ParentCategoryId = parent3_Id },
-            new Category { Id = cat_Laptop, Name = "Laptop (Máy tính xách tay)", ParentCategoryId = parent3_Id },
-            new Category { Id = cat_DienThoai, Name = "Điện thoại di động", ParentCategoryId = parent3_Id },
-            new Category { Id = Guid.Parse("33333333-3333-3333-3333-000000000004"), Name = "Máy tính bảng (Tablet)", ParentCategoryId = parent3_Id },
-            new Category { Id = cat_MayIn, Name = "Máy in", ParentCategoryId = parent3_Id },
-            new Category { Id = Guid.Parse("33333333-3333-3333-3333-000000000006"), Name = "Máy scan", ParentCategoryId = parent3_Id },
-            new Category { Id = Guid.Parse("33333333-3333-3333-3333-000000000007"), Name = "Thiết bị mạng (Router, Modem)", ParentCategoryId = parent3_Id },
-            new Category { Id = parent4_Id, Name = "Đồ gia dụng nhỏ", ParentCategoryId = null },
-            new Category { Id = cat_NoiComDien, Name = "Nồi cơm điện", ParentCategoryId = parent4_Id },
-            new Category { Id = Guid.Parse("44444444-4444-4444-4444-000000000002"), Name = "Ấm đun nước", ParentCategoryId = parent4_Id },
-            new Category { Id = Guid.Parse("44444444-4444-4444-4444-000000000003"), Name = "Máy xay sinh tố", ParentCategoryId = parent4_Id },
-            new Category { Id = cat_QuatDien, Name = "Quạt điện", ParentCategoryId = parent4_Id },
-            new Category { Id = cat_MayHutBui, Name = "Máy hút bụi", ParentCategoryId = parent4_Id },
-            new Category { Id = Guid.Parse("44444444-4444-4444-4444-000000000006"), Name = "Bàn là (Bàn ủi)", ParentCategoryId = parent4_Id },
-            new Category { Id = Guid.Parse("44444444-4444-4444-4444-000000000007"), Name = "Máy sấy tóc", ParentCategoryId = parent4_Id },
-            new Category { Id = Guid.Parse("44444444-4444-4444-4444-000000000008"), Name = "Máy pha cà phê", ParentCategoryId = parent4_Id },
-            new Category { Id = parent5_Id, Name = "Phụ kiện và Pin", ParentCategoryId = null },
-            new Category { Id = Guid.Parse("55555555-5555-5555-5555-000000000001"), Name = "Pin (các loại)", ParentCategoryId = parent5_Id },
-            new Category { Id = Guid.Parse("55555555-5555-5555-5555-000000000002"), Name = "Cáp sạc, Bộ sạc", ParentCategoryId = parent5_Id },
-            new Category { Id = Guid.Parse("55555555-5555-5555-5555-000000000003"), Name = "Tai nghe", ParentCategoryId = parent5_Id },
-            new Category { Id = Guid.Parse("55555555-5555-5555-5555-000000000004"), Name = "Chuột máy tính", ParentCategoryId = parent5_Id },
-            new Category { Id = Guid.Parse("55555555-5555-5555-5555-000000000005"), Name = "Bàn phím", ParentCategoryId = parent5_Id },
-            new Category { Id = Guid.Parse("55555555-5555-5555-5555-000000000006"), Name = "Điều khiển (Remote)", ParentCategoryId = parent5_Id }
+            new Category { CategoryId = parent1_Id, Name = "Đồ gia dụng lớn", ParentCategoryId = null },
+            new Category { CategoryId = cat_TuLanh, Name = "Tủ lạnh", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = cat_MayGiat, Name = "Máy giặt", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = Guid.Parse("11111111-1111-1111-1111-000000000003"), Name = "Máy sấy quần áo", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = Guid.Parse("11111111-1111-1111-1111-000000000004"), Name = "Máy rửa bát", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = Guid.Parse("11111111-1111-1111-1111-000000000005"), Name = "Máy điều hòa", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = cat_BinhNuocNong, Name = "Bình nước nóng", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = Guid.Parse("11111111-1111-1111-1111-000000000007"), Name = "Lò nướng", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = cat_LoViSong, Name = "Lò vi sóng", ParentCategoryId = parent1_Id },
+            new Category { CategoryId = parent2_Id, Name = "Đồ điện tử Tiêu dùng & Giải trí", ParentCategoryId = null },
+            new Category { CategoryId = cat_Tivi, Name = "Tivi", ParentCategoryId = parent2_Id },
+            new Category { CategoryId = cat_ManHinhMayTinh, Name = "Màn hình máy tính", ParentCategoryId = parent2_Id },
+            new Category { CategoryId = cat_Loa, Name = "Dàn âm thanh (Loa, Amply)", ParentCategoryId = parent2_Id },
+            new Category { CategoryId = Guid.Parse("22222222-2222-2222-2222-000000000004"), Name = "Máy chơi game (Console)", ParentCategoryId = parent2_Id },
+            new Category { CategoryId = Guid.Parse("22222222-2222-2222-2222-000000000005"), Name = "Đầu đĩa (DVD, VCD, Blu-ray)", ParentCategoryId = parent2_Id },
+            new Category { CategoryId = parent3_Id, Name = "Thiết bị IT và Viễn thông", ParentCategoryId = null },
+            new Category { CategoryId = cat_MayTinhDeBan, Name = "Máy tính để bàn (PC)", ParentCategoryId = parent3_Id },
+            new Category { CategoryId = cat_Laptop, Name = "Laptop (Máy tính xách tay)", ParentCategoryId = parent3_Id },
+            new Category { CategoryId = cat_DienThoai, Name = "Điện thoại di động", ParentCategoryId = parent3_Id },
+            new Category { CategoryId = Guid.Parse("33333333-3333-3333-3333-000000000004"), Name = "Máy tính bảng (Tablet)", ParentCategoryId = parent3_Id },
+            new Category { CategoryId = cat_MayIn, Name = "Máy in", ParentCategoryId = parent3_Id },
+            new Category { CategoryId = Guid.Parse("33333333-3333-3333-3333-000000000006"), Name = "Máy scan", ParentCategoryId = parent3_Id },
+            new Category { CategoryId = Guid.Parse("33333333-3333-3333-3333-000000000007"), Name = "Thiết bị mạng (Router, Modem)", ParentCategoryId = parent3_Id },
+            new Category { CategoryId = parent4_Id, Name = "Đồ gia dụng nhỏ", ParentCategoryId = null },
+            new Category { CategoryId = cat_NoiComDien, Name = "Nồi cơm điện", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = Guid.Parse("44444444-4444-4444-4444-000000000002"), Name = "Ấm đun nước", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = Guid.Parse("44444444-4444-4444-4444-000000000003"), Name = "Máy xay sinh tố", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = cat_QuatDien, Name = "Quạt điện", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = cat_MayHutBui, Name = "Máy hút bụi", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = Guid.Parse("44444444-4444-4444-4444-000000000006"), Name = "Bàn là (Bàn ủi)", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = Guid.Parse("44444444-4444-4444-4444-000000000007"), Name = "Máy sấy tóc", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = Guid.Parse("44444444-4444-4444-4444-000000000008"), Name = "Máy pha cà phê", ParentCategoryId = parent4_Id },
+            new Category { CategoryId = parent5_Id, Name = "Phụ kiện và Pin", ParentCategoryId = null },
+            new Category { CategoryId = Guid.Parse("55555555-5555-5555-5555-000000000001"), Name = "Pin (các loại)", ParentCategoryId = parent5_Id },
+            new Category { CategoryId = Guid.Parse("55555555-5555-5555-5555-000000000002"), Name = "Cáp sạc, Bộ sạc", ParentCategoryId = parent5_Id },
+            new Category { CategoryId = Guid.Parse("55555555-5555-5555-5555-000000000003"), Name = "Tai nghe", ParentCategoryId = parent5_Id },
+            new Category { CategoryId = Guid.Parse("55555555-5555-5555-5555-000000000004"), Name = "Chuột máy tính", ParentCategoryId = parent5_Id },
+            new Category { CategoryId = Guid.Parse("55555555-5555-5555-5555-000000000005"), Name = "Bàn phím", ParentCategoryId = parent5_Id },
+            new Category { CategoryId = Guid.Parse("55555555-5555-5555-5555-000000000006"), Name = "Điều khiển (Remote)", ParentCategoryId = parent5_Id }
         };
 
         public static List<Attributes> attributes = new()
         {
-            new Attributes { Id = att_KichThuocManHinh, Name = "Kích thước màn hình (inch)", },
-            new Attributes { Id = att_ChieuDai, Name = "Chiều dài (cm)", },
-            new Attributes { Id = att_ChieuRong, Name = "Chiều rộng (cm)", },
-            new Attributes { Id = att_ChieuCao, Name = "Chiều cao (cm)", },
-            new Attributes { Id = att_DungTich, Name = "Dung tích (lít)", },
-            new Attributes { Id = att_KhoiLuongGiat, Name = "Khối lượng giặt (kg)", },
-            new Attributes { Id = att_TrongLuong, Name = "Trọng lượng (kg)", }
+            new Attributes { AttributeId = att_KichThuocManHinh, Name = "Kích thước màn hình (inch)", },
+            new Attributes { AttributeId = att_ChieuDai, Name = "Chiều dài (cm)", },
+            new Attributes { AttributeId = att_ChieuRong, Name = "Chiều rộng (cm)", },
+            new Attributes { AttributeId = att_ChieuCao, Name = "Chiều cao (cm)", },
+            new Attributes { AttributeId = att_DungTich, Name = "Dung tích (lít)", },
+            new Attributes { AttributeId = att_KhoiLuongGiat, Name = "Khối lượng giặt (kg)", },
+            new Attributes { AttributeId = att_TrongLuong, Name = "Trọng lượng (kg)", }
         };
 
         public static List<CategoryAttributes> categoryAttributes = new()
         {
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_Tivi, AttributeId = att_KichThuocManHinh },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_Tivi, AttributeId = att_TrongLuong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, AttributeId = att_KichThuocManHinh },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, AttributeId = att_TrongLuong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_Laptop, AttributeId = att_KichThuocManHinh },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_Laptop, AttributeId = att_TrongLuong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_KhoiLuongGiat },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_TrongLuong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_ChieuDai },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_ChieuRong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_ChieuCao },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_DungTich },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_TrongLuong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_ChieuDai },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_ChieuRong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_ChieuCao },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_DungTich },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_TrongLuong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_ChieuDai },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_ChieuRong },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_ChieuCao },
-            new CategoryAttributes { Id = Guid.NewGuid(), CategoryId = cat_MayHutBui, AttributeId = att_TrongLuong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_Tivi, AttributeId = att_KichThuocManHinh },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_Tivi, AttributeId = att_TrongLuong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, AttributeId = att_KichThuocManHinh },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_ManHinhMayTinh, AttributeId = att_TrongLuong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_Laptop, AttributeId = att_KichThuocManHinh },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_Laptop, AttributeId = att_TrongLuong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_KhoiLuongGiat },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_TrongLuong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_ChieuDai },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_ChieuRong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_MayGiat, AttributeId = att_ChieuCao },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_DungTich },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_TrongLuong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_ChieuDai },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_ChieuRong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_TuLanh, AttributeId = att_ChieuCao },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_DungTich },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_TrongLuong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_ChieuDai },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_ChieuRong },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_LoViSong, AttributeId = att_ChieuCao },
+            new CategoryAttributes { CategoryAttributeId = Guid.NewGuid(), CategoryId = cat_MayHutBui, AttributeId = att_TrongLuong },
         };
 
         public static List<AttributeOptions> attributeOptions = new List<AttributeOptions>
@@ -482,7 +482,7 @@ namespace ElecWasteCollection.Application.Data
                 PackageId = pkg_T001,
                 PackageName = "Thùng TV/Màn hình 01 (Vinhomes)",
                 CreateAt = _vnNow.AddHours(-8), // SỬA
-                SmallCollectionPointsId = 1,
+                SmallCollectionPointsId = "1",
                 Status = "Đang vận chuyển"
             }
         };
@@ -494,25 +494,25 @@ namespace ElecWasteCollection.Application.Data
         public static List<Products> products = new List<Products>
         {
             // --- HÔM QUA (0-4) ---
-            new Products { Id = prodIds[0], CategoryId = cat_Tivi, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đang vận chuyển", Description = "Hỏng màn hình", QRCode = "product1" },
-            new Products { Id = prodIds[1], CategoryId = cat_TuLanh, BrandId = brand_Pana_TuLanh, PackageId = null,  Status = "Đã thu gom", Description = "Không lạnh ngăn mát", QRCode = "product2" },
-            new Products { Id = prodIds[2], CategoryId = cat_Laptop, BrandId = brand_Acer_Laptop, PackageId = null, Status = "Hủy bỏ", Description = "Khách hủy yêu cầu" },
-            new Products { Id = prodIds[3], CategoryId = cat_QuatDien, BrandId = brand_Asia_Quat, PackageId = null,  Status = "Đã thu gom", Description = "Gãy cánh", QRCode = "product4" },
-            new Products { Id = prodIds[4], CategoryId = cat_MayGiat, BrandId = brand_Toshiba_MayGiat, PackageId = null, Status = "Đã thu gom", Description = "Kêu to khi vắt", QRCode = "product5" },
+            new Products { ProductId = prodIds[0], CategoryId = cat_Tivi, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đang vận chuyển", Description = "Hỏng màn hình", QRCode = "product1" },
+            new Products { ProductId = prodIds[1], CategoryId = cat_TuLanh, BrandId = brand_Pana_TuLanh, PackageId = null,  Status = "Đã thu gom", Description = "Không lạnh ngăn mát", QRCode = "product2" },
+            new Products { ProductId = prodIds[2], CategoryId = cat_Laptop, BrandId = brand_Acer_Laptop, PackageId = null, Status = "Hủy bỏ", Description = "Khách hủy yêu cầu" },
+            new Products { ProductId = prodIds[3], CategoryId = cat_QuatDien, BrandId = brand_Asia_Quat, PackageId = null,  Status = "Đã thu gom", Description = "Gãy cánh", QRCode = "product4" },
+            new Products { ProductId = prodIds[4], CategoryId = cat_MayGiat, BrandId = brand_Toshiba_MayGiat, PackageId = null, Status = "Đã thu gom", Description = "Kêu to khi vắt", QRCode = "product5" },
 
             // --- HÔM NAY (5-9) ---
-            new Products { Id = prodIds[5], CategoryId = cat_ManHinhMayTinh, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6" },
-            new Products { Id = prodIds[6], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Không nóng" },
-            new Products { Id = prodIds[7], CategoryId = cat_BinhNuocNong, BrandId = brand_Ariston_Binh, PackageId = null,  Status = "Chờ thu gom", Description = "Rò điện" },
-            new Products { Id = prodIds[8], CategoryId = cat_MayIn, BrandId = brand_HP_MayIn, PackageId = null, Status = "Đã thu gom", Description = "Kẹt giấy liên tục", QRCode = "product9" },
-            new Products { Id = prodIds[9], CategoryId = cat_DienThoai, BrandId = brand_Apple_DienThoai, PackageId = null,  Status = "Chờ thu gom", Description = "Vỡ màn hình" },
+            new Products { ProductId = prodIds[5], CategoryId = cat_ManHinhMayTinh, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6" },
+            new Products { ProductId = prodIds[6], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Không nóng" },
+            new Products { ProductId = prodIds[7], CategoryId = cat_BinhNuocNong, BrandId = brand_Ariston_Binh, PackageId = null,  Status = "Chờ thu gom", Description = "Rò điện" },
+            new Products { ProductId = prodIds[8], CategoryId = cat_MayIn, BrandId = brand_HP_MayIn, PackageId = null, Status = "Đã thu gom", Description = "Kẹt giấy liên tục", QRCode = "product9" },
+            new Products { ProductId = prodIds[9], CategoryId = cat_DienThoai, BrandId = brand_Apple_DienThoai, PackageId = null,  Status = "Chờ thu gom", Description = "Vỡ màn hình" },
 
             // --- NGÀY MAI (10-14) ---
-            new Products { Id = prodIds[10], CategoryId = cat_MayHutBui, BrandId = brand_Dyson, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng pin" },
-            new Products { Id = prodIds[11], CategoryId = cat_Loa, BrandId = brand_JBL_Loa, PackageId = null,Status = "Chờ thu gom", Description = "Mất tiếng bass" },
-            new Products { Id = prodIds[12], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng rơ le" },
-            new Products { Id = prodIds[13], CategoryId = cat_MayTinhDeBan, BrandId = brand_Dell_PC, PackageId = null,  Status = "Chờ thu gom", Description = "Main hỏng" },
-            new Products { Id = prodIds[14], CategoryId = cat_NoiComDien, BrandId = brand_Cuckoo, PackageId = null,  Status = "Chờ thu gom", Description = "Không chín cơm" }
+            new Products { ProductId = prodIds[10], CategoryId = cat_MayHutBui, BrandId = brand_Dyson, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng pin" },
+            new Products { ProductId = prodIds[11], CategoryId = cat_Loa, BrandId = brand_JBL_Loa, PackageId = null,Status = "Chờ thu gom", Description = "Mất tiếng bass" },
+            new Products { ProductId = prodIds[12], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng rơ le" },
+            new Products { ProductId = prodIds[13], CategoryId = cat_MayTinhDeBan, BrandId = brand_Dell_PC, PackageId = null,  Status = "Chờ thu gom", Description = "Main hỏng" },
+            new Products { ProductId = prodIds[14], CategoryId = cat_NoiComDien, BrandId = brand_Cuckoo, PackageId = null,  Status = "Chờ thu gom", Description = "Không chín cơm" }
         };
 
         public static List<ProductValues> productValues = new List<ProductValues>
@@ -556,25 +556,25 @@ namespace ElecWasteCollection.Application.Data
         {
             // --- HÔM QUA (-1 day) ---
             // Sử dụng _vnNow.AddDays(-X) để đảm bảo thời gian luôn trôi theo ngày hiện tại
-            new Post { Id = postIds[0], ProductId = prodIds[0], SenderId = users[0].UserId,  Date = _vnNow.AddDays(-3), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 100 },
-            new Post { Id = postIds[1], ProductId = prodIds[1], SenderId = users[1].UserId,  Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "09:30", "10:30"), Address = userAddress[1].Address, EstimatePoint = 200 },
-            new Post { Id = postIds[2], ProductId = prodIds[2], SenderId = users[2].UserId, Date = _vnNow.AddDays(-4), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 150 },
-            new Post { Id = postIds[3], ProductId = prodIds[3], SenderId = users[3].UserId, Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "13:00", "14:00"), Address = userAddress[3].Address, EstimatePoint = 50 },
-            new Post { Id = postIds[4], ProductId = prodIds[4], SenderId = users[4].UserId, Date = _vnNow.AddDays(-5), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "15:00", "16:00"), Address = userAddress[4].Address, EstimatePoint = 180 },
+            new Post { PostId = postIds[0], ProductId = prodIds[0], SenderId = users[0].UserId,  Date = _vnNow.AddDays(-3), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 100 },
+            new Post { PostId = postIds[1], ProductId = prodIds[1], SenderId = users[1].UserId,  Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "09:30", "10:30"), Address = userAddress[1].Address, EstimatePoint = 200 },
+            new Post { PostId = postIds[2], ProductId = prodIds[2], SenderId = users[2].UserId, Date = _vnNow.AddDays(-4), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 150 },
+            new Post { PostId = postIds[3], ProductId = prodIds[3], SenderId = users[3].UserId, Date = _vnNow.AddDays(-2), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "13:00", "14:00"), Address = userAddress[3].Address, EstimatePoint = 50 },
+            new Post { PostId = postIds[4], ProductId = prodIds[4], SenderId = users[4].UserId, Date = _vnNow.AddDays(-5), Status = "Đã duyệt", ScheduleJson = CreateSchedule(-1, "15:00", "16:00"), Address = userAddress[4].Address, EstimatePoint = 180 },
 
             // --- HÔM NAY (0 day) ---
-            new Post { Id = postIds[5], ProductId = prodIds[5], SenderId = users[0].UserId,Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "08:30", "09:30"), Address = userAddress[0].Address, EstimatePoint = 80 },
-            new Post { Id = postIds[6], ProductId = prodIds[6], SenderId = users[0].UserId,  Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "10:00", "11:00"), Address = userAddress[0].Address, EstimatePoint = 120 },
-            new Post { Id = postIds[7], ProductId = prodIds[7], SenderId = users[2].UserId, Date = _vnNow.AddDays(-3), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "14:00", "15:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
-            new Post { Id = postIds[8], ProductId = prodIds[8], SenderId = users[3].UserId,  Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "09:00", "10:00"), Address = userAddress[3].Address, EstimatePoint = 90 },
-            new Post { Id = postIds[9], ProductId = prodIds[9], SenderId = users[4].UserId, Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "16:00", "17:00"), Address = userAddress[4].Address, EstimatePoint = 200 },
+            new Post { PostId = postIds[5], ProductId = prodIds[5], SenderId = users[0].UserId,Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "08:30", "09:30"), Address = userAddress[0].Address, EstimatePoint = 80 },
+            new Post { PostId = postIds[6], ProductId = prodIds[6], SenderId = users[0].UserId,  Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "10:00", "11:00"), Address = userAddress[0].Address, EstimatePoint = 120 },
+            new Post { PostId = postIds[7], ProductId = prodIds[7], SenderId = users[2].UserId, Date = _vnNow.AddDays(-3), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "14:00", "15:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
+            new Post { PostId = postIds[8], ProductId = prodIds[8], SenderId = users[3].UserId,  Date = _vnNow.AddDays(-1), Status = "Đã duyệt", ScheduleJson = CreateSchedule(0, "09:00", "10:00"), Address = userAddress[3].Address, EstimatePoint = 90 },
+            new Post { PostId = postIds[9], ProductId = prodIds[9], SenderId = users[4].UserId, Date = _vnNow.AddDays(-2), Status = "Đã Duyệt", ScheduleJson = CreateSchedule(0, "16:00", "17:00"), Address = userAddress[4].Address, EstimatePoint = 200 },
 
             // --- NGÀY MAI (+1 day) ---
-            new Post { Id = postIds[10], ProductId = prodIds[10], SenderId = users[0].UserId,Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 110 },
-            new Post { Id = postIds[11], ProductId = prodIds[11], SenderId = users[1].UserId, Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "09:00", "10:00"), Address = userAddress[1].Address, EstimatePoint = 70 },
-            new Post { Id = postIds[12], ProductId = prodIds[12], SenderId = users[2].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
-            new Post { Id = postIds[13], ProductId = prodIds[13], SenderId = users[3].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "14:00", "15:00"), Address = userAddress[3].Address, EstimatePoint = 150 },
-            new Post { Id = postIds[14], ProductId = prodIds[14], SenderId = users[4].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "15:30", "16:30"), Address = userAddress[4].Address, EstimatePoint = 60 }
+            new Post { PostId = postIds[10], ProductId = prodIds[10], SenderId = users[0].UserId,Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "08:00", "09:00"), Address = userAddress[0].Address, EstimatePoint = 110 },
+            new Post { PostId = postIds[11], ProductId = prodIds[11], SenderId = users[1].UserId, Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "09:00", "10:00"), Address = userAddress[1].Address, EstimatePoint = 70 },
+            new Post { PostId = postIds[12], ProductId = prodIds[12], SenderId = users[2].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "10:00", "11:00"), Address = userAddress[2].Address, EstimatePoint = 100 },
+            new Post { PostId = postIds[13], ProductId = prodIds[13], SenderId = users[3].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "14:00", "15:00"), Address = userAddress[3].Address, EstimatePoint = 150 },
+            new Post { PostId = postIds[14], ProductId = prodIds[14], SenderId = users[4].UserId,  Date = _vnNow, Status = "Đã duyệt", ScheduleJson = CreateSchedule(1, "15:30", "16:30"), Address = userAddress[4].Address, EstimatePoint = 60 }
         };
 
         public static List<ProductImages> productImages = new();
@@ -584,43 +584,43 @@ namespace ElecWasteCollection.Application.Data
             var defaultImg = "https://picsum.photos/id/1/200/200";
             foreach (var product in products)
             {
-                productImages.Add(new ProductImages { ProductImagesId = Guid.NewGuid(), ProductId = product.Id, ImageUrl = defaultImg, AiDetectedLabelsJson = "[{\"Tag\":\"electronics\",\"Confidence\":90.0}]" });
+                productImages.Add(new ProductImages { ProductImagesId = Guid.NewGuid(), ProductId = product.ProductId, ImageUrl = defaultImg, AiDetectedLabelsJson = "[{\"Tag\":\"electronics\",\"Confidence\":90.0}]" });
             }
         }
         public static List<Vehicles> vehicles = new()
 {
     new Vehicles
     {
-        Id = 1,
+        VehicleId = "1",
         Plate_Number = "51A-12345",
         Vehicle_Type = "Xe tải nhỏ",
         Capacity_Kg = 1000,
         Capacity_M3 = 8,
         Radius_Km = 10,
         Status = "active",
-        Small_Collection_Point = 1 // Thuộc trạm 1
+        Small_Collection_Point = "1" // Thuộc trạm 1
     },
     new Vehicles
 {
-    Id = 3, // ID tiếp theo
+    VehicleId = "3", // ID tiếp theo
     Plate_Number = "51C-99999",
     Vehicle_Type = "Xe tải nhỏ",
     Capacity_Kg = 1000,
     Capacity_M3 = 8,
     Radius_Km = 10,
     Status = "active",
-    Small_Collection_Point = 2 // Trạm 2
+    Small_Collection_Point = "2" // Trạm 2
 },
     new Vehicles
     {
-        Id = 2,
+        VehicleId = "2",
         Plate_Number = "51B-67890",
         Vehicle_Type = "Xe tải lớn",
         Capacity_Kg = 2000,
         Capacity_M3 = 15,
         Radius_Km = 15,
         Status = "active",
-        Small_Collection_Point = 1 // Thuộc trạm 1
+        Small_Collection_Point = "1" // Thuộc trạm 1
     }
 };
         // =========================================================================
@@ -630,31 +630,31 @@ namespace ElecWasteCollection.Application.Data
         public static List<Shifts> shifts = new()
         {
             // --- HÔM QUA ---
-            new Shifts { Id = 1, CollectorId = collector_Dung_Id, Vehicle_Id = 1, WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(7), Shift_End_Time = _vnNow.AddDays(-1).AddHours(15) },
-            new Shifts { Id = 2, CollectorId = collector_Tuan_Id, Vehicle_Id = 2, WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(8), Shift_End_Time = _vnNow.AddDays(-1).AddHours(16) },
+            new Shifts { ShiftId = "1", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(7), Shift_End_Time = _vnNow.AddDays(-1).AddHours(15) },
+            new Shifts { ShiftId = "2", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(8), Shift_End_Time = _vnNow.AddDays(-1).AddHours(16) },
 
             // --- HÔM NAY ---
-            new Shifts { Id = 3, CollectorId = collector_Dung_Id, Vehicle_Id = 1, WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(7), Shift_End_Time = _vnNow.AddHours(15) },
-            new Shifts { Id = 4, CollectorId = collector_Tuan_Id, Vehicle_Id = 2, WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(8), Shift_End_Time = _vnNow.AddHours(16) },
+            new Shifts { ShiftId = "3", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(7), Shift_End_Time = _vnNow.AddHours(15) },
+            new Shifts { ShiftId = "4", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(8), Shift_End_Time = _vnNow.AddHours(16) },
 
             // --- NGÀY MAI ---
-            new Shifts { Id = 5, CollectorId = collector_Dung_Id, Vehicle_Id = 1, WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(7), Shift_End_Time = _vnNow.AddDays(1).AddHours(15) },
-            new Shifts { Id = 6, CollectorId = collector_Tuan_Id, Vehicle_Id = 2, WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(8), Shift_End_Time = _vnNow.AddDays(1).AddHours(16) }
+            new Shifts { ShiftId = "5", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(7), Shift_End_Time = _vnNow.AddDays(1).AddHours(15) },
+            new Shifts { ShiftId = "6", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(8), Shift_End_Time = _vnNow.AddDays(1).AddHours(16) }
         };
 
         public static List<CollectionGroups> collectionGroups = new()
         {
             // Hôm qua
-            new CollectionGroups { Id = 1, Shift_Id = 1, Group_Code = "YESTERDAY-S1-DUNG", Name = "Tuyến Hôm Qua (Dũng)", Created_At = _vnNow.AddDays(-2) },
-            new CollectionGroups { Id = 2, Shift_Id = 2, Group_Code = "YESTERDAY-S2-TUAN", Name = "Tuyến Hôm Qua (Tuấn)", Created_At = _vnNow.AddDays(-2) },
+            new CollectionGroups { CollectionGroupId = 1, Shift_Id = "1", Group_Code = "YESTERDAY-S1-DUNG", Name = "Tuyến Hôm Qua (Dũng)", Created_At = _vnNow.AddDays(-2) },
+            new CollectionGroups { CollectionGroupId = 2, Shift_Id = "2", Group_Code = "YESTERDAY-S2-TUAN", Name = "Tuyến Hôm Qua (Tuấn)", Created_At = _vnNow.AddDays(-2) },
 
             // Hôm nay
-            new CollectionGroups { Id = 3, Shift_Id = 3, Group_Code = "TODAY-S1-DUNG", Name = "Tuyến Hôm Nay (Dũng)", Created_At = _vnNow.AddHours(-10) },
-            new CollectionGroups { Id = 4, Shift_Id = 4, Group_Code = "TODAY-S2-TUAN", Name = "Tuyến Hôm Nay (Tuấn)", Created_At = _vnNow.AddHours(-10) },
+            new CollectionGroups { CollectionGroupId = 3, Shift_Id = "3", Group_Code = "TODAY-S1-DUNG", Name = "Tuyến Hôm Nay (Dũng)", Created_At = _vnNow.AddHours(-10) },
+            new CollectionGroups { CollectionGroupId = 4, Shift_Id = "4", Group_Code = "TODAY-S2-TUAN", Name = "Tuyến Hôm Nay (Tuấn)", Created_At = _vnNow.AddHours(-10) },
 
             // Ngày mai
-            new CollectionGroups { Id = 5, Shift_Id = 5, Group_Code = "TOMORROW-S1-DUNG", Name = "Tuyến Ngày Mai (Dũng)", Created_At = _vnNow },
-            new CollectionGroups { Id = 6, Shift_Id = 6, Group_Code = "TOMORROW-S2-TUAN", Name = "Tuyến Ngày Mai (Tuấn)", Created_At = _vnNow }
+            new CollectionGroups { CollectionGroupId = 5, Shift_Id = "5", Group_Code = "TOMORROW-S1-DUNG", Name = "Tuyến Ngày Mai (Dũng)", Created_At = _vnNow },
+            new CollectionGroups { CollectionGroupId = 6, Shift_Id = "6", Group_Code = "TOMORROW-S2-TUAN", Name = "Tuyến Ngày Mai (Tuấn)", Created_At = _vnNow }
         };
 
         public static List<CollectionRoutes> collectionRoutes = new()
@@ -741,16 +741,16 @@ namespace ElecWasteCollection.Application.Data
 
         public static List<PointTransactions> points = new List<PointTransactions>()
         {
-          new PointTransactions{ PointTransactionId = Guid.NewGuid(), CreatedAt = _vnNow.AddDays(-3), Point = 100, Desciption = "Thu gom thành công", UserId = posts[0].SenderId, ProductId = products[0].Id, TransactionType = "Earned"  },
+          new PointTransactions{ PointTransactionId = Guid.NewGuid(), CreatedAt = _vnNow.AddDays(-3), Point = 100, Desciption = "Thu gom thành công", UserId = posts[0].SenderId, ProductId = products[0].ProductId, TransactionType = "Earned"  },
         };
 
         public static List<UserPoints> userPoints = new()
         {
-            new UserPoints { Id = Guid.NewGuid(), UserId = Guid.Parse("7f5c8b33-1b52-4d11-91b0-932c3d243c71"), Points = 100 },
-            new UserPoints { Id = Guid.NewGuid(), UserId = Guid.Parse("b73a62a7-8b90-43cf-9ad7-2abf96f34a52"), Points = 75.5 },
-            new UserPoints { Id = Guid.NewGuid(), UserId = Guid.Parse("e9b4b9de-b3b0-49ad-b90c-74c24a26b57a"), Points = 220 },
-            new UserPoints { Id = Guid.NewGuid(), UserId = Guid.Parse("72b4ad6a-0b5b-45a3-bb6b-6e1790c84b45"), Points = 0 },
-            new UserPoints { Id = Guid.NewGuid(), UserId = Guid.Parse("c40deff9-163b-49e8-b967-238f22882b63"), Points = 50 }
+            new UserPoints { UserPointId = Guid.NewGuid(), UserId = Guid.Parse("7f5c8b33-1b52-4d11-91b0-932c3d243c71"), Points = 100 },
+            new UserPoints { UserPointId = Guid.NewGuid(), UserId = Guid.Parse("b73a62a7-8b90-43cf-9ad7-2abf96f34a52"), Points = 75.5 },
+            new UserPoints { UserPointId = Guid.NewGuid(), UserId = Guid.Parse("e9b4b9de-b3b0-49ad-b90c-74c24a26b57a"), Points = 220 },
+            new UserPoints { UserPointId = Guid.NewGuid(), UserId = Guid.Parse("72b4ad6a-0b5b-45a3-bb6b-6e1790c84b45"), Points = 0 },
+            new UserPoints { UserPointId = Guid.NewGuid(), UserId = Guid.Parse("c40deff9-163b-49e8-b967-238f22882b63"), Points = 50 }
         };
 
 
@@ -778,37 +778,37 @@ namespace ElecWasteCollection.Application.Data
         public static List<SmallCollectionPoints> smallCollectionPoints = new()
 {
     new SmallCollectionPoints {
-        Id = 1,
+        SmallCollectionPointsId = "1",
         Name = "Điểm A - Thủ Đức",
         Address = "Thủ Đức",
         Latitude = 10.8520,
         Longitude = 106.7540,
         Status = "Active",
-        CompanyId = 1,
+        CompanyId = "1",
         Created_At = _vnNow.AddDays(-1),
         Updated_At = _vnNow,
         OpenTime = "07:00 - 18:00"
     },
     new SmallCollectionPoints {
-        Id = 2,
+        SmallCollectionPointsId = "2",
         Name = "Điểm B - Quận 9",
         Address = "Quận 9",
         Latitude = 10.8452,
         Longitude = 106.7825,
         Status = "Active",
-        CompanyId = 1,
+        CompanyId = "1",
         Created_At = _vnNow.AddDays(-1),
         Updated_At = _vnNow,
         OpenTime = "07:00 - 18:00"
     },
     new SmallCollectionPoints {
-        Id = 3,
+		SmallCollectionPointsId = "3",
         Name = "Điểm C - Bình Thạnh",
         Address = "Bình Thạnh",
         Latitude = 10.8040,
         Longitude = 106.7070,
         Status = "Active",
-        CompanyId = 2,
+        CompanyId = "2",
         Created_At = _vnNow.AddDays(-1),
         Updated_At = _vnNow,
         OpenTime = "07:00 - 18:00"
@@ -1051,8 +1051,8 @@ namespace ElecWasteCollection.Application.Data
         public class StagingAssignDay
         {
             public DateOnly Date { get; set; }
-            public int PointId { get; set; }
-            public int VehicleId { get; set; }
+            public string PointId { get; set; }
+            public string VehicleId { get; set; }
             public List<Guid> ProductIds { get; set; } = new();
         }
 
@@ -2142,11 +2142,11 @@ namespace ElecWasteCollection.Application.Data
         //        public double Lng { get; set; }
         //    }
 
-        public static List<CollectionTeams> collectionTeams = new()
+        public static List<CollectionCompany> collectionTeams = new()
 {
-    new CollectionTeams
+    new CollectionCompany
     {
-        Id = 1,
+        CollectionCompanyId = "1",
         Name = "EcoGreen Collection Co.",
         CompanyEmail = "NguyễnVănMinh@gmail.com",
         Phone = "0901 234 567",
@@ -2155,9 +2155,9 @@ namespace ElecWasteCollection.Application.Data
         Created_At = _vnNow.AddDays(-10),
         Updated_At = _vnNow
     },
-    new CollectionTeams
+    new CollectionCompany
     {
-        Id = 2,
+        CollectionCompanyId = "2",
         Name = "UrbanClean Recycling Corp.",
         CompanyEmail = "TrầnThịHạnh@gmail.com",
         Phone = "0987 654 321",
@@ -2272,7 +2272,7 @@ namespace ElecWasteCollection.Application.Data
 
                 newProducts.Add(new Products
                 {
-                    Id = prodId,
+                    ProductId = prodId,
                     CategoryId = catId,
                     BrandId = brand.BrandId,
                     Status = "Chờ gom nhóm",
@@ -2329,7 +2329,7 @@ namespace ElecWasteCollection.Application.Data
                             productValues.Add(new ProductValues
                             {
                                 ProductValuesId = Guid.NewGuid(),
-                                ProductId = p.Id,
+                                ProductId = p.ProductId,
                                 AttributeId = attr.AttributeId,
                                 AttributeOptionId = selectedOpt.OptionId, // <--- Gán Option
                                 Value = null // Không nhập tay
@@ -2352,7 +2352,7 @@ namespace ElecWasteCollection.Application.Data
                             productValues.Add(new ProductValues
                             {
                                 ProductValuesId = Guid.NewGuid(),
-                                ProductId = p.Id,
+                                ProductId = p.ProductId,
                                 AttributeId = attr.AttributeId,
                                 Value = val, // <--- Nhập tay
                                 AttributeOptionId = null
@@ -2383,9 +2383,9 @@ namespace ElecWasteCollection.Application.Data
 
                 posts.Add(new Post
                 {
-                    Id = Guid.NewGuid(),
+                    PostId = Guid.NewGuid(),
                     SenderId = newUsers[i].UserId,
-                    ProductId = newProducts[i].Id,
+                    ProductId = newProducts[i].ProductId,
                     Status = "Đã duyệt", // Hoặc "Chờ gom nhóm" tùy logic filter
                     Address = newUserAddresses[i].Address,
                     ScheduleJson = scheduleJson,
@@ -2396,7 +2396,7 @@ namespace ElecWasteCollection.Application.Data
                 productImages.Add(new ProductImages
                 {
                     ProductImagesId = Guid.NewGuid(),
-                    ProductId = newProducts[i].Id,
+                    ProductId = newProducts[i].ProductId,
                     ImageUrl = $"https://picsum.photos/id/{i + 50}/300/300",
                     AiDetectedLabelsJson = "[]"
                 });
@@ -2407,44 +2407,44 @@ namespace ElecWasteCollection.Application.Data
             // ============================================================
 
             // Đảm bảo Collection Points
-            if (!smallCollectionPoints.Any(x => x.Id == 1))
+            if (!smallCollectionPoints.Any(x => x.SmallCollectionPointsId == "1"))
             {
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 1, Name = "Điểm A - Thủ Đức", Latitude = 10.8520, Longitude = 106.7540, CompanyId = 1, OpenTime = "07:00 - 18:00" });
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 2, Name = "Điểm B - Quận 9", Latitude = 10.8452, Longitude = 106.7825, CompanyId = 1, OpenTime = "07:00 - 18:00" });
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 3, Name = "Điểm C - Bình Thạnh", Latitude = 10.8040, Longitude = 106.7070, CompanyId = 2, OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { SmallCollectionPointsId = "1", Name = "Điểm A - Thủ Đức", Latitude = 10.8520, Longitude = 106.7540, CompanyId = "1", OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { SmallCollectionPointsId = "2", Name = "Điểm B - Quận 9", Latitude = 10.8452, Longitude = 106.7825, CompanyId = "1", OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { SmallCollectionPointsId = "3", Name = "Điểm C - Bình Thạnh", Latitude = 10.8040, Longitude = 106.7070, CompanyId = "2", OpenTime = "07:00 - 18:00" });
             }
 
             // Shifts
-            int nextShiftId = shifts.Any() ? shifts.Max(s => s.Id) + 1 : 1;
+            int nextShiftId = shifts.Any() ? shifts.Max(s => int.Parse(s.ShiftId)) + 1 : 1;
 
             // 1. Ca của Dũng (SmallPoint 1)
-            shifts.Add(new Shifts { Id = nextShiftId, CollectorId = collector_Dung_Id, Vehicle_Id = 1, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+            shifts.Add(new Shifts { ShiftId = nextShiftId.ToString(), CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
 
             // 2. Ca của Tuấn (SmallPoint 1)
-            shifts.Add(new Shifts { Id = nextShiftId + 1, CollectorId = collector_Tuan_Id, Vehicle_Id = 2, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+            shifts.Add(new Shifts { ShiftId = (nextShiftId + 1).ToString(), CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
 
             // 3. Ca của Trường (SmallPoint 2 - Quận 9)
             // Lưu ý: Đảm bảo bạn đã thêm Vehicle Id = 3 vào list vehicles ở đầu file như hướng dẫn trước
-            shifts.Add(new Shifts { Id = nextShiftId + 2, CollectorId = collector_Truong_Id, Vehicle_Id = 3, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16) });
+            shifts.Add(new Shifts { ShiftId = (nextShiftId + 2).ToString(), CollectorId = collector_Truong_Id, Vehicle_Id = "3", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16) });
 
 
             // Groups
-            int nextGroupId = collectionGroups.Any() ? collectionGroups.Max(g => g.Id) + 1 : 1;
+            int nextGroupId = collectionGroups.Any() ? collectionGroups.Max(g => g.CollectionGroupId) + 1 : 1;
 
             // 1. Group Dũng
-            collectionGroups.Add(new CollectionGroups { Id = nextGroupId, Shift_Id = nextShiftId, Group_Code = "1512-S1-DUNG", Name = "Tuyến Dũng 15/12", Created_At = _vnNow });
+            collectionGroups.Add(new CollectionGroups { CollectionGroupId = nextGroupId, Shift_Id = nextShiftId.ToString(), Group_Code = "1512-S1-DUNG", Name = "Tuyến Dũng 15/12", Created_At = _vnNow });
 
             // 2. Group Tuấn
-            collectionGroups.Add(new CollectionGroups { Id = nextGroupId + 1, Shift_Id = nextShiftId + 1, Group_Code = "1512-S2-TUAN", Name = "Tuyến Tuấn 15/12", Created_At = _vnNow });
+            collectionGroups.Add(new CollectionGroups { CollectionGroupId = nextGroupId + 1, Shift_Id = (nextShiftId + 1).ToString(), Group_Code = "1512-S2-TUAN", Name = "Tuyến Tuấn 15/12", Created_At = _vnNow });
 
             // 3. Group Trường
-            collectionGroups.Add(new CollectionGroups { Id = nextGroupId + 2, Shift_Id = nextShiftId + 2, Group_Code = "1512-S3-TRUONG", Name = "Tuyến Trường 15/12 (Q9)", Created_At = _vnNow });
+            collectionGroups.Add(new CollectionGroups { CollectionGroupId = nextGroupId + 2, Shift_Id = (nextShiftId + 2).ToString(), Group_Code = "1512-S3-TRUONG", Name = "Tuyến Trường 15/12 (Q9)", Created_At = _vnNow });
 
             // Configs
             CompanyConfigs = new List<CompanyConfigItem>
     {
-        new CompanyConfigItem { CompanyId = 1, RatioPercent = 60, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = 1, RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true }, new SmallPointConfigItem { SmallPointId = 2, RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true } } },
-        new CompanyConfigItem { CompanyId = 2, RatioPercent = 40, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = 3, RadiusKm = 12, MaxRoadDistanceKm = 20, Active = true } } }
+        new CompanyConfigItem { CompanyId = "1", RatioPercent = 60, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = "1", RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true }, new SmallPointConfigItem { SmallPointId = "2", RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true } } },
+        new CompanyConfigItem { CompanyId = "2", RatioPercent = 40, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = "3", RadiusKm = 12, MaxRoadDistanceKm = 20, Active = true } } }
     };
 
             Console.WriteLine("[FakeData] SUCCESS: Loaded 20 posts (50% Manual Size / 50% Option Size) for 15/12.");
@@ -2538,7 +2538,7 @@ namespace ElecWasteCollection.Application.Data
 
                 newProducts.Add(new Products
                 {
-                    Id = prodId,
+                    ProductId = prodId,
                     CategoryId = catId,
                     BrandId = brand.BrandId,
                     Status = "Chờ gom nhóm",
@@ -2590,7 +2590,7 @@ namespace ElecWasteCollection.Application.Data
                             productValues.Add(new ProductValues
                             {
                                 ProductValuesId = Guid.NewGuid(),
-                                ProductId = p.Id,
+                                ProductId = p.ProductId,
                                 AttributeId = attr.AttributeId,
                                 AttributeOptionId = selectedOpt.OptionId,
                                 Value = null
@@ -2612,7 +2612,7 @@ namespace ElecWasteCollection.Application.Data
                             productValues.Add(new ProductValues
                             {
                                 ProductValuesId = Guid.NewGuid(),
-                                ProductId = p.Id,
+                                ProductId = p.ProductId,
                                 AttributeId = attr.AttributeId,
                                 Value = val,
                                 AttributeOptionId = null
@@ -2642,9 +2642,9 @@ namespace ElecWasteCollection.Application.Data
 
                 posts.Add(new Post
                 {
-                    Id = Guid.NewGuid(),
+                    PostId = Guid.NewGuid(),
                     SenderId = newUsers[i].UserId,
-                    ProductId = newProducts[i].Id,
+                    ProductId = newProducts[i].ProductId,
                     Status = "Đã duyệt",
                     Address = newUserAddresses[i].Address,
                     ScheduleJson = scheduleJson,
@@ -2655,7 +2655,7 @@ namespace ElecWasteCollection.Application.Data
                 productImages.Add(new ProductImages
                 {
                     ProductImagesId = Guid.NewGuid(),
-                    ProductId = newProducts[i].Id,
+                    ProductId = newProducts[i].ProductId,
                     ImageUrl = $"https://picsum.photos/id/{i + 50}/300/300",
                     AiDetectedLabelsJson = "[]"
                 });
@@ -2666,43 +2666,43 @@ namespace ElecWasteCollection.Application.Data
             // ============================================================
 
             // Đảm bảo Collection Points
-            if (!smallCollectionPoints.Any(x => x.Id == 1))
+            if (!smallCollectionPoints.Any(x => x.SmallCollectionPointsId == "1"))
             {
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 1, Name = "Điểm A - Thủ Đức", Latitude = 10.8520, Longitude = 106.7540, CompanyId = 1, OpenTime = "07:00 - 18:00" });
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 2, Name = "Điểm B - Quận 9", Latitude = 10.8452, Longitude = 106.7825, CompanyId = 1, OpenTime = "07:00 - 18:00" });
-                smallCollectionPoints.Add(new SmallCollectionPoints { Id = 3, Name = "Điểm C - Bình Thạnh", Latitude = 10.8040, Longitude = 106.7070, CompanyId = 2, OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { SmallCollectionPointsId = "1", Name = "Điểm A - Thủ Đức", Latitude = 10.8520, Longitude = 106.7540, CompanyId = "1", OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { SmallCollectionPointsId = "2", Name = "Điểm B - Quận 9", Latitude = 10.8452, Longitude = 106.7825, CompanyId = "1", OpenTime = "07:00 - 18:00" });
+                smallCollectionPoints.Add(new SmallCollectionPoints { SmallCollectionPointsId = "3", Name = "Điểm C - Bình Thạnh", Latitude = 10.8040, Longitude = 106.7070, CompanyId = "2", OpenTime = "07:00 - 18:00" });
             }
 
             // Shifts
-            int nextShiftId = shifts.Any() ? shifts.Max(s => s.Id) + 1 : 1;
+            int nextShiftId = shifts.Any() ? shifts.Max(s => int.Parse(s.ShiftId)) + 1 : 1;
 
             // 1. Ca của Dũng (SmallPoint 1)
-            shifts.Add(new Shifts { Id = nextShiftId, CollectorId = collector_Dung_Id, Vehicle_Id = 1, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+            shifts.Add(new Shifts { ShiftId = nextShiftId.ToString(), CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
 
             // 2. Ca của Tuấn (SmallPoint 1)
-            shifts.Add(new Shifts { Id = nextShiftId + 1, CollectorId = collector_Tuan_Id, Vehicle_Id = 2, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+            shifts.Add(new Shifts { ShiftId = (nextShiftId + 1).ToString(), CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
 
             // 3. Ca của Trường (SmallPoint 2 - Quận 9)
-            shifts.Add(new Shifts { Id = nextShiftId + 2, CollectorId = collector_Truong_Id, Vehicle_Id = 3, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16) });
+            shifts.Add(new Shifts { ShiftId = (nextShiftId + 2).ToString(), CollectorId = collector_Truong_Id, Vehicle_Id = "3", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16) });
 
 
             // Groups
-            int nextGroupId = collectionGroups.Any() ? collectionGroups.Max(g => g.Id) + 1 : 1;
+            int nextGroupId = collectionGroups.Any() ? collectionGroups.Max(g => g.CollectionGroupId) + 1 : 1;
 
             // 1. Group Dũng
-            collectionGroups.Add(new CollectionGroups { Id = nextGroupId, Shift_Id = nextShiftId, Group_Code = "0712-S1-DUNG", Name = "Tuyến Dũng 07/12", Created_At = _vnNow });
+            collectionGroups.Add(new CollectionGroups { CollectionGroupId = nextGroupId, Shift_Id = nextShiftId.ToString(), Group_Code = "0712-S1-DUNG", Name = "Tuyến Dũng 07/12", Created_At = _vnNow });
 
             // 2. Group Tuấn
-            collectionGroups.Add(new CollectionGroups { Id = nextGroupId + 1, Shift_Id = nextShiftId + 1, Group_Code = "0712-S2-TUAN", Name = "Tuyến Tuấn 07/12", Created_At = _vnNow });
+            collectionGroups.Add(new CollectionGroups { CollectionGroupId = nextGroupId + 1, Shift_Id = (nextShiftId + 1).ToString(), Group_Code = "0712-S2-TUAN", Name = "Tuyến Tuấn 07/12", Created_At = _vnNow });
 
             // 3. Group Trường
-            collectionGroups.Add(new CollectionGroups { Id = nextGroupId + 2, Shift_Id = nextShiftId + 2, Group_Code = "0712-S3-TRUONG", Name = "Tuyến Trường 07/12 (Q9)", Created_At = _vnNow });
+            collectionGroups.Add(new CollectionGroups { CollectionGroupId = nextGroupId + 2, Shift_Id = (nextShiftId + 2).ToString(), Group_Code = "0712-S3-TRUONG", Name = "Tuyến Trường 07/12 (Q9)", Created_At = _vnNow });
 
             // Configs
             CompanyConfigs = new List<CompanyConfigItem>
     {
-        new CompanyConfigItem { CompanyId = 1, RatioPercent = 60, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = 1, RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true }, new SmallPointConfigItem { SmallPointId = 2, RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true } } },
-        new CompanyConfigItem { CompanyId = 2, RatioPercent = 40, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = 3, RadiusKm = 12, MaxRoadDistanceKm = 20, Active = true } } }
+        new CompanyConfigItem { CompanyId = "1", RatioPercent = 60, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = "1", RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true }, new SmallPointConfigItem { SmallPointId = "2", RadiusKm = 10, MaxRoadDistanceKm = 15, Active = true } } },
+        new CompanyConfigItem { CompanyId = "2", RatioPercent = 40, SmallPoints = new List<SmallPointConfigItem> { new SmallPointConfigItem { SmallPointId = "3", RadiusKm = 12, MaxRoadDistanceKm = 20, Active = true } } }
     };
 
             Console.WriteLine("[FakeData] SUCCESS: Loaded 20 posts (50% Manual Size / 50% Option Size) for 07/12.");
