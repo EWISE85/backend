@@ -8,10 +8,12 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Services;
 using ElecWasteCollection.Application.Services.AssignPostService;
+using ElecWasteCollection.Domain.IRepository;
 using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
 using ElecWasteCollection.Infrastructure.ExternalService.Imagga;
 using ElecWasteCollection.Infrastructure.Implementations;
+using ElecWasteCollection.Infrastructure.Repository;
 using FirebaseAdmin;
 using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -103,7 +105,11 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ISmallCollectionService, SmallCollectionService>();
 			builder.Services.AddScoped<IImageRecognitionService, ImaggaImageService>();
 			builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
-			builder.Services.AddCors(options =>
+
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+            builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
 				{
