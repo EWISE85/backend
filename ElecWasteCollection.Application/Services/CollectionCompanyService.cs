@@ -143,6 +143,23 @@ namespace ElecWasteCollection.Application.Services
 			return null;
 		}
 
+		public List<CollectionCompanyResponse>? GetCompanyByName(string companyName)
+		{
+			var companies = _teams
+				.Where(team => team.Name.Contains(companyName, StringComparison.OrdinalIgnoreCase))
+				.Select(team => new CollectionCompanyResponse
+				{
+					Id = team.CollectionCompanyId,
+					Name = team.Name,
+					CompanyEmail = team.CompanyEmail,
+					Phone = team.Phone,
+					City = team.Address,
+					Status = team.Status
+				})
+				.ToList();
+			return companies;
+		}
+
 		public Task<PagedResultModel<CollectionCompanyResponse>> GetPagedCompanyAsync(CompanySearchModel model)
 		{
 			var query = _teams.AsQueryable();

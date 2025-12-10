@@ -19,7 +19,7 @@ namespace ElecWasteCollection.API.DTOs.Request
 		//[FromQuery(Name = "order")]
 		//[DefaultValue("DESC")]
 		//public string Order { get; set; } = "DESC";
-		[FromQuery(Name = "smallCollectionPointsId")]
+		[FromQuery(Name = "smallCollectionPointId")]
 		public string SmallCollectionPointsId { get; set; }
 		[FromQuery(Name = "status")]
 		public string? Status { get; set; }

@@ -122,5 +122,20 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Product checked status updated successfully." });
 		}
+		[HttpGet("admin/filter")]
+		public async Task<IActionResult> AdminFilterProducts([FromQuery] AdminFilterProductRequest request)
+		{
+			var model = new AdminFilterProductModel
+			{
+				FromDate = request.FromDate,
+				ToDate = request.ToDate,
+				Page = request.Page,
+				Limit = request.Limit,
+				CategoryName = request.CategoryName,
+				CollectionCompanyId = request.CollectionCompanyId,
+			};
+			var result = await _productService.AdminGetProductsAsync(model);
+			return Ok(result);
+		}
 	}
 }

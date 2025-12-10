@@ -10,7 +10,7 @@ namespace ElecWasteCollection.Application.Model
 	public class PostDetailModel
 	{
 		public Guid Id { get; set; }
-		public User Sender { get; set; } // Gửi đầy đủ thông tin người đăng
+		public UserResponse Sender { get; set; } // Gửi đầy đủ thông tin người đăng
 
 		public string ParentCategory { get; set; } // Tên Parent Category
 

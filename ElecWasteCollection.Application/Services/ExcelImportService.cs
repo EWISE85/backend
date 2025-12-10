@@ -6,6 +6,7 @@ using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,15 +20,19 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IUserService _userService;
 		private readonly ISmallCollectionService _smallCollectionPointService; // New service
 		private readonly ICollectorService _collectorService; // New service
+		private readonly IShiftService _shiftService;
+		private readonly IVehicleService _vehicleService;
 
 
-		public ExcelImportService(ICollectionCompanyService collectionCompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService)
+		public ExcelImportService(ICollectionCompanyService collectionCompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService)
 		{
 			_collectionCompanyService = collectionCompanyService;
 			_accountService = accountService;
 			_userService = userService;
 			_smallCollectionPointService = smallCollectionPointService;
 			_collectorService = collectorService;
+			_shiftService = shiftService;
+			_vehicleService = vehicleService;
 		}
 
 		public async Task<ImportResult> ImportAsync(Stream excelStream, string importType)
@@ -50,6 +55,14 @@ namespace ElecWasteCollection.Application.Services
 				{
 					await ImportCollectorAsync(worksheet, result); // New import for collector
 				}
+				else if (importType.Equals("Shift", StringComparison.OrdinalIgnoreCase))
+				{
+					await ImportShiftAsync(worksheet, result); // New import for collector
+				}
+				else if (importType.Equals("Vehicle", StringComparison.OrdinalIgnoreCase))
+				{
+					await ImportVehicleAsync(worksheet, result); // New import for collector
+				}
 				else if (importType.Equals("User", StringComparison.OrdinalIgnoreCase))
 				{
 					await ImportUserAsync(worksheet, result);
@@ -69,6 +82,77 @@ namespace ElecWasteCollection.Application.Services
 				result.Messages.Add(ex.Message);
 			}
 			return result;
+		}
+
+		private async Task ImportVehicleAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			int rowCount = worksheet.RowsUsed().Count();
+			for (int row = 2; row <= rowCount; row++) // Skip header row
+			{
+				var id = worksheet.Cell(row, 1).Value.ToString();
+				var plateNumber = worksheet.Cell(row, 2).Value.ToString();
+				var vehicleType = worksheet.Cell(row, 3).Value.ToString();
+				var capacityKg = worksheet.Cell(row, 4).Value.ToString();
+				var capacityM3 = worksheet.Cell(row, 5).Value.ToString();
+				var radiusKm = worksheet.Cell(row, 6).Value.ToString();
+				var smallColelctionPoint = worksheet.Cell(row, 7).Value.ToString();
+				var status = worksheet.Cell(row, 8).Value.ToString();
+
+				var vehicleModel = new CreateVehicleModel
+				{
+					VehicleId = id,
+					Plate_Number = plateNumber,
+					Vehicle_Type = vehicleType,
+					Capacity_Kg = int.Parse(capacityKg),
+					Capacity_M3 = int.Parse(capacityM3),
+					Radius_Km = int.Parse(radiusKm),
+					Small_Collection_Point = smallColelctionPoint,
+					Status = status
+				};
+				var importResult = await _vehicleService.CheckAndUpdateVehicleAsync(vehicleModel);
+				result.Messages.AddRange(importResult.Messages);
+			}
+		}
+
+		private async Task ImportShiftAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			int rowCount = worksheet.RowsUsed().Count();
+			for (int row = 2; row <= rowCount; row++) // Skip header row
+			{
+				var id = worksheet.Cell(row, 1).Value.ToString();
+				var collectorId = worksheet.Cell(row, 2).Value.ToString();
+				var collectorName = worksheet.Cell(row, 3).Value.ToString();
+				string dateString = worksheet.Cell(row, 4).GetValue<string>();
+				var starTime = worksheet.Cell(row, 5).Value.ToString();
+				var endTime = worksheet.Cell(row, 6).Value.ToString();
+				var smallColelctionPoint = worksheet.Cell(row, 7).Value.ToString();
+				var status = worksheet.Cell(row, 8).Value.ToString();
+				string[] formats = { "dd-MM-yyyy", "d-M-yyyy", "dd/MM/yyyy", "d/M/yyyy" };
+
+				DateOnly finalDate;
+				DateOnly workDate = new DateOnly();
+				// 3. Parse an toàn
+				// DateTimeStyles.None: Bắt buộc chuỗi phải sạch, không có khoảng trắng thừa
+				// CultureInfo.InvariantCulture: Đảm bảo chạy đúng trên mọi máy chủ (Window/Linux/Docker)
+				if (DateOnly.TryParseExact(dateString, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out finalDate))
+				{
+					// Thành công!
+					workDate = finalDate;
+				}
+				var shifModel = new CreateShiftModel
+				{
+					ShiftId = id,
+					CollectorId = Guid.Parse(collectorId),
+					WorkDate = workDate,
+					Shift_Start_Time = DateTime.Parse(starTime),
+					Shift_End_Time = DateTime.Parse(endTime),
+					Status = status
+				};
+				var importResult = await _shiftService.CheckAndUpdateShiftAsync(shifModel);
+				result.Messages.AddRange(importResult.Messages);
+			}
+			
+
 		}
 
 		private async Task ImportCollectorAsync(IXLWorksheet worksheet, ImportResult result)

@@ -183,7 +183,7 @@ namespace ElecWasteCollection.Application.Data
             new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b72"), Name = "Admin thu gom kho điểm C - Bình thạnh", Email = "adminthugomnho233@gmail.com", Phone = "0977222333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminWarehouse.ToString(), SmallCollectionPointId = "3",Status = UserStatus.Active.ToString(), CollectionCompanyId = "2" },
 
 
-            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882d12"), Name = "Admin công ty eco", Email = "NguyễnVănMinh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = "0",Status = UserStatus.Active.ToString(), CollectionCompanyId =" 1"  },
+            new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882d12"), Name = "Admin công ty eco", Email = "NguyễnVănMinh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = "0",Status = UserStatus.Active.ToString(), CollectionCompanyId ="1"  },
              new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882c98"), Name = "Admin công ty urban", Email = "TrầnThịHạnh@gmail.com", Phone = "0987654321", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.AdminCompany.ToString(), SmallCollectionPointId = "0",Status = UserStatus.Active.ToString(), CollectionCompanyId = "2"  },
             new User { UserId = Guid.Parse("c20deff9-163b-49e8-b967-238f22882b95"), Name = "Admin hệ thống ", Email = "superadmin@gmail.com", Phone = "0977922333", Avatar = "https://picsum.photos/id/1059/200/200", Role = UserRole.Admin.ToString(), SmallCollectionPointId = "0" ,Status = UserStatus.Active.ToString(), CollectionCompanyId = "0" },
             new User
@@ -540,25 +540,25 @@ namespace ElecWasteCollection.Application.Data
         public static List<Products> products = new List<Products>
         {
             // --- HÔM QUA (0-4) ---
-            new Products { ProductId = prodIds[0], CategoryId = cat_Tivi, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đang vận chuyển", Description = "Hỏng màn hình", QRCode = "product1" },
-            new Products { ProductId = prodIds[1], CategoryId = cat_TuLanh, BrandId = brand_Pana_TuLanh, PackageId = null,  Status = "Đã thu gom", Description = "Không lạnh ngăn mát", QRCode = "product2" },
-            new Products { ProductId = prodIds[2], CategoryId = cat_Laptop, BrandId = brand_Acer_Laptop, PackageId = null, Status = "Hủy bỏ", Description = "Khách hủy yêu cầu" },
-            new Products { ProductId = prodIds[3], CategoryId = cat_QuatDien, BrandId = brand_Asia_Quat, PackageId = null,  Status = "Đã thu gom", Description = "Gãy cánh", QRCode = "product4" },
-            new Products { ProductId = prodIds[4], CategoryId = cat_MayGiat, BrandId = brand_Toshiba_MayGiat, PackageId = null, Status = "Đã thu gom", Description = "Kêu to khi vắt", QRCode = "product5" },
+            new Products { ProductId = prodIds[0], CategoryId = cat_Tivi, BrandId = brand_Samsung_Tivi, PackageId = pkg_T001, Status = "Đang vận chuyển", Description = "Hỏng màn hình", QRCode = "product1", CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(-1)) },
+            new Products { ProductId = prodIds[1], CategoryId = cat_TuLanh, BrandId = brand_Pana_TuLanh, PackageId = null,  Status = "Đã thu gom", Description = "Không lạnh ngăn mát", QRCode = "product2",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(-1)) },
+            new Products { ProductId = prodIds[2], CategoryId = cat_Laptop, BrandId = brand_Acer_Laptop, PackageId = null, Status = "Hủy bỏ", Description = "Khách hủy yêu cầu",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(-1)) },
+            new Products { ProductId = prodIds[3], CategoryId = cat_QuatDien, BrandId = brand_Asia_Quat, PackageId = null,  Status = "Đã thu gom", Description = "Gãy cánh", QRCode = "product4",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(-1)) },
+            new Products { ProductId = prodIds[4], CategoryId = cat_MayGiat, BrandId = brand_Toshiba_MayGiat, PackageId = null, Status = "Đã thu gom", Description = "Kêu to khi vắt", QRCode = "product5",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(-1)) },
 
             // --- HÔM NAY (5-9) ---
-            new Products { ProductId = prodIds[5], CategoryId = cat_ManHinhMayTinh, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6" },
-            new Products { ProductId = prodIds[6], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Không nóng" },
-            new Products { ProductId = prodIds[7], CategoryId = cat_BinhNuocNong, BrandId = brand_Ariston_Binh, PackageId = null,  Status = "Chờ thu gom", Description = "Rò điện" },
-            new Products { ProductId = prodIds[8], CategoryId = cat_MayIn, BrandId = brand_HP_MayIn, PackageId = null, Status = "Đã thu gom", Description = "Kẹt giấy liên tục", QRCode = "product9" },
-            new Products { ProductId = prodIds[9], CategoryId = cat_DienThoai, BrandId = brand_Apple_DienThoai, PackageId = null,  Status = "Chờ thu gom", Description = "Vỡ màn hình" },
+            new Products { ProductId = prodIds[5], CategoryId = cat_ManHinhMayTinh, BrandId = brand_Dell_PC, PackageId = null, Status = "Đã thu gom", Description = "Sọc màn hình", QRCode = "product6",CreateAt = DateOnly.FromDateTime(_vnNow) },
+            new Products { ProductId = prodIds[6], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Không nóng",CreateAt = DateOnly.FromDateTime(_vnNow) },
+            new Products { ProductId = prodIds[7], CategoryId = cat_BinhNuocNong, BrandId = brand_Ariston_Binh, PackageId = null,  Status = "Chờ thu gom", Description = "Rò điện",CreateAt = DateOnly.FromDateTime(_vnNow) },
+            new Products { ProductId = prodIds[8], CategoryId = cat_MayIn, BrandId = brand_HP_MayIn, PackageId = null, Status = "Đã thu gom", Description = "Kẹt giấy liên tục", QRCode = "product9",CreateAt = DateOnly.FromDateTime(_vnNow) },
+            new Products { ProductId = prodIds[9], CategoryId = cat_DienThoai, BrandId = brand_Apple_DienThoai, PackageId = null,  Status = "Chờ thu gom", Description = "Vỡ màn hình",CreateAt = DateOnly.FromDateTime(_vnNow) },
 
             // --- NGÀY MAI (10-14) ---
-            new Products { ProductId = prodIds[10], CategoryId = cat_MayHutBui, BrandId = brand_Dyson, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng pin" },
-            new Products { ProductId = prodIds[11], CategoryId = cat_Loa, BrandId = brand_JBL_Loa, PackageId = null,Status = "Chờ thu gom", Description = "Mất tiếng bass" },
-            new Products { ProductId = prodIds[12], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng rơ le" },
-            new Products { ProductId = prodIds[13], CategoryId = cat_MayTinhDeBan, BrandId = brand_Dell_PC, PackageId = null,  Status = "Chờ thu gom", Description = "Main hỏng" },
-            new Products { ProductId = prodIds[14], CategoryId = cat_NoiComDien, BrandId = brand_Cuckoo, PackageId = null,  Status = "Chờ thu gom", Description = "Không chín cơm" }
+            new Products { ProductId = prodIds[10], CategoryId = cat_MayHutBui, BrandId = brand_Dyson, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng pin",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(+1)) },
+            new Products { ProductId = prodIds[11], CategoryId = cat_Loa, BrandId = brand_JBL_Loa, PackageId = null,Status = "Chờ thu gom", Description = "Mất tiếng bass",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(+1)) },
+            new Products { ProductId = prodIds[12], CategoryId = cat_LoViSong, BrandId = brand_Sharp_LoViSong, PackageId = null, Status = "Chờ thu gom", Description = "Hỏng rơ le",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(+1)) },
+            new Products { ProductId = prodIds[13], CategoryId = cat_MayTinhDeBan, BrandId = brand_Dell_PC, PackageId = null,  Status = "Chờ thu gom", Description = "Main hỏng",CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(+1)) },
+            new Products { ProductId = prodIds[14], CategoryId = cat_NoiComDien, BrandId = brand_Cuckoo, PackageId = null,  Status = "Chờ thu gom", Description = "Không chín cơm" ,CreateAt = DateOnly.FromDateTime(_vnNow.AddDays(+1))}
         };
 
         public static List<ProductValues> productValues = new List<ProductValues>
@@ -676,16 +676,16 @@ namespace ElecWasteCollection.Application.Data
         public static List<Shifts> shifts = new()
         {
             // --- HÔM QUA ---
-            new Shifts { ShiftId = "1", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(7), Shift_End_Time = _vnNow.AddDays(-1).AddHours(15) },
-            new Shifts { ShiftId = "2", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(8), Shift_End_Time = _vnNow.AddDays(-1).AddHours(16) },
+            new Shifts { ShiftId = "1", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(7), Shift_End_Time = _vnNow.AddDays(-1).AddHours(15), Status = ShiftStatus.Active.ToString() },
+            new Shifts { ShiftId = "2", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(-1)), Shift_Start_Time = _vnNow.AddDays(-1).AddHours(8), Shift_End_Time = _vnNow.AddDays(-1).AddHours(16), Status = ShiftStatus.Active.ToString() },
 
             // --- HÔM NAY ---
-            new Shifts { ShiftId = "3", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(7), Shift_End_Time = _vnNow.AddHours(15) },
-            new Shifts { ShiftId = "4", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(8), Shift_End_Time = _vnNow.AddHours(16) },
+            new Shifts { ShiftId = "3", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(7), Shift_End_Time = _vnNow.AddHours(15), Status = ShiftStatus.Active.ToString() },
+            new Shifts { ShiftId = "4", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow), Shift_Start_Time = _vnNow.AddHours(8), Shift_End_Time = _vnNow.AddHours(16), Status = ShiftStatus.Active.ToString() },
 
             // --- NGÀY MAI ---
-            new Shifts { ShiftId = "5", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(7), Shift_End_Time = _vnNow.AddDays(1).AddHours(15) },
-            new Shifts { ShiftId = "6", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(8), Shift_End_Time = _vnNow.AddDays(1).AddHours(16) }
+            new Shifts { ShiftId = "5", CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(7), Shift_End_Time = _vnNow.AddDays(1).AddHours(15), Status = ShiftStatus.Active.ToString() },
+            new Shifts { ShiftId = "6", CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = DateOnly.FromDateTime(_vnNow.AddDays(1)), Shift_Start_Time = _vnNow.AddDays(1).AddHours(8), Shift_End_Time = _vnNow.AddDays(1).AddHours(16), Status = ShiftStatus.Active.ToString() }
         };
 
         public static List<CollectionGroups> collectionGroups = new()
@@ -735,19 +735,26 @@ namespace ElecWasteCollection.Application.Data
             new ProductStatusHistory
     {
         ProductStatusHistoryId = Guid.NewGuid(),
-        ProductId = prodIds[0],
+        ProductId = prodIds[6],
         Status = "Chờ duyệt",
         StatusDescription = "Người dùng tạo yêu cầu thu gom.",
-        ChangedAt = _vnNow.AddDays(-3) // Khớp với ngày tạo Post
+        ChangedAt = _vnNow.AddDays(-3).AddHours(-2) // Khớp với ngày tạo Post
     },
-
+new ProductStatusHistory
+	{
+		ProductStatusHistoryId = Guid.NewGuid(),
+		ProductId = prodIds[6],
+		Status = "Chờ gom nhóm",
+		StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm",
+		ChangedAt = _vnNow.AddDays(-3) // Khớp với ngày tạo Post
+    },
     // 2. Admin duyệt bài - Chuyển sang Chờ thu gom
     new ProductStatusHistory
     {
         ProductStatusHistoryId = Guid.NewGuid(),
-        ProductId = prodIds[0],
+        ProductId = prodIds[6],
         Status = "Chờ thu gom",
-        StatusDescription = "Admin đã duyệt yêu cầu. Đang điều phối người thu gom.",
+        StatusDescription = "Hệ thống đã phân chia người thu gom.",
         ChangedAt = _vnNow.AddDays(-2).AddHours(2) // Duyệt sau khi đăng khoảng 1 ngày
     },
 
@@ -755,7 +762,7 @@ namespace ElecWasteCollection.Application.Data
     new ProductStatusHistory
     {
         ProductStatusHistoryId = Guid.NewGuid(),
-        ProductId = prodIds[0],
+        ProductId = prodIds[6],
         Status = "Đã thu gom",
         StatusDescription = "Đã thu gom thành công tại địa chỉ của khách hàng.",
         ChangedAt = _vnNow.AddDays(-1).AddHours(9) // Thu gom vào khung giờ sáng hôm qua
@@ -765,9 +772,9 @@ namespace ElecWasteCollection.Application.Data
     new ProductStatusHistory
     {
         ProductStatusHistoryId = Guid.NewGuid(),
-        ProductId = prodIds[0],
+        ProductId = prodIds[6],
         Status = "Nhập kho",
-        StatusDescription = "Sản phẩm đã được vận chuyển về kho trung tâm.",
+        StatusDescription = "Sản phẩm đã được vận chuyển về kho.",
         ChangedAt = _vnNow.AddDays(-1).AddHours(14) // Về kho vào chiều hôm qua
     },
 
@@ -775,7 +782,7 @@ namespace ElecWasteCollection.Application.Data
     new ProductStatusHistory
     {
         ProductStatusHistoryId = Guid.NewGuid(),
-        ProductId = prodIds[0],
+        ProductId = prodIds[6],
         Status = "Đã đóng thùng",
         StatusDescription = "Sản phẩm đã được phân loại và đóng gói kỹ càng.",
         ChangedAt = _vnNow.AddHours(-2) // Mới đóng gói cách đây 2 tiếng

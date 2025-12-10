@@ -105,8 +105,10 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ISmallCollectionService, SmallCollectionService>();
 			builder.Services.AddScoped<IImageRecognitionService, ImaggaImageService>();
 			builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
+			builder.Services.AddScoped<IShiftService, ShiftService>();
+			builder.Services.AddScoped<IVehicleService, VehicleService>();
 
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+			builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
             builder.Services.AddCors(options =>

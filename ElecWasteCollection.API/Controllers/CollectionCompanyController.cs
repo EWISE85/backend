@@ -67,5 +67,15 @@ namespace ElecWasteCollection.API.Controllers
 			var result = await _collectionCompanyService.GetPagedCompanyAsync(model);
 			return Ok(result);
 		}
+		[HttpGet("name")]
+		public IActionResult GetCollectionCompanyByName([FromQuery] string name)
+		{
+			var result = _collectionCompanyService.GetCompanyByName(name);
+			if (result == null || result.Count == 0)
+			{
+				return NotFound();
+			}
+			return Ok(result);
+		}
 	}
 }

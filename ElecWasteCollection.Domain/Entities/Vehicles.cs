@@ -1,6 +1,12 @@
 ﻿namespace ElecWasteCollection.Domain.Entities
 {
-    public class Vehicles
+    public enum VehicleStatus
+	{
+		Active,
+		Inactive,
+		
+	}
+	public class Vehicles
     {
         public string VehicleId { get; set; }
         public string Plate_Number { get; set; } = null!;

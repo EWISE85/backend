@@ -1,6 +1,11 @@
 ﻿namespace ElecWasteCollection.Domain.Entities
 {
-    public class Shifts
+    public enum ShiftStatus
+	{
+		Active,
+		Inactive,   
+	}
+	public class Shifts
     {
         public string ShiftId { get; set; }
         public Guid CollectorId { get; set; }

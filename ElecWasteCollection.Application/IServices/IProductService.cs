@@ -35,5 +35,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		bool UpdateCheckedProductAtRecycler(string packageId, List<string> QrCode);
 
+		Task<PagedResultModel<ProductDetail>> AdminGetProductsAsync(AdminFilterProductModel model);
+
 	}
 }

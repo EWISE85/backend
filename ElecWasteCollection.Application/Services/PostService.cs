@@ -173,7 +173,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public PostDetailModel GetById(Guid id)
 		{
-			var post = posts.FirstOrDefault(p => p.ProductId == id);
+			var post = posts.FirstOrDefault(p => p.PostId == id);
 			if (post == null)
 			{
 				return null;
@@ -249,6 +249,16 @@ namespace ElecWasteCollection.Application.Services
 			if (post == null) return null;
 
 			var sender = _userService.GetById(post.SenderId);
+			var userRespose = new UserResponse
+			{
+				UserId = sender.UserId,
+				Avatar = sender.Avatar,
+				Email = sender.Email,
+				Name = sender.Name,
+				Phone = sender.Phone,
+				Role = sender.Role,
+				SmallCollectionPointId = sender.SmallCollectionPointId
+			};
 			var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
 
 			string categoryName = "Không rõ";
@@ -323,7 +333,16 @@ namespace ElecWasteCollection.Application.Services
 		.OrderByDescending(l => l.Confidence) // Sắp xếp theo cái cao nhất
 		.Take(5) // <-- Chỉ lấy 5 tag HÀNG ĐẦU TỔNG CỘNG
 		.ToList();
-
+			var userResponse = new UserResponse
+			{
+				UserId = sender.UserId,
+				Avatar = sender.Avatar,
+				Email = sender.Email,
+				Name = sender.Name,
+				Phone = sender.Phone,
+				Role = sender.Role,
+				SmallCollectionPointId = sender.SmallCollectionPointId
+			};
 			// 4. Tạo PostModel chi tiết
 			return new PostDetailModel
 			{
@@ -335,7 +354,7 @@ namespace ElecWasteCollection.Application.Services
 				RejectMessage = post.RejectMessage,
 				Date = post.Date,
 				Address = post.Address,
-				Sender = sender,
+				Sender = userResponse,
 				Schedule = schedule,
 				PostNote = post.Description,
 				Product = productDetailModel,
@@ -353,19 +372,20 @@ namespace ElecWasteCollection.Application.Services
 			if (post != null)
 			{
 				post.Status = "Đã Duyệt";
-				var history = new ProductStatusHistory
-				{
-					ProductId = post.ProductId,
-					ChangedAt = DateTime.Now,
-					Status = post.Status,
-					StatusDescription = "Yêu cầu được duyệt"
-				};
-				_productStatusHistories.Add(history);
+				
 				var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
 				if (product != null)
 				{
 					product.Status = "Chờ gom nhóm";
 					_productService.UpdateProductStatusByProductId(product.ProductId, product.Status);
+					var history = new ProductStatusHistory
+					{
+						ProductId = post.ProductId,
+						ChangedAt = DateTime.Now,
+						Status = "Chờ gom nhóm",
+						StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
+					};
+					_productStatusHistories.Add(history);
 
 				}
 				return true;

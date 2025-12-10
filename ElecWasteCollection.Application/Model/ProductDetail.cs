@@ -27,7 +27,7 @@ namespace ElecWasteCollection.Application.Model
 		public double? RealPoints { get; set; } // Điểm thực tế sau khi kiểm tra sản phẩm
 
 		public string? RejectMessage { get; set; } // Lý do hủy sản phẩm (nếu có)
-		public User Sender { get; set; }
+		public UserResponse Sender { get; set; }
 
 		public CollectorResponse? Collector { get; set; }
 		public Guid? CollectionRouterId { get; set; }

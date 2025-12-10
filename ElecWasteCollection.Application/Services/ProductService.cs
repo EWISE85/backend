@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.Data;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -32,8 +33,13 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ICollectorService _collectorService;
 		private readonly List<PointTransactions> pointTransactions = FakeDataSeeder.points;
 		private readonly List<Packages> _package = FakeDataSeeder.packages;
+		private readonly List<SmallCollectionPoints> smallCollectionPoints = FakeDataSeeder.smallCollectionPoints;
+		private readonly List<CollectionCompany> collectionCompanies = FakeDataSeeder.collectionTeams;
 		private readonly IAttributeOptionService _attributeOptionService;
 		private readonly ILogger<ProductService> _logger;
+		private readonly List<UserAddress> _userAddresses = FakeDataSeeder.userAddress;
+		private readonly List<User> collector = FakeDataSeeder.users;
+
 		public ProductService(IPointTransactionService pointTransactionService, IUserService userService, ICollectorService collectorService, IAttributeOptionService attributeOptionService, ILogger<ProductService> logger)
 		{
 			_pointTransactionService = pointTransactionService;
@@ -489,7 +495,16 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 			var realPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.ProductId)?.Point;
-
+			var userResponse = new UserResponse
+			{
+				UserId = sender.UserId,
+				Name = sender.Name,
+				Phone = sender.Phone,
+				Email = sender.Email,
+				Avatar = sender.Avatar,
+				Role = sender.Role,
+				SmallCollectionPointId = sender.SmallCollectionPointId
+			};
 			// 9. Return kết quả
 			return new ProductDetail
 			{
@@ -502,7 +517,7 @@ namespace ElecWasteCollection.Application.Services
 				ProductImages = imageUrls,
 				Status = product.Status,
 				EstimatePoint = post.EstimatePoint,
-				Sender = sender,
+				Sender = userResponse,
 				Address = post.Address,
 				Schedule = schedule,
 				Attributes = productAttributes,
@@ -550,6 +565,157 @@ namespace ElecWasteCollection.Application.Services
 		public List<ProductComeWarehouseDetailModel> FilterProductByCompanyIdAndDate(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId)
 		{
 			throw new NotImplementedException();
+		}
+
+		public Task<PagedResultModel<ProductDetail>> AdminGetProductsAsync(AdminFilterProductModel model)
+		{
+			var query = _products.AsQueryable();
+
+			// 1. Lọc theo CategoryName
+			if (!string.IsNullOrEmpty(model.CategoryName))
+			{
+				var matchingCategoryIds = _categories
+					.Where(c => c.Name.Contains(model.CategoryName, StringComparison.OrdinalIgnoreCase))
+					.Select(c => c.CategoryId)
+					.ToList();
+
+				query = query.Where(p => matchingCategoryIds.Contains(p.CategoryId));
+			}
+
+			// 2. Lọc theo CollectionCompanyId (CollectorId) - SỬA LẠI LOGIC KẾT NỐI
+			if (model.CollectionCompanyId != null)
+			{
+				var smallCollectionPoint = smallCollectionPoints.Where(scp => scp.CompanyId == model.CollectionCompanyId).Select(scp => scp.SmallCollectionPointsId);
+				var collectorIds = collector
+		.Where(u => u.SmallCollectionPointId != null && smallCollectionPoint.Contains(u.SmallCollectionPointId))
+		.Select(u => u.UserId);
+
+				// 2a. Tìm tất cả Shift (Ca làm việc) của Collector này
+				var collectorShiftIds = _shifts
+		.Where(s => collectorIds.Contains(s.CollectorId))
+		.Select(s => s.ShiftId);
+
+				// 2b. Tìm tất cả Group được gán cho các Shift này
+				var relevantGroupIds = _collectionGroups
+		.Where(g => collectorShiftIds.Contains(g.Shift_Id))
+		.Select(g => g.CollectionGroupId);
+
+				// 2c. Tìm TẤT CẢ PRODUCTS đã được gán vào các Group/Route này (Sử dụng ProductId)
+				var relevantProductIds = _collectionRoutes
+		.Where(cr => relevantGroupIds.Contains(cr.CollectionGroupId))
+		.Select(cr => cr.ProductId); // <-- IQueryable<Guid>
+
+				// 6. Lọc query cuối cùng
+				// EFCore sẽ gộp tất cả các bước trên thành một câu SQL JOIN/Subquery lớn.
+				query = query.Where(p => relevantProductIds.Contains(p.ProductId));
+			}
+			if (model.FromDate.HasValue)
+			{
+				// Lọc những sản phẩm có ngày tạo LỚN HƠN hoặc BẰNG FromDate
+				query = query.Where(p => p.CreateAt.HasValue && p.CreateAt.Value >= model.FromDate.Value);
+			}
+
+			if (model.ToDate.HasValue)
+			{
+				// Lọc những sản phẩm có ngày tạo NHỎ HƠN hoặc BẰNG ToDate
+				query = query.Where(p => p.CreateAt.HasValue && p.CreateAt.Value <= model.ToDate.Value);
+			}
+			// 3. Phân trang (Paging)
+			var totalRecords = query.Count();
+
+			var productsPaged = query
+				.Skip((model.Page - 1) * model.Limit)
+				.Take(model.Limit)
+				.ToList();
+
+			// 4. Mapping sang ProductDetail Model
+			var productDetails = productsPaged.Select(product =>
+			{
+				// Tìm Route liên quan đến Product
+				var route = _collectionRoutes.FirstOrDefault(r => r.ProductId == product.ProductId);
+
+				// Lấy Category và Brand
+				var category = _categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
+				var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
+
+				// --- LẤY DỮ LIỆU TỪ POST/SENDER (VÌ POST VẪN CHỨA THÔNG TIN GỬI HÀNG) ---
+				var post = _posts.FirstOrDefault(p => p.ProductId == product.ProductId);
+				if (post == null) return null; // Vẫn cần Post để lấy Sender, Address, Status...
+
+				var sender = _userService.GetById(post.SenderId);
+
+				// --- TÌM THÔNG TIN COLLECTOR, DATE, TIME TỪ ROUTE ---
+				CollectorResponse? collector = null;
+				DateOnly? pickUpDate = null;
+				TimeOnly? estimatedTime = null;
+
+				if (route != null)
+				{
+					// Logic tìm Collector phải lặp lại từ Route -> Group -> Shift -> Collector
+					var group = _collectionGroups.FirstOrDefault(g => g.CollectionGroupId == route.CollectionGroupId);
+					if (group != null)
+					{
+						var shift = _shifts.FirstOrDefault(s => s.ShiftId == group.Shift_Id);
+						if (shift != null)
+						{
+							 collector = _collectorService.GetById(shift.CollectorId);
+							
+						}
+					}
+
+					// Lấy Date/Time từ Route
+					pickUpDate = route.CollectionDate;
+					estimatedTime = route.EstimatedTime;
+				}
+				
+				// Lấy Images (vẫn phải qua Post vì ảnh gắn với bài đăng ban đầu)
+				var imageUrls = productImages
+					.Where(pi => pi.ProductId == product.ProductId)
+					.Select(pi => pi.ImageUrl)
+					.ToList();
+
+				
+				var userResponse = new UserResponse
+				{
+					UserId = sender.UserId,
+					Name = sender.Name,
+					Phone = sender.Phone,
+					Email = sender.Email,
+					Avatar = sender.Avatar,
+					Role = sender.Role,
+					SmallCollectionPointId = sender.SmallCollectionPointId
+				};
+				var realPoint = pointTransactions.FirstOrDefault(pt => pt.ProductId == product.ProductId)?.Point;
+				// Map ProductDetail
+				return new ProductDetail
+				{
+					ProductId = product.ProductId,
+					CategoryId = category.CategoryId,
+					BrandId = brand.BrandId,
+					CollectionRouterId = route.CollectionRouteId,
+					EstimatePoint = post.EstimatePoint,
+					QRCode = product.QRCode,
+					IsChecked = product.isChecked,
+					RealPoints = realPoint,
+					CategoryName = category?.Name ?? "Không rõ",
+					Description = product.Description,
+					BrandName = brand?.Name ?? "Không rõ",
+					ProductImages = imageUrls,
+					Status = product.Status,
+					Sender = userResponse,
+					Address = _userAddresses.FirstOrDefault(ua => ua.Address == post.Address).Address,
+					Collector = collector,
+					PickUpDate = pickUpDate,
+					EstimatedTime = estimatedTime,
+				};
+			})
+			.Where(pd => pd != null)
+			.ToList();
+
+			// 5. Trả về kết quả phân trang
+			var pagedResult = new PagedResultModel<ProductDetail>(productDetails, model.Page, model.Limit, totalRecords);
+
+			return Task.FromResult(pagedResult);
 		}
 	}
 }
