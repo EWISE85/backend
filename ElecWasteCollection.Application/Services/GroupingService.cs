@@ -567,6 +567,28 @@ namespace ElecWasteCollection.Application.Services
                     int currentLocIdx = originalIdx + 1;
 
                     var data = mapData[originalIdx];
+
+                    var productToUpdate = FakeDataSeeder.products.FirstOrDefault(pr => pr.ProductId == data.Post.ProductId);
+
+                    if (productToUpdate != null)
+                    {
+                        productToUpdate.Status = "Chờ thu gom";
+
+                        var newHistory = new ProductStatusHistory
+                        {
+                            ProductStatusHistoryId = Guid.NewGuid(),
+                            ProductId = productToUpdate.ProductId,
+                            ChangedAt = DateTime.UtcNow.AddHours(7),
+                            Status = "Chờ thu gom",
+                            StatusDescription = $"Đơn hàng đã được xếp lịch cho xe {vehicle.Plate_Number}. Đang chờ tài xế đến lấy."
+                        };
+
+                        if (request.SaveResult)
+                        {
+                            FakeDataSeeder.productStatusHistories.Add(newHistory);
+                        }
+                    }
+
                     var node = nodesToOptimize[originalIdx];
 
                     long distMeters = matrixDist[prevLocIdx, currentLocIdx];
