@@ -59,6 +59,7 @@ namespace ElecWasteCollection.Application.Services
 					CategoryId = productRequest.SubCategoryId,
 					BrandId = productRequest.BrandId,
 					Description = createPostRequest.Description,
+					CreateAt = DateOnly.FromDateTime(DateTime.Now.AddHours(7)),
 					isChecked = false,
 					Status = "Chờ Duyệt"
 				};
