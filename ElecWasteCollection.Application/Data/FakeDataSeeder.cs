@@ -2471,14 +2471,24 @@ new ProductStatusHistory
             int nextShiftId = shifts.Any() ? shifts.Max(s => int.Parse(s.ShiftId)) + 1 : 1;
 
             // 1. Ca của Dũng (SmallPoint 1)
-            shifts.Add(new Shifts { ShiftId = nextShiftId.ToString(), CollectorId = collector_Dung_Id, Vehicle_Id = "1", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+            shifts.Add(new Shifts { ShiftId = nextShiftId.ToString(), CollectorId = collector_Dung_Id, Vehicle_Id = null, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15), Status = "Available" });
 
             // 2. Ca của Tuấn (SmallPoint 1)
-            shifts.Add(new Shifts { ShiftId = (nextShiftId + 1).ToString(), CollectorId = collector_Tuan_Id, Vehicle_Id = "2", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15) });
+            shifts.Add(new Shifts { ShiftId = (nextShiftId + 1).ToString(), CollectorId = collector_Tuan_Id, Vehicle_Id = null, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15), Status = "Available" });
 
             // 3. Ca của Trường (SmallPoint 2 - Quận 9)
-            // Lưu ý: Đảm bảo bạn đã thêm Vehicle Id = 3 vào list vehicles ở đầu file như hướng dẫn trước
-            shifts.Add(new Shifts { ShiftId = (nextShiftId + 2).ToString(), CollectorId = collector_Truong_Id, Vehicle_Id = "3", WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16) });
+            shifts.Add(new Shifts { ShiftId = (nextShiftId + 2).ToString(), CollectorId = collector_Truong_Id, Vehicle_Id = null, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16), Status = "Available" });
+
+            shifts.Add(new Shifts
+            {
+                ShiftId = (nextShiftId + 3).ToString(),
+                CollectorId = collector_Dang_Id,
+                Vehicle_Id = null, 
+                WorkDate = targetDate,
+                Shift_Start_Time = targetDateTime.AddHours(7),
+                Shift_End_Time = targetDateTime.AddHours(15),
+                Status = "Available"
+            });
 
 
             // Groups

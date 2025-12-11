@@ -72,33 +72,6 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
-        [HttpPost("reassign-collector")]
-        public async Task<IActionResult> ReassignCollector([FromBody] ReassignGroupRequest request)
-        {
-            try
-            {
-                var result = await _groupingService.ReassignGroupAsync(request);
-
-                return Ok(new
-                {
-                    Success = true,
-                    Message = result.Message,
-                    GroupId = result.GroupId,
-                    CollectorName = result.CollectorName
-                });
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new
-                {
-                    Success = false,
-                    Message = ex.Message,
-                    GroupId = 0,
-                    CollectorName = (string?)null
-                });
-            }
-        }
-
         [HttpPost("settings")]
         public async Task<IActionResult> UpdateSettings([FromBody] UpdatePointSettingRequest request)
         {
