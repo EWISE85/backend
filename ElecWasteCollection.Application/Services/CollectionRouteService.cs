@@ -83,7 +83,7 @@ namespace ElecWasteCollection.Application.Services
 			_productStatusHistories.Add(new ProductStatusHistory
 			{
 				ProductId = product.ProductId,
-				ChangedAt = DateTime.Now,
+				ChangedAt = DateTime.Now.AddHours(7),
 				StatusDescription = "Sản phẩm đã được thu gom",
 				Status = "Đã thu gom"
 			});

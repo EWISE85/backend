@@ -130,7 +130,7 @@ namespace ElecWasteCollection.Application.Services
 						var history = new ProductStatusHistory
 						{
 							ProductId = newProduct.ProductId,
-							ChangedAt = DateTime.Now,
+							ChangedAt = DateTime.Now.AddHours(7),
 							Status = "Chờ gom nhóm",
 							StatusDescription = "Yêu cầu được duyệt"
 						};
@@ -142,7 +142,7 @@ namespace ElecWasteCollection.Application.Services
 						var history = new ProductStatusHistory
 						{
 							ProductId = newProduct.ProductId,
-							ChangedAt = DateTime.Now,
+							ChangedAt = DateTime.Now.AddHours(7),
 							Status = "Chờ Duyệt",
 							StatusDescription = "Yêu cầu đã được gửi"
 						};
