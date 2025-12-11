@@ -177,6 +177,7 @@ namespace ElecWasteCollection.Application.Services
 					Plate_Number = vehicleInfo?.Plate_Number,
 					CollectorName = collectorInfo?.Name,
 					CollectorId = shift.CollectorId,
+					WorkDate = shift.WorkDate,
 					Shift_Start_Time = shift.Shift_Start_Time,
 					Shift_End_Time = shift.Shift_End_Time,
 					Status = shift.Status,

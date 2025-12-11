@@ -421,6 +421,7 @@ namespace ElecWasteCollection.Application.Services
                 var workDate = assignDay.Date;
                 var posts = FakeDataSeeder.posts.Where(p => assignDay.ProductIds.Contains(p.ProductId)).ToList();
                 if (!posts.Any()) continue;
+
                 var assignedShift = FakeDataSeeder.shifts.FirstOrDefault(s => s.WorkDate == workDate && s.Vehicle_Id == assignDay.VehicleId);
 
                 Shifts mainShift;
@@ -449,6 +450,7 @@ namespace ElecWasteCollection.Application.Services
                     {
                         availableShift.Vehicle_Id = assignDay.VehicleId;
                         availableShift.Status = "Scheduled";
+                        availableShift.WorkDate = workDate;
                         mainShift = availableShift;
                     }
                     else

@@ -2477,7 +2477,7 @@ new ProductStatusHistory
             shifts.Add(new Shifts { ShiftId = (nextShiftId + 1).ToString(), CollectorId = collector_Tuan_Id, Vehicle_Id = null, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15), Status = "Available" });
 
             // 3. Ca của Trường (SmallPoint 2 - Quận 9)
-            shifts.Add(new Shifts { ShiftId = (nextShiftId + 2).ToString(), CollectorId = collector_Truong_Id, Vehicle_Id = null, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(8), Shift_End_Time = targetDateTime.AddHours(16), Status = "Available" });
+            shifts.Add(new Shifts { ShiftId = (nextShiftId + 2).ToString(), CollectorId = collector_Truong_Id, Vehicle_Id = null, WorkDate = targetDate, Shift_Start_Time = targetDateTime.AddHours(7), Shift_End_Time = targetDateTime.AddHours(15), Status = "Available" });
 
             shifts.Add(new Shifts
             {
