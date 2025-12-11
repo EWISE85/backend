@@ -11,7 +11,13 @@ namespace ElecWasteCollection.Domain.Entities
 		Active,
 		Inactive
 	}
-
+	public enum SystemConfigKey
+	{
+		QR_SCAN_RADIUS_METERS,
+		DAYS_TO_MARK_MISSING,
+		AI_AUTO_APPROVE_THRESHOLD,
+		MAX_PICKUP_DURATION_MINUTES
+	}
 	public class SystemConfig
     {
         public Guid SystemConfigId { get; set; }

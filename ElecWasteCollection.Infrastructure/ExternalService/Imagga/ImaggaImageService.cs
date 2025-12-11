@@ -1,6 +1,7 @@
 ﻿using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Domain.Entities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System;
@@ -17,13 +18,14 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Imagga
 		private readonly HttpClient _httpClient;
 		private readonly ILogger<ImaggaImageService> _logger;
 		private readonly ImaggaSettings _settings;
-		private const double ConfidenceThreshold = 80.0;
 		private readonly double Confidence_AcceptToSave = 30.0;
-		public ImaggaImageService(ILogger<ImaggaImageService> logger, IOptions<ImaggaSettings> options)
+		private readonly ISystemConfigService _systemConfigService;
+		public ImaggaImageService(ILogger<ImaggaImageService> logger, IOptions<ImaggaSettings> options, ISystemConfigService systemConfigService)
 		{
 			_logger = logger;
 			_settings = options.Value;
 			_httpClient = new HttpClient();
+			_systemConfigService = systemConfigService;
 		}
 		public async Task<ImaggaCheckResult> AnalyzeImageCategoryAsync(string imageUrl, string category)
         {
@@ -67,9 +69,9 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Imagga
 
 						// 1. Kiểm tra xem tag có "Phù hợp" hay không
 						bool isTagMatch = acceptedEnglishTags.Contains(tagName);
-
+						var ConfidenceThreshold =  _systemConfigService.GetSystemConfigByKey(SystemConfigKey.AI_AUTO_APPROVE_THRESHOLD.ToString());
 						// 2. Quyết định status của TOÀN BỘ ẢNH (vẫn cần ngưỡng 80%)
-						if (!overallImageMatch && isTagMatch && confidence >= ConfidenceThreshold)
+						if (!overallImageMatch && isTagMatch && confidence >= double.Parse(ConfidenceThreshold.Value))
 						{
 							overallImageMatch = true;
 						}
