@@ -642,7 +642,6 @@ namespace ElecWasteCollection.Application.Data
         Vehicle_Type = "Xe tải nhỏ",
         Capacity_Kg = 1000,
         Capacity_M3 = 8,
-        Radius_Km = 10,
         Status = "active",
         Small_Collection_Point = "1" // Thuộc trạm 1
     },
@@ -653,7 +652,6 @@ namespace ElecWasteCollection.Application.Data
     Vehicle_Type = "Xe tải nhỏ",
     Capacity_Kg = 1000,
     Capacity_M3 = 8,
-    Radius_Km = 10,
     Status = "active",
     Small_Collection_Point = "2" // Trạm 2
 },
@@ -664,7 +662,6 @@ namespace ElecWasteCollection.Application.Data
         Vehicle_Type = "Xe tải lớn",
         Capacity_Kg = 2000,
         Capacity_M3 = 15,
-        Radius_Km = 15,
         Status = "active",
         Small_Collection_Point = "1" // Thuộc trạm 1
     }

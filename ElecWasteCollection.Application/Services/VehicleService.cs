@@ -25,7 +25,6 @@ namespace ElecWasteCollection.Application.Services
 				existingVehicle.Vehicle_Type = vehicle.Vehicle_Type;
 				existingVehicle.Capacity_Kg = vehicle.Capacity_Kg;
 				existingVehicle.Capacity_M3 = vehicle.Capacity_M3;
-				existingVehicle.Radius_Km = vehicle.Radius_Km;
 				existingVehicle.Status = vehicle.Status;
 				existingVehicle.Small_Collection_Point = vehicle.Small_Collection_Point;
 			}
@@ -38,7 +37,6 @@ namespace ElecWasteCollection.Application.Services
 					Vehicle_Type = vehicle.Vehicle_Type,
 					Capacity_Kg = vehicle.Capacity_Kg,
 					Capacity_M3 = vehicle.Capacity_M3,
-					Radius_Km = vehicle.Radius_Km,
 					Status = vehicle.Status,
 					Small_Collection_Point = vehicle.Small_Collection_Point
 				};
@@ -64,7 +62,6 @@ namespace ElecWasteCollection.Application.Services
 				VehicleType = vehicle.Vehicle_Type,
 				CapacityKg = vehicle.Capacity_Kg,
 				CapacityM3 = vehicle.Capacity_M3,
-				RadiusKm = vehicle.Radius_Km,
 				Status = vehicle.Status,
 				SmallCollectionPointId = vehicle.Small_Collection_Point,
 				SmallCollectionPointName = smallCollectionPoint?.Name ?? "Chưa gán điểm thu gom"
@@ -137,7 +134,6 @@ namespace ElecWasteCollection.Application.Services
 					VehicleType = v.Vehicle_Type,
 					CapacityKg = v.Capacity_Kg, 
 					CapacityM3 = v.Capacity_M3, 
-					RadiusKm = v.Radius_Km,     
 					Status = v.Status,
 					SmallCollectionPointId = v.Small_Collection_Point,
 					// Map tên SCP, nếu không có thì báo N/A
