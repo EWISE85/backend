@@ -21,17 +21,20 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpPost("company-config")]
-        public IActionResult UpdateCompanyConfig([FromBody] CompanyConfigRequest request)
+        public async Task<IActionResult> UpdateCompanyConfig([FromBody] CompanyConfigRequest request)
         {
-            var result = _companyConfigService.UpdateCompanyConfig(request);
+            var result = await _companyConfigService.UpdateCompanyConfigAsync(request);
+            if (result.Companies == null || !result.Companies.Any())
+            {
+                return Ok(result);
+            }
             return Ok(result);
         }
 
-
         [HttpGet("company-config")]
-        public IActionResult GetCompanyConfig()
+        public async Task<IActionResult> GetCompanyConfig()
         {
-            var result = _companyConfigService.GetCompanyConfig();
+            var result = await _companyConfigService.GetCompanyConfigAsync();
             return Ok(result);
         }
 

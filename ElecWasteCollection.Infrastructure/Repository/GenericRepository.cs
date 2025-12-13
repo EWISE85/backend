@@ -19,9 +19,19 @@ namespace ElecWasteCollection.Infrastructure.Repository
             _dbSet = _context.Set<T>();
         }
 
-        public async Task<IEnumerable<T>> GetAllAsync()
+        public async Task<IEnumerable<T>> GetAllAsync(string? includeProperties = null)
         {
-            return await _dbSet.ToListAsync();
+            IQueryable<T> query = _dbSet;
+
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+
+            return await query.ToListAsync();
         }
 
         public async Task<T?> GetByIdAsync(object id)
