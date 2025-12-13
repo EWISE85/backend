@@ -15,12 +15,14 @@ namespace ElecWasteCollection.Infrastructure.Repository
         private readonly ElecWasteCollectionDbContext _context;
 
         public IGenericRepository<User> Users { get; }
+        public IGenericRepository<CollectionCompany> CollectionCompanies { get; }
 
         public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
 
             Users = new GenericRepository<User>(_context);
+            CollectionCompanies = new GenericRepository<CollectionCompany>(_context);
         }
 
         public async Task<int> SaveAsync()

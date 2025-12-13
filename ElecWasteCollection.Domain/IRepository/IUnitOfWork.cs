@@ -10,6 +10,7 @@ namespace ElecWasteCollection.Domain.IRepository
     public interface IUnitOfWork : IDisposable
     {
         IGenericRepository<User> Users { get; }
+        IGenericRepository<CollectionCompany> CollectionCompanies { get; }
         Task<int> SaveAsync();
     }
 }
