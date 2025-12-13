@@ -1,132 +1,153 @@
-﻿using ElecWasteCollection.Application.Data;
-using ElecWasteCollection.Application.IServices.IAssignPost;
+﻿using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Application.Helpers;
-using System.Text.Json;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
+using System.Text.Json;
 
 namespace ElecWasteCollection.Application.Services.AssignPostService
 {
     public class ProductAssignService : IProductAssignService
     {
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IMapboxDistanceCacheService _distanceCache;
 
-        public ProductAssignService(IMapboxDistanceCacheService distanceCache)
+        public ProductAssignService(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache)
         {
+            _unitOfWork = unitOfWork;
             _distanceCache = distanceCache;
         }
 
         public async Task<AssignProductResult> AssignProductsAsync(List<Guid> productIds, DateOnly workDate)
         {
             var result = new AssignProductResult();
+            var companies = await _unitOfWork.CollectionCompanies.GetAllAsync(includeProperties: "SmallCollectionPoints");
 
-            var config = FakeDataSeeder.CompanyConfigs;
-
-            if (!config.Any())
+            if (!companies.Any())
                 throw new Exception("Chưa có cấu hình company.");
 
-            var sortedConfig = config.OrderBy(c => c.CompanyId).ToList();
+            //Tính toán MinRange/MaxRange (Dùng DTO tạm thời)
+            var sortedConfig = companies.OrderBy(c => c.CollectionCompanyId).ToList();
+            double totalPercent = sortedConfig.Sum(c => c.AssignRatio);
 
-            double totalPercent = sortedConfig.Sum(c => c.RatioPercent);
             if (Math.Abs(totalPercent - 100) > 0.1)
                 throw new Exception($"Tổng tỉ lệ phần trăm hiện tại là {totalPercent}%, cần phải là 100%");
 
+            var rangeConfigs = new List<CompanyRangeConfig>();
             double currentPivot = 0.0;
-            foreach (var company in sortedConfig)
+
+            foreach (var comp in sortedConfig)
             {
-                company.MinRange = currentPivot;
-                currentPivot += (company.RatioPercent / 100.0);
-                company.MaxRange = currentPivot;
+                var cfg = new CompanyRangeConfig
+                {
+                    CompanyEntity = comp,
+                    MinRange = currentPivot
+                };
+                currentPivot += (comp.AssignRatio / 100.0);
+                cfg.MaxRange = currentPivot;
+                rangeConfigs.Add(cfg);
             }
-
-            var products = FakeDataSeeder.products
-                .Where(p => productIds.Contains(p.ProductId))
-                .ToList();
-
-            if (!products.Any())
-                throw new Exception("Không có product hợp lệ.");
+            var products = await _unitOfWork.Products.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
+            if (!products.Any()) throw new Exception("Không có product hợp lệ.");
 
             foreach (var product in products)
             {
-                var post = FakeDataSeeder.posts.First(p => p.ProductId == product.ProductId);
-                var userAddress = FakeDataSeeder.userAddress.First(a => a.UserId == post.SenderId);
-
-                double magicNumber = GetStableHashRatio(product.ProductId);
-
-                var targetCompany = sortedConfig.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange);
-
-                if (targetCompany == null) targetCompany = sortedConfig.Last();
-
-                ProductAssignCandidate? chosenCandidate = null;
-
-                var targetCandidate = await FindBestSmallPointForCompanyAsync(targetCompany, userAddress);
-
-                if (targetCandidate != null)
+                try
                 {
-                    chosenCandidate = targetCandidate;
-                }
-                else
-                {
-                    double bestDistance = double.MaxValue;
+                    var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
+                    if (post == null) continue;
 
-                    foreach (var otherCompany in sortedConfig.Where(c => c.CompanyId != targetCompany.CompanyId))
+                    var userAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == post.SenderId);
+                    if (userAddress == null)
                     {
-                        var candidate = await FindBestSmallPointForCompanyAsync(otherCompany, userAddress);
-                        if (candidate != null && candidate.RoadKm < bestDistance)
+                        result.Details.Add(new { productId = product.ProductId, status = "failed", reason = "User address not found" });
+                        continue;
+                    }
+
+                    // Roulette Wheel
+                    double magicNumber = GetStableHashRatio(product.ProductId);
+
+                    var targetConfig = rangeConfigs.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange);
+                    if (targetConfig == null) targetConfig = rangeConfigs.Last();
+
+                    ProductAssignCandidate? chosenCandidate = null;
+
+                    var targetCandidate = await FindBestSmallPointForCompanyAsync(targetConfig.CompanyEntity, userAddress);
+
+                    if (targetCandidate != null)
+                    {
+                        chosenCandidate = targetCandidate;
+                    }
+                    else
+                    {
+                        double bestDistance = double.MaxValue;
+                        foreach (var otherConfig in rangeConfigs.Where(c => c.CompanyEntity.CollectionCompanyId != targetConfig.CompanyEntity.CollectionCompanyId))
                         {
-                            bestDistance = candidate.RoadKm;
-                            chosenCandidate = candidate;
+                            var candidate = await FindBestSmallPointForCompanyAsync(otherConfig.CompanyEntity, userAddress);
+                            if (candidate != null && candidate.RoadKm < bestDistance)
+                            {
+                                bestDistance = candidate.RoadKm;
+                                chosenCandidate = candidate;
+                            }
                         }
                     }
-                }
 
-                if (chosenCandidate == null)
-                {
-                    result.TotalUnassigned++;
-                    result.Details.Add(new { productId = product.ProductId, status = "no_candidate_available" });
-                }
-                else
-                {
-                    post.CollectionCompanyId = chosenCandidate.CompanyId;
-                    post.AssignedSmallPointId = chosenCandidate.SmallPointId;
-                    post.DistanceToPointKm = chosenCandidate.RoadKm;
-
-                    result.TotalAssigned++;
-
-                    string note = (chosenCandidate.CompanyId == targetCompany.CompanyId)
-                        ? "Target Match"
-                        : "Fallback Geo";
-
-                    result.Details.Add(new
+                    if (chosenCandidate == null)
                     {
-                        productId = product.ProductId,
-                        companyId = chosenCandidate.CompanyId,
-                        smallPointId = chosenCandidate.SmallPointId,
-                        roadKm = $"{Math.Round(chosenCandidate.RoadKm, 2):0.00} km",
-                        radiusKm = $"{Math.Round(chosenCandidate.HaversineKm, 2):0.00} km",
-                        status = "assigned",
-                        note = note
-                    });
+                        result.TotalUnassigned++;
+                        result.Details.Add(new { productId = product.ProductId, status = "no_candidate_available" });
+                    }
+                    else
+                    {
+                        post.CollectionCompanyId = chosenCandidate.CompanyId;
+                        post.AssignedSmallPointId = chosenCandidate.SmallPointId;
+                        post.DistanceToPointKm = chosenCandidate.RoadKm;
+
+                        _unitOfWork.Posts.Update(post);
+
+                        product.SmallCollectionPointId = chosenCandidate.SmallPointId;
+                        _unitOfWork.Products.Update(product);
+
+                        result.TotalAssigned++;
+                        string note = (chosenCandidate.CompanyId == targetConfig.CompanyEntity.CollectionCompanyId) ? "Target Match" : "Fallback Geo";
+
+                        result.Details.Add(new
+                        {
+                            productId = product.ProductId,
+                            companyId = chosenCandidate.CompanyId,
+                            smallPointId = chosenCandidate.SmallPointId,
+                            roadKm = $"{Math.Round(chosenCandidate.RoadKm, 2):0.00} km",
+                            status = "assigned",
+                            note = note
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    result.Details.Add(new { productId = product.ProductId, status = "error", message = ex.Message });
                 }
             }
+
+            await _unitOfWork.SaveAsync();
 
             return result;
         }
 
-        private async Task<ProductAssignCandidate?> FindBestSmallPointForCompanyAsync(CompanyConfigItem company, UserAddress address)
+        private async Task<ProductAssignCandidate?> FindBestSmallPointForCompanyAsync(CollectionCompany company, UserAddress address)
         {
             ProductAssignCandidate? best = null;
             double minRoadKm = double.MaxValue;
 
-            foreach (var sp in company.SmallPoints.Where(s => s.Active))
-            {
-                var small = FakeDataSeeder.smallCollectionPoints.FirstOrDefault(p => p.SmallCollectionPointsId == sp.SmallPointId);
-                if (small == null) continue;
+            if (company.SmallCollectionPoints == null) return null;
 
-                double hvDistance = GeoHelper.DistanceKm(small.Latitude, small.Longitude, address.Iat.Value, address.Ing.Value);
+            foreach (var sp in company.SmallCollectionPoints) 
+            {
+                // Tinh toán khoảng cách Haversine trước
+                double hvDistance = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, address.Iat ?? 0, address.Ing ?? 0);
                 if (hvDistance > sp.RadiusKm) continue;
 
-                double roadKm = await _distanceCache.GetRoadDistanceKm(small.Latitude, small.Longitude, address.Iat.Value, address.Ing.Value);
+                // Tính toán khoảng cách đường bộ (road distance) sử dụng Mapbox API với caching
+                double roadKm = await _distanceCache.GetRoadDistanceKm(sp.Latitude, sp.Longitude, address.Iat ?? 0, address.Ing ?? 0);
                 if (roadKm > sp.MaxRoadDistanceKm) continue;
 
                 if (roadKm < minRoadKm)
@@ -134,9 +155,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     minRoadKm = roadKm;
                     best = new ProductAssignCandidate
                     {
-                        ProductId = Guid.Empty,
-                        CompanyId = company.CompanyId,
-                        SmallPointId = sp.SmallPointId,
+                        ProductId = Guid.Empty, 
+                        CompanyId = company.CollectionCompanyId,
+                        SmallPointId = sp.SmallCollectionPointsId,
                         RoadKm = roadKm,
                         HaversineKm = hvDistance
                     };
@@ -154,9 +175,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         public async Task<List<ProductByDateModel>> GetProductsByWorkDateAsync(DateOnly workDate)
         {
+            var posts = await _unitOfWork.Posts.GetAllAsync(
+                filter: p => p.Product != null && p.Product.Status == "Chờ gom nhóm",
+                includeProperties: "Product,Sender,Product.Category,Product.Brand"
+            );
+
             var result = new List<ProductByDateModel>();
 
-            foreach (var post in FakeDataSeeder.posts)
+            foreach (var post in posts)
             {
                 if (!TryParseScheduleInfo(post.ScheduleJson!, out var dates))
                     continue;
@@ -164,28 +190,21 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 if (!dates.Contains(workDate))
                     continue;
 
-                var product = FakeDataSeeder.products.First(pr => pr.ProductId == post.ProductId);
-                if (product.Status != "Chờ gom nhóm") continue;
-
-                var user = FakeDataSeeder.users.First(u => u.UserId == post.SenderId);
-                var address = FakeDataSeeder.userAddress
-                    .FirstOrDefault(a => a.UserId == user.UserId)?.Address;
-
-                var category = FakeDataSeeder.categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
-                var brand = FakeDataSeeder.brands.FirstOrDefault(b => b.BrandId == product.BrandId);
+                var addressEntity = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == post.SenderId);
+                string userAddrStr = addressEntity?.Address ?? "Unknown Address";
 
                 result.Add(new ProductByDateModel
                 {
-                    ProductId = product.ProductId,
+                    ProductId = post.Product!.ProductId,
                     PostId = post.PostId,
-                    CategoryName = category?.Name ?? "Unknown Category", 
-                    BrandName = brand?.Name ?? "Unknown Brand",      
-                    UserName = user.Name,
-                    Address = address
+                    CategoryName = post.Product.Category?.Name ?? "Unknown Category",
+                    BrandName = post.Product.Brand?.Name ?? "Unknown Brand",
+                    UserName = post.Sender?.Name ?? "Unknown User",
+                    Address = userAddrStr
                 });
             }
 
-            return await Task.FromResult(result);
+            return result;
         }
 
 
@@ -193,38 +212,32 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         {
             dates = new List<DateOnly>();
             if (string.IsNullOrWhiteSpace(raw)) return false;
-
             try
             {
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var days = JsonSerializer.Deserialize<List<ScheduleDayDto>>(raw, opts);
-
                 if (days == null) return false;
-
                 foreach (var d in days)
                 {
                     if (DateOnly.TryParse(d.PickUpDate, out var date))
                         dates.Add(date);
                 }
-
                 return dates.Any();
             }
-            catch
-            {
-                return false;
-            }
+            catch { return false; }
+        }
+
+        private class CompanyRangeConfig
+        {
+            public CollectionCompany CompanyEntity { get; set; } = null!;
+            public double MinRange { get; set; }
+            public double MaxRange { get; set; }
         }
 
         private class ScheduleDayDto
         {
             public string? PickUpDate { get; set; }
-            public ScheduleSlotDto? Slots { get; set; }
-        }
-
-        private class ScheduleSlotDto
-        {
-            public string? StartTime { get; set; }
-            public string? EndTime { get; set; }
+            public object? Slots { get; set; } 
         }
     }
 }

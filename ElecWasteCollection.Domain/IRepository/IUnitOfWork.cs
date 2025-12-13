@@ -11,6 +11,14 @@ namespace ElecWasteCollection.Domain.IRepository
     {
         IGenericRepository<User> Users { get; }
         IGenericRepository<CollectionCompany> CollectionCompanies { get; }
+        IGenericRepository<Products> Products { get; }
+        IGenericRepository<Post> Posts { get; }
+        IGenericRepository<UserAddress> UserAddresses { get; }
+        IGenericRepository<Category> Categories { get; }
+        IGenericRepository<Brand> Brands { get; }
+        IGenericRepository<ProductValues> ProductValues { get; }
+        IGenericRepository<AttributeOptions> AttributeOptions { get; }
+        IGenericRepository<Attributes> Attributes { get; }
         Task<int> SaveAsync();
     }
 }
