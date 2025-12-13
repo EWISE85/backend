@@ -20,7 +20,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         public async Task<CompanyConfigResponse> UpdateCompanyConfigAsync(CompanyConfigRequest request)
         {
-            // 1. Validate Input cơ bản
             if (request == null || request.Companies == null || !request.Companies.Any())
             {
                 return new CompanyConfigResponse
@@ -30,7 +29,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 };
             }
 
-            // 2. Validate Logic Ratio
             double totalRatio = request.Companies.Sum(c => c.RatioPercent);
             if (Math.Abs(totalRatio - 100) > 0.0001)
             {
@@ -40,21 +38,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 };
             }
 
-            // 3. Xử lý update Database
             var updatedDtos = new List<CompanyConfigDto>();
 
             try
             {
-                // SỬA: Dùng Property CollectionCompanies thay vì GetRepository<>
                 var companyRepo = _unitOfWork.CollectionCompanies;
-
-                // Load Company kèm theo SmallCollectionPoints để update
-                // Lưu ý: Chuỗi "SmallCollectionPoints" phải trùng tên với Property trong Entity CollectionCompany
                 var allCompanies = await companyRepo.GetAllAsync(includeProperties: "SmallCollectionPoints");
 
                 foreach (var companyDto in request.Companies)
                 {
-                    // Validate DTO con
                     if (companyDto.SmallPoints == null || !companyDto.SmallPoints.Any())
                     {
                         return new CompanyConfigResponse
@@ -64,34 +56,26 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         };
                     }
 
-                    // Tìm Company trong DB
                     var companyEntity = allCompanies.FirstOrDefault(c => c.CollectionCompanyId == companyDto.CompanyId);
 
                     if (companyEntity != null)
                     {
-                        // Update AssignRatio
                         companyEntity.AssignRatio = companyDto.RatioPercent;
                         companyEntity.Updated_At = DateTime.UtcNow;
-
-                        // Update Small Points
                         var spDtos = new List<SmallPointDto>();
 
                         foreach (var spDto in companyDto.SmallPoints)
                         {
-                            // Validate Logic SmallPoint
                             if (spDto.RadiusKm <= 0) return ErrorResponse($"SmallPoint {spDto.SmallPointId} radiusKm không hợp lệ.");
                             if (spDto.MaxRoadDistanceKm <= 0) return ErrorResponse($"SmallPoint {spDto.SmallPointId} maxRoadDistanceKm không hợp lệ.");
 
-                            // Tìm SmallPoint entity trong list con của Company
                             var spEntity = companyEntity.SmallCollectionPoints
                                 .FirstOrDefault(p => p.SmallCollectionPointsId == spDto.SmallPointId);
 
                             if (spEntity != null)
                             {
-                                // Cập nhật các trường cấu hình
                                 spEntity.RadiusKm = spDto.RadiusKm;
                                 spEntity.MaxRoadDistanceKm = spDto.MaxRoadDistanceKm;
-                                // spEntity.Status = spDto.Active ? "Active" : "Inactive"; // Uncomment nếu có field Status
 
                                 spDtos.Add(new SmallPointDto
                                 {
@@ -106,10 +90,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             }
                         }
 
-                        // Đánh dấu update (Optional: Tùy thuộc vào implementation của EF Core, thường sửa property là tự track)
                         companyRepo.Update(companyEntity);
 
-                        // Add vào list response để trả về client
                         updatedDtos.Add(new CompanyConfigDto
                         {
                             CompanyId = companyEntity.CollectionCompanyId,
@@ -120,7 +102,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     }
                 }
 
-                // 4. Commit transaction
                 await _unitOfWork.SaveAsync();
 
                 return new CompanyConfigResponse
@@ -143,10 +124,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         {
             try
             {
-                // SỬA: Dùng Property CollectionCompanies thay vì GetRepository<>
                 var companyRepo = _unitOfWork.CollectionCompanies;
-
-                // Lấy Company kèm theo SmallCollectionPoints
                 var companies = await companyRepo.GetAllAsync(includeProperties: "SmallCollectionPoints");
 
                 var companyDtos = companies.Select(c => new CompanyConfigDto
