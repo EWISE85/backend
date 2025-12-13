@@ -38,30 +38,41 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
-
         [HttpPost("products")]
         public async Task<IActionResult> AssignProducts([FromBody] AssignProductRequest request)
         {
-            if (request == null)
-                return BadRequest("Request cannot be null.");
+            if (request == null) return BadRequest("Request cannot be null.");
+            if (request.ProductIds == null || !request.ProductIds.Any()) return BadRequest("ProductIds cannot be empty.");
+            if (!DateOnly.TryParse(request.WorkDate, out var workDate)) return BadRequest("WorkDate không hợp lệ. Hãy nhập yyyy-MM-dd.");
 
-            if (request.ProductIds == null || !request.ProductIds.Any())
-                return BadRequest("ProductIds cannot be empty.");
-
-            if (!DateOnly.TryParse(request.WorkDate, out var workDate))
-                return BadRequest("WorkDate không hợp lệ. Hãy nhập yyyy-MM-dd.");
-
-            var result = await _productAssignService.AssignProductsAsync(request.ProductIds, workDate);
-            return Ok(result);
+            try
+            {
+                var result = await _productAssignService.AssignProductsAsync(request.ProductIds, workDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
         }
 
         [HttpGet("products-by-date")]
         public async Task<IActionResult> GetProductsByDate([FromQuery] string workDate)
         {
             if (!DateOnly.TryParse(workDate, out var date))
-                return BadRequest("workDate không hợp lệ. Định dạng yyyy-MM-dd");
+                return BadRequest("WorkDate không hợp lệ. Định dạng yyyy-MM-dd");
 
             var result = await _productAssignService.GetProductsByWorkDateAsync(date);
+
+            if (result == null || !result.Any())
+            {
+                return Ok(new
+                {
+                    WorkDate = date.ToString("yyyy-MM-dd"),
+                    Message = $"Chưa có sản phẩm nào cần gom nhóm cho ngày {date:yyyy-MM-dd}."
+                });
+            }
+
             return Ok(result);
         }
     }
