@@ -203,7 +203,7 @@ namespace ElecWasteCollection.Application.Services
             if (!pointVehicles.Any())
                 throw new Exception("Trạm này hiện không có xe nào hoạt động.");
 
-            double maxRadius = pointVehicles.Max(v => v.Radius_Km);
+            //double maxRadius = pointVehicles.Max(v => v.Radius_Km);
 
             var rawPosts = FakeDataSeeder.posts.Where(p =>
             {
@@ -230,7 +230,7 @@ namespace ElecWasteCollection.Application.Services
                     double lng = userAddress?.Ing ?? point.Longitude;
 
                     double dist = GeoHelper.DistanceKm(point.Latitude, point.Longitude, lat, lng);
-                    if (dist > maxRadius) continue;
+                    //if (dist > maxRadius) continue;
 
                     pool.Add(new
                     {
