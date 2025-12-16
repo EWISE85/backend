@@ -1,59 +1,51 @@
-﻿using ElecWasteCollection.Application.Data;
-using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
     public class ReassignDriverService : IReassignDriverService
     {
+        private readonly IUnitOfWork _unitOfWork;
+
+        public ReassignDriverService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
         public async Task<List<ReassignCandidateDto>> GetReassignCandidatesAsync(string companyId, DateTime workDateInput)
         {
             var targetDate = DateOnly.FromDateTime(workDateInput);
 
-            var allCollectors = FakeDataSeeder.users
-                .Where(u => u.Role == "Collector" && u.CollectionCompanyId == companyId)
-                .ToList();
+            var allCollectors = await _unitOfWork.Users.GetAllAsync(
+                u => u.Role == "Collector" &&
+                     u.CollectionCompanyId == companyId &&
+                     u.Status == "Active"
+            );
 
-            var shiftsInDay = FakeDataSeeder.shifts
-                .Where(s => s.WorkDate == targetDate)
-                .ToList();
+            var shiftsInDay = await _unitOfWork.Shifts.GetAllAsync(
+                s => s.WorkDate == targetDate
+            );
 
             var result = new List<ReassignCandidateDto>();
+            var collectorList = allCollectors.ToList();
+            var shiftList = shiftsInDay.ToList();
 
-            foreach (var user in allCollectors)
+            foreach (var user in collectorList)
             {
-                var userShifts = shiftsInDay.Where(s => s.CollectorId == user.UserId).ToList();
-
-                var busyShifts = userShifts.Where(s =>
-                    !string.IsNullOrEmpty(s.Vehicle_Id) &&
-                    s.Status != "Cancelled"
-                ).ToList();
+                var userShifts = shiftList.Where(s => s.CollectorId == user.UserId).ToList();
 
                 var availableShifts = userShifts.Where(s =>
                     string.IsNullOrEmpty(s.Vehicle_Id) &&
                     (s.Status == "Available" || s.Status == "Standby")
                 ).ToList();
 
-                if (busyShifts.Any())
-                {
-                    var timeSlots = string.Join(", ", busyShifts.Select(s =>
-                        $"{s.Shift_Start_Time:HH:mm}-{s.Shift_End_Time:HH:mm} (Xe: {FakeDataSeeder.vehicles.FirstOrDefault(v => v.VehicleId == s.Vehicle_Id)?.Plate_Number ?? s.Vehicle_Id})"));
-
-                    result.Add(new ReassignCandidateDto
-                    {
-                        UserId = user.UserId,
-                        Name = user.Name,
-                        IsAvailable = false, 
-                        StatusText = $"Bận: {timeSlots}"
-                    });
-                }
-                else if (availableShifts.Any())
+                if (availableShifts.Any())
                 {
                     var timeSlots = string.Join(", ", availableShifts.Select(s => $"{s.Shift_Start_Time:HH:mm}-{s.Shift_End_Time:HH:mm}"));
 
@@ -61,32 +53,21 @@ namespace ElecWasteCollection.Application.Services
                     {
                         UserId = user.UserId,
                         Name = user.Name,
-                        IsAvailable = true, 
+                        IsAvailable = true,
                         StatusText = $"Sẵn sàng (Ca chờ: {timeSlots})"
-                    });
-                }
-                else
-                {
-
-                    result.Add(new ReassignCandidateDto
-                    {
-                        UserId = user.UserId,
-                        Name = user.Name,
-                        IsAvailable = true, 
-                        StatusText = "Sẵn sàng (Chưa có lịch, sẽ tạo mới)"
                     });
                 }
             }
 
-            return result.OrderByDescending(x => x.IsAvailable).ThenBy(x => x.Name).ToList();
+            return result.OrderBy(x => x.Name).ToList();
         }
 
         public async Task<ReassignDriverResponse> ReassignDriverAsync(ReassignDriverRequest request)
         {
-            var group = FakeDataSeeder.collectionGroups.FirstOrDefault(g => g.CollectionGroupId == request.GroupId)
+            var group = await _unitOfWork.CollectionGroups.GetByIdAsync(request.GroupId)
                 ?? throw new Exception("Không tìm thấy nhóm thu gom.");
 
-            var oldShift = FakeDataSeeder.shifts.FirstOrDefault(s => s.ShiftId == group.Shift_Id)
+            var oldShift = await _unitOfWork.Shifts.GetByIdAsync(group.Shift_Id)
                 ?? throw new Exception("Không tìm thấy ca làm việc gốc.");
 
             if (oldShift.Status == "Completed")
@@ -97,41 +78,40 @@ namespace ElecWasteCollection.Application.Services
             var reqStart = oldShift.Shift_Start_Time;
             var reqEnd = oldShift.Shift_End_Time;
 
-            var newCollector = FakeDataSeeder.users.FirstOrDefault(u => u.UserId == request.NewCollectorId)
+            var newCollector = await _unitOfWork.Users.GetByIdAsync(request.NewCollectorId)
                 ?? throw new Exception("Nhân viên mới không tồn tại.");
 
-            var isBusy = FakeDataSeeder.shifts.Any(s =>
+            var conflictShifts = await _unitOfWork.Shifts.GetAllAsync(s =>
                 s.CollectorId == request.NewCollectorId &&
                 s.WorkDate == workDate &&
                 !string.IsNullOrEmpty(s.Vehicle_Id) && 
-                s.Status != "Cancelled" &&             
-                s.Shift_Start_Time < reqEnd &&        
+                s.Status != "Cancelled" &&
+                s.Shift_Start_Time < reqEnd &&
                 s.Shift_End_Time > reqStart
             );
 
-            if (isBusy)
+            if (conflictShifts.Any())
             {
-                var busyShift = FakeDataSeeder.shifts.First(s =>
-                    s.CollectorId == request.NewCollectorId && !string.IsNullOrEmpty(s.Vehicle_Id) &&
-                    s.Shift_Start_Time < reqEnd && s.Shift_End_Time > reqStart);
-
-                var busyVehicle = FakeDataSeeder.vehicles.FirstOrDefault(v => v.VehicleId == busyShift.Vehicle_Id);
+                var busyShift = conflictShifts.First();
+                var busyVehicle = await _unitOfWork.Vehicles.GetByIdAsync(busyShift.Vehicle_Id);
 
                 throw new Exception($"Nhân viên {newCollector.Name} đang bận chạy xe {busyVehicle?.Plate_Number ?? "khác"} trong khung giờ {busyShift.Shift_Start_Time:HH:mm}-{busyShift.Shift_End_Time:HH:mm}.");
             }
 
             oldShift.Status = "Cancelled";
             oldShift.Vehicle_Id = null;
+            _unitOfWork.Shifts.Update(oldShift);
 
-            var availableShift = FakeDataSeeder.shifts.FirstOrDefault(s =>
+            var availableShifts = await _unitOfWork.Shifts.GetAllAsync(s =>
                 s.CollectorId == request.NewCollectorId &&
                 s.WorkDate == workDate &&
                 string.IsNullOrEmpty(s.Vehicle_Id) &&
                 (s.Status == "Available" || s.Status == "Standby") &&
-                s.Shift_Start_Time < reqEnd && 
+                s.Shift_Start_Time < reqEnd &&
                 s.Shift_End_Time > reqStart
             );
 
+            var availableShift = availableShifts.FirstOrDefault();
             string targetShiftId;
             string messageAction;
 
@@ -139,15 +119,18 @@ namespace ElecWasteCollection.Application.Services
             {
                 availableShift.Vehicle_Id = vehicleId;
                 availableShift.Status = "Assigned";
+                _unitOfWork.Shifts.Update(availableShift);
+
                 targetShiftId = availableShift.ShiftId;
                 messageAction = "đã cập nhật vào lịch chờ có sẵn";
             }
             else
             {
-                int newId = FakeDataSeeder.shifts.Any() ? FakeDataSeeder.shifts.Max(s => int.Parse(s.ShiftId)) + 1 : 1;
+                var newId = Guid.NewGuid().ToString();
+
                 var newShift = new Shifts
                 {
-                    ShiftId = newId.ToString(),
+                    ShiftId = newId,
                     CollectorId = request.NewCollectorId,
                     Vehicle_Id = vehicleId,
                     WorkDate = workDate,
@@ -156,28 +139,31 @@ namespace ElecWasteCollection.Application.Services
                     Status = "Assigned"
                 };
 
-                FakeDataSeeder.shifts.Add(newShift);
-                targetShiftId = newId.ToString();
+                await _unitOfWork.Shifts.AddAsync(newShift);
+                targetShiftId = newId;
                 messageAction = "đã tạo ca làm việc mới";
             }
 
             group.Shift_Id = targetShiftId;
 
-            var vehicleObj = FakeDataSeeder.vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
+            var vehicleObj = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
             if (vehicleObj != null)
             {
                 group.Name = $"{vehicleObj.Vehicle_Type} - {vehicleObj.Plate_Number} ({newCollector.Name})";
             }
+            _unitOfWork.CollectionGroups.Update(group);
 
-            return await Task.FromResult(new ReassignDriverResponse
+            await _unitOfWork.SaveAsync();
+
+            return new ReassignDriverResponse
             {
                 Success = true,
                 Message = $"Thay thế thành công. Hệ thống {messageAction}. Tài xế {newCollector.Name} đã nhận xe {vehicleObj?.Plate_Number}.",
-                GroupId = group.CollectionGroupId, 
+                GroupId = group.CollectionGroupId,
                 ShiftId = targetShiftId,
                 CollectorName = newCollector.Name,
                 VehiclePlate = vehicleObj?.Plate_Number
-            });
+            };
         }
     }
 }
