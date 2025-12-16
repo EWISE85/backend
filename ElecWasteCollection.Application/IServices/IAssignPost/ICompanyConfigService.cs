@@ -10,9 +10,7 @@ namespace ElecWasteCollection.Application.IServices.IAssignPost
 
     public interface ICompanyConfigService
     {
-        CompanyConfigResponse UpdateCompanyConfig(CompanyConfigRequest request);
-        CompanyConfigResponse GetCompanyConfig();
-
-
+        Task<CompanyConfigResponse> UpdateCompanyConfigAsync(CompanyConfigRequest request);
+        Task<CompanyConfigResponse> GetCompanyConfigAsync();
     }
 }

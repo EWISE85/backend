@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ElecWasteCollection.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ElecWasteCollection.Infrastructure.Migrations
 {
     [DbContext(typeof(ElecWasteCollectionDbContext))]
-    partial class ElecWasteCollectionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251213141202_UpdateCompanyAndVehicle")]
+    partial class UpdateCompanyAndVehicle
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -572,9 +575,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<double>("Longitude")
                         .HasColumnType("double precision");
 
-                    b.Property<double>("MaxRoadDistanceKm")
-                        .HasColumnType("double precision");
-
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -583,9 +583,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<string>("OpenTime")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<double>("RadiusKm")
-                        .HasColumnType("double precision");
 
                     b.Property<string>("Status")
                         .IsRequired()

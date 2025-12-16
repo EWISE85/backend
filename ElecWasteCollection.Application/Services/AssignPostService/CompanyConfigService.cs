@@ -1,12 +1,24 @@
-﻿using ElecWasteCollection.Application.Data;
-using ElecWasteCollection.Application.IServices.IAssignPost;
+﻿using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
+using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services.AssignPostService
 {
     public class CompanyConfigService : ICompanyConfigService
     {
-        public CompanyConfigResponse UpdateCompanyConfig(CompanyConfigRequest request)
+        private readonly IUnitOfWork _unitOfWork;
+
+        public CompanyConfigService(IUnitOfWork unitOfWork)
+        {
+            _unitOfWork = unitOfWork;
+        }
+
+        public async Task<CompanyConfigResponse> UpdateCompanyConfigAsync(CompanyConfigRequest request)
         {
             if (request == null || request.Companies == null || !request.Companies.Any())
             {
@@ -17,41 +29,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 };
             }
 
-            foreach (var company in request.Companies)
-            {
-                if (company.SmallPoints == null || !company.SmallPoints.Any())
-                {
-                    return new CompanyConfigResponse
-                    {
-                        Message = $"Company {company.CompanyId} không có smallPoints.",
-                        Companies = new List<CompanyConfigDto>()
-                    };
-                }
-
-                foreach (var sp in company.SmallPoints)
-                {
-                    if (sp.RadiusKm <= 0)
-                    {
-                        return new CompanyConfigResponse
-                        {
-                            Message = $"SmallPoint {sp.SmallPointId} radiusKm không hợp lệ.",
-                            Companies = new List<CompanyConfigDto>()
-                        };
-                    }
-
-                    if (sp.MaxRoadDistanceKm <= 0)
-                    {
-                        return new CompanyConfigResponse
-                        {
-                            Message = $"SmallPoint {sp.SmallPointId} maxRoadDistanceKm không hợp lệ.",
-                            Companies = new List<CompanyConfigDto>()
-                        };
-                    }
-                }
-            }
-
             double totalRatio = request.Companies.Sum(c => c.RatioPercent);
-
             if (Math.Abs(totalRatio - 100) > 0.0001)
             {
                 return new CompanyConfigResponse
@@ -60,87 +38,131 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 };
             }
 
-            FakeDataSeeder.CompanyConfigs = request.Companies;
+            var updatedDtos = new List<CompanyConfigDto>();
 
-            var companyDtos = request.Companies.Select(company =>
+            try
             {
-                var realCompany = FakeDataSeeder.collectionTeams
-                    .FirstOrDefault(t => t.CollectionCompanyId == company.CompanyId);
+                var companyRepo = _unitOfWork.CollectionCompanies;
+                var allCompanies = await companyRepo.GetAllAsync(includeProperties: "SmallCollectionPoints");
 
-                var smallPointDtos = company.SmallPoints.Select(cfgSp =>
+                foreach (var companyDto in request.Companies)
                 {
-                    var realSP = FakeDataSeeder.smallCollectionPoints
-                        .FirstOrDefault(p => p.SmallCollectionPointsId == cfgSp.SmallPointId);
-
-                    return new SmallPointDto
+                    if (companyDto.SmallPoints == null || !companyDto.SmallPoints.Any())
                     {
-                        SmallPointId = cfgSp.SmallPointId,
-                        Name = realSP?.Name,
-                        Lat = realSP?.Latitude ?? 0,
-                        Lng = realSP?.Longitude ?? 0,
-                        RadiusKm = cfgSp.RadiusKm,
-                        MaxRoadDistanceKm = cfgSp.MaxRoadDistanceKm,
-                        Active = cfgSp.Active
-                    };
-                }).ToList();
+                        return new CompanyConfigResponse
+                        {
+                            Message = $"Company {companyDto.CompanyId} không có smallPoints.",
+                            Companies = new List<CompanyConfigDto>()
+                        };
+                    }
 
-                return new CompanyConfigDto
+                    var companyEntity = allCompanies.FirstOrDefault(c => c.CollectionCompanyId == companyDto.CompanyId);
+
+                    if (companyEntity != null)
+                    {
+                        companyEntity.AssignRatio = companyDto.RatioPercent;
+                        companyEntity.Updated_At = DateTime.UtcNow;
+                        var spDtos = new List<SmallPointDto>();
+
+                        foreach (var spDto in companyDto.SmallPoints)
+                        {
+                            if (spDto.RadiusKm <= 0) return ErrorResponse($"SmallPoint {spDto.SmallPointId} radiusKm không hợp lệ.");
+                            if (spDto.MaxRoadDistanceKm <= 0) return ErrorResponse($"SmallPoint {spDto.SmallPointId} maxRoadDistanceKm không hợp lệ.");
+
+                            var spEntity = companyEntity.SmallCollectionPoints
+                                .FirstOrDefault(p => p.SmallCollectionPointsId == spDto.SmallPointId);
+
+                            if (spEntity != null)
+                            {
+                                spEntity.RadiusKm = spDto.RadiusKm;
+                                spEntity.MaxRoadDistanceKm = spDto.MaxRoadDistanceKm;
+
+                                spDtos.Add(new SmallPointDto
+                                {
+                                    SmallPointId = spEntity.SmallCollectionPointsId,
+                                    Name = spEntity.Name,
+                                    Lat = spEntity.Latitude,
+                                    Lng = spEntity.Longitude,
+                                    RadiusKm = spEntity.RadiusKm,
+                                    MaxRoadDistanceKm = spEntity.MaxRoadDistanceKm,
+                                    Active = true
+                                });
+                            }
+                        }
+
+                        companyRepo.Update(companyEntity);
+
+                        updatedDtos.Add(new CompanyConfigDto
+                        {
+                            CompanyId = companyEntity.CollectionCompanyId,
+                            CompanyName = companyEntity.Name,
+                            RatioPercent = companyEntity.AssignRatio,
+                            SmallPoints = spDtos
+                        });
+                    }
+                }
+
+                await _unitOfWork.SaveAsync();
+
+                return new CompanyConfigResponse
                 {
-                    CompanyId = company.CompanyId,
-                    CompanyName = realCompany?.Name ?? $"Company {company.CompanyId}",
-                    RatioPercent = company.RatioPercent,
-                    SmallPoints = smallPointDtos
+                    Message = "Company configuration updated successfully.",
+                    Companies = updatedDtos
                 };
-            }).ToList();
-
-            return new CompanyConfigResponse
+            }
+            catch (Exception ex)
             {
-                Message = "Company configuration updated successfully.",
-                Companies = companyDtos
-            };
+                return new CompanyConfigResponse
+                {
+                    Message = $"Lỗi hệ thống: {ex.Message}",
+                    Companies = new List<CompanyConfigDto>()
+                };
+            }
         }
 
-        public CompanyConfigResponse GetCompanyConfig()
+        public async Task<CompanyConfigResponse> GetCompanyConfigAsync()
         {
-            var companyDtos = FakeDataSeeder.CompanyConfigs.Select(company =>
+            try
             {
-                var realCompany = FakeDataSeeder.collectionTeams
-                    .FirstOrDefault(t => t.CollectionCompanyId == company.CompanyId);
+                var companyRepo = _unitOfWork.CollectionCompanies;
+                var companies = await companyRepo.GetAllAsync(includeProperties: "SmallCollectionPoints");
 
-                string companyName = realCompany?.Name ?? $"Company {company.CompanyId}";
-
-                var smallPoints = company.SmallPoints.Select(cfgSp =>
+                var companyDtos = companies.Select(c => new CompanyConfigDto
                 {
-                    var realSP = FakeDataSeeder.smallCollectionPoints
-                        .FirstOrDefault(p => p.SmallCollectionPointsId == cfgSp.SmallPointId);
-
-                    return new SmallPointDto
+                    CompanyId = c.CollectionCompanyId,
+                    CompanyName = c.Name,
+                    RatioPercent = c.AssignRatio,
+                    SmallPoints = c.SmallCollectionPoints.Select(sp => new SmallPointDto
                     {
-                        SmallPointId = cfgSp.SmallPointId,
-                        Name = realSP?.Name,
-                        Lat = realSP?.Latitude ?? 0,
-                        Lng = realSP?.Longitude ?? 0,
-                        RadiusKm = cfgSp.RadiusKm,
-                        MaxRoadDistanceKm = cfgSp.MaxRoadDistanceKm,
-                        Active = cfgSp.Active
-                    };
+                        SmallPointId = sp.SmallCollectionPointsId,
+                        Name = sp.Name,
+                        Lat = sp.Latitude,
+                        Lng = sp.Longitude,
+                        RadiusKm = sp.RadiusKm,
+                        MaxRoadDistanceKm = sp.MaxRoadDistanceKm,
+                        Active = true
+                    }).ToList()
                 }).ToList();
 
-                return new CompanyConfigDto
+                return new CompanyConfigResponse
                 {
-                    CompanyId = company.CompanyId,
-                    CompanyName = companyName,
-                    RatioPercent = company.RatioPercent,
-                    SmallPoints = smallPoints
+                    Message = "Success",
+                    Companies = companyDtos
                 };
-            }).ToList();
+            }
+            catch (Exception ex)
+            {
+                return new CompanyConfigResponse { Message = ex.Message };
+            }
+        }
 
+        private CompanyConfigResponse ErrorResponse(string msg)
+        {
             return new CompanyConfigResponse
             {
-                Message = "Success",
-                Companies = companyDtos
+                Message = msg,
+                Companies = new List<CompanyConfigDto>()
             };
         }
     }
-
 }
