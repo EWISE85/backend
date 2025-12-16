@@ -24,6 +24,13 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public IGenericRepository<ProductValues> ProductValues { get; }
         public IGenericRepository<AttributeOptions> AttributeOptions { get; }
         public IGenericRepository<Attributes> Attributes { get; }
+        public IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
+        public IGenericRepository<Vehicles> Vehicles { get; }
+        public IGenericRepository<Shifts> Shifts { get; }
+        public IGenericRepository<CollectionGroups> CollectionGroups { get; }
+        public IGenericRepository<CollectionRoutes> CollectionRoutes { get; }
+        public IGenericRepository<ProductStatusHistory> ProductStatusHistories { get; }
+
 
 
 
@@ -41,6 +48,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
             ProductValues = new GenericRepository<ProductValues>(_context);
             AttributeOptions = new GenericRepository<AttributeOptions>(_context);
             Attributes = new GenericRepository<Attributes>(_context);
+            SmallCollectionPoints = new GenericRepository<SmallCollectionPoints>(_context);
+            Vehicles = new GenericRepository<Vehicles>(_context);
+            Shifts = new GenericRepository<Shifts>(_context);
+            CollectionGroups = new GenericRepository<CollectionGroups>(_context);
+            CollectionRoutes = new GenericRepository<CollectionRoutes>(_context);
+            ProductStatusHistories = new GenericRepository<ProductStatusHistory>(_context);
         }
 
         public async Task<int> SaveAsync()

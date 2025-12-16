@@ -1,4 +1,6 @@
-﻿namespace ElecWasteCollection.Domain.Entities
+﻿using System.Text.Json.Serialization;
+
+namespace ElecWasteCollection.Domain.Entities
 {
     public enum VehicleStatus
 	{
@@ -16,9 +18,9 @@
         //public int Radius_Km { get; set; }
         public string Status { get; set; } = null!;
         public string Small_Collection_Point { get; set; }
-
+        [JsonIgnore]
         public SmallCollectionPoints SmallCollectionPoints { get; set; } = null!;
-
+        [JsonIgnore]
         public virtual ICollection<Shifts> Shifts { get; set; } = new List<Shifts>();
 	}
 }

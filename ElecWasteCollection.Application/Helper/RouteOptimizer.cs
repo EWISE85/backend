@@ -24,19 +24,11 @@ namespace ElecWasteCollection.Application.Helpers
             int count = matrixDist.GetLength(0);
             if (count == 0) return new List<int>();
 
-            Console.WriteLine($"\n[OR-TOOLS] Bắt đầu tính toán cho {nodes.Count} điểm giao hàng.");
-            Console.WriteLine($"[OR-TOOLS] Ca làm việc: {shiftStart} - {shiftEnd} (Tổng: {(shiftEnd - shiftStart).TotalMinutes} phút)");
+            // Tính tổng thời gian ca làm việc (Horizon)
+            long horizon = (long)(shiftEnd - shiftStart).TotalMinutes;
 
-            for (int i = 0; i < nodes.Count; i++)
-            {
-                var n = nodes[i];
-                double startOffset = (n.Start - shiftStart).TotalMinutes;
-                double endOffset = (n.End - shiftStart).TotalMinutes;
-                Console.WriteLine($"  + Node {i + 1}: Yêu cầu {n.Start}-{n.End} | Offset: {startOffset}p -> {endOffset}p | Nặng: {n.Weight}kg");
-
-                if (endOffset < 0)
-                    Console.WriteLine("CẢNH BÁO: Khách hẹn giờ trước khi ca làm việc bắt đầu!");
-            }
+            Console.WriteLine($"\n[OR-TOOLS] Bắt đầu tính toán VRP cho {nodes.Count} điểm.");
+            Console.WriteLine($"[OR-TOOLS] Ca: {shiftStart}-{shiftEnd} | Horizon: {horizon} phút");
 
             RoutingIndexManager manager = new RoutingIndexManager(count, 1, 0);
             RoutingModel routing = new RoutingModel(manager);
@@ -46,82 +38,103 @@ namespace ElecWasteCollection.Application.Helpers
                 matrixDist[manager.IndexToNode(i), manager.IndexToNode(j)]);
             routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
 
-            // 2. Ràng buộc Thời gian (QUAN TRỌNG)
+            // 2. Ràng buộc Thời gian (Time Dimension)
             int timeCallbackIndex = routing.RegisterTransitCallback((long i, long j) =>
             {
                 int fromNode = manager.IndexToNode(i);
                 int toNode = manager.IndexToNode(j);
 
-                // Mapbox trả về giây -> Đổi ra phút
-                long travelTimeMin = matrixTime[fromNode, toNode] / 60;
+                // FIX: Mapbox trả về giây -> Đổi ra phút và làm tròn lên (tránh = 0)
+                long seconds = matrixTime[fromNode, toNode];
+                long travelTimeMin = (long)Math.Ceiling(seconds / 60.0);
 
-                // Thời gian phục vụ (bốc hàng)
-                // Depot (0) = 0 phút, Khách = 15 phút
+                // Thời gian phục vụ: Depot = 0, Khách = 15p
                 long serviceTime = (fromNode == 0) ? 0 : 15;
 
                 return travelTimeMin + serviceTime;
             });
 
-            // Slack (thời gian chờ tối đa): Cho phép chờ tới 120 phút (2 tiếng) để dễ tìm đường hơn
-            // Capacity: Tổng thời gian ca làm việc
-            routing.AddDimension(timeCallbackIndex, 120, (long)(shiftEnd - shiftStart).TotalMinutes, false, "Time");
+            // Slack 120p (cho phép chờ), Horizon = độ dài ca
+            routing.AddDimension(timeCallbackIndex, 120, horizon, false, "Time");
             var timeDim = routing.GetMutableDimension("Time");
 
-            // Set khung giờ cho Depot (Toàn bộ ca)
-            timeDim.CumulVar(manager.NodeToIndex(0)).SetRange(0, (long)(shiftEnd - shiftStart).TotalMinutes);
+            // Set khung giờ Depot (0 -> Horizon)
+            timeDim.CumulVar(manager.NodeToIndex(0)).SetRange(0, horizon);
 
-            // Set khung giờ cho Khách hàng
+            // Set khung giờ cho các Node
             for (int i = 0; i < nodes.Count; i++)
             {
                 long index = manager.NodeToIndex(i + 1);
-                long startMin = (long)(nodes[i].Start - shiftStart).TotalMinutes;
-                long endMin = (long)(nodes[i].End - shiftStart).TotalMinutes;
+                var node = nodes[i];
+
+                long startMin = (long)(node.Start - shiftStart).TotalMinutes;
+                long endMin = (long)(node.End - shiftStart).TotalMinutes;
+
+                // FIX: Đảm bảo không âm (do lệch Timezone hoặc data lỗi)
                 long effectiveStart = Math.Max(0, startMin);
                 long effectiveEnd = Math.Max(0, endMin);
 
-                if (effectiveEnd < effectiveStart) effectiveEnd = effectiveStart + 15; 
+                // FIX QUAN TRỌNG: Không được vượt quá Horizon của ca làm việc
+                if (effectiveEnd > horizon) effectiveEnd = horizon;
 
+                // FIX LỖI SET RANGE: Nếu sau khi cắt gọt mà Start > End -> Mở rộng End ra chút
+                if (effectiveEnd < effectiveStart) effectiveEnd = effectiveStart + 15;
+
+                // Kiểm tra lần cuối: Nếu Start vượt quá Horizon -> Node này không thể phục vụ
+                if (effectiveStart > horizon)
+                {
+                    Console.WriteLine($"[CẢNH BÁO] Node {i + 1} nằm ngoài giờ ca làm việc -> Sẽ bị bỏ qua.");
+                    // Gán penalty cực lớn để Solver bỏ qua node này thay vì báo lỗi Infeasible
+                    routing.AddDisjunction(new long[] { index }, 10000000);
+                    continue;
+                }
+
+                // Set Range an toàn
                 timeDim.CumulVar(index).SetRange(effectiveStart, effectiveEnd);
+
+                // Cho phép bỏ qua điểm này nếu không thể xếp lịch (Penalty cao)
+                // Điều này giúp thuật toán trả về các điểm đi được thay vì trả về rỗng
+                routing.AddDisjunction(new long[] { index }, 1000000);
             }
 
-            // 3. Ràng buộc Tải trọng (Weight)
+            // 3. Ràng buộc Tải trọng
             int weightCallback = routing.RegisterUnaryTransitCallback((long i) => {
                 int node = manager.IndexToNode(i);
                 return node == 0 ? 0 : (long)(nodes[node - 1].Weight * 100);
             });
             routing.AddDimension(weightCallback, 0, (long)(capKg * 100), true, "Weight");
 
-            // 4. Ràng buộc Thể tích (Volume)
+            // 4. Ràng buộc Thể tích
             int volumeCallback = routing.RegisterUnaryTransitCallback((long i) => {
                 int node = manager.IndexToNode(i);
                 return node == 0 ? 0 : (long)(nodes[node - 1].Volume * 10000);
             });
             routing.AddDimension(volumeCallback, 0, (long)(capM3 * 10000), true, "Volume");
 
-            // 5. Cấu hình tìm kiếm
+            // 5. Cấu hình Search
             RoutingSearchParameters searchParameters = operations_research_constraint_solver.DefaultRoutingSearchParameters();
             searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
-            // Giới hạn thời gian tìm kiếm để không bị treo (ví dụ 1 giây)
-            searchParameters.TimeLimit = new Google.Protobuf.WellKnownTypes.Duration { Seconds = 1 };
+            searchParameters.TimeLimit = new Google.Protobuf.WellKnownTypes.Duration { Seconds = 2 }; // Tăng lên 2s cho chắc
 
             Assignment solution = routing.SolveWithParameters(searchParameters);
 
             var res = new List<int>();
             if (solution != null)
             {
-                Console.WriteLine("[OR-TOOLS] TÌM THẤY LỘ TRÌNH! (Status: Success)");
+                Console.WriteLine("[OR-TOOLS] --> Success!");
                 long index = routing.Start(0);
                 while (!routing.IsEnd(index))
                 {
                     int node = manager.IndexToNode(index);
-                    if (node != 0) res.Add(node - 1);
+                    if (node != 0) res.Add(node - 1); // Trả về index gốc của list nodes
                     index = solution.Value(routing.NextVar(index));
                 }
             }
             else
             {
-                Console.WriteLine("[OR-TOOLS]  KHÔNG TÌM THẤY LỘ TRÌNH (Status: Fail/Infeasible)");
-                Console.WriteLine("Lý do có thể: Time Window quá chặt hoặc Mapbox tính thời gian đi quá lâu.");
+                Console.WriteLine("[OR-TOOLS] --> Failed / Infeasible.");
+                // Fallback: Trả về danh sách gốc để không mất đơn (tùy logic bạn chọn)
+                // return Enumerable.Range(0, nodes.Count).ToList(); 
             }
             return res;
         }
