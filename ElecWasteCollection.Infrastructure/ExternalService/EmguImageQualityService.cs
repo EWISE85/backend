@@ -20,12 +20,10 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 		private readonly ILogger<EmguImageQualityService> _logger;
 		private readonly HttpClient _httpClient;
 
-		// Constructor
 		public EmguImageQualityService(ILogger<EmguImageQualityService> logger)
 		{
 			_logger = logger;
 			_httpClient = new HttpClient();
-			// Giả lập Browser để tránh bị chặn bởi một số server (như Tiki, Shopee)
 			_httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
 		}
 
@@ -147,14 +145,12 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 				return false;
 			}
 
-			// Cách 1: Tối ưu đơn giản - Thoát ngay khi tìm thấy (Vẫn chạy tuần tự nhưng nhanh hơn nếu may mắn)
 			foreach (var urlA in urls1)
 			{
 				foreach (var urlB in urls2)
 				{
 					double similarity = await ComputeSimilarityAsync(urlA, urlB);
 
-					// Nếu tìm thấy 1 cặp giống > 80% thì return True luôn, không cần check các cặp còn lại
 					if (similarity > 80)
 					{
 						_logger.LogInformation($"Match found between {urlA} and {urlB} with score {similarity}");
