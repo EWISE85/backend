@@ -14,9 +14,9 @@ namespace ElecWasteCollection.API.Controllers
 			_attributeOptionService = attributeOptionService;
 		}
 		[HttpGet("by-attribute/{attributeId}")]
-		public IActionResult GetOptionsByAttributeId(Guid attributeId)
+		public async Task<IActionResult> GetOptionsByAttributeId(Guid attributeId)
 		{
-			var options = _attributeOptionService.GetOptionsByAttributeId(attributeId);
+			var options = await _attributeOptionService.GetOptionsByAttributeId(attributeId);
 			return Ok(options);
 		}
 	}

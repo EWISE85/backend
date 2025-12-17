@@ -9,21 +9,21 @@ namespace ElecWasteCollection.API.Controllers
 	[ApiController]
 	public class AuthController : ControllerBase
 	{
-		private readonly IUserService _userService;
-		public AuthController(IUserService userService)
+		private readonly IAccountService _accountService;
+		public AuthController(IAccountService accountService)
 		{
-			_userService = userService;
+			_accountService = accountService;
 		}
 		[HttpPost("login-google")]
 		public async Task<IActionResult> LoginWithGoogle([FromBody] LoginGGRequest request)
 		{
-			var response = await _userService.LoginWithGoogleAsync(request.Token);
+			var response = await _accountService.LoginWithGoogleAsync(request.Token);
 			return Ok(new { token = response });
 		}
 		[HttpPost("login")]
 		public async Task<IActionResult> Login([FromBody] LoginRequest request)
 		{
-			var response = await _userService.Login(request.Username, request.Password);
+			var response = await _accountService.Login(request.Username, request.Password);
 			return Ok(new { token = response });
 		}
 

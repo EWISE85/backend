@@ -57,5 +57,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public virtual ICollection<Shifts> Shifts { get; set; } = new List<Shifts>();
 
+		public virtual ICollection<ForgotPassword> ForgotPasswords { get; set; } = new List<ForgotPassword>();
+
 	}
 }

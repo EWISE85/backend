@@ -9,11 +9,11 @@ namespace ElecWasteCollection.Application.IServices
 {
     public interface ICategoryService
     {
-        List<CategoryModel> GetParentCategory();
+        Task<List<CategoryModel>> GetParentCategory();
 
-		List<CategoryModel> GetSubCategoryByParentId(Guid parentId);
+		Task<List<CategoryModel>> GetSubCategoryByParentId(Guid parentId);
 
-		List<CategoryModel> GetSubCategoryByName(string name, Guid parentId);
+		Task<List<CategoryModel>> GetSubCategoryByName(string name, Guid parentId);
 
 	}
 }

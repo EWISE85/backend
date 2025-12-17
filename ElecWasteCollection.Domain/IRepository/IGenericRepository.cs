@@ -11,9 +11,11 @@ namespace ElecWasteCollection.Domain.IRepository
     {
         Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null, string? includeProperties = null);
         Task<T?> GetAsync(Expression<Func<T, bool>> filter, string? includeProperties = null);
-        Task<T?> GetByIdAsync(object id);
+		Task<List<T>> GetsAsync(Expression<Func<T, bool>> filter, string? includeProperties = null);
+		Task<T?> GetByIdAsync(object id);
         Task AddAsync(T entity);
         void Update(T entity);
         void Delete(T entity);
-    }
+		void Add(T entity);
+	}
 }

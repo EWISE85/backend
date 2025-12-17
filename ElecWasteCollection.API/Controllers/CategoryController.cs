@@ -16,27 +16,27 @@ namespace ElecWasteCollection.API.Controllers
 			_categoryAttributeService = categoryAttributeService;
 		}
 		[HttpGet("parents")]
-		public IActionResult GetParentCategories()
+		public async Task<IActionResult> GetParentCategories()
 		{
-			var parentCategories = _categorySerivce.GetParentCategory();
+			var parentCategories = await _categorySerivce.GetParentCategory();
 			return Ok(parentCategories);
 		}
 		[HttpGet("{parentId}/subcategories")]
-		public IActionResult GetSubCategoriesByParentId(Guid parentId)
+		public async Task<IActionResult> GetSubCategoriesByParentId(Guid parentId)
 		{
-			var subCategories = _categorySerivce.GetSubCategoryByParentId(parentId);
+			var subCategories = await _categorySerivce.GetSubCategoryByParentId(parentId);
 			return Ok(subCategories);
 		}
 		[HttpGet("{subCategoryId}/attributes")]
-		public IActionResult GetAttributesByCategoryId([FromRoute]Guid subCategoryId)
+		public async Task<IActionResult> GetAttributesByCategoryId([FromRoute]Guid subCategoryId)
 		{
-			var attributes = _categoryAttributeService.GetCategoryAttributesByCategoryId(subCategoryId);
+			var attributes = await _categoryAttributeService.GetCategoryAttributesByCategoryIdAsync(subCategoryId);
 			return Ok(attributes);
 		}
 		[HttpGet("/subCategory")]
-		public IActionResult GetSubCategoriesByName([FromQuery]Guid parentId,[FromQuery] string name)
+		public async Task<IActionResult> GetSubCategoriesByName([FromQuery]Guid parentId,[FromQuery] string name)
 		{
-			var subCategories = _categorySerivce.GetSubCategoryByName(name, parentId);
+			var subCategories = await _categorySerivce.GetSubCategoryByName(name, parentId);
 			return Ok(subCategories);
 		}
 

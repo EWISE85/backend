@@ -10,11 +10,11 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IPostService
 	{
-		Task<PostDetailModel> AddPost(CreatePostModel createPostRequest);
+		Task<bool> AddPost(CreatePostModel createPostRequest);
 
-		List<PostSummaryModel> GetAll();
-		List<PostDetailModel> GetPostBySenderId(Guid senderId);
-		PostDetailModel GetById(Guid id);
+		Task<List<PostSummaryModel>> GetAll();
+		Task<List<PostDetailModel>> GetPostBySenderId(Guid senderId);
+		Task<PostDetailModel> GetById(Guid id);
 		Task<bool> ApprovePost(Guid postId);
 
 		Task<bool> RejectPost(Guid postId, string rejectMessage);

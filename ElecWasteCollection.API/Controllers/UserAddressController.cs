@@ -16,7 +16,7 @@ namespace ElecWasteCollection.API.Controllers
 			_userAddressService = userAddressService;
 		}
 		[HttpPost]
-		public IActionResult AddUserAddress([FromBody] CreateUpdateUserAddressRequest create)
+		public async Task<IActionResult> AddUserAddress([FromBody] CreateUpdateUserAddressRequest create)
 		{
 			var model = new CreateUpdateUserAddress
 			{
@@ -26,7 +26,7 @@ namespace ElecWasteCollection.API.Controllers
 				Ing = create.Ing,
 				isDefault = create.isDefault
 			};
-			var result = _userAddressService.AddUserAddress(model);
+			var result = await _userAddressService.AddUserAddress(model);
 			if (!result)
 			{
 				return BadRequest(new { message = "Failed to add user address. User may not exist." });
@@ -34,9 +34,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "User address added successfully." });
 		}
 		[HttpDelete("{userAddressId}")]
-		public IActionResult DeleteUserAddress([FromRoute] Guid userAddressId)
+		public async Task<IActionResult> DeleteUserAddress([FromRoute] Guid userAddressId)
 		{
-			var result = _userAddressService.DeleteUserAddress(userAddressId);
+			var result = await _userAddressService.DeleteUserAddress(userAddressId);
 			if (!result)
 			{
 				return NotFound(new { message = "User address not found." });
@@ -44,9 +44,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "User address deleted successfully." });
 		}
 		[HttpGet("{userId}")]
-		public IActionResult GetUserAddressByUserId([FromRoute] Guid userId)
+		public async Task<IActionResult> GetUserAddressByUserId([FromRoute] Guid userId)
 		{
-			var address = _userAddressService.GetByUserId(userId);
+			var address = await _userAddressService.GetByUserId(userId);
 			if (address == null)
 			{
 				return NotFound(new { message = "User address not found." });
@@ -54,7 +54,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(address);
 		}
 		[HttpPut("{userAddressId}")]
-		public IActionResult UpdateUserAddress([FromRoute] Guid userAddressId, [FromBody] CreateUpdateUserAddressRequest update)
+		public async Task<IActionResult> UpdateUserAddress([FromRoute] Guid userAddressId, [FromBody] CreateUpdateUserAddressRequest update)
 		{
 			var model = new CreateUpdateUserAddress
 			{
@@ -64,7 +64,7 @@ namespace ElecWasteCollection.API.Controllers
 				Ing = update.Ing,
 				isDefault = update.isDefault
 			};
-			var result = _userAddressService.UpdateUserAddress(userAddressId, model);
+			var result = await _userAddressService.UpdateUserAddress(userAddressId, model);
 			if (!result)
 			{
 				return NotFound(new { message = "User address not found." });

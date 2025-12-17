@@ -14,7 +14,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> UpdateShiftAsync(CreateShiftModel updateShift);
 
 		Task<bool> DeleteShiftAsync(string shiftId);
-		ShiftModel? GetShiftById(string shiftId);
+		Task<ShiftModel> GetShiftById(string shiftId);
 		Task<PagedResultModel<ShiftModel>> GetPagedShiftAsync(ShiftSearchModel model);
 		Task<ImportResult> CheckAndUpdateShiftAsync(CreateShiftModel shift);
 

@@ -9,6 +9,6 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface ICategoryAttributeService
 	{
-		List<CategoryAttributeModel> GetCategoryAttributesByCategoryId(Guid categoryId);	
+		Task<List<CategoryAttributeModel>> GetCategoryAttributesByCategoryIdAsync(Guid categoryId);
 	}
 }

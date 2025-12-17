@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IVehicleService
 	{
-		VehicleModel? GetVehicleById(string vehicleId);
+		Task<VehicleModel?> GetVehicleById(string vehicleId);
 
 		Task<PagedResultModel<VehicleModel>> PagedVehicles(VehicleSearchModel model);
 

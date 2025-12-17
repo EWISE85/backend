@@ -9,6 +9,6 @@ namespace ElecWasteCollection.Application.IServices
 {
     public interface IBrandService
     {
-		List<BrandModel> GetBrandsByCategoryIdAsync(Guid categoryId);
+		Task<List<BrandModel>> GetBrandsByCategoryIdAsync(Guid categoryId);
 	}
 }

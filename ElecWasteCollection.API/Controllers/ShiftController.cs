@@ -53,9 +53,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(result);
 		}
 		[HttpGet("{id}")]
-		public IActionResult GetShiftById([FromRoute] string id)
+		public async Task<IActionResult> GetShiftById([FromRoute] string id)
 		{
-			var shift = _shiftService.GetShiftById(id);
+			var shift = await _shiftService.GetShiftById(id);
 			if (shift == null)
 			{
 				return NotFound();

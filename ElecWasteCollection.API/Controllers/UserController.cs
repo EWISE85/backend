@@ -17,9 +17,9 @@ namespace ElecWasteCollection.API.Controllers
 			_userService = userService;
 		}
 		[HttpGet]
-		public IActionResult GetAllUsers()
+		public async Task<IActionResult> GetAllUsers()
 		{
-			var users = _userService.GetAll();
+			var users = await _userService.GetAll();
 			return Ok(users);
 		}
 		//[HttpPut("{id}")]
@@ -30,7 +30,7 @@ namespace ElecWasteCollection.API.Controllers
 		//	return Ok(new { message = $"User {id} updated successfully." });
 		//}
 		[HttpGet("profile")]
-		public IActionResult GetProfile()
+		public async Task<IActionResult> GetProfile()
 		{
 			var accountEmail = User.FindFirst(ClaimTypes.Email)?.Value;
 			if (accountEmail == null)
@@ -40,7 +40,7 @@ namespace ElecWasteCollection.API.Controllers
 					message = "Chưa login"
 				});
 			}
-			var user = _userService.Profile(accountEmail);
+			var user = await _userService.Profile(accountEmail);
 			if (user == null)
 			{
 				return NotFound(new { message = "User not found." });
@@ -48,9 +48,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(user);
 		}
 		[HttpGet("{id}")]
-		public IActionResult GetUserById([FromRoute] Guid id)
+		public async Task<IActionResult> GetUserById([FromRoute] Guid id)
 		{
-			var user = _userService.GetById(id);
+			var user = await _userService.GetById(id);
 			if (user == null)
 			{
 				return NotFound(new { message = "User not found." });
@@ -59,9 +59,9 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpGet("phone/{phone}")]
-		public IActionResult GetUserByPhone([FromRoute] string phone)
+		public async Task<IActionResult> GetUserByPhone([FromRoute] string phone)
 		{
-			var user = _userService.GetByPhone(phone);
+			var user = await _userService.GetByPhone(phone);
 			if (user == null)
 			{
 				return NotFound(new { message = "User not found." });

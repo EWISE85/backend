@@ -429,8 +429,8 @@ namespace ElecWasteCollection.Application.Services
                 var oldGroups = await _unitOfWork.CollectionGroups.GetAllAsync(g => g.Shift_Id == mainShift.ShiftId);
                 foreach (var g in oldGroups)
                 {
-                    var routes = await _unitOfWork.CollectionRoutes.GetAllAsync(r => r.CollectionGroupId == g.CollectionGroupId);
-                    foreach (var r in routes) _unitOfWork.CollectionRoutes.Delete(r);
+                    var routes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.CollectionGroupId == g.CollectionGroupId);
+                    foreach (var r in routes) _unitOfWork.CollecctionRoutes.Delete(r);
                     _unitOfWork.CollectionGroups.Delete(g);
                 }
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(assignDay.VehicleId);
@@ -539,7 +539,7 @@ namespace ElecWasteCollection.Application.Services
 
                         if (request.SaveResult)
                         {
-                            await _unitOfWork.ProductStatusHistories.AddAsync(new ProductStatusHistory
+                            await _unitOfWork.ProductStatusHistory.AddAsync(new ProductStatusHistory
                             {
                                 ProductStatusHistoryId = Guid.NewGuid(),
                                 ProductId = productToUpdate.ProductId,
@@ -575,7 +575,7 @@ namespace ElecWasteCollection.Application.Services
 
                     if (request.SaveResult)
                     {
-                        await _unitOfWork.CollectionRoutes.AddAsync(new CollectionRoutes
+                        await _unitOfWork.CollecctionRoutes.AddAsync(new CollectionRoutes
                         {
                             CollectionRouteId = Guid.NewGuid(),
                             CollectionGroupId = group.CollectionGroupId,
@@ -653,7 +653,7 @@ namespace ElecWasteCollection.Application.Services
 
                 if (isMatch)
                 {
-                    var routes = await _unitOfWork.CollectionRoutes.GetAllAsync(r => r.CollectionGroupId == group.CollectionGroupId);
+                    var routes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.CollectionGroupId == group.CollectionGroupId);
 
                     double totalW = 0;
                     double totalV = 0;
@@ -692,7 +692,7 @@ namespace ElecWasteCollection.Application.Services
         {
             var group = await _unitOfWork.CollectionGroups.GetByIdAsync(groupId) ?? throw new Exception("Không tìm thấy group.");
             var shift = await _unitOfWork.Shifts.GetByIdAsync(group.Shift_Id);
-            var routes = await _unitOfWork.CollectionRoutes.GetAllAsync(r => r.CollectionGroupId == groupId);
+            var routes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.CollectionGroupId == groupId);
             var sortedRoutes = routes.OrderBy(r => r.EstimatedTime).ToList();
 
             if (!sortedRoutes.Any()) throw new Exception("Group không có route nào.");

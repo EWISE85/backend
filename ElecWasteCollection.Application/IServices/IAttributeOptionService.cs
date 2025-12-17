@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Application.IServices
 {
     public interface IAttributeOptionService
     {
-        List<AttributeOptionResponse> GetOptionsByAttributeId(Guid attributeId);
-		AttributeOptionResponse? GetOptionByOptionId(Guid optionId);
+       Task<List<AttributeOptionResponse>> GetOptionsByAttributeId(Guid attributeId);
+		Task<AttributeOptionResponse?> GetOptionByOptionId(Guid optionId);
 	}
 }

@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,25 +13,28 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class CategoryAttributeService : ICategoryAttributeService
 	{
-		private static List<CategoryAttributes> _categoriesAttribute = FakeDataSeeder.categoryAttributes;
-		private static List<Attributes> _attributes = FakeDataSeeder.attributes;
-		public List<CategoryAttributeModel> GetCategoryAttributesByCategoryId(Guid categoryId)
+		private readonly ICategoryAttributeRepsitory _categoryAttributeRepsitory;
+
+		public CategoryAttributeService(ICategoryAttributeRepsitory categoryAttributeRepsitory)
 		{
-			// Tạo dictionary để truy vấn nhanh chóng thuộc tính theo AttributeId
-			var attributeDictionary = _attributes.ToDictionary(a => a.AttributeId, a => a.Name);
+			_categoryAttributeRepsitory = categoryAttributeRepsitory;
+		}
 
-			var categoryAttributes = _categoriesAttribute
-				.Where(ca => ca.CategoryId == categoryId)
-				.Select(ca => new CategoryAttributeModel
-				{
-					Id = ca.AttributeId,
-					Name = attributeDictionary.ContainsKey(ca.AttributeId)
-						   ? attributeDictionary[ca.AttributeId] // Trả về tên thuộc tính nếu tìm thấy
-						   : "Không tìm thấy" // Nếu không có thuộc tính tương ứng, trả về giá trị mặc định
-				})
-				.ToList();
+		public async Task<List<CategoryAttributeModel>> GetCategoryAttributesByCategoryIdAsync(Guid categoryId)
+		{
+			var listEntities = await _categoryAttributeRepsitory.GetsAsync(x => x.CategoryId == categoryId,"Attribute");
+			if (listEntities == null)
+			{
+				return new List<CategoryAttributeModel>();
+			}
 
-			return categoryAttributes;
+			// 3. Map từ Entity sang Model
+			var result = listEntities.Select(ca => new CategoryAttributeModel
+			{
+				Id = ca.AttributeId,
+				Name = ca.Attribute?.Name ?? "Không tìm thấy tên"
+			}).ToList();
+			return result;
 		}
 	}
 }

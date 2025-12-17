@@ -1,5 +1,6 @@
 ﻿
 using ElecWasteCollection.API.Hubs;
+using ElecWasteCollection.API.MiddlewareCustom;
 using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Interfaces;
 
@@ -9,8 +10,10 @@ using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Services;
 using ElecWasteCollection.Application.Services.AssignPostService;
 using ElecWasteCollection.Domain.IRepository;
+using ElecWasteCollection.Infrastructure.Configuration;
 using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
+using ElecWasteCollection.Infrastructure.ExternalService.Email;
 using ElecWasteCollection.Infrastructure.ExternalService.Imagga;
 using ElecWasteCollection.Infrastructure.Implementations;
 using ElecWasteCollection.Infrastructure.Repository;
@@ -111,8 +114,37 @@ namespace ElecWasteCollection.API
 
             builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
             builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+			builder.Services.AddScoped<IAccountRepsitory, AccountRepsitory>();
+			builder.Services.AddScoped<IAttributeOptionRepository, AttributeOptionRepository>();
+			builder.Services.AddScoped<IAttributeRepository, AttributeRepository>();
+			builder.Services.AddScoped<IBrandRepository, BrandRepository>();
+			builder.Services.AddScoped<ICategoryAttributeRepsitory, CategoryAttributeRepsitory>();
+			builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
+			builder.Services.AddScoped<ICollectionCompanyRepository, CollectionCompanyRepository>();
+			builder.Services.AddScoped<ICollectionRouteRepository, CollectionRouteRepository>();
+			builder.Services.AddScoped<ICollectorRepository, CollectorRepository>();
+			builder.Services.AddScoped<IPackageRepository, PackageRepository>();
+			builder.Services.AddScoped<IPointTransactionRepository, PointTransactionRepository>();
+			builder.Services.AddScoped<IPostRepository, PostRepository>();
+			builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+			builder.Services.AddScoped<IProductRepository, ProductRepository>();
+			builder.Services.AddScoped<IProductStatusHistoryRepository, ProductStatusHistoryRepository>();
+			builder.Services.AddScoped<IProductValuesRepository, ProductValuesRepository>();
+			builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
+			builder.Services.AddScoped<ISmallCollectionRepository, SmallCollectionRepository>();
+			builder.Services.AddScoped<IUserAddressRepository, UserAddressRepository>();
+			builder.Services.AddScoped<IUserPointRepository, UserPointRepository>();
+			builder.Services.AddScoped<IUserRepository, UserRepository>();
+			builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
+			builder.Services.AddScoped<DbContext, ElecWasteCollectionDbContext>();
+			builder.Services.AddScoped<ITrackingRepository, TrackingRepository>();
+			builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+			builder.Services.AddScoped<IEmailService, EmailService>();
+			builder.Services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
+			builder.Services.AddScoped<IForgotPasswordRepository, ForgotPasswordRepository>();
+			builder.Services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
 
-            builder.Services.AddCors(options =>
+			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
 				{
@@ -172,7 +204,8 @@ namespace ElecWasteCollection.API
 			}
 
 			app.UseHttpsRedirection();
-
+			app.UseMiddleware<HandlingException>();
+			app.UseAuthentication();
 			app.UseAuthorization();
 
 			app.MapHub<ShippingHub>("/shippingHub");

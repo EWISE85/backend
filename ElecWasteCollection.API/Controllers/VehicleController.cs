@@ -18,9 +18,9 @@ namespace ElecWasteCollection.API.Controllers
 			_excelImportService = excelImportService;
 		}
 		[HttpGet("{vehicleId}")]
-		public IActionResult GetVehicleById(string vehicleId)
+		public async Task<IActionResult> GetVehicleById(string vehicleId)
 		{
-			var vehicle = _vehicleService.GetVehicleById(vehicleId);
+			var vehicle =  await _vehicleService.GetVehicleById(vehicleId);
 			if (vehicle == null)
 			{
 				return NotFound();

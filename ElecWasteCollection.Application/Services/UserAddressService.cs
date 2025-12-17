@@ -1,7 +1,9 @@
 ﻿using ElecWasteCollection.Application.Data;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,16 +14,37 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class UserAddressService : IUserAddressService
 	{
-		private readonly List<UserAddress> _addresses = FakeDataSeeder.userAddress;
-		private readonly List<User> _user = FakeDataSeeder.users;
-		public bool AddUserAddress(CreateUpdateUserAddress create)
+		private readonly IUserAddressRepository _userAddressRepository;
+		private readonly IUserRepository _userRepository;
+		private readonly IUnitOfWork _unitOfWork;
+
+		public UserAddressService(IUserAddressRepository userAddressRepository, IUserRepository userRepository, IUnitOfWork unitOfWork)
 		{
-			var userExists = _user.Any(u => u.UserId == create.UserId);
-			if (!userExists)
+			_userAddressRepository = userAddressRepository;
+			_userRepository = userRepository;
+			_unitOfWork = unitOfWork;
+		}
+		public async Task<bool> AddUserAddress(CreateUpdateUserAddress create)
+		{
+			var userExists = await _userRepository.GetAsync(u => u.UserId == create.UserId);
+			if (userExists == null) throw new AppException("User không tồn tại", 404);
+			if (create.isDefault)
 			{
-				return false; // User does not exist
+				var existingAddresses = await _userAddressRepository.GetsAsync(a => a.UserId == create.UserId);
+
+				if (existingAddresses != null && existingAddresses.Any())
+				{
+					foreach (var addr in existingAddresses)
+					{
+						if (addr.isDefault)
+						{
+							addr.isDefault = false;
+							_unitOfWork.UserAddresses.Update(addr);
+						}
+					}
+				}
 			}
-			var address = new UserAddress
+			var newAddress = new UserAddress
 			{
 				UserAddressId = Guid.NewGuid(),
 				UserId = create.UserId,
@@ -30,35 +53,26 @@ namespace ElecWasteCollection.Application.Services
 				Ing = create.Ing,
 				isDefault = create.isDefault
 			};
-			var existingAddress = _addresses.Where(a => a.UserId == create.UserId);
-			if (create.isDefault)
-			{
-				foreach (var addr in existingAddress)
-				{
-					addr.isDefault = false;
-				}
-			}
-			_addresses.Add(address);
+			await _unitOfWork.UserAddresses.AddAsync(newAddress);
+			await _unitOfWork.SaveAsync();
 			return true;
 		}
 
-		public bool DeleteUserAddress(Guid userAddressId)
+		public async Task<bool> DeleteUserAddress(Guid userAddressId)
 		{
-			var address = _addresses.FirstOrDefault(a => a.UserAddressId == userAddressId);
-			if (address == null)
-			{
-				return false; // Address not found
-			}
-			_addresses.Remove(address);
+			var address = await _userAddressRepository.GetAsync(a => a.UserAddressId == userAddressId);
+			if (address == null) throw new AppException("Địa chỉ không tồn tại", 404);
+			_unitOfWork.UserAddresses.Delete(address);
+			await _unitOfWork.SaveAsync();
 			return true;
 		}
 
-		public List<UserAddressResponse>? GetByUserId(Guid userId)
+		public async Task<List<UserAddressResponse>?> GetByUserId(Guid userId)
 		{
-			var address = _addresses.Where(a => a.UserId == userId);
+			var address = await _userAddressRepository.GetsAsync(a => a.UserId == userId);
 			if (address == null)
 			{
-				return null; // Address not found
+				return null;
 			}
 			var response = address.Select(a => new UserAddressResponse
 			{
@@ -72,31 +86,33 @@ namespace ElecWasteCollection.Application.Services
 			return response;
 		}
 
-		public bool UpdateUserAddress(Guid userAddressId, CreateUpdateUserAddress update)
+		public async Task<bool> UpdateUserAddress(Guid userAddressId, CreateUpdateUserAddress update)
 		{
-			var userExists = _user.Any(u => u.UserId == update.UserId);
-			if (!userExists)
-			{
-				return false; // User does not exist
-			}
-			var address = _addresses.FirstOrDefault(a => a.UserAddressId == userAddressId);
-			if (address == null)
-			{
-				return false; // Address not found
-			}
-			var existingAddress = _addresses.Where(a => a.UserId == update.UserId);
+			var userExists = await _userRepository.GetAsync(u => u.UserId == update.UserId);
+			if (userExists == null) throw new AppException("User không tồn tại", 404);
+			var addressToUpdate = await _userAddressRepository.GetAsync(a => a.UserAddressId == userAddressId);
+			if (addressToUpdate == null) throw new AppException("Địa chỉ không tồn tại", 404);
 			if (update.isDefault)
 			{
-				foreach (var addr in existingAddress)
+				var otherAddresses = await _userAddressRepository.GetsAsync(a => a.UserId == update.UserId && a.UserAddressId != userAddressId);
+				if (otherAddresses != null)
 				{
-					addr.isDefault = false;
+					foreach (var addr in otherAddresses)
+					{
+						if (addr.isDefault)
+						{
+							addr.isDefault = false;
+							_unitOfWork.UserAddresses.Update(addr);
+						}
+					}
 				}
 			}
-			address.Address = update.Address;
-			address.Iat = update.Iat;
-			address.Ing = update.Ing;
-			address.isDefault = update.isDefault;
-			
+			addressToUpdate.Address = update.Address;
+			addressToUpdate.Iat = update.Iat;
+			addressToUpdate.Ing = update.Ing;
+			addressToUpdate.isDefault = update.isDefault;
+			_unitOfWork.UserAddresses.Update(addressToUpdate);
+			await _unitOfWork.SaveAsync();
 			return true;
 		}
 	}

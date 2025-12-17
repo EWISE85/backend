@@ -16,7 +16,7 @@ namespace ElecWasteCollection.API.Controllers
 			_packageService = packageService;
 		}
 		[HttpPost]
-		public  IActionResult CreatePackage([FromBody] CreatePackageRequest newPackage)
+		public async Task<IActionResult> CreatePackage([FromBody] CreatePackageRequest newPackage)
 		{
 			if (newPackage == null)
 			{
@@ -30,7 +30,7 @@ namespace ElecWasteCollection.API.Controllers
 				SmallCollectionPointsId = newPackage.SmallCollectionPointsId,
 				ProductsQrCode = newPackage.ProductsQrCode
 			};
-			var result =  _packageService.CreatePackageAsync(model);
+			var result =  await _packageService.CreatePackageAsync(model);
 			if (result == null)
 			{
 				return StatusCode(400, "An error occurred while creating the package.");
@@ -39,9 +39,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Package created successfully.", packageId = result });
 		}
 		[HttpGet("{packageId}")]
-		public IActionResult GetPackageById(string packageId)
+		public async Task<IActionResult> GetPackageById(string packageId)
 		{
-			var package = _packageService.GetPackageById(packageId);
+			var package = await _packageService.GetPackageById(packageId);
 			if (package == null)
 			{
 				return NotFound("Package not found.");
@@ -50,7 +50,7 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpGet("filter")]
-		public IActionResult GetPackagesByQuery([FromQuery] PackageSearchQueryRequest query)
+		public async Task<IActionResult> GetPackagesByQuery([FromQuery] PackageSearchQueryRequest query)
 		{
 			var model = new PackageSearchQueryModel
 			{
@@ -59,13 +59,13 @@ namespace ElecWasteCollection.API.Controllers
 				SmallCollectionPointsId = query.SmallCollectionPointsId,
 				Status = query.Status
 			};
-			var packages = _packageService.GetPackagesByQuery(model);
+			var packages = await _packageService.GetPackagesByQuery(model);
 			return Ok(packages);
 		}
 		[HttpPut("{packageId}/status")]
-		public IActionResult SealedPackageStatus([FromRoute] string packageId)
+		public async Task<IActionResult> SealedPackageStatus([FromRoute] string packageId)
 		{
-			var result = _packageService.UpdatePackageStatus(packageId, "Đã đóng thùng");
+			var result = await _packageService.UpdatePackageStatus(packageId, "Đã đóng thùng");
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");
@@ -73,7 +73,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Package status updated successfully." });
 		}
 		[HttpPut("{packageId}")]
-		public IActionResult UpdatePackage([FromRoute] string packageId, [FromBody] UpdatePackageRequest updatePackage)
+		public async Task<IActionResult> UpdatePackage([FromRoute] string packageId, [FromBody] UpdatePackageRequest updatePackage)
 		{
 			if (updatePackage == null)
 			{
@@ -87,7 +87,7 @@ namespace ElecWasteCollection.API.Controllers
 				SmallCollectionPointsId = updatePackage.SmallCollectionPointsId,
 				ProductsQrCode = updatePackage.ProductsQrCode
 			};
-			var result = _packageService.UpdatePackageAsync(model);
+			var result = await _packageService.UpdatePackageAsync(model);
 			if (!result)
 			{
 				return StatusCode(400, "An error occurred while updating the package.");
@@ -97,15 +97,15 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpGet("delivery")]
-		public IActionResult GetPackagesWhenDelivery()
+		public async Task<IActionResult> GetPackagesWhenDelivery()
 		{
-			var packages = _packageService.GetPackagesWhenDelivery();
+			var packages = await _packageService.GetPackagesWhenDelivery();
 			return Ok(packages);
 		}
 		[HttpPut("{packageId}/delivery")]
-		public IActionResult UpdatePackageStatusToDelivering([FromRoute] string packageId)
+		public async Task<IActionResult> UpdatePackageStatusToDelivering([FromRoute] string packageId)
 		{
-			var result = _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, "Đang vận chuyển");
+			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, "Đang vận chuyển");
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");
@@ -113,9 +113,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Package status updated to 'Đang vận chuyển' successfully." });
 		}
 		[HttpPut("{packageId}/recycler")]
-		public IActionResult UpdatePackageStatusToRecycled([FromRoute] string packageId)
+		public async Task<IActionResult> UpdatePackageStatusToRecycled([FromRoute] string packageId)
 		{
-			var result = _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, "Tái chế");
+			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, "Tái chế");
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");

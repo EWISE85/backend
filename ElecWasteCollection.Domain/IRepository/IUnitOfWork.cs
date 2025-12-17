@@ -19,13 +19,22 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<ProductValues> ProductValues { get; }
         IGenericRepository<AttributeOptions> AttributeOptions { get; }
         IGenericRepository<Attributes> Attributes { get; }
-
-        IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
-        IGenericRepository<Vehicles> Vehicles { get; }
+        IGenericRepository<Account> Accounts { get; }
+        IGenericRepository<CategoryAttributes> CategoryAttributes { get; }
+        IGenericRepository<CollectionRoutes> CollecctionRoutes { get; }
+        IGenericRepository<Packages> Packages { get; }
+        IGenericRepository<PointTransactions> PointTransactions { get; }
+        IGenericRepository<ProductImages> ProductImages { get; }
+        IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
         IGenericRepository<Shifts> Shifts { get; }
-        IGenericRepository<CollectionGroups> CollectionGroups { get; }
-        IGenericRepository<CollectionRoutes> CollectionRoutes { get; }
-        IGenericRepository<ProductStatusHistory> ProductStatusHistories { get; }
-        Task<int> SaveAsync();
+        IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
+        IGenericRepository<UserPoints> UserPoints { get; }
+        IGenericRepository<Vehicles> Vehicles { get; }
+		IGenericRepository<CollectionGroups> CollectionGroups { get; }
+
+		IGenericRepository<ForgotPassword> ForgotPasswords { get; }
+
+        IGenericRepository<SystemConfig> SystemConfig { get; }
+		Task<int> SaveAsync();
     }
 }

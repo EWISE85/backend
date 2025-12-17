@@ -1,7 +1,9 @@
 ﻿using ElecWasteCollection.Application.Data;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,23 +14,27 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class CollectorService : ICollectorService
 	{
-		private  List<User> collectors = FakeDataSeeder.users;
-		private readonly IAccountService _accountService;
-		public CollectorService(IAccountService accountService)
+		private readonly ICollectorRepository _collectorRepository;
+		private readonly IAccountRepsitory _accountRepsitory;
+		private readonly IUnitOfWork _unitOfWork;
+		public CollectorService(ICollectorRepository collectorRepository, IAccountRepsitory accountRepsitory, IUnitOfWork unitOfWork)
 		{
-			_accountService = accountService;
+			_collectorRepository = collectorRepository;
+			_accountRepsitory = accountRepsitory;
+			_unitOfWork = unitOfWork;
 		}
 
-		public Task<bool> AddNewCollector(User collector)
+		public async Task<bool> AddNewCollector(User collector)
 		{
-			collectors.Add(collector);
-			return Task.FromResult(true);
+			await _unitOfWork.Users.AddAsync(collector);
+			await _unitOfWork.SaveAsync();
+			return true;
 		}
 
 		public async Task<ImportResult> CheckAndUpdateCollectorAsync(User collector, string collectorUsername, string password)
 		{
 			var result = new ImportResult();
-			var existingCollector = collectors.FirstOrDefault(c => c.UserId == collector.UserId);
+			var existingCollector = await _collectorRepository.GetAsync(c => c.UserId == collector.UserId);
 			if (existingCollector != null)
 			{
 				await UpdateCollector(collector);
@@ -42,26 +48,27 @@ namespace ElecWasteCollection.Application.Services
 					PasswordHash = password,
 					UserId = collector.UserId
 				};
-				_accountService.AddNewAccount(account);
+				await _unitOfWork.Accounts.AddAsync(account);
 				result.Messages.Add($"Thêm thu gom viên '{collector.Name}' thành công.");
-
+				await _unitOfWork.SaveAsync();
 			}
 			return result;
 		}
 
-		public Task<bool> DeleteCollector(Guid collectorId)
+		public async Task<bool> DeleteCollector(Guid collectorId)
 		{
-			var collector = collectors.FirstOrDefault(c => c.UserId == collectorId);
-			if (collector != null)
-			{
-				collector.Status = UserStatus.Inactive.ToString();
-				return Task.FromResult(true);
-			}
-			return Task.FromResult(false);
+			var collector = await _collectorRepository.GetAsync(c => c.UserId == collectorId);
+			if (collector == null) throw new AppException("Không tìm thấy người thu gom",404);
+			collector.Status = UserStatus.Inactive.ToString();
+			_unitOfWork.Users.Update(collector);
+			await _unitOfWork.SaveAsync();
+			return true;
+			
 		}
 
-		public List<CollectorResponse> GetAll()
+		public async Task<List<CollectorResponse>> GetAll()
 		{
+			var collectors = await _collectorRepository.GetAllAsync(c => c.Role == UserRole.Collector.ToString());
 			var response = collectors.Select(c => new CollectorResponse
 			{
 				CollectorId = c.UserId,
@@ -71,18 +78,14 @@ namespace ElecWasteCollection.Application.Services
 				Avatar = c.Avatar,
 				SmallCollectionPointId = c.SmallCollectionPointId
 			}).ToList();
-
 			return response;
 
 		}
 
-		public CollectorResponse? GetById(Guid id)
+		public async Task<CollectorResponse> GetById(Guid id)
 		{
-			var collector = collectors.FirstOrDefault(c => c.UserId == id);
-			if (collector == null)
-			{
-				return null;
-			}
+			var collector = await _collectorRepository.GetAsync(c => c.UserId == id);
+			if (collector == null) throw new AppException("Không tìm thấy người thu gom", 404);
 
 			var response = new CollectorResponse
 			{
@@ -97,45 +100,41 @@ namespace ElecWasteCollection.Application.Services
 			return response;
 		}
 
-		public List<CollectorResponse> GetCollectorByCompanyId(string companyId)
+		public async Task<List<CollectorResponse>> GetCollectorByCompanyId(string companyId)
 		{
-			var response = collectors
-				.Where(c => c.CollectionCompanyId == companyId && c.Role == UserRole.Collector.ToString())
-				.Select(c => new CollectorResponse
-				{
-					CollectorId = c.UserId,
-					Name = c.Name,
-					Email = c.Email,
-					Phone = c.Phone,
-					Avatar = c.Avatar,
-					SmallCollectionPointId = c.SmallCollectionPointId
-				})
-				.ToList();
-			return response;
-		}
-
-		public List<CollectorResponse> GetCollectorByWareHouseId(string wareHouseId)
-		{
-			var response = collectors
-				.Where(c => c.SmallCollectionPointId == wareHouseId && c.Role == UserRole.Collector.ToString())
-				.Select(c => new CollectorResponse
-				{
-					CollectorId = c.UserId,
-					Name = c.Name,
-					Email = c.Email,
-					Phone = c.Phone,
-					Avatar = c.Avatar,
-					SmallCollectionPointId = c.SmallCollectionPointId
-				})
-				.ToList();
-			return response;
-		}
-
-		public Task<bool> UpdateCollector(User collector)
-		{
-			var collectorToUpdate = collectors.FirstOrDefault(c => c.UserId == collector.UserId);
-			if (collectorToUpdate != null)
+			var collectores = await _collectorRepository.GetsAsync(c => c.CollectionCompanyId == companyId && c.Role == UserRole.Collector.ToString());
+			var response = collectores.Select(c => new CollectorResponse
 			{
+				CollectorId = c.UserId,
+				Name = c.Name,
+				Email = c.Email,
+				Phone = c.Phone,
+				Avatar = c.Avatar,
+				SmallCollectionPointId = c.SmallCollectionPointId
+			}).ToList();
+			return response;
+		}
+
+		public async Task<List<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId)
+		{
+			var collectores = await _collectorRepository.GetsAsync(c => c.SmallCollectionPointId == wareHouseId && c.Role == UserRole.Collector.ToString());
+			var response = collectores.Select(c => new CollectorResponse
+			{
+				CollectorId = c.UserId,
+				Name = c.Name,
+				Email = c.Email,
+				Phone = c.Phone,
+				Avatar = c.Avatar,
+				SmallCollectionPointId = c.SmallCollectionPointId
+			}).ToList();
+			return response;
+		}
+
+		public async Task<bool> UpdateCollector(User collector)
+		{
+			var collectorToUpdate = await _collectorRepository.GetAsync(c => c.UserId == collector.UserId);
+			if (collectorToUpdate == null) throw new AppException("Không tìm thấy người thu gom", 404);
+			
 				collectorToUpdate.Name = collector.Name;
 				collectorToUpdate.Email = collector.Email;
 				collectorToUpdate.Phone = collector.Phone;
@@ -143,46 +142,38 @@ namespace ElecWasteCollection.Application.Services
 				collectorToUpdate.CollectionCompanyId = collector.CollectionCompanyId;
 				collectorToUpdate.SmallCollectionPointId = collector.SmallCollectionPointId;
 				collectorToUpdate.Status = collector.Status;
-				return Task.FromResult(true);
-			}
-			return Task.FromResult(false);
+			_unitOfWork.Users.Update(collectorToUpdate);
+			await _unitOfWork.SaveAsync();
+			return true;
+			
 		}
 
-		public Task<PagedResultModel<CollectorResponse>> GetPagedCollectorsAsync(CollectorSearchModel model)
+		public async Task<PagedResultModel<CollectorResponse>> GetPagedCollectorsAsync(CollectorSearchModel model)
 		{
-			var query = collectors.AsQueryable();
+			var (users, totalItems) = await _collectorRepository.GetPagedCollectorsAsync(
+				status: model.Status,
+				companyId: model.CompanyId,
+				smallCollectionPointId: model.SmallCollectionId,
+				page: model.Page,
+				limit: model.Limit
+			);
 
-			if (!string.IsNullOrEmpty(model.Status))
+			var resultList = users.Select(c => new CollectorResponse
 			{
-				query = query.Where(c => c.Status == model.Status);
-			}
-			if (model.CompanyId != null)
-			{
-				query = query.Where(c => c.CollectionCompanyId == model.CompanyId);
-			}
-			if (model.SmallCollectionId != null)
-			{
-				query = query.Where(c => c.SmallCollectionPointId == model.SmallCollectionId);
-			}
+				CollectorId = c.UserId,
+				Name = c.Name,
+				Email = c.Email,
+				Phone = c.Phone,
+				Avatar = c.Avatar,
+				SmallCollectionPointId = c.SmallCollectionPointId,
+			}).ToList();
 
-			var totalItems = query.Count();
-
-			var items = query
-				.Skip((model.Page - 1) * model.Limit)
-				.Take(model.Page)
-				.Select(c => new CollectorResponse
-				{
-					CollectorId = c.UserId,
-					Name = c.Name,
-					Email = c.Email,
-					Phone = c.Phone,
-					Avatar = c.Avatar,
-					SmallCollectionPointId = c.SmallCollectionPointId
-				})
-				.ToList();
-			var pagedResult = new PagedResultModel<CollectorResponse>(items, model.Page, model.Limit, totalItems);
-
-			return Task.FromResult(pagedResult);
+			return new PagedResultModel<CollectorResponse>(
+				resultList,
+				model.Page,
+				model.Limit,
+				totalItems
+			);
 		}
 	}
 }

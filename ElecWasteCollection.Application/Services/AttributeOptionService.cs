@@ -1,7 +1,9 @@
 ﻿using ElecWasteCollection.Application.Data;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,33 +15,34 @@ namespace ElecWasteCollection.Application.Services
 	public class AttributeOptionService : IAttributeOptionService
 	{
 		private readonly List<AttributeOptions> _attributeOptions = FakeDataSeeder.attributeOptions;
-
-		public AttributeOptionResponse? GetOptionByOptionId(Guid optionId)
+		private readonly IAttributeOptionRepository _attributeOptionRepository;
+		public AttributeOptionService(IAttributeOptionRepository attributeOptionRepository)
 		{
-			var option = _attributeOptions
-				.Where(opt => opt.OptionId == optionId)
-				.Select(opt => new AttributeOptionResponse
-				{
-					AttributeOptionId = opt.OptionId,
-					OptionName = opt.OptionName
-				})
-				.FirstOrDefault();
-
-			return option;
+			_attributeOptionRepository = attributeOptionRepository;
 		}
 
-		public List<AttributeOptionResponse> GetOptionsByAttributeId(Guid attributeId)
+		public async Task<AttributeOptionResponse?> GetOptionByOptionId(Guid optionId)
 		{
-			var options = _attributeOptions
-				.Where(option => option.AttributeId == attributeId)
-				.Select(option => new AttributeOptionResponse
-				{
-					AttributeOptionId = option.OptionId,
-					OptionName = option.OptionName
-				})
-				.ToList();
+			var option = await  _attributeOptionRepository.GetAsync(opt => opt.OptionId == optionId);
+			if (option == null) throw new AppException("Không tìm thấy option", 404);
+			var responseOption = new AttributeOptionResponse
+			{
+				AttributeOptionId = option.OptionId,
+				OptionName = option.OptionName
+			};
+			return responseOption;
+		}
 
-			return options;
+		public async Task<List<AttributeOptionResponse>> GetOptionsByAttributeId(Guid attributeId)
+		{
+			var options = await _attributeOptionRepository.GetsAsync(option => option.AttributeId == attributeId);
+			if (options == null) return new List<AttributeOptionResponse>(); 
+			var responseOptions = options.Select(option => new AttributeOptionResponse
+			{
+				AttributeOptionId = option.OptionId,
+				OptionName = option.OptionName
+			}).ToList();
+			return responseOptions;
 		}
 	}
 }

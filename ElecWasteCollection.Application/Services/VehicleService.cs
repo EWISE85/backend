@@ -1,8 +1,11 @@
 ﻿using ElecWasteCollection.Application.Data;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,13 +15,19 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class VehicleService : IVehicleService
 	{
-		private readonly List<Vehicles> vehicles = FakeDataSeeder.vehicles;
-		private readonly List<SmallCollectionPoints> _smallCollectionPoints = FakeDataSeeder.smallCollectionPoints;
-		public Task<ImportResult> CheckAndUpdateVehicleAsync(CreateVehicleModel vehicle)
+		private readonly IUnitOfWork _unitOfWork;
+		private readonly IVehicleRepository _vehicleRepository;
+		private readonly ISmallCollectionRepository _smallCollectionRepository;
+		public VehicleService(IUnitOfWork unitOfWork, IVehicleRepository vehicleRepository, ISmallCollectionRepository smallCollectionRepository)
+		{
+			_unitOfWork = unitOfWork;
+			_vehicleRepository = vehicleRepository;
+			_smallCollectionRepository = smallCollectionRepository;
+		}
+		public async Task<ImportResult> CheckAndUpdateVehicleAsync(CreateVehicleModel vehicle)
 		{
 			var importResult = new ImportResult();
-			var existingVehicle = vehicles
-				.FirstOrDefault(v => v.VehicleId == vehicle.VehicleId);
+			var existingVehicle = await _vehicleRepository.GetAsync(v => v.VehicleId == vehicle.VehicleId);
 			if (existingVehicle != null)
 			{
 				existingVehicle.Plate_Number = vehicle.Plate_Number;
@@ -27,6 +36,7 @@ namespace ElecWasteCollection.Application.Services
 				existingVehicle.Capacity_M3 = vehicle.Capacity_M3;
 				existingVehicle.Status = vehicle.Status;
 				existingVehicle.Small_Collection_Point = vehicle.Small_Collection_Point;
+				 _unitOfWork.Vehicles.Update(existingVehicle);
 			}
 			else
 			{
@@ -40,21 +50,21 @@ namespace ElecWasteCollection.Application.Services
 					Status = vehicle.Status,
 					Small_Collection_Point = vehicle.Small_Collection_Point
 				};
-				vehicles.Add(newVehicle);
+				await _unitOfWork.Vehicles.AddAsync(newVehicle);
 
 			}
-				return Task.FromResult(importResult);
+			await _unitOfWork.SaveAsync();
+			return importResult;
 		}
 
-	public VehicleModel? GetVehicleById(string vehicleId)
+	public async Task<VehicleModel?> GetVehicleById(string vehicleId)
 		{
-			var vehicle = vehicles.FirstOrDefault(v => v.VehicleId == vehicleId);
+			var vehicle = await _vehicleRepository.GetAsync(v => v.VehicleId == vehicleId);
 			if (vehicle == null)
 			{
-				return null;
+				throw new AppException("Xe không tồn tại", 404);
 			}
-			var smallCollectionPoint = _smallCollectionPoints
-				.FirstOrDefault(scp => scp.SmallCollectionPointsId == vehicle.Small_Collection_Point);
+			var smallCollectionPoint = await _smallCollectionRepository.GetAsync(scp => scp.SmallCollectionPointsId == vehicle.Small_Collection_Point);
 			return new VehicleModel
 			{
 				VehicleId = vehicle.VehicleId,
@@ -69,82 +79,55 @@ namespace ElecWasteCollection.Application.Services
 
 		}
 
-		public Task<PagedResultModel<VehicleModel>> PagedVehicles(VehicleSearchModel model)
+		public async Task<PagedResultModel<VehicleModel>> PagedVehicles(VehicleSearchModel model)
 		{
-			// 1. Khởi tạo query
-			var query = vehicles.AsQueryable(); // _vehicles là List giả lập hoặc DbSet
 
-			// 2. Xử lý bộ lọc
+			var (vehicles, totalItems) = await _vehicleRepository.GetPagedVehiclesAsync(
+				collectionCompanyId: model.CollectionCompanyId,
+				smallCollectionPointId: model.SmallCollectionPointId,
+				plateNumber: model.PlateNumber,
+				status: model.Status,
+				page: model.Page,
+				limit: model.Limit
+			);
 
-			// 2a. Lọc theo CollectionCompanyId (Logic bắc cầu: Company -> SCP -> Vehicle)
-			if (!string.IsNullOrEmpty(model.CollectionCompanyId))
-			{
-				// Tìm danh sách ID của các SCP thuộc Company này
-				// Lưu ý: Cần convert ID sang cùng kiểu dữ liệu (Guid hoặc String) để so sánh
-				var scpIdsInCompany = _smallCollectionPoints
-					.Where(scp => scp.CompanyId != null &&
-								  scp.CompanyId.ToString().Equals(model.CollectionCompanyId, StringComparison.OrdinalIgnoreCase))
-					.Select(scp => scp.SmallCollectionPointsId.ToString()) // Giả sử Vehicle lưu SCP ID dưới dạng string hoặc Guid
-					.ToList();
 
-				// Lọc xe thuộc các SCP này
-				query = query.Where(v => v.Small_Collection_Point != null &&
-										 scpIdsInCompany.Contains(v.Small_Collection_Point));
-			}
-
-			// 2b. Lọc theo SmallCollectionPointId (Trực tiếp)
-			if (!string.IsNullOrEmpty(model.SmallCollectionPointId))
-			{
-				query = query.Where(v => v.Small_Collection_Point != null &&
-										 v.Small_Collection_Point.ToString().Equals(model.SmallCollectionPointId, StringComparison.OrdinalIgnoreCase));
-			}
-
-			// 2c. Lọc theo Biển số (PlateNumber) - Tìm gần đúng (Contains)
-			if (!string.IsNullOrEmpty(model.PlateNumber))
-			{
-				query = query.Where(v => v.Plate_Number.Contains(model.PlateNumber, StringComparison.OrdinalIgnoreCase));
-			}
-
-			// 2d. Lọc theo Trạng thái (Status) - Tìm chính xác
-			if (!string.IsNullOrEmpty(model.Status))
-			{
-				query = query.Where(v => v.Status.Equals(model.Status, StringComparison.OrdinalIgnoreCase));
-			}
-
-			// 3. Tính tổng số bản ghi (cho phân trang)
-			var totalItems = query.Count();
-
-			// 4. Phân trang & Lấy dữ liệu (Execute query)
-			var pagedEntities = query
-				.Skip((model.Page - 1) * model.Limit)
-				.Take(model.Limit)
+			var scpIds = vehicles
+				.Where(v => v.Small_Collection_Point != null)
+				.Select(v => v.Small_Collection_Point)
+				.Distinct()
 				.ToList();
 
-			// 5. Mapping sang VehicleModel
-			var resultList = pagedEntities.Select(v =>
+			var scpDict = new Dictionary<string, string>();
+			if (scpIds.Any())
 			{
-				// Lookup tên Small Collection Point để hiển thị
-				var scp = _smallCollectionPoints
-					.FirstOrDefault(s => s.SmallCollectionPointsId == v.Small_Collection_Point);
+				// Giả sử bạn có _scpRepository
+				var scps = await _smallCollectionRepository.GetsAsync(s => scpIds.Contains(s.SmallCollectionPointsId));
+				scpDict = scps.ToDictionary(k => k.SmallCollectionPointsId, v => v.Name);
+			}
+
+			var resultList = vehicles.Select(v =>
+			{
+				string scpName = "Chưa gán điểm thu gom";
+				if (v.Small_Collection_Point != null && scpDict.ContainsKey(v.Small_Collection_Point))
+				{
+					scpName = scpDict[v.Small_Collection_Point];
+				}
 
 				return new VehicleModel
 				{
 					VehicleId = v.VehicleId.ToString(),
 					PlateNumber = v.Plate_Number,
 					VehicleType = v.Vehicle_Type,
-					CapacityKg = v.Capacity_Kg, 
-					CapacityM3 = v.Capacity_M3, 
+					CapacityKg = v.Capacity_Kg,
+					CapacityM3 = v.Capacity_M3,
 					Status = v.Status,
 					SmallCollectionPointId = v.Small_Collection_Point,
-					// Map tên SCP, nếu không có thì báo N/A
-					SmallCollectionPointName = scp?.Name ?? "Chưa gán điểm thu gom"
+					SmallCollectionPointName = scpName
 				};
 			}).ToList();
 
-			// 6. Đóng gói kết quả
-			var pagedResult = new PagedResultModel<VehicleModel>(resultList, model.Page, model.Limit, totalItems);
-
-			return Task.FromResult(pagedResult);
+			return new PagedResultModel<VehicleModel>(resultList, model.Page, model.Limit, totalItems);
 		}
 	}
 }

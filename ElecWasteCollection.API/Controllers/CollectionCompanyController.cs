@@ -46,9 +46,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(result);
 		}
 		[HttpGet("{companyId}")]
-		public  IActionResult GetCollectionCompanyById([FromRoute] string companyId)
+		public  async Task<IActionResult> GetCollectionCompanyById([FromRoute] string companyId)
 		{
-			var result =  _collectionCompanyService.GetCompanyById(companyId);
+			var result = await _collectionCompanyService.GetCompanyById(companyId);
 			if (result == null)
 			{
 				return NotFound();
@@ -68,9 +68,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(result);
 		}
 		[HttpGet("name")]
-		public IActionResult GetCollectionCompanyByName([FromQuery] string name)
+		public async Task<IActionResult> GetCollectionCompanyByName([FromQuery] string name)
 		{
-			var result = _collectionCompanyService.GetCompanyByName(name);
+			var result = await _collectionCompanyService.GetCompanyByName(name);
 			if (result == null || result.Count == 0)
 			{
 				return NotFound();

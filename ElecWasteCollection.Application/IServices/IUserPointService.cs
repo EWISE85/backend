@@ -9,8 +9,8 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IUserPointService
 	{
-		UserPointModel GetPointByUserId(Guid userId);
+		Task<UserPointModel> GetPointByUserId(Guid userId);
 
-		bool UpdatePointForUser(Guid userId, double point);
+		Task<bool> UpdatePointForUser(Guid userId, double point);
 	}
 }

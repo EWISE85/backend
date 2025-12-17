@@ -14,9 +14,9 @@ namespace ElecWasteCollection.API.Controllers
 			_brandService = brandService;
 		}
 		[HttpGet("sub-category/{categoryId}")]
-		public IActionResult GetBrandsByCategoryId(Guid categoryId)
+		public async Task<IActionResult> GetBrandsByCategoryId(Guid categoryId)
 		{
-			var brands = _brandService.GetBrandsByCategoryIdAsync(categoryId);
+			var brands = await _brandService.GetBrandsByCategoryIdAsync(categoryId);
 			return Ok(brands);
 		}
 	}

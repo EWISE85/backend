@@ -16,19 +16,19 @@ namespace ElecWasteCollection.API.Controllers
 			_collectionRouteService = collectionRouteService;
 		}
 		[HttpGet("{pickUpDate}")]
-		public IActionResult GetAllRoutes(DateOnly pickUpDate)
+		public async Task<IActionResult> GetAllRoutes(DateOnly pickUpDate)
 		{
-			var routes = _collectionRouteService.GetAllRoutes(pickUpDate);
+			var routes = await _collectionRouteService.GetAllRoutes(pickUpDate);
 			return Ok(routes);
 		}
 		[HttpGet("{pickUpDate}/collector/{id}")]
-		public IActionResult GetRoutesByCollectorId([FromRoute] DateOnly pickUpDate, [FromRoute] Guid id)
+		public async Task<IActionResult> GetRoutesByCollectorId([FromRoute] DateOnly pickUpDate, [FromRoute] Guid id)
 		{
-			var routes = _collectionRouteService.GetRoutesByCollectorId(pickUpDate, id);
+			var routes = await _collectionRouteService.GetRoutesByCollectorId(pickUpDate, id);
 			return Ok(routes);
 		}
 		[HttpGet("collection-point/date/filter")]
-		public IActionResult GetRoutesByCollectionPointId([FromQuery] RouteSearchQueryRequest searchQueryRequest)
+		public async Task<IActionResult> GetRoutesByCollectionPointId([FromQuery] RouteSearchQueryRequest searchQueryRequest)
 		{
 			var model = new RouteSearchQueryModel
 			{
@@ -38,14 +38,14 @@ namespace ElecWasteCollection.API.Controllers
 				PickUpDate = searchQueryRequest.PickUpDate,
 				Status = searchQueryRequest.Status
 			};
-			var routes = _collectionRouteService.GetPagedRoutes(model);
+			var routes = await _collectionRouteService.GetPagedRoutes(model);
 			return Ok(routes);
 		}
 
 		[HttpGet("detail/{collectionRouteId}")]
-		public IActionResult GetRouteById(Guid collectionRouteId)
+		public async Task<IActionResult> GetRouteById(Guid collectionRouteId)
 		{
-			var route = _collectionRouteService.GetRouteById(collectionRouteId);
+			var route = await _collectionRouteService.GetRouteById(collectionRouteId);
 			if (route == null)
 			{
 				return NotFound($"Collection route with ID {collectionRouteId} not found.");
@@ -53,9 +53,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(route);
 		}
 		[HttpPut("confirm/{collectionRouteId}")]
-		public IActionResult ConfirmCollection(Guid collectionRouteId, [FromBody] ConfirmCollectionRequest request)
+		public async Task<IActionResult> ConfirmCollection(Guid collectionRouteId, [FromBody] ConfirmCollectionRequest request)
 		{
-			var result = _collectionRouteService.ConfirmCollection(collectionRouteId, request.ConfirmImages, request.QRCode);
+			var result = await _collectionRouteService.ConfirmCollection(collectionRouteId, request.ConfirmImages, request.QRCode);
 			if (!result)
 			{
 				return StatusCode(400, "An error occurred while confirming the collection.");
@@ -63,9 +63,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Collection confirmed successfully." });
 		}
 		[HttpPut("cancel/{collectionRouteId}")]
-		public IActionResult CancelCollection(Guid collectionRouteId, [FromBody] CancelCollectionRequest rejectMessage)
+		public async Task<IActionResult> CancelCollection(Guid collectionRouteId, [FromBody] CancelCollectionRequest rejectMessage)
 		{
-			var result = _collectionRouteService.CancelCollection(collectionRouteId, rejectMessage.RejectMessage);
+			var result = await _collectionRouteService.CancelCollection(collectionRouteId, rejectMessage.RejectMessage);
 			if (!result)
 			{
 				return StatusCode(400, "An error occurred while canceling the collection.");

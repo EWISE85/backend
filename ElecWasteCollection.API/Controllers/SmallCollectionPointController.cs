@@ -19,15 +19,15 @@ namespace ElecWasteCollection.API.Controllers
 			_excelImportService = excelImportService;
 		}
 		[HttpGet("company/{companyId}")]
-		public IActionResult GetByCompanyId([FromRoute] string companyId)
+		public async Task<IActionResult> GetByCompanyId([FromRoute] string companyId)
 		{
-			var result = _smallCollectionService.GetSmallCollectionPointByCompanyId(companyId);
+			var result = await _smallCollectionService.GetSmallCollectionPointByCompanyId(companyId);
 			return Ok(result);
 		}
 		[HttpGet("{smallCollectionPointId}")]
-		public IActionResult GetById([FromRoute] string smallCollectionPointId)
+		public async Task<IActionResult> GetById([FromRoute] string smallCollectionPointId)
 		{
-			var result = _smallCollectionService.GetSmallCollectionById(smallCollectionPointId);
+			var result = await _smallCollectionService.GetSmallCollectionById(smallCollectionPointId);
 			if (result == null)
 			{
 				return NotFound();
@@ -70,9 +70,9 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpGet("active")]
-		public IActionResult GetActiveSmallCollectionPoints()
+		public async Task<IActionResult> GetActiveSmallCollectionPoints()
 		{
-			var result = _smallCollectionService.GetSmallCollectionPointActive();
+			var result = await _smallCollectionService.GetSmallCollectionPointActive();
 			return Ok(result);
 		}
 

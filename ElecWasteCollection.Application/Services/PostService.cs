@@ -1,8 +1,10 @@
 ﻿using ElecWasteCollection.Application.Data;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,341 +17,346 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class PostService : IPostService
 	{
-		// === FIX 1: Thêm các List fake data còn thiếu ===
-		private static List<Post> posts = FakeDataSeeder.posts;
-		private static List<Products> products = FakeDataSeeder.products;
-		private static List<ProductValues> productValues = FakeDataSeeder.productValues;
-		private static List<Category> categories = FakeDataSeeder.categories;
-		//private static List<PostImages> postImages = FakeDataSeeder.postImages;
-		private static List<Attributes> attributes = FakeDataSeeder.attributes;
-		private static List<Brand> _brands = FakeDataSeeder.brands;
-		private static List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
-		private static List<ProductImages> _productImages = FakeDataSeeder.productImages;
-
-		
-		private static readonly HttpClient _httpClient = new HttpClient();
-		private readonly IUserService _userService;
 		private readonly IProfanityChecker _profanityChecker;
 		private readonly IProductService _productService;
 		private readonly IImageRecognitionService _imageRecognitionService;
+		private readonly IProductRepository _productRepository;
+		private readonly IProductImageRepository _productImageRepository;
+		private readonly IProductValuesRepository _productValuesRepository;
+		private readonly IUnitOfWork _unitOfWork;
+		private readonly IPostRepository _postRepository;
+		private readonly IProductStatusHistoryRepository _productStatusHistoryRepository;
+		private readonly ICategoryRepository _categoryRepository;
+		private readonly IAttributeRepository _attributeRepository;
+		private readonly IAttributeOptionRepository _attributeOptionRepository;
 
-		public PostService(IUserService userService, IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService)
+		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository)
 		{
-			_userService = userService;
 			_profanityChecker = profanityChecker;
 			_productService = productService;
 			_imageRecognitionService = imageRecognitionService;
+			_productImageRepository = productImageRepository;
+			_productRepository = productRepository;
+			_productValuesRepository = productValuesRepository;
+			_unitOfWork = unitOfWork;
+			_postRepository = postRepository;
+			_productStatusHistoryRepository = productStatusHistoryRepository;
+			_categoryRepository = categoryRepository;
+			_attributeRepository = attributeRepository;
+			_attributeOptionRepository = attributeOptionRepository;
 		}
 
-		public async Task<PostDetailModel> AddPost(CreatePostModel createPostRequest)
+		public async Task<bool> AddPost(CreatePostModel createPostRequest)
 		{
-			string postStatus = "Chờ Duyệt";
-			var productRequest = createPostRequest.Product;
 
-			if (productRequest == null)
-			{
-				return null;
-			}
-
+			if (createPostRequest.Product == null) throw new AppException("Product đang trống", 400);
+			if (createPostRequest.Product.Attributes == null || !createPostRequest.Product.Attributes.Any())
+				throw new AppException("Thuộc tính sản phẩm đang trống", 400);
+			DateTime transactionTimeUtc = DateTime.UtcNow;
 			try
 			{
+				string currentStatus = "Chờ Duyệt";
+				string statusDescription = "Yêu cầu đã được gửi";
+				Guid newProductId = Guid.NewGuid(); // Dùng ID này cho tất cả các bảng liên quan
+
 				var newProduct = new Products
 				{
-					ProductId = Guid.NewGuid(),
-					CategoryId = productRequest.SubCategoryId,
-					BrandId = productRequest.BrandId,
+					ProductId = newProductId,
+					CategoryId = createPostRequest.Product.SubCategoryId,
+					BrandId = createPostRequest.Product.BrandId,
 					Description = createPostRequest.Description,
-					CreateAt = DateOnly.FromDateTime(DateTime.Now.AddHours(7)),
+					CreateAt = DateOnly.FromDateTime(transactionTimeUtc),
+					UserId = createPostRequest.SenderId,
 					isChecked = false,
-					Status = "Chờ Duyệt"
+					Status = currentStatus
 				};
-				foreach (var attr in productRequest.Attributes)
+
+				foreach (var attr in createPostRequest.Product.Attributes)
 				{
-
-
-
 					var newProductValue = new ProductValues
 					{
 						ProductValuesId = Guid.NewGuid(),
-						ProductId = newProduct.ProductId,
+						ProductId = newProductId,
 						AttributeId = attr.AttributeId,
 						AttributeOptionId = attr.OptionId,
 						Value = attr.Value
 					};
-					productValues.Add(newProductValue);
+
+					await _unitOfWork.ProductValues.AddAsync(newProductValue); 
+																   
 				}
 
 
-
-
-				// --- BƯỚC 3: Tạo Post (Chưa có ảnh, chưa có status) ---
-				var newPost = new Post
-				{
-					PostId = Guid.NewGuid(),
-					SenderId = createPostRequest.SenderId,
-					Date = DateTime.Now,
-					Description = string.Empty,
-					Address = createPostRequest.Address,
-					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
-					Status = postStatus, // Sẽ cập nhật sau
-					ProductId = newProduct.ProductId,
-					EstimatePoint = 50,
-					CheckMessage = new List<string>()
-
-				};
-
-
+				// 2. Xử lý Images và AI Check (Task.WhenAll)
 				if (createPostRequest.Images != null && createPostRequest.Images.Any())
 				{
-					var category = categories.FirstOrDefault(c => c.CategoryId == productRequest.SubCategoryId);
+					// Category cần thiết cho AI check (async call)
+					var category = await _categoryRepository.GetByIdAsync(createPostRequest.Product.SubCategoryId);
 					var categoryName = category?.Name ?? "unknown";
 
 					var checkTasks = createPostRequest.Images
-						.Select(async imageUrl => await _imageRecognitionService.AnalyzeImageCategoryAsync(imageUrl, categoryName))
+						.Select(img => _imageRecognitionService.AnalyzeImageCategoryAsync(img, categoryName))
 						.ToList();
+					var results = await Task.WhenAll(checkTasks); // Chờ tất cả AI check
 
-					var results = await Task.WhenAll(checkTasks);
-
+					// Chuẩn bị ProductImages
+					var productImages = new List<ProductImages>();
 					for (int i = 0; i < createPostRequest.Images.Count; i++)
 					{
-						var imageResult = results[i];
-						var newPostImage = new ProductImages
+						productImages.Add(new ProductImages
 						{
 							ProductImagesId = Guid.NewGuid(),
-							ProductId = newProduct.ProductId,
+							ProductId = newProductId,
 							ImageUrl = createPostRequest.Images[i],
-							AiDetectedLabelsJson = imageResult.DetectedTagsJson
-						};
-						_productImages.Add(newPostImage);
+							AiDetectedLabelsJson = results[i].DetectedTagsJson
+						});
+					}
+
+					foreach (var img in productImages)
+					{
+						await _unitOfWork.ProductImages.AddAsync(img);
 					}
 
 					if (results.All(r => r.IsMatch))
 					{
-						postStatus = "Đã Duyệt";
+						currentStatus = "Đã Duyệt";
 						newProduct.Status = "Chờ gom nhóm";
-						var history = new ProductStatusHistory
-						{
-							ProductId = newProduct.ProductId,
-							ChangedAt = DateTime.Now.AddHours(7),
-							Status = "Chờ gom nhóm",
-							StatusDescription = "Yêu cầu được duyệt"
-						};
-						products.Add(newProduct);
-						_productStatusHistories.Add(history);
+						statusDescription = "Yêu cầu được duyệt tự động";
 					}
-					else
-					{
-						var history = new ProductStatusHistory
-						{
-							ProductId = newProduct.ProductId,
-							ChangedAt = DateTime.Now.AddHours(7),
-							Status = "Chờ Duyệt",
-							StatusDescription = "Yêu cầu đã được gửi"
-						};
-						products.Add(newProduct);
-						_productStatusHistories.Add(history);
-					}
-
-
-
 				}
-				newPost.Status = postStatus;
-				posts.Add(newPost);
 
-				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-				return MapToPostDetailModel(newPost, options);
+
+				// 3. Chuẩn bị và Thêm Product, History, Post
+				if (newProduct.Status == "Chờ Duyệt")
+				{
+					statusDescription = "Yêu cầu đã được gửi.";
+				}
+
+				var history = new ProductStatusHistory
+				{
+					ProductId = newProductId,
+					ChangedAt = DateTime.UtcNow,
+					Status = newProduct.Status, 
+					StatusDescription = statusDescription
+				};
+
+				var newPost = new Post
+				{
+					PostId = Guid.NewGuid(),
+					SenderId = createPostRequest.SenderId,
+					Date = DateTime.UtcNow,
+					Description = createPostRequest.Description, 
+					Address = createPostRequest.Address,
+					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
+					Status = currentStatus,
+					ProductId = newProductId,
+					EstimatePoint = 50, 
+					CheckMessage = new List<string>() 
+				};
+
+				await _unitOfWork.Products.AddAsync(newProduct);
+				await _unitOfWork.ProductStatusHistory.AddAsync(history);
+				await _unitOfWork.Posts.AddAsync(newPost);
+
+
+				await _unitOfWork.SaveAsync();
+
+				return true;
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"[FATAL ERROR] Lỗi khi tạo Post: {ex.Message}");
-				return null;
+				Console.WriteLine($"[FATAL ERROR] AddPost: {ex}");
+				throw;
 			}
 		}
 
-		
-		public List<PostSummaryModel> GetAll()
+
+		public async Task<List<PostSummaryModel>> GetAll()
 		{
+			var posts = await _postRepository.GetAllPostsWithDetailsAsync();
+
+			if (posts == null) return new List<PostSummaryModel>();
+
 			return posts.Select(post => MapToPostSummaryModel(post)).ToList();
 		}
 
-		public PostDetailModel GetById(Guid id)
+		public async Task<PostDetailModel> GetById(Guid id)
 		{
-			var post = posts.FirstOrDefault(p => p.PostId == id);
-			if (post == null)
+			var post = await _postRepository.GetPostWithDetailsAsync(id);
+			if (post == null) return null;
+			var productValues = post.Product?.ProductValues ?? new List<ProductValues>();
+
+			var attrIds = productValues.Select(pv => pv.AttributeId).Distinct().ToList();
+			var optionIds = productValues.Where(pv => pv.AttributeOptionId.HasValue)
+										 .Select(pv => pv.AttributeOptionId.Value)
+										 .Distinct().ToList();
+			var attributes = await _attributeRepository.GetsAsync(a => attrIds.Contains(a.AttributeId));
+			var optionsList = await _attributeOptionRepository.GetsAsync(o => optionIds.Contains(o.OptionId));
+			var attrDict = attributes.ToDictionary(k => k.AttributeId, v => v.Name);
+			var optionDict = optionsList.ToDictionary(k => k.OptionId, v => v.OptionName);
+			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+			return MapToPostDetailModel(post, attrDict, optionDict, jsonOptions);
+		}
+
+		public async Task<List<PostDetailModel>> GetPostBySenderId(Guid senderId)
+		{
+			var posts = await _postRepository.GetPostsBySenderIdWithDetailsAsync(senderId);
+			if (posts == null || !posts.Any())
 			{
-				return null;
+				return new List<PostDetailModel>();
 			}
-			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-			return MapToPostDetailModel(post, options);
+			var allProductValues = posts
+				.Where(p => p.Product != null && p.Product.ProductValues != null)
+				.SelectMany(p => p.Product.ProductValues)
+				.ToList();
+
+			if (!allProductValues.Any())
+			{
+				var emptyJsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+				return posts.Select(p => MapToPostDetailModel(
+					p,
+					new Dictionary<Guid, string>(),
+					new Dictionary<Guid, string>(),
+					emptyJsonOptions)
+				).ToList();
+			}
+			var attrIds = allProductValues.Select(pv => pv.AttributeId).Distinct().ToList();
+			var optionIds = allProductValues
+				.Where(pv => pv.AttributeOptionId.HasValue)
+				.Select(pv => pv.AttributeOptionId.Value)
+				.Distinct()
+				.ToList();
+			var attributes = await _attributeRepository.GetsAsync(a => attrIds.Contains(a.AttributeId));
+			var optionsList = await _attributeOptionRepository.GetsAsync(o => optionIds.Contains(o.OptionId));
+
+			var attrDict = attributes.ToDictionary(k => k.AttributeId, v => v.Name);
+			var optionDict = optionsList.ToDictionary(k => k.OptionId, v => v.OptionName);
+			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+			return posts.Select(post => MapToPostDetailModel(post, attrDict, optionDict, jsonOptions)).ToList();
 		}
 
-		public List<PostDetailModel> GetPostBySenderId(Guid senderId)
-		{
-			var postList = posts.Where(p => p.SenderId == senderId).ToList();
-			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-			return postList.Select(post => MapToPostDetailModel(post, options)).ToList();
-		}
-
-		// === SỬA LẠI: MapToPostModel (để lấy ảnh từ bảng PostImages) ===
 		private PostSummaryModel MapToPostSummaryModel(Post post)
 		{
-			if (post == null) return null;
-
-			var sender = _userService.GetById(post.SenderId);
-			var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
-
-			// Bước 1: Lấy category được gán trực tiếp (VD: "Tivi")
-			var directCategory = categories.FirstOrDefault(c => c.CategoryId == product?.CategoryId);
-
+			if (post == null) throw new AppException("Post không tồn tại", 404);
+			var senderName = post.Sender?.Name ?? "Không rõ";
+			if (post.Product == null)
+			{
+				throw new AppException("Product của Post không tồn tại", 404);
+			}
 			string finalCategoryName = "Không rõ";
+			var directCategory = post.Product.Category;
 
 			if (directCategory != null)
 			{
-				// Bước 2: Kiểm tra xem category này có cha không?
-				if (directCategory.ParentCategoryId != null)
+				if (directCategory.ParentCategory != null)
 				{
-					// Bước 3: Nếu có cha, tìm và lấy tên của cha
-					var parentCategory = categories.FirstOrDefault(c => c.CategoryId == directCategory.ParentCategoryId);
-					if (parentCategory != null)
-					{
-						finalCategoryName = parentCategory.Name; // Chỉ lấy tên cha
-					}
-					else
-					{
-						// Trường hợp hiếm: có ParentCategoryId nhưng không tìm thấy cha
-						finalCategoryName = "Lỗi (Không tìm thấy cha)";
-					}
+					finalCategoryName = directCategory.ParentCategory.Name;
 				}
 				else
 				{
-					// Bước 4: Nếu không có cha (nó đã là cha), thì lấy chính nó
 					finalCategoryName = directCategory.Name;
 				}
 			}
 
-			// Lấy ảnh
-			var thumbnailUrl = _productImages
-				.FirstOrDefault(pi => pi.ProductId == post.ProductId)?
-				.ImageUrl;
+			string thumbnailUrl = null;
+			if (post.Product.ProductImages != null && post.Product.ProductImages.Any())
+			{
+				thumbnailUrl = post.Product.ProductImages.FirstOrDefault()?.ImageUrl;
+			}
 
 			return new PostSummaryModel
 			{
 				Id = post.PostId,
-				Category = finalCategoryName, // <--- SỬ DỤNG TÊN ĐÃ QUA XỬ LÝ
+				Category = finalCategoryName,
 				Status = post.Status,
 				Date = post.Date,
 				Address = post.Address,
-				SenderName = sender?.Name ?? "Không rõ",
+				SenderName = senderName,
 				ThumbnailUrl = thumbnailUrl,
 				EstimatePoint = post.EstimatePoint
 			};
 		}
 
-		private PostDetailModel MapToPostDetailModel(Post post, JsonSerializerOptions options)
+		private PostDetailModel MapToPostDetailModel(Post post, Dictionary<Guid, string> attrDict, Dictionary<Guid, string> optionDict, JsonSerializerOptions options)
 		{
-			if (post == null) return null;
-
-			var sender = _userService.GetById(post.SenderId);
-			var userRespose = new UserResponse
+			if (post == null) throw new AppException("Post không tồn tại", 404);
+			var userResponse = new UserResponse();
+			if (post.Sender != null)
 			{
-				UserId = sender.UserId,
-				Avatar = sender.Avatar,
-				Email = sender.Email,
-				Name = sender.Name,
-				Phone = sender.Phone,
-				Role = sender.Role,
-				SmallCollectionPointId = sender.SmallCollectionPointId
-			};
-			var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
-
+				userResponse = new UserResponse
+				{
+					UserId = post.Sender.UserId,
+					Avatar = post.Sender.Avatar,
+					Email = post.Sender.Email,
+					Name = post.Sender.Name,
+					Phone = post.Sender.Phone,
+					Role = post.Sender.Role,
+					SmallCollectionPointId = post.Sender.SmallCollectionPointId?.ToString()
+				};
+			}
+			var productDetail = new ProductDetailModel();
 			string categoryName = "Không rõ";
-			var productDetailModel = new ProductDetailModel(); // Model lồng
-			var parentCategoryId = categories.FirstOrDefault(c => c.CategoryId == product.CategoryId)?.ParentCategoryId;
-			var parentCategory = categories.FirstOrDefault(c => c.CategoryId == parentCategoryId);
+			string parentCategoryName = "Không rõ";
+			List<string> imageUrls = new List<string>();
+			List<LabelModel> aggregatedLabels = new List<LabelModel>();
 
-			if (product != null)
+			if (post.Product != null)
 			{
-				var category = categories.FirstOrDefault(c => c.CategoryId == product.CategoryId);
-				categoryName = category?.Name ?? "Không rõ";
-				var brand = _brands.FirstOrDefault(b => b.BrandId == product.BrandId);
-				// Xây dựng ProductDetailModel
-				productDetailModel.ProductId = product.ProductId;
-				productDetailModel.Description = product.Description;
-				productDetailModel.BrandId = product.BrandId;
-				productDetailModel.BrandName = brand?.Name ?? "Không rõ";
+				if (post.Product.Category != null)
+				{
+					categoryName = post.Product.Category.Name;
+					parentCategoryName = post.Product.Category.ParentCategory?.Name ?? "Không rõ";
+				}
+				productDetail.ProductId = post.Product.ProductId;
+				productDetail.Description = post.Product.Description;
+				productDetail.BrandId = post.Product.BrandId;
+				productDetail.BrandName = post.Product.Brand?.Name ?? "Không rõ";
+				if (post.Product.ProductValues != null)
+				{
+					productDetail.Attributes = post.Product.ProductValues.Select(pv => new ProductValueDetailModel
+					{
+						AttributeId = pv.AttributeId.Value,
+						AttributeName = attrDict.ContainsKey(pv.AttributeId.Value) ? attrDict[pv.AttributeId.Value] : "Unknown",
+						OptionId = pv.AttributeOptionId,
+						OptionName = (pv.AttributeOptionId.HasValue && optionDict.ContainsKey(pv.AttributeOptionId.Value))
+									 ? optionDict[pv.AttributeOptionId.Value] : null,
+						Value = pv.Value.ToString()
+					}).ToList();
+				}
 
-				// Kiểm tra xem người dùng dùng SizeTier hay Attributes
+				if (post.Product.ProductImages != null)
+				{
+					imageUrls = post.Product.ProductImages.Select(x => x.ImageUrl).ToList();
 
-				// Lấy danh sách Attributes chi tiết
-				productDetailModel.Attributes = productValues
-					.Where(pv => pv.ProductId == product.ProductId)
-					.Join(attributes,
-						  pv => pv.AttributeId,
-						  attr => attr.AttributeId,
-						  (pv, attr) => new ProductValueDetailModel
-						  {
-							  AttributeName = attr.Name,
-							  AttributeId = attr.AttributeId,
-							  OptionId = pv.AttributeOptionId,
-							  OptionName = attr.AttributeOptions?
-					.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId)?
-					.OptionName,
-							  Value = pv.Value.ToString(),
-						  })
-					.ToList();
-
+					var allLabels = new List<LabelModel>();
+					foreach (var img in post.Product.ProductImages)
+					{
+						if (!string.IsNullOrEmpty(img.AiDetectedLabelsJson))
+						{
+							try
+							{
+								var labels = JsonSerializer.Deserialize<List<LabelModel>>(img.AiDetectedLabelsJson, options);
+								if (labels != null) allLabels.AddRange(labels);
+							}
+							catch { }
+						}
+					}
+					aggregatedLabels = allLabels.GroupBy(l => l.Tag)
+						.Select(g => new LabelModel { Tag = g.Key, Confidence = g.Max(x => x.Confidence), Status = g.First().Status })
+						.OrderByDescending(x => x.Confidence).Take(5).ToList();
+				}
 			}
 
-			// Deserialize Lịch hẹn
 			List<DailyTimeSlots> schedule = null;
 			if (!string.IsNullOrEmpty(post.ScheduleJson))
 			{
-				try
-				{
-					schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options);
-				}
-				catch (JsonException ex)
-				{
-					Console.WriteLine($"[JSON ERROR] Could not deserialize schedule for Post ID {post.PostId}: {ex.Message}");
-				}
+				try { schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options); }
+				catch { }
 			}
-			var allProductImages = _productImages.Where(pi => pi.ProductId == post.ProductId).ToList();
-			var imageUrls = allProductImages.Select(pi => pi.ImageUrl).ToList();
-			var allLabels = new List<LabelModel>();
-			foreach (var img in allProductImages)
-			{
-				var labelsFromThisImage = JsonSerializer.Deserialize<List<LabelModel>>(img.AiDetectedLabelsJson ?? "[]", options);
-				allLabels.AddRange(labelsFromThisImage);
-			}
-			var aggregatedLabels = allLabels
-		.GroupBy(l => l.Tag) // Nhóm các tag trùng tên (ví dụ: "toy", "toy")
-		.Select(group => new LabelModel
-		{
-			Tag = group.Key,
-			// Lấy confidence CAO NHẤT trong nhóm
-			Confidence = group.Max(g => g.Confidence),
-			// Lấy status đầu tiên (vì chúng giống nhau)
-			Status = group.First().Status
-		})
-		.OrderByDescending(l => l.Confidence) // Sắp xếp theo cái cao nhất
-		.Take(5) // <-- Chỉ lấy 5 tag HÀNG ĐẦU TỔNG CỘNG
-		.ToList();
-			var userResponse = new UserResponse
-			{
-				UserId = sender.UserId,
-				Avatar = sender.Avatar,
-				Email = sender.Email,
-				Name = sender.Name,
-				Phone = sender.Phone,
-				Role = sender.Role,
-				SmallCollectionPointId = sender.SmallCollectionPointId
-			};
-			// 4. Tạo PostModel chi tiết
 			return new PostDetailModel
 			{
 				Id = post.PostId,
-				//Name = post.Name,
-				ParentCategory = parentCategory.Name,
+				ParentCategory = parentCategoryName,
 				SubCategory = categoryName,
 				Status = post.Status,
 				RejectMessage = post.RejectMessage,
@@ -358,40 +365,38 @@ namespace ElecWasteCollection.Application.Services
 				Sender = userResponse,
 				Schedule = schedule,
 				PostNote = post.Description,
-				Product = productDetailModel,
+				Product = productDetail,
 				CheckMessage = post.CheckMessage,
 				EstimatePoint = post.EstimatePoint,
-
-				// === GÁN KẾT QUẢ MỚI ===
 				ImageUrls = imageUrls,
 				AggregatedAiLabels = aggregatedLabels
 			};
 		}
 		public async Task<bool> ApprovePost(Guid postId)
 		{
-			var post = posts.FirstOrDefault(p => p.PostId == postId);
-			if (post != null)
-			{
-				post.Status = "Đã Duyệt";
-				
-				var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
-				if (product != null)
-				{
-					product.Status = "Chờ gom nhóm";
-					_productService.UpdateProductStatusByProductId(product.ProductId, product.Status);
-					var history = new ProductStatusHistory
-					{
-						ProductId = post.ProductId,
-						ChangedAt = DateTime.Now,
-						Status = "Chờ gom nhóm",
-						StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
-					};
-					_productStatusHistories.Add(history);
+			var post = await _postRepository.GetAsync(p => p.PostId == postId);
+			if (post == null) throw new AppException("Post không tồn tại", 404);
+			post.Status = "Đã Duyệt";
 
-				}
-				return true;
+			var product = await _postRepository.GetAsync(p => p.ProductId == post.ProductId);
+			if (product != null)
+			{
+				product.Status = "Chờ gom nhóm";
+				await _productService.UpdateProductStatusByProductId(product.ProductId, product.Status);
+				var history = new ProductStatusHistory
+				{
+					ProductId = post.ProductId,
+					ChangedAt = DateTime.Now,
+					Status = "Chờ gom nhóm",
+					StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
+				};
+				await _unitOfWork.ProductStatusHistory.AddAsync(history);
+
 			}
-			return false;
+			_unitOfWork.Posts.Update(post);
+			await _unitOfWork.SaveAsync();
+			return true;
+
 		}
 
 		public async Task<bool> RejectPost(Guid postId, string rejectMessage)
@@ -401,120 +406,41 @@ namespace ElecWasteCollection.Application.Services
 			{
 				return false;
 			}
-			var post = posts.FirstOrDefault(p => p.PostId == postId);
-			if (post != null)
-			{
-				post.Status = "Đã Từ Chối";
-				post.RejectMessage = rejectMessage;
-				var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
-				if (product != null)
-				{
-					product.Status = "Đã Từ Chối";
-				}
-				return true;
-			}
-			return false;
+			var post = await _postRepository.GetAsync(p => p.PostId == postId);
+			if (post == null) throw new AppException("Post không tồn tại", 404);
+			post.Status = "Đã Từ Chối";
+			post.RejectMessage = rejectMessage;
+			var product = await _productRepository.GetAsync(p => p.ProductId == post.ProductId);
+			if (product == null) throw new AppException("Product không tồn tại", 404);
+
+			product.Status = "Đã Từ Chối";
+			
+			_unitOfWork.Products.Update(product);
+			_unitOfWork.Posts.Update(post);
+			await _unitOfWork.SaveAsync();
+			return true;
+
 		}
 
-		public Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model)
+		public async Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model)
 		{
+			var (posts, totalItems) = await _postRepository.GetPagedPostsAsync(
+				status: model.Status,
+				search: model.Search,
+				order: model.Order,
+				page: model.Page,
+				limit: model.Limit
+			);
 
-			var queryablePosts = posts.Select(post =>
-			{
-				var product = products.FirstOrDefault(p => p.ProductId == post.ProductId);
-				var directCategory = categories.FirstOrDefault(c => c.CategoryId == product?.CategoryId);
-				string parentCategoryName = null;
-
-				if (directCategory != null)
-				{
-					if (directCategory.ParentCategoryId != null)
-					{
-						var parentCategory = categories.FirstOrDefault(c => c.CategoryId == directCategory.ParentCategoryId);
-						parentCategoryName = parentCategory?.Name;
-					}
-					else
-					{
-						parentCategoryName = directCategory.Name; // Nó chính là category cha
-					}
-				}
-
-				return new
-				{
-					PostObject = post,
-					SearchableCategoryName = parentCategoryName ?? ""
-				};
-			}).AsQueryable();
-
-			// Bước 2: Lọc theo Status (nếu có)
-			if (!string.IsNullOrEmpty(model.Status))
-			{
-				queryablePosts = queryablePosts.Where(p => p.PostObject.Status == model.Status);
-			}
-
-			// Bước 3: Lọc theo Search (Name bài đăng HOẶC Name category cha)
-			if (!string.IsNullOrEmpty(model.Search))
-			{
-				string searchLower = model.Search.ToLower();
-				queryablePosts = queryablePosts.Where(p =>
-					p.SearchableCategoryName.ToLower().Contains(searchLower)
-				);
-			}
-
-			// Bước 4: Lấy tổng số lượng (trước khi phân trang)
-			int totalItems = queryablePosts.Count();
-
-			// Bước 5: Sắp xếp (ORDER BY)
-			// Áp dụng logic nghiệp vụ bạn yêu cầu
-			IQueryable<dynamic> sortedPosts;
-			if (model.Status == "Chờ Duyệt")
-			{
-				// "nếu status là chờ duyệt thì orderby ngày tăng dần"
-				sortedPosts = queryablePosts.OrderBy(p => p.PostObject.Date);
-			}
-			else if (model.Status == "Đã Duyệt" || model.Status == "Đã Từ Chối")
-			{
-				// "nếu status là đã duyệt, đã từ chối thì order ngày giảm dần"
-				sortedPosts = queryablePosts.OrderByDescending(p => p.PostObject.Date);
-			}
-			else
-			{
-				// Trường hợp không lọc status (hoặc status khác),
-				// thì tuân theo tham số 'order'
-				if (model.Order?.ToUpper() == "ASC")
-				{
-					sortedPosts = queryablePosts.OrderBy(p => p.PostObject.Date);
-				}
-				else
-				{
-					// Mặc định là giảm dần (DESC)
-					sortedPosts = queryablePosts.OrderByDescending(p => p.PostObject.Date);
-				}
-			}
-
-			// Bước 6: Phân trang (SKIP & TAKE)
-			var pagedData = sortedPosts
-				.Skip((model.Page - 1) * model.Limit)
-				.Take(model.Limit)
-				.ToList(); // Thực thi query (lấy dữ liệu)
-
-			// Bước 7: Map kết quả sang PostSummaryModel
-			var finalResultList = pagedData
-	.Select(p => MapToPostSummaryModel(p.PostObject))
-	.Cast<PostSummaryModel>() // <-- THÊM DÒNG NÀY
-	.ToList();
-
-			// Bước 8: Tạo PagedResultModel
-			var pagedResult = new PagedResultModel<PostSummaryModel>(
-				finalResultList,
+			var summaryList = posts
+				.Select(p => MapToPostSummaryModel(p))
+				.ToList();
+			return new PagedResultModel<PostSummaryModel>(
+				summaryList,
 				model.Page,
 				model.Limit,
 				totalItems
 			);
-
-			// Trả về Task (vì đang dùng fake list)
-			return Task.FromResult(pagedResult);
 		}
-
-
 	}
 }

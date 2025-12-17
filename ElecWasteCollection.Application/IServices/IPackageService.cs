@@ -9,18 +9,18 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IPackageService
 	{
-		string CreatePackageAsync(CreatePackageModel model);
+		Task<string> CreatePackageAsync(CreatePackageModel model);
 
-		PackageDetailModel GetPackageById(string packageId);
+		Task<PackageDetailModel> GetPackageById(string packageId);
 
-		PagedResult<PackageDetailModel> GetPackagesByQuery(PackageSearchQueryModel query);
+		Task<PagedResult<PackageDetailModel>> GetPackagesByQuery(PackageSearchQueryModel query);
 
-		bool UpdatePackageStatus(string packageId, string status);
-		bool UpdatePackageStatusDeliveryAndRecycler(string packageId, string status);
+		Task<bool> UpdatePackageStatus(string packageId, string status);
+		Task<bool> UpdatePackageStatusDeliveryAndRecycler(string packageId, string status);
 
-		bool UpdatePackageAsync(UpdatePackageModel model);
+		Task<bool> UpdatePackageAsync(UpdatePackageModel model);
 
-		List<PackageDetailModel> GetPackagesWhenDelivery();
+		Task<List<PackageDetailModel>> GetPackagesWhenDelivery();
 
 
 	}

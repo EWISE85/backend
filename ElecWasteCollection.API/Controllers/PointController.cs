@@ -18,13 +18,13 @@ namespace ElecWasteCollection.API.Controllers
             _pointTransactionService = pointTransactionService;
         }
         [HttpGet("points/{userId}")]
-        public IActionResult GetUserPoints([FromRoute] Guid userId)
+        public async Task<IActionResult> GetUserPoints([FromRoute] Guid userId)
         {
-            var points = _userPointService.GetPointByUserId(userId);
+            var points = await _userPointService.GetPointByUserId(userId);
             return Ok(points);
         }
         [HttpPost("points-transaction")]
-        public IActionResult CreatePointTransaction([FromBody] ReceivePointFromCollectionPointRequest request)
+        public async Task<IActionResult> CreatePointTransaction([FromBody] ReceivePointFromCollectionPointRequest request)
         {
             var model = new CreatePointTransactionModel
             {
@@ -32,13 +32,13 @@ namespace ElecWasteCollection.API.Controllers
                 Point = request.Point,
                 Desciption = request.Desciption,
             };
-            var result = _pointTransactionService.ReceivePointFromCollectionPoint(model);
+            var result = await _pointTransactionService.ReceivePointFromCollectionPoint(model);
             return Ok(result);
         }
         [HttpGet("points-transaction/{userId}")]
-        public IActionResult GetPointTransactionByUserId([FromRoute] Guid userId)
+        public async Task<IActionResult> GetPointTransactionByUserId([FromRoute] Guid userId)
         {
-            var pointTransactions = _pointTransactionService.GetAllPointHistoryByUserId(userId);
+            var pointTransactions = await _pointTransactionService.GetAllPointHistoryByUserId(userId);
             return Ok(pointTransactions);
         }
 

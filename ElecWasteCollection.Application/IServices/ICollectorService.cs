@@ -15,13 +15,13 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> DeleteCollector(Guid collectorId);
 
 
-		CollectorResponse? GetById(Guid id);
+		Task<CollectorResponse> GetById(Guid id);
 
-		List<CollectorResponse> GetAll();
+		Task<List<CollectorResponse>> GetAll();
 
-		List<CollectorResponse> GetCollectorByCompanyId(string companyId);
+		Task<List<CollectorResponse>> GetCollectorByCompanyId(string companyId);
 
-		List<CollectorResponse> GetCollectorByWareHouseId(string wareHouseId);
+		Task<List<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId);
 
 		Task<ImportResult> CheckAndUpdateCollectorAsync(User collector, string collectorUsername, string password);
 

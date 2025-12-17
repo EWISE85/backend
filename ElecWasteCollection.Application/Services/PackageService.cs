@@ -1,7 +1,9 @@
 ﻿using ElecWasteCollection.Application.Data;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,17 +14,20 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class PackageService : IPackageService
 	{
-		private readonly List<Packages> packages = FakeDataSeeder.packages;
 		private readonly IProductService _productService;
-		private readonly List<ProductStatusHistory> _productStatusHistories = FakeDataSeeder.productStatusHistories;
+		private readonly IPackageRepository _packageRepository;
+		private readonly IProductStatusHistoryRepository _productStatusHistoryRepository;
+		private readonly IUnitOfWork _unitOfWork;
 
-
-		public PackageService(IProductService productService)
+		public PackageService(IProductService productService, IPackageRepository packageRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IUnitOfWork unitOfWork)
 		{
 			_productService = productService;
+			_packageRepository = packageRepository;
+			_productStatusHistoryRepository = productStatusHistoryRepository;
+			_unitOfWork = unitOfWork;
 		}
 
-		public string CreatePackageAsync(CreatePackageModel model)
+		public async Task<string> CreatePackageAsync(CreatePackageModel model)
 		{
 			var newPackage = new Packages
 			{
@@ -32,15 +37,15 @@ namespace ElecWasteCollection.Application.Services
 				CreateAt = DateTime.UtcNow,
 				Status = "Đang đóng gói"
 			};
-			packages.Add(newPackage);
+			await _unitOfWork.Packages.AddAsync(newPackage);
 			foreach (var qrCode in model.ProductsQrCode)
 			{
-				var product = _productService.GetByQrCode(qrCode);
+				var product = await _productService.GetByQrCode(qrCode);
 
 				if (product != null)
 				{
-					_productService.AddPackageIdToProductByQrCode(product.QrCode, newPackage.PackageId);
-					_productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
+					await _productService.AddPackageIdToProductByQrCode(product.QrCode, newPackage.PackageId);
+					await _productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
 					var newHistory = new ProductStatusHistory
 					{
 						ProductStatusHistoryId = Guid.NewGuid(),
@@ -49,22 +54,20 @@ namespace ElecWasteCollection.Application.Services
 						StatusDescription = "Sản phẩm đã được đóng gói",
 						Status = "Đã đóng thùng"
 					};
+					await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 
 				}
 			}
-
+			await _unitOfWork.SaveAsync();
 			return newPackage.PackageId;
 		}
 
-		public PackageDetailModel GetPackageById(string packageId)
+		public async Task<PackageDetailModel> GetPackageById(string packageId)
 		{
-			var package = packages.FirstOrDefault(p => p.PackageId == packageId);
-			if (package == null)
-			{
-				return null;
-			}
+			var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
+			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
-			var productDetails = _productService.GetProductsByPackageId(packageId);
+			var productDetails = await _productService.GetProductsByPackageIdAsync(packageId);
 
 			var packageDetail = new PackageDetailModel
 			{
@@ -78,37 +81,32 @@ namespace ElecWasteCollection.Application.Services
 			return packageDetail;
 		}
 
-		public PagedResult<PackageDetailModel> GetPackagesByQuery(PackageSearchQueryModel query)
+
+		public async Task<PagedResult<PackageDetailModel>> GetPackagesByQuery(PackageSearchQueryModel query)
 		{
-			var filteredData = packages.AsEnumerable();
+			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesWithDetailsAsync(
+				query.SmallCollectionPointsId,
+				query.Status,
+				query.Page,
+				query.Limit
+			);
 
-
-			if (query.SmallCollectionPointsId != null)
+			var resultItems = pagedPackages.Select(pkg =>
 			{
-				filteredData = filteredData.Where(p => p.SmallCollectionPointsId == query.SmallCollectionPointsId);
-			}
+				var productDetails = pkg.Products?.Select(product => new ProductDetailModel
+				{
+					ProductId = product.ProductId,
+					Description = product.Description,
+					BrandId = product.BrandId,
+					BrandName = product.Brand?.Name, 
+					CategoryId = product.CategoryId,
+					CategoryName = product.Category?.Name, 
+					QrCode = product.QRCode,
+					IsChecked = product.isChecked,
+					Status = product.Status
+				}).ToList() ?? new List<ProductDetailModel>();
 
-			if (!string.IsNullOrEmpty(query.Status))
-			{
-				filteredData = filteredData.Where(p =>
-					!string.IsNullOrEmpty(p.Status) &&
-					p.Status.Equals(query.Status.Trim(), StringComparison.OrdinalIgnoreCase));
-			}
-
-			int totalCount = filteredData.Count();
-
-			var pagedPackages = filteredData
-				.Skip((query.Page - 1) * query.Limit)
-				.Take(query.Limit)
-				.ToList();
-
-			var resultItems = new List<PackageDetailModel>();
-
-			foreach (var pkg in pagedPackages)
-			{
-				var productDetails = _productService.GetProductsByPackageId(pkg.PackageId);
-
-				var model = new PackageDetailModel
+				return new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
 					PackageName = pkg.PackageName,
@@ -116,11 +114,8 @@ namespace ElecWasteCollection.Application.Services
 					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
 					Products = productDetails
 				};
+			}).ToList();
 
-				resultItems.Add(model);
-			}
-
-			// 6. Trả về kết quả
 			return new PagedResult<PackageDetailModel>
 			{
 				Data = resultItems,
@@ -130,17 +125,16 @@ namespace ElecWasteCollection.Application.Services
 			};
 		}
 
-		public List<PackageDetailModel> GetPackagesWhenDelivery()
+		public async Task<List<PackageDetailModel>> GetPackagesWhenDelivery()
 		{
-			var deliveringPackages = packages
-				.Where(p => p.Status == "Đang vận chuyển")
-				.ToList();
+			var deliveringPackages = await _packageRepository.GetsAsync(p => p.Status == "Đang vận chuyển");
+				
 
 			var result = new List<PackageDetailModel>();
 
 			foreach (var pkg in deliveringPackages)
 			{
-				var productDetails = _productService.GetProductsByPackageId(pkg.PackageId);
+				var productDetails = await _productService.GetProductsByPackageIdAsync(pkg.PackageId);
 
 				var model = new PackageDetailModel
 				{
@@ -157,81 +151,67 @@ namespace ElecWasteCollection.Application.Services
 			return result;
 		}
 
-		public bool UpdatePackageAsync(UpdatePackageModel model)
+		public async Task<bool> UpdatePackageAsync(UpdatePackageModel model)
 		{
-			// 1. Tìm gói hàng cần update
-			var package = packages.FirstOrDefault(p => p.PackageId == model.PackageId);
-			if (package == null)
-			{
-				return false;
-			}
+			var package = await _packageRepository.GetAsync(p => p.PackageId == model.PackageId);
+			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
-			// 2. Update thông tin cơ bản
 			package.PackageName = model.PackageName;
 			package.SmallCollectionPointsId = model.SmallCollectionPointsId;
 
-			// 3. Lấy danh sách sản phẩm HIỆN TẠI đang thuộc về gói này (trong Database/List cũ)
-			var currentProductsInPackage = _productService.GetProductsByPackageId(model.PackageId);
+			var currentProductsInPackage = await _productService.GetProductsByPackageIdAsync(model.PackageId);
 
-			// Tạo HashSet từ danh sách QR Code MỚI gửi lên để tra cứu cho nhanh
 			var newQrCodesSet = model.ProductsQrCode.ToHashSet();
 
-			// === XỬ LÝ XÓA (REMOVE) ===
-			// Duyệt qua các sản phẩm cũ, nếu cái nào KHÔNG nằm trong danh sách mới -> Đuổi khỏi gói
 			foreach (var existingProduct in currentProductsInPackage)
 			{
 				if (!newQrCodesSet.Contains(existingProduct.QrCode))
 				{
-					// Set lại PackageId = null
-					// Lưu ý: Bạn cần đảm bảo hàm này nhận tham số null, hoặc viết hàm riêng để Remove
-					_productService.AddPackageIdToProductByQrCode(existingProduct.QrCode, null);
+					await _productService.AddPackageIdToProductByQrCode(existingProduct.QrCode, null);
 
 					// Trả lại trạng thái ban đầu (ví dụ: "Nhập kho")
-					_productService.UpdateProductStatusByQrCode(existingProduct.QrCode, "Nhập kho");
+					await _productService.UpdateProductStatusByQrCode(existingProduct.QrCode, "Nhập kho");
 
-					var oldHistory = _productStatusHistories.FirstOrDefault(h => h.ProductId == existingProduct.ProductId && h.Status == "Đã đóng thùng");
+					var oldHistory = await _productStatusHistoryRepository.GetAsync(h => h.ProductId == existingProduct.ProductId && h.Status == "Đã đóng thùng");
 					if (oldHistory != null)
 					{
-						_productStatusHistories.Remove(oldHistory);
+						_unitOfWork.ProductStatusHistory.Delete(oldHistory);
 					}
 
 				}
 			}
 
-			// === XỬ LÝ THÊM (ADD) HOẶC UPDATE ===
-			// Duyệt danh sách mới gửi lên để gán vào gói
 			foreach (var qrCode in model.ProductsQrCode)
 			{
-				var product = _productService.GetByQrCode(qrCode);
+				var product = await _productService.GetByQrCode(qrCode);
 				if (product != null)
 				{
-					// Gán vào gói hiện tại
-					_productService.AddPackageIdToProductByQrCode(product.QrCode, package.PackageId);
+					await _productService.AddPackageIdToProductByQrCode(product.QrCode, package.PackageId);
 
-					// Cập nhật trạng thái
-					_productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
+					await _productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
 				}
 			}
+			_unitOfWork.Packages.Update(package);
+			await _unitOfWork.SaveAsync();
 			return true;
 		}
 
-		public bool UpdatePackageStatus(string packageId, string status)
+		public async Task<bool> UpdatePackageStatus(string packageId, string status)
 		{
-			var package = packages.FirstOrDefault(p => p.PackageId == packageId);
+			var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
 
-			if (package == null)
-			{
-				return false;
-			}
+			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
 			package.Status = status;
+			_unitOfWork.Packages.Update(package);
+			await _unitOfWork.SaveAsync();
 			return true;
 		}
 
-		public bool UpdatePackageStatusDeliveryAndRecycler(string packageId, string status)
+		public async Task<bool> UpdatePackageStatusDeliveryAndRecycler(string packageId, string status)
 		{
-			var package = packages.FirstOrDefault(p => p.PackageId == packageId);
-			var productList = _productService.GetProductsByPackageId(packageId);
+			var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
+			var productList = await _productService.GetProductsByPackageIdAsync(packageId);
 			if (package == null)
 			{
 				return false;
@@ -239,17 +219,19 @@ namespace ElecWasteCollection.Application.Services
 			package.Status = status;
 			foreach (var product in productList)
 			{
-				_productService.UpdateProductStatusByQrCode(product.QrCode, status);
+				await _productService.UpdateProductStatusByQrCode(product.QrCode, status);
 				var newHistory = new ProductStatusHistory
 				{
 					ProductStatusHistoryId = Guid.NewGuid(),
 					ProductId = product.ProductId,
-					ChangedAt = DateTime.UtcNow.AddHours(7),
+					ChangedAt = DateTime.UtcNow,
 					StatusDescription = status == "Đang vận chuyển" ? "Sản phẩm đang được vận chuyển" : "Sản phẩm đã được tái chế",
 					Status = status
 				};
-				_productStatusHistories.Add(newHistory);
+				await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 			}
+			_unitOfWork.Packages.Update(package);
+			await _unitOfWork.SaveAsync();
 			return true;
 		}
 	}

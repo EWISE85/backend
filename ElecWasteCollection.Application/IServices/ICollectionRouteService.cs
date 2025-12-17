@@ -9,18 +9,18 @@ namespace ElecWasteCollection.Application.IServices
 {
     public interface ICollectionRouteService
     {
-        List<CollectionRouteModel> GetAllRoutes(DateOnly PickUpDate);
-		List<CollectionRouteModel> GetRoutesByCollectorId(DateOnly PickUpDate, Guid collectorId);
-		List<CollectionRouteModel> GetAllRoutesByDateAndByCollectionPoints(DateOnly PickUpDate, string collectionPointId);
-		CollectionRouteModel GetRouteById(Guid collectionRoute);
+        Task<List<CollectionRouteModel>> GetAllRoutes(DateOnly PickUpDate);
+		Task<List<CollectionRouteModel>> GetRoutesByCollectorId(DateOnly PickUpDate, Guid collectorId);
+		Task<List<CollectionRouteModel>> GetAllRoutesByDateAndByCollectionPoints(DateOnly PickUpDate, string collectionPointId);
+		Task<CollectionRouteModel> GetRouteById(Guid collectionRoute);
 
-        bool ConfirmCollection(Guid collectionRouteId, List<string> confirmImages, string QRCode);
+        Task<bool> ConfirmCollection(Guid collectionRouteId, List<string> confirmImages, string QRCode);
 
-        bool CancelCollection(Guid collectionRouteId, string rejectMessage);
+        Task<bool> CancelCollection(Guid collectionRouteId, string rejectMessage);
 
         Task<bool> IsUserConfirm(Guid collectionRouteId, bool isConfirm, bool isSkip);
 
-		PagedResult<CollectionRouteModel> GetPagedRoutes(RouteSearchQueryModel parameters);
+		Task<PagedResultModel<CollectionRouteModel>> GetPagedRoutes(RouteSearchQueryModel parameters);
 
 
 	}

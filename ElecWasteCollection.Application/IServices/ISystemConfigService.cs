@@ -9,9 +9,9 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface ISystemConfigService
 	{
-		List<SystemConfigModel> GetAllSystemConfigActive();
-		SystemConfigModel GetSystemConfigByKey(string key);
+		Task<List<SystemConfigModel>> GetAllSystemConfigActive();
+		Task<SystemConfigModel> GetSystemConfigByKey(string key);
 
-		bool UpdateSystemConfig(UpdateSystemConfigModel model);
+		Task<bool> UpdateSystemConfig(UpdateSystemConfigModel model);
 	}
 }

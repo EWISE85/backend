@@ -36,6 +36,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 		public DbSet<UserPoints> UserPoints { get; set; }
 		public DbSet<Vehicles> Vehicles { get; set; }
 
+		public DbSet<ForgotPassword> ForgotPasswords { get; set; }
+
+		public DbSet<SystemConfig> SystemConfigs { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<CollectionCompany>(entity =>
@@ -84,6 +88,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasKey(e => e.AccountId);
 				entity.Property(e => e.AccountId).ValueGeneratedOnAdd();
 				entity.Property(e => e.UserId).IsRequired();
+				entity.Property(e => e.IsFirstLogin).HasDefaultValue(true);
 				entity.HasOne(e => e.User)
 					  .WithMany(u => u.Accounts)
 					  .HasForeignKey(e => e.UserId)
@@ -369,6 +374,25 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .WithMany(s => s.Packages)
 					  .HasForeignKey(e => e.SmallCollectionPointsId)
 					  .HasConstraintName("FK_Packages_SmallCollectionPoints");
+			});
+
+			modelBuilder.Entity<ForgotPassword>(entity =>
+			{
+				entity.ToTable("ForgotPassword");
+				entity.HasKey(e => e.ForgotPasswordId);
+				entity.Property(e => e.ForgotPasswordId).ValueGeneratedOnAdd();
+				entity.Property(e => e.UserId).IsRequired();
+				entity.HasOne(e => e.User)
+					  .WithMany(u => u.ForgotPasswords)
+					  .HasForeignKey(e => e.UserId)
+					  .HasConstraintName("FK_ForgotPassword_User");
+			});
+
+			modelBuilder.Entity<SystemConfig>(entity =>
+			{
+				entity.ToTable("SystemConfig");
+				entity.HasKey(e => e.SystemConfigId);
+				entity.Property(e => e.SystemConfigId).ValueGeneratedOnAdd();
 			});
 		}
 	}

@@ -29,6 +29,11 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<bool>("IsFirstLogin")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(true);
+
                     b.Property<string>("PasswordHash")
                         .HasColumnType("text");
 
@@ -237,7 +242,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     b.PrimitiveCollection<List<string>>("ConfirmImages")
-                        .IsRequired()
                         .HasColumnType("text[]");
 
                     b.Property<double>("DistanceKm")
@@ -263,6 +267,29 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.HasIndex("ProductId");
 
                     b.ToTable("CollectionRoutes", (string)null);
+                });
+
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.ForgotPassword", b =>
+                {
+                    b.Property<Guid>("ForgotPasswordId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ExpireAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("OTP")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("ForgotPasswordId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("ForgotPassword", (string)null);
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Packages", b =>
@@ -610,6 +637,37 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.ToTable("SmallCollectionPoints", (string)null);
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.SystemConfig", b =>
+                {
+                    b.Property<Guid>("SystemConfigId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("DisplayName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("GroupName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("SystemConfigId");
+
+                    b.ToTable("SystemConfig", (string)null);
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.User", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -837,6 +895,18 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("CollectionGroup");
 
                     b.Navigation("Product");
+                });
+
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.ForgotPassword", b =>
+                {
+                    b.HasOne("ElecWasteCollection.Domain.Entities.User", "User")
+                        .WithMany("ForgotPasswords")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_ForgotPassword_User");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Packages", b =>
@@ -1164,6 +1234,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.User", b =>
                 {
                     b.Navigation("Accounts");
+
+                    b.Navigation("ForgotPasswords");
 
                     b.Navigation("PointTransactions");
 

@@ -15,15 +15,15 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<bool> DeleteSmallCollectionPoint(string smallCollectionPointId);
 
-		List<SmallCollectionPointsResponse> GetSmallCollectionPointByCompanyId(string companyId);
+		Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointByCompanyId(string companyId);
 
-		SmallCollectionPointsResponse? GetSmallCollectionById(string smallCollectionPointId);
+		Task<SmallCollectionPointsResponse> GetSmallCollectionById(string smallCollectionPointId);
 
 		Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(SmallCollectionPoints smallCollectionPoints, string adminUsername, string adminPassword);
 
 		Task<PagedResultModel<SmallCollectionPointsResponse>> GetPagedSmallCollectionPointsAsync(SmallCollectionSearchModel model);
 
-		List<SmallCollectionPointsResponse> GetSmallCollectionPointActive();
+		Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointActive();
 
 	}
 }

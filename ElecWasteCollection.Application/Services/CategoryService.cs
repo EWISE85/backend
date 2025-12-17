@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,25 +13,35 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class CategoryService : ICategoryService
 	{
-		private static List<Category> _categories = FakeDataSeeder.categories;
-		public List<CategoryModel> GetParentCategory()
+		private readonly ICategoryRepository _categoryRepository;
+		public CategoryService(ICategoryRepository categoryRepository)
 		{
-			var parentCategories = _categories
-				.Where(c => c.ParentCategoryId == null)
-				.Select(c => new CategoryModel
-				{
-					Id = c.CategoryId,
-					Name = c.Name,
-					ParentCategoryId = c.ParentCategoryId
-				})
-				.ToList();
+			_categoryRepository = categoryRepository;
+		}
+		public async Task<List<CategoryModel>> GetParentCategory()
+		{
 
-			return parentCategories;
+			var parentCategories = await _categoryRepository.GetsAsync(c => c.ParentCategoryId == null);
+			if (parentCategories == null)
+			{
+				return new List<CategoryModel>();
+			}
+			var response = parentCategories.Select(c => new CategoryModel
+			{
+				Id = c.CategoryId,
+				Name = c.Name,
+				ParentCategoryId = c.ParentCategoryId
+			}).ToList();
+			return response;
 		}
 
-		public List<CategoryModel> GetSubCategoryByName(string name, Guid parentId)
-		{
-			var categories = _categories.Where(c => c.Name.ToLower().Contains(name.ToLower()) && c.ParentCategoryId == parentId);
+		public async Task<List<CategoryModel>> GetSubCategoryByName(string name, Guid parentId)
+		{			
+			var categories = await _categoryRepository.GetsAsync(c => c.Name.ToLower().Contains(name.ToLower()) && c.ParentCategoryId == parentId);
+			if (categories == null)
+			{
+				return new List<CategoryModel>();
+			}
 			var subCategories = categories
 				.Select(c => new CategoryModel
 				{
@@ -42,19 +53,21 @@ namespace ElecWasteCollection.Application.Services
 			return subCategories;
 		}
 
-		public List<CategoryModel> GetSubCategoryByParentId(Guid parentId)
+		public async Task<List<CategoryModel>> GetSubCategoryByParentId(Guid parentId)
 		{
-			var subCategories = _categories
-				.Where(c => c.ParentCategoryId == parentId)
-				.Select(c => new CategoryModel
-				{
-					Id = c.CategoryId,
-					Name = c.Name,
-					ParentCategoryId = c.ParentCategoryId
-				})
-				.ToList();
+			var subCategories = await _categoryRepository.GetsAsync(c => c.ParentCategoryId == parentId);
+			if (subCategories == null)
+			{
+				return new List<CategoryModel>();
+			}
+			var response = subCategories.Select(c => new CategoryModel
+			{
+				Id = c.CategoryId,
+				Name = c.Name,
+				ParentCategoryId = c.ParentCategoryId
+			}).ToList();
 
-			return subCategories;
+			return response;
 		}
 	}
 }

@@ -73,5 +73,24 @@ namespace ElecWasteCollection.Infrastructure.Repository
         {
             _dbSet.Remove(entity);
         }
-    }
+
+		public async Task<List<T>> GetsAsync(Expression<Func<T, bool>> filter, string? includeProperties = null)
+		{
+			IQueryable<T> query = _dbSet;
+
+			if (!string.IsNullOrEmpty(includeProperties))
+			{
+				foreach (var includeProp in includeProperties.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+				{
+					query = query.Include(includeProp);
+				}
+			}
+
+			return await query.Where(filter).ToListAsync();
+		}
+		public void Add(T entity) 
+		{
+			_dbSet.Add(entity);
+		}
+	}
 }

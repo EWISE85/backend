@@ -24,17 +24,34 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public IGenericRepository<ProductValues> ProductValues { get; }
         public IGenericRepository<AttributeOptions> AttributeOptions { get; }
         public IGenericRepository<Attributes> Attributes { get; }
-        public IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
-        public IGenericRepository<Vehicles> Vehicles { get; }
-        public IGenericRepository<Shifts> Shifts { get; }
-        public IGenericRepository<CollectionGroups> CollectionGroups { get; }
-        public IGenericRepository<CollectionRoutes> CollectionRoutes { get; }
-        public IGenericRepository<ProductStatusHistory> ProductStatusHistories { get; }
+		public IGenericRepository<Account> Accounts { get; }
+		public IGenericRepository<CollectionGroups> CollectionGroups { get; }
 
+		public IGenericRepository<CategoryAttributes> CategoryAttributes { get; }
 
+		public IGenericRepository<CollectionRoutes> CollecctionRoutes { get; }
 
+		public IGenericRepository<Packages> Packages { get; }
 
-        public UnitOfWork(ElecWasteCollectionDbContext context)
+		public IGenericRepository<PointTransactions> PointTransactions { get; }
+
+		public IGenericRepository<ProductImages> ProductImages { get; }
+
+		public IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
+
+		public IGenericRepository<Shifts> Shifts { get; }
+
+		public IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
+
+		public IGenericRepository<UserPoints> UserPoints { get; }
+
+		public IGenericRepository<Vehicles> Vehicles { get; }
+
+		public IGenericRepository<ForgotPassword> ForgotPasswords { get; }
+
+		public IGenericRepository<SystemConfig> SystemConfig { get; }
+
+		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
 
@@ -48,15 +65,25 @@ namespace ElecWasteCollection.Infrastructure.Repository
             ProductValues = new GenericRepository<ProductValues>(_context);
             AttributeOptions = new GenericRepository<AttributeOptions>(_context);
             Attributes = new GenericRepository<Attributes>(_context);
-            SmallCollectionPoints = new GenericRepository<SmallCollectionPoints>(_context);
-            Vehicles = new GenericRepository<Vehicles>(_context);
-            Shifts = new GenericRepository<Shifts>(_context);
-            CollectionGroups = new GenericRepository<CollectionGroups>(_context);
-            CollectionRoutes = new GenericRepository<CollectionRoutes>(_context);
-            ProductStatusHistories = new GenericRepository<ProductStatusHistory>(_context);
-        }
+			Accounts = new GenericRepository<Account>(_context);
+			CategoryAttributes = new GenericRepository<CategoryAttributes>(_context);
+			CollecctionRoutes = new GenericRepository<CollectionRoutes>(_context);
+			Packages = new GenericRepository<Packages>(_context);
+			PointTransactions = new GenericRepository<PointTransactions>(_context);
+			ProductImages = new GenericRepository<ProductImages>(_context);
+			ProductStatusHistory = new GenericRepository<ProductStatusHistory>(_context);
+			Shifts = new GenericRepository<Shifts>(_context);
+			SmallCollectionPoints = new GenericRepository<SmallCollectionPoints>(_context);
+			UserPoints = new GenericRepository<UserPoints>(_context);
+			Vehicles = new GenericRepository<Vehicles>(_context);
+			ForgotPasswords = new GenericRepository<ForgotPassword>(_context);
+			SystemConfig = new GenericRepository<SystemConfig>(_context);
+			CollectionGroups = new GenericRepository<CollectionGroups>(_context);
 
-        public async Task<int> SaveAsync()
+
+		}
+
+		public async Task<int> SaveAsync()
         {
             return await _context.SaveChangesAsync();
         }

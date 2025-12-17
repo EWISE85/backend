@@ -10,30 +10,29 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IProductService
 	{
-		Products? GetById(Guid productId);
+		Task<ProductDetailModel> GetById(Guid productId);
 
-		ProductComeWarehouseDetailModel? GetByQrCode(string qrcode);
+		Task<ProductComeWarehouseDetailModel> GetByQrCode(string qrcode);
 
-		ProductDetailModel AddProduct(CreateProductAtWarehouseModel createProductRequest);
+		Task<ProductDetailModel> AddProduct(CreateProductAtWarehouseModel createProductRequest);
 
-		bool AddPackageIdToProductByQrCode(string productQrCode, string? packageId);
+		Task<bool> AddPackageIdToProductByQrCode(string qrCode, string? packageId);
 
-		List<ProductDetailModel> GetProductsByPackageId(string packageId);
+		Task<List<ProductDetailModel>> GetProductsByPackageIdAsync(string packageId);
 
-		bool UpdateProductStatusByQrCode(string productQrCode, string status);
-		bool UpdateProductStatusByProductId(Guid productId, string status);
+		Task<bool> UpdateProductStatusByQrCode(string productQrCode, string status);
+		Task<bool> UpdateProductStatusByProductId(Guid productId, string status);
 
-		bool UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status, UserReceivePointFromCollectionPointModel model );
+		Task<bool> UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status, UserReceivePointFromCollectionPointModel model);
 
-		List<ProductComeWarehouseDetailModel> ProductsComeWarehouseByDate(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
+		Task<List<ProductComeWarehouseDetailModel>> ProductsComeWarehouseByDateAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 
-		List<ProductComeWarehouseDetailModel> FilterProductByCompanyIdAndDate(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 
-		List<ProductComeWarehouseDetailModel> GetAllProductsByUserId(Guid userId);
+		Task<List<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId);
 
-		ProductDetail? GetProductDetailById(Guid productId);
+		Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId);
 
-		bool UpdateCheckedProductAtRecycler(string packageId, List<string> QrCode);
+		Task<bool> UpdateCheckedProductAtRecycler(string packageId, List<string> QrCode);
 
 		Task<PagedResultModel<ProductDetail>> AdminGetProductsAsync(AdminFilterProductModel model);
 

@@ -9,10 +9,10 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IUserAddressService
 	{
-		bool AddUserAddress(CreateUpdateUserAddress create);
-		bool UpdateUserAddress(Guid userId, CreateUpdateUserAddress update);
-		bool DeleteUserAddress(Guid userId);
-		List<UserAddressResponse>? GetByUserId(Guid userId);
+		Task<bool> AddUserAddress(CreateUpdateUserAddress create);
+		Task<bool> UpdateUserAddress(Guid userId, CreateUpdateUserAddress update);
+		Task<bool> DeleteUserAddress(Guid userId);
+		Task<List<UserAddressResponse>?> GetByUserId(Guid userId);
 
 	}
 }

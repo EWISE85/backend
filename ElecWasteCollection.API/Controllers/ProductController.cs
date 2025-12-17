@@ -18,9 +18,9 @@ namespace ElecWasteCollection.API.Controllers
 			_shippingNotifierService = shippingNotifierService;
 		}
 		[HttpGet("qrcode/{qrcode}")]
-		public IActionResult GetProductByQrCode(string qrcode)
+		public async Task<IActionResult> GetProductByQrCode(string qrcode)
 		{
-			var product = _productService.GetByQrCode(qrcode);
+			var product = await _productService.GetByQrCode(qrcode);
 			if (product == null)
 			{
 				return NotFound("Product not found.");
@@ -28,7 +28,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(product);
 		}
 		[HttpPut("receive-at-warehouse/{qrCode}")]
-		public IActionResult ReceiveProductAtWarehouse([FromRoute] string qrCode, [FromBody] UserReceivePointFromCollectionPointRequest request)
+		public async Task<IActionResult> ReceiveProductAtWarehouse([FromRoute] string qrCode, [FromBody] UserReceivePointFromCollectionPointRequest request)
 		{
 			var model = new UserReceivePointFromCollectionPointModel
 			{
@@ -36,7 +36,7 @@ namespace ElecWasteCollection.API.Controllers
 				Description = request.Description,
 				Point = request.Point
 			};
-			var result = _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode,"Nhập kho", model);
+			var result = await _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode,"Nhập kho", model);
 			 
 			if (!result) 
 			{
@@ -45,13 +45,13 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Product status updated successfully." });
 		}
 		[HttpGet("from-date-to-date")]
-		public IActionResult GetProductsComingToWarehouse([FromQuery] DateOnly fromDate, [FromQuery] DateOnly toDate, [FromQuery] string smallCollectionPointId )
+		public async Task<IActionResult> GetProductsComingToWarehouse([FromQuery] DateOnly fromDate, [FromQuery] DateOnly toDate, [FromQuery] string smallCollectionPointId )
 		{
-			var products = _productService.ProductsComeWarehouseByDate(fromDate, toDate, smallCollectionPointId);
+			var products = await _productService.ProductsComeWarehouseByDateAsync(fromDate, toDate, smallCollectionPointId);
 			return Ok(products);
 		}
 		[HttpPost("warehouse")]
-		public IActionResult AddProductToWarehouse([FromBody] CreateProductAtWarehouseRequest newProduct)
+		public async Task<IActionResult> AddProductToWarehouse([FromBody] CreateProductAtWarehouseRequest newProduct)
 		{
 			if (newProduct == null)
 			{
@@ -70,7 +70,7 @@ namespace ElecWasteCollection.API.Controllers
 				Point = newProduct.Point,
 				SenderId = newProduct.SenderId
 			};
-			var result = _productService.AddProduct(model);
+			var result = await _productService.AddProduct(model);
 			if (result == null)
 			{
 				return StatusCode(400, "An error occurred while adding the product to warehouse.");
@@ -80,9 +80,9 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpGet("user/{userId}")]
-		public IActionResult GetAllProductsByUserId(Guid userId)
+		public async Task<IActionResult> GetAllProductsByUserId(Guid userId)
 		{
-			var products = _productService.GetAllProductsByUserId(userId);
+			var products = await _productService.GetAllProductsByUserId(userId);
 			return Ok(products);
 		}
 		[HttpPost("notify-arrival/{productId}")]
@@ -102,9 +102,9 @@ namespace ElecWasteCollection.API.Controllers
 			}
 		}
 		[HttpGet("{id}")]
-		public IActionResult GetProductDetailById(Guid id)
+		public async Task<IActionResult> GetProductDetailById(Guid id)
 		{
-			var productDetail = _productService.GetProductDetailById(id);
+			var productDetail = await _productService.GetProductDetailByIdAsync(id);
 			if (productDetail == null)
 			{
 				return NotFound("Product not found.");
@@ -113,9 +113,9 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpPut("checked")]
-		public IActionResult UpdateProductCheckedStatus([FromBody] CheckedProductRequest request)
+		public async Task<IActionResult> UpdateProductCheckedStatus([FromBody] CheckedProductRequest request)
 		{
-			var result = _productService.UpdateCheckedProductAtRecycler(request.PackageId, request.ProductQrCode);
+			var result = await _productService.UpdateCheckedProductAtRecycler(request.PackageId, request.ProductQrCode);
 			if (!result)
 			{
 				return BadRequest("Failed to update product checked status.");

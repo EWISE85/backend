@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,66 +13,53 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class PointTransactionService : IPointTransactionService
 	{
-		private readonly List<PointTransactions> pointTransactions = FakeDataSeeder.points;
+		private readonly IPointTransactionRepository _pointTransactionRepository;
+		private readonly IUnitOfWork _unitOfWork;
 		private readonly IUserPointService _userPointService;
-		private readonly List<Post> _post = FakeDataSeeder.posts;
-		//private readonly List<PostImages> postImages = FakeDataSeeder.postImages;
-		private readonly List<ProductImages> productImages = FakeDataSeeder.productImages;	
-		private readonly List<Products> products = FakeDataSeeder.products;
+		private readonly IProductImageRepository _productImageRepository;
 
-		public PointTransactionService(IUserPointService userPointService)
+		public PointTransactionService(IPointTransactionRepository pointTransactionRepository, IUnitOfWork unitOfWork, IUserPointService userPointService, IProductImageRepository productImageRepository)
 		{
+			_pointTransactionRepository = pointTransactionRepository;
+			_unitOfWork = unitOfWork;
 			_userPointService = userPointService;
+			_productImageRepository = productImageRepository;
 		}
 
-		public List<PointTransactionModel> GetAllPointHistoryByUserId(Guid id)
+		public async Task<List<PointTransactionModel>> GetAllPointHistoryByUserId(Guid id)
 		{
-			var result = pointTransactions // Sử dụng biến _pointTransactions từ FakeData
-				.Where(x => x.UserId == id)
-				.Select(pt =>
+			var pointTransactions = await _pointTransactionRepository.GetPointHistoryWithProductImagesAsync(id);
+
+			if (pointTransactions == null || !pointTransactions.Any())
+			{
+				return new List<PointTransactionModel>();
+			}
+
+			var result = pointTransactions.Select(pt =>
+			{
+				var images = pt.Product?.ProductImages?
+					.Select(pi => pi.ImageUrl)
+					.ToList() ?? new List<string>();
+
+				return new PointTransactionModel
 				{
-					// --- LOGIC LẤY ẢNH ---
-					List<string> images = new List<string>();
+					PointTransactionId = pt.PointTransactionId,
+					ProductId = pt.ProductId,
+					UserId = pt.UserId,
+					Desciption = pt.Desciption,
+					TransactionType = pt.TransactionType,
+					Point = pt.Point,
+					CreatedAt = pt.CreatedAt,
 
-					// 1. Ưu tiên lấy ảnh từ Post (ảnh hiện trường/thực tế)
-					//if (pt.PostId.HasValue)
-					//{
-					//	images = postImages
-					//		.Where(pi => pi.PostId == pt.PostId)
-					//		.Select(pi => pi.ImageUrl)
-					//		.ToList();
-					//}
-
-					// 2. Nếu chưa có ảnh từ Post, thử lấy ảnh từ Product (ảnh danh mục)
-
-						images = productImages
-							.Where(pi => pi.ProductId == pt.ProductId)
-							.Select(pi => pi.ImageUrl)
-							.ToList();
-					
-
-					// --- MAPPING MODEL ---
-					return new PointTransactionModel
-					{
-						PointTransactionId = pt.PointTransactionId,
-						ProductId = pt.ProductId,
-						UserId = pt.UserId,
-						Desciption = pt.Desciption,
-						TransactionType = pt.TransactionType,
-						Point = pt.Point,
-						CreatedAt = pt.CreatedAt,
-
-						// Gán danh sách ảnh tìm được
-						Images = images ?? new List<string>()
-					};
-				})
-				.OrderByDescending(pt => pt.CreatedAt) // Nên sắp xếp mới nhất lên đầu
-				.ToList();
+					Images = images
+				};
+			})
+			.ToList();
 
 			return result;
 		}
 
-		public Guid ReceivePointFromCollectionPoint(CreatePointTransactionModel createPointTransactionModel)
+		public async Task<Guid> ReceivePointFromCollectionPoint(CreatePointTransactionModel createPointTransactionModel)
 		{
 			var points = new PointTransactions
 			{
@@ -84,8 +72,9 @@ namespace ElecWasteCollection.Application.Services
 				TransactionType = PointTransactionType.Earned.ToString()
 			};
 			var userPoint = _userPointService.GetPointByUserId(createPointTransactionModel.UserId);
-			pointTransactions.Add(points);
+			await _unitOfWork.PointTransactions.AddAsync(points);
 			var result =  _userPointService.UpdatePointForUser(createPointTransactionModel.UserId, points.Point);
+			await _unitOfWork.SaveAsync();
 			return points.PointTransactionId;
 		}
 	}
