@@ -44,11 +44,12 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<SystemConfigModel> GetSystemConfigByKey(string key)
 		{
+			// Chuyển cả 2 vế về viết thường để so sánh
 			var config = await _systemConfigRepository
-				.GetAsync(c => c.Key.Equals(key, StringComparison.OrdinalIgnoreCase)
-								  && c.Status == SystemConfigStatus.Active.ToString());
+				.GetAsync(c => c.Key.ToLower() == key.ToLower()
+							   && c.Status == SystemConfigStatus.Active.ToString());
 
-			if (config == null) throw new AppException("không tìm thấy config",404);
+			if (config == null) throw new AppException("không tìm thấy config", 404);
 
 			return new SystemConfigModel
 			{
