@@ -38,7 +38,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (!string.IsNullOrEmpty(status))
 			{
-				query = query.Where(p => p.Status == status);
+				var trimmedStatus = status.Trim().ToLower();
+				query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
 			}
 
 			if (!string.IsNullOrEmpty(search))

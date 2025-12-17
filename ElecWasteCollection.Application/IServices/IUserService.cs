@@ -14,9 +14,9 @@ namespace ElecWasteCollection.Application.IServices
 		void AddRange(IEnumerable<User> newUsers);
 		Task<List<UserResponse>> GetAll();
 		Task<UserResponse>? GetById(Guid id);
-		
 
-		Task<UserProfileResponse?> Profile(string email);
+
+		Task<UserProfileResponse> Profile(string email);
 
 		Task<UserResponse?> GetByPhone(string phone);
 

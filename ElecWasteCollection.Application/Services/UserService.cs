@@ -20,14 +20,16 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IUserRepository _userRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IUserPointService _userPointService;
+		private readonly IUserPointRepository _userPointRepository;
 
-		public UserService(IFirebaseService firebaseService, ITokenService tokenService, IUserRepository userRepository, IUnitOfWork unitOfWork, IUserPointService userPointService)
+		public UserService(IFirebaseService firebaseService, ITokenService tokenService, IUserRepository userRepository, IUnitOfWork unitOfWork, IUserPointService userPointService, IUserPointRepository userPointRepository)
 		{
 			_firebaseService = firebaseService;
 			_tokenService = tokenService;
 			_userRepository = userRepository;
 			_unitOfWork = unitOfWork;
 			_userPointService = userPointService;
+			_userPointRepository = userPointRepository;
 		}
 
 		public async Task<List<UserResponse>> GetAll()
@@ -97,7 +99,8 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var user = await _userRepository.GetAsync(u => u.Email == email);
 			if (user == null) throw new AppException("User không tồn tại", 404);
-			var points = await _userPointService.GetPointByUserId(user.UserId);
+			var points = await _userPointRepository.GetAsync(p => p.UserId == user.UserId);
+			var pointsValue = points == null ? 0 : points.Points;
 			var userProfile = new UserProfileResponse
 			{
 				UserId = user.UserId,
@@ -106,7 +109,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = user.Phone,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				Points = points.Points,
+				Points = pointsValue,
 				CollectionCompanyId = user.CollectionCompanyId,
 				SmallCollectionPointId = user.SmallCollectionPointId
 			};

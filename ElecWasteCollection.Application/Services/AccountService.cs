@@ -20,6 +20,7 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IFirebaseService _firebaseService;
 		private readonly ITokenService _tokenService;
 		private readonly IUserRepository _userRepository;
+
 		public AccountService(IUnitOfWork unitOfWork, IAccountRepsitory accountRepository, IFirebaseService firebaseService, ITokenService tokenService, IUserRepository userRepository)
 		{
 			_unitOfWork = unitOfWork;
@@ -52,9 +53,17 @@ namespace ElecWasteCollection.Application.Services
 					Name = name,
 					Avatar = picture,
 					Role = UserRole.User.ToString(),
+					Status = UserStatus.Active.ToString()
+				};
+				var point = new UserPoints
+				{
+					UserPointId = Guid.NewGuid(),
+					UserId = user.UserId,
+					Points = 0
 				};
 				var repo = _unitOfWork.Users;
 				await repo.AddAsync(user);
+				await _unitOfWork.UserPoints.AddAsync(point);
 				await _unitOfWork.SaveAsync();
 			}
 			var accessToken = await _tokenService.GenerateToken(user);

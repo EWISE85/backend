@@ -1,4 +1,5 @@
 ﻿
+using ElecWasteCollection.API.Helper;
 using ElecWasteCollection.API.Hubs;
 using ElecWasteCollection.API.MiddlewareCustom;
 using ElecWasteCollection.Application.Data;
@@ -35,7 +36,11 @@ namespace ElecWasteCollection.API
 
 			// Add services to the container.
 			builder.Services.AddSignalR();
-			builder.Services.AddControllers();
+			builder.Services.AddControllers()
+	.AddJsonOptions(options =>
+	{
+		options.JsonSerializerOptions.Converters.Add(new VietnamDateTimeJsonConverter());
+	});
 			// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen(c =>
@@ -93,12 +98,12 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IUserPointService, UserPointService>();
 			builder.Services.AddScoped<IImageComparisonService, EmguImageQualityService>();
 			builder.Services.AddScoped<IUserAddressService, UserAddressService>();
-            builder.Services.AddScoped<ICompanyConfigService, CompanyConfigService>();
-            builder.Services.AddScoped<IProductAssignService, ProductAssignService>();
-            builder.Services.AddScoped<IProductQueryService, ProductQueryService>();
+			builder.Services.AddScoped<ICompanyConfigService, CompanyConfigService>();
+			builder.Services.AddScoped<IProductAssignService, ProductAssignService>();
+			builder.Services.AddScoped<IProductQueryService, ProductQueryService>();
 
-            builder.Services.AddHttpClient<MapboxDirectionsClient>();
-            builder.Services.AddSingleton<IMapboxDistanceCacheService, MapboxDistanceCacheService>();
+			builder.Services.AddHttpClient<MapboxDirectionsClient>();
+			builder.Services.AddSingleton<IMapboxDistanceCacheService, MapboxDistanceCacheService>();
 			builder.Services.AddHttpClient<MapboxMatrixClient>();
 
 			builder.Services.AddScoped<IAttributeOptionService, AttributeOptionService>();
@@ -110,10 +115,10 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
 			builder.Services.AddScoped<IShiftService, ShiftService>();
 			builder.Services.AddScoped<IVehicleService, VehicleService>();
-            builder.Services.AddScoped<IReassignDriverService, ReassignDriverService>();
+			builder.Services.AddScoped<IReassignDriverService, ReassignDriverService>();
 
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-            builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+			builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+			builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 			builder.Services.AddScoped<IAccountRepsitory, AccountRepsitory>();
 			builder.Services.AddScoped<IAttributeOptionRepository, AttributeOptionRepository>();
 			builder.Services.AddScoped<IAttributeRepository, AttributeRepository>();
@@ -210,7 +215,7 @@ namespace ElecWasteCollection.API
 
 			app.MapHub<ShippingHub>("/shippingHub");
 			app.MapControllers();
-			
+
 			app.Run();
 		}
 	}

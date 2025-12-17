@@ -41,8 +41,6 @@ namespace ElecWasteCollection.Domain.Entities
 		public virtual ICollection<ProductImages> ProductImages { get; set; } = new List<ProductImages>();
 
 		public virtual ICollection<ProductValues> ProductValues { get; set; } = new List<ProductValues>();
-		public virtual ICollection<UserPoints> UserPoints { get; set; } = new List<UserPoints>();
-
 		public virtual ICollection<ProductStatusHistory> ProductStatusHistories { get; set; } = new List<ProductStatusHistory>();
 
 		public virtual ICollection<CollectionRoutes> CollectionRoutes { get; set; } = new List<CollectionRoutes>();
