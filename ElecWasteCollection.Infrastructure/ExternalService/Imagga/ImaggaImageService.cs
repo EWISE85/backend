@@ -69,7 +69,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Imagga
 
 						// 1. Kiểm tra xem tag có "Phù hợp" hay không
 						bool isTagMatch = acceptedEnglishTags.Contains(tagName);
-						var ConfidenceThreshold =  _systemConfigService.GetSystemConfigByKey(SystemConfigKey.AI_AUTO_APPROVE_THRESHOLD.ToString());
+						var ConfidenceThreshold = await  _systemConfigService.GetSystemConfigByKey(SystemConfigKey.AI_AUTO_APPROVE_THRESHOLD.ToString());
 						// 2. Quyết định status của TOÀN BỘ ẢNH (vẫn cần ngưỡng 80%)
 						if (!overallImageMatch && isTagMatch && confidence >= double.Parse(ConfidenceThreshold.Value))
 						{

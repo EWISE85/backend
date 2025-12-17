@@ -46,6 +46,10 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 		public IGenericRepository<Vehicles> Vehicles { get; }
 
+		public IGenericRepository<ForgotPassword> ForgotPasswords { get; }
+
+		public IGenericRepository<SystemConfig> SystemConfig { get; }
+
 		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
@@ -71,6 +75,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			SmallCollectionPoints = new GenericRepository<SmallCollectionPoints>(_context);
 			UserPoints = new GenericRepository<UserPoints>(_context);
 			Vehicles = new GenericRepository<Vehicles>(_context);
+			ForgotPasswords = new GenericRepository<ForgotPassword>(_context);
+			SystemConfig = new GenericRepository<SystemConfig>(_context);
 
 		}
 

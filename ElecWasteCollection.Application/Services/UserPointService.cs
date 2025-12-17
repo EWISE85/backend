@@ -38,7 +38,7 @@ namespace ElecWasteCollection.Application.Services
 			var userPoint = await _userPointRepository.GetAsync(up => up.UserId == userId);
 			if (userPoint == null) throw new AppException("Không tìm thấy điểm người dùng", 404);
 			userPoint.Points += point;
-			_userPointRepository.Update(userPoint);
+			_unitOfWork.UserPoints.Update(userPoint);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}

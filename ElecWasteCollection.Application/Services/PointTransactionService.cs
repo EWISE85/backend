@@ -72,7 +72,7 @@ namespace ElecWasteCollection.Application.Services
 				TransactionType = PointTransactionType.Earned.ToString()
 			};
 			var userPoint = _userPointService.GetPointByUserId(createPointTransactionModel.UserId);
-			await _pointTransactionRepository.AddAsync(points);
+			await _unitOfWork.PointTransactions.AddAsync(points);
 			var result =  _userPointService.UpdatePointForUser(createPointTransactionModel.UserId, points.Point);
 			await _unitOfWork.SaveAsync();
 			return points.PointTransactionId;

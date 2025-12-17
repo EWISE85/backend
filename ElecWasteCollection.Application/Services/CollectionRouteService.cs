@@ -41,15 +41,15 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ProductStatusHistoryId = Guid.NewGuid(), 
 					ProductId = route.Product.ProductId,
-					ChangedAt = DateTime.UtcNow.AddHours(7), 
+					ChangedAt = DateTime.UtcNow, 
 					Status = "Hủy bỏ",
 					StatusDescription = $"Hủy thu gom: {rejectMessage}"
 				};
 
 				await _productStatusHistoryRepository.AddAsync(history);
+				_unitOfWork.Products.Update(route.Product);
 			}
-
-			
+			_unitOfWork.CollecctionRoutes.Update(route);
 			await _unitOfWork.SaveAsync();
 
 			return true;
@@ -68,7 +68,7 @@ namespace ElecWasteCollection.Application.Services
 
 			route.Status = "Hoàn thành";
 			route.ConfirmImages = confirmImages;
-			route.Actual_Time = TimeOnly.FromDateTime(DateTime.Now);
+			route.Actual_Time = TimeOnly.FromDateTime(DateTime.UtcNow);
 
 			if (route.Product != null)
 			{
@@ -79,13 +79,15 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ProductStatusHistoryId = Guid.NewGuid(), 
 					ProductId = route.Product.ProductId,
-					ChangedAt = DateTime.UtcNow.AddHours(7), 
+					ChangedAt = DateTime.UtcNow, 
 					StatusDescription = "Sản phẩm đã được thu gom thành công",
 					Status = "Đã thu gom"
 				};
 
-				await _productStatusHistoryRepository.AddAsync(history);
+				await _unitOfWork.ProductStatusHistory.AddAsync(history);
+				_unitOfWork.Products.Update(route.Product);
 			}
+			_unitOfWork.CollecctionRoutes.Update(route);
 			await _unitOfWork.SaveAsync();
 
 			return true;
@@ -173,6 +175,7 @@ namespace ElecWasteCollection.Application.Services
 				newStatus = "User_Reject";
 			}
 			route.Status = newStatus;
+			_unitOfWork.CollecctionRoutes.Update(route);
 			await _unitOfWork.SaveAsync();
 
 			try

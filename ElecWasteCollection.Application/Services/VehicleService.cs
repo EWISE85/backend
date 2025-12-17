@@ -36,7 +36,7 @@ namespace ElecWasteCollection.Application.Services
 				existingVehicle.Capacity_M3 = vehicle.Capacity_M3;
 				existingVehicle.Status = vehicle.Status;
 				existingVehicle.Small_Collection_Point = vehicle.Small_Collection_Point;
-				 _vehicleRepository.Update(existingVehicle);
+				 _unitOfWork.Vehicles.Update(existingVehicle);
 			}
 			else
 			{
@@ -50,7 +50,7 @@ namespace ElecWasteCollection.Application.Services
 					Status = vehicle.Status,
 					Small_Collection_Point = vehicle.Small_Collection_Point
 				};
-				await _vehicleRepository.AddAsync(newVehicle);
+				await _unitOfWork.Vehicles.AddAsync(newVehicle);
 
 			}
 			await _unitOfWork.SaveAsync();

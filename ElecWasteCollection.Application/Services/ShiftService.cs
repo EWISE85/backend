@@ -34,6 +34,7 @@ namespace ElecWasteCollection.Application.Services
 				existingShift.Shift_Start_Time = shift.Shift_Start_Time;
 				existingShift.Shift_End_Time = shift.Shift_End_Time;
 				existingShift.Status = shift.Status;
+				_unitOfWork.Shifts.Update(existingShift);
 			}
 			else
 			{
@@ -46,7 +47,7 @@ namespace ElecWasteCollection.Application.Services
 					Shift_End_Time = shift.Shift_End_Time,
 					Status = shift.Status,
 				};
-				await _shiftRepository.AddAsync(newShift);
+				await _unitOfWork.Shifts.AddAsync(newShift);
 			}
 			await _unitOfWork.SaveAsync();
 			return result;
@@ -62,7 +63,7 @@ namespace ElecWasteCollection.Application.Services
 				Shift_End_Time = newShift.Shift_End_Time,
 				Status = newShift.Status,
 			};
-			await _shiftRepository.AddAsync(shift);
+			await _unitOfWork.Shifts.AddAsync(shift);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -72,7 +73,7 @@ namespace ElecWasteCollection.Application.Services
 			var shift = await _shiftRepository.GetAsync(s => s.ShiftId == shiftId);
 			if (shift == null) throw new AppException("Không tìm thấy ca làm", 404);
 			shift.Status = ShiftStatus.Inactive.ToString();
-			_shiftRepository.Update(shift);
+			_unitOfWork.Shifts.Update(shift);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -135,7 +136,7 @@ namespace ElecWasteCollection.Application.Services
 			shift.Shift_Start_Time = updateShift.Shift_Start_Time;
 			shift.Shift_End_Time = updateShift.Shift_End_Time;
 			shift.Status = updateShift.Status;
-			_shiftRepository.Update(shift);
+			_unitOfWork.Shifts.Update(shift);
 			await _unitOfWork.SaveAsync();
 			return true;
 

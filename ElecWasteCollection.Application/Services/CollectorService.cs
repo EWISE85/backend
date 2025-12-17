@@ -26,7 +26,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> AddNewCollector(User collector)
 		{
-			await _collectorRepository.AddAsync(collector);
+			await _unitOfWork.Users.AddAsync(collector);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -48,7 +48,7 @@ namespace ElecWasteCollection.Application.Services
 					PasswordHash = password,
 					UserId = collector.UserId
 				};
-				await _accountRepsitory.AddAsync(account);
+				await _unitOfWork.Accounts.AddAsync(account);
 				result.Messages.Add($"Thêm thu gom viên '{collector.Name}' thành công.");
 				await _unitOfWork.SaveAsync();
 			}
@@ -60,7 +60,7 @@ namespace ElecWasteCollection.Application.Services
 			var collector = await _collectorRepository.GetAsync(c => c.UserId == collectorId);
 			if (collector == null) throw new AppException("Không tìm thấy người thu gom",404);
 			collector.Status = UserStatus.Inactive.ToString();
-			_collectorRepository.Update(collector);
+			_unitOfWork.Users.Update(collector);
 			await _unitOfWork.SaveAsync();
 			return true;
 			
@@ -142,7 +142,7 @@ namespace ElecWasteCollection.Application.Services
 				collectorToUpdate.CollectionCompanyId = collector.CollectionCompanyId;
 				collectorToUpdate.SmallCollectionPointId = collector.SmallCollectionPointId;
 				collectorToUpdate.Status = collector.Status;
-			_collectorRepository.Update(collectorToUpdate);
+			_unitOfWork.Users.Update(collectorToUpdate);
 			await _unitOfWork.SaveAsync();
 			return true;
 			

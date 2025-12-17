@@ -75,5 +75,28 @@ namespace ElecWasteCollection.Application.Services
 			var accessToken = await _tokenService.GenerateToken(user);
 			return accessToken;
 		}
+
+		public async Task<bool> ChangePassword(string email, string newPassword, string confirmPassword)
+		{
+			var user = await _userRepository.GetAsync(u => u.Email == email);
+			if (user == null)
+			{
+				throw new AppException("User không tồn tại", 404);
+			}
+			if (newPassword != confirmPassword)
+			{
+				throw new AppException("Mật khẩu xác nhận không khớp", 400);
+			}
+			var account = await _accountRepository.GetAsync(a => a.UserId == user.UserId);
+			if (account == null)
+			{
+				throw new AppException("Tài khoản không tồn tại", 404);
+			}
+			account.PasswordHash = newPassword;
+			account.IsFirstLogin = false;
+			_unitOfWork.Accounts.Update(account);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
 	}
 }

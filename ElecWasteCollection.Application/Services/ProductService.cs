@@ -44,7 +44,7 @@ namespace ElecWasteCollection.Application.Services
 			var product = await _productRepository.GetAsync(p => p.QRCode == qrCode);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm",404);
 			product.PackageId = packageId;
-			_productRepository.Update(product);
+			_unitOfWork.Products.Update(product);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -58,12 +58,12 @@ namespace ElecWasteCollection.Application.Services
 				BrandId = createProductRequest.BrandId,
 				Description = createProductRequest.Description,
 				QRCode = createProductRequest.QrCode,
-				CreateAt = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)),
+				CreateAt = DateOnly.FromDateTime(DateTime.UtcNow),
 				SmallCollectionPointId = createProductRequest.SmallCollectionPointId,
 				isChecked = false,
 				Status = "Nhập kho"
 			};
-			await _productRepository.AddAsync(newProduct);
+			await _unitOfWork.Products.AddAsync(newProduct);
 
 			var productImages = new List<ProductImages>();
 			for (int i = 0; i < createProductRequest.Images.Count; i++)
@@ -75,9 +75,9 @@ namespace ElecWasteCollection.Application.Services
 					ProductImagesId = Guid.NewGuid()
 				};
 				productImages.Add(newProductImage);
-				await _productImageRepository.AddAsync(newProductImage);
+				await _unitOfWork.ProductImages.AddAsync(newProductImage);
 			}
-			await _unitOfWork.SaveAsync();
+			
 			if (createProductRequest.SenderId.HasValue)
 			{
 				var pointTransaction = new CreatePointTransactionModel
@@ -87,8 +87,9 @@ namespace ElecWasteCollection.Application.Services
 					ProductId = newProduct.ProductId,
 					Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
 				};
-				 _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
+				 await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
 			}
+			await _unitOfWork.SaveAsync();
 			return await BuildProductDetailModelAsync(newProduct);
 		}
 
@@ -266,7 +267,7 @@ namespace ElecWasteCollection.Application.Services
 			var product = await _productRepository.GetAsync(p => p.QRCode == productQrCode);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với mã QR đã cho", 404);
 			product.Status = status;
-			_productRepository.Update(product);
+			_unitOfWork.Products.Update(product);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -301,9 +302,9 @@ namespace ElecWasteCollection.Application.Services
 				StatusDescription = "Sản phẩm đã về đến kho",
 				Status = status
 			};
-			_productRepository.Update(product);
+			_unitOfWork.Products.Update(product);
 			await _productStatusHistoryRepository.AddAsync(newHistory);
-			_pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
+			await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -431,7 +432,7 @@ namespace ElecWasteCollection.Application.Services
 			var product = await _productRepository.GetAsync(p => p.ProductId == productId);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với Id đã cho", 404);
 			product.Status = status;
-			_productRepository.Update(product);
+			_unitOfWork.Products.Update(product);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -446,11 +447,10 @@ namespace ElecWasteCollection.Application.Services
 				if (product != null)
 				{
 					product.isChecked = true;
-					_productRepository.Update(product);
+					_unitOfWork.Products.Update(product);
 				}
-				await _unitOfWork.SaveAsync();
-
 			}
+			await _unitOfWork.SaveAsync();
 			return true;
 
 		}

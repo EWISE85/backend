@@ -28,7 +28,7 @@ namespace ElecWasteCollection.Application.Services
 		}
 		public async Task<bool> AddNewSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints)
 		{
-			await _smallCollectionRepository.AddAsync(smallCollectionPoints);
+			await _unitOfWork.SmallCollectionPoints.AddAsync(smallCollectionPoints);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -55,7 +55,7 @@ namespace ElecWasteCollection.Application.Services
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
 					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,
 				};
-				await _userRepository.AddAsync(newAdminWarehouse);
+				await _unitOfWork.Users.AddAsync(newAdminWarehouse);
 				var adminAccount = new Account
 				{
 					AccountId = Guid.NewGuid(),
@@ -63,7 +63,7 @@ namespace ElecWasteCollection.Application.Services
 					Username = adminUsername,
 					PasswordHash = adminPassword,
 				};
-				await _accountRepository.AddAsync(adminAccount);
+				await _unitOfWork.Accounts.AddAsync(adminAccount);
 				result.Messages.Add($"Tạo tài khoản quản trị kho với tên đăng nhập '{adminUsername}'.");
 				await _unitOfWork.SaveAsync();
 			}
@@ -76,7 +76,7 @@ namespace ElecWasteCollection.Application.Services
 			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.SmallCollectionPointsId == smallCollectionPointId);
 			if (smallPoint == null) throw new AppException("Không tìm thấy kho",404);
 			smallPoint.Status = SmallCollectionPointStatus.Inactive.ToString();
-			_smallCollectionRepository.Update(smallPoint);
+			_unitOfWork.SmallCollectionPoints.Update(smallPoint);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -172,6 +172,7 @@ namespace ElecWasteCollection.Application.Services
 			smallPoint.Status = smallCollectionPoints.Status;
 			smallPoint.CompanyId = smallCollectionPoints.CompanyId;
 			smallPoint.OpenTime = smallCollectionPoints.OpenTime;
+			_unitOfWork.SmallCollectionPoints.Update(smallPoint);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}

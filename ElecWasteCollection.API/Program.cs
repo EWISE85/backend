@@ -1,5 +1,6 @@
 ﻿
 using ElecWasteCollection.API.Hubs;
+using ElecWasteCollection.API.MiddlewareCustom;
 using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Interfaces;
 
@@ -9,8 +10,10 @@ using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Services;
 using ElecWasteCollection.Application.Services.AssignPostService;
 using ElecWasteCollection.Domain.IRepository;
+using ElecWasteCollection.Infrastructure.Configuration;
 using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
+using ElecWasteCollection.Infrastructure.ExternalService.Email;
 using ElecWasteCollection.Infrastructure.ExternalService.Imagga;
 using ElecWasteCollection.Infrastructure.Implementations;
 using ElecWasteCollection.Infrastructure.Repository;
@@ -134,6 +137,13 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IUserRepository, UserRepository>();
 			builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();
 			builder.Services.AddScoped<DbContext, ElecWasteCollectionDbContext>();
+			builder.Services.AddScoped<ITrackingRepository, TrackingRepository>();
+			builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("EmailSettings"));
+			builder.Services.AddScoped<IEmailService, EmailService>();
+			builder.Services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
+			builder.Services.AddScoped<IForgotPasswordRepository, ForgotPasswordRepository>();
+			builder.Services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
+
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
@@ -194,7 +204,8 @@ namespace ElecWasteCollection.API
 			}
 
 			app.UseHttpsRedirection();
-
+			app.UseMiddleware<HandlingException>();
+			app.UseAuthentication();
 			app.UseAuthorization();
 
 			app.MapHub<ShippingHub>("/shippingHub");

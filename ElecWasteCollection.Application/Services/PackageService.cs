@@ -37,7 +37,7 @@ namespace ElecWasteCollection.Application.Services
 				CreateAt = DateTime.UtcNow,
 				Status = "Đang đóng gói"
 			};
-			await _packageRepository.AddAsync(newPackage);
+			await _unitOfWork.Packages.AddAsync(newPackage);
 			foreach (var qrCode in model.ProductsQrCode)
 			{
 				var product = await _productService.GetByQrCode(qrCode);
@@ -54,7 +54,7 @@ namespace ElecWasteCollection.Application.Services
 						StatusDescription = "Sản phẩm đã được đóng gói",
 						Status = "Đã đóng thùng"
 					};
-					await _productStatusHistoryRepository.AddAsync(newHistory);
+					await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 
 				}
 			}
@@ -175,26 +175,23 @@ namespace ElecWasteCollection.Application.Services
 					var oldHistory = await _productStatusHistoryRepository.GetAsync(h => h.ProductId == existingProduct.ProductId && h.Status == "Đã đóng thùng");
 					if (oldHistory != null)
 					{
-						_productStatusHistoryRepository.Delete(oldHistory);
+						_unitOfWork.ProductStatusHistory.Delete(oldHistory);
 					}
 
 				}
 			}
 
-			// === XỬ LÝ THÊM (ADD) HOẶC UPDATE ===
-			// Duyệt danh sách mới gửi lên để gán vào gói
 			foreach (var qrCode in model.ProductsQrCode)
 			{
 				var product = await _productService.GetByQrCode(qrCode);
 				if (product != null)
 				{
-					// Gán vào gói hiện tại
 					await _productService.AddPackageIdToProductByQrCode(product.QrCode, package.PackageId);
 
-					// Cập nhật trạng thái
 					await _productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
 				}
 			}
+			_unitOfWork.Packages.Update(package);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -206,6 +203,7 @@ namespace ElecWasteCollection.Application.Services
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
 			package.Status = status;
+			_unitOfWork.Packages.Update(package);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -226,12 +224,13 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ProductStatusHistoryId = Guid.NewGuid(),
 					ProductId = product.ProductId,
-					ChangedAt = DateTime.UtcNow.AddHours(7),
+					ChangedAt = DateTime.UtcNow,
 					StatusDescription = status == "Đang vận chuyển" ? "Sản phẩm đang được vận chuyển" : "Sản phẩm đã được tái chế",
 					Status = status
 				};
-				await _productStatusHistoryRepository.AddAsync(newHistory);
+				await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 			}
+			_unitOfWork.Packages.Update(package);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}

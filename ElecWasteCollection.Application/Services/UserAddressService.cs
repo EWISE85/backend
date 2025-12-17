@@ -39,6 +39,7 @@ namespace ElecWasteCollection.Application.Services
 						if (addr.isDefault)
 						{
 							addr.isDefault = false;
+							_unitOfWork.UserAddresses.Update(addr);
 						}
 					}
 				}
@@ -52,7 +53,7 @@ namespace ElecWasteCollection.Application.Services
 				Ing = create.Ing,
 				isDefault = create.isDefault
 			};
-			await _userAddressRepository.AddAsync(newAddress);
+			await _unitOfWork.UserAddresses.AddAsync(newAddress);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -61,7 +62,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var address = await _userAddressRepository.GetAsync(a => a.UserAddressId == userAddressId);
 			if (address == null) throw new AppException("Địa chỉ không tồn tại", 404);
-			_userAddressRepository.Delete(address);
+			_unitOfWork.UserAddresses.Delete(address);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -101,6 +102,7 @@ namespace ElecWasteCollection.Application.Services
 						if (addr.isDefault)
 						{
 							addr.isDefault = false;
+							_unitOfWork.UserAddresses.Update(addr);
 						}
 					}
 				}
@@ -109,6 +111,7 @@ namespace ElecWasteCollection.Application.Services
 			addressToUpdate.Iat = update.Iat;
 			addressToUpdate.Ing = update.Ing;
 			addressToUpdate.isDefault = update.isDefault;
+			_unitOfWork.UserAddresses.Update(addressToUpdate);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}

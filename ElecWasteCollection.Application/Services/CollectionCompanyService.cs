@@ -30,7 +30,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> AddNewCompany(CollectionCompany collectionTeams)
 		{
-			await _collectionCompanyRepository.AddAsync(collectionTeams);
+			await _unitOfWork.CollectionCompanies.AddAsync(collectionTeams);
 			await _unitOfWork.SaveAsync();
 			return true;
 
@@ -58,13 +58,14 @@ namespace ElecWasteCollection.Application.Services
 					existingCompany.Status = importData.Status;
 					existingCompany.CompanyEmail = importData.CompanyEmail;
 					existingCompany.Updated_At = DateTime.UtcNow;
+					_unitOfWork.CollectionCompanies.Update(existingCompany);
 					result.Messages.Add($"Đã cập nhật thông tin công ty '{importData.Name}'.");
 				}
 				else
 				{
 					importData.Created_At = DateTime.UtcNow;
 					importData.Updated_At = DateTime.UtcNow;
-					await _collectionCompanyRepository.AddAsync(importData);
+					await _unitOfWork.CollectionCompanies.AddAsync(importData);
 					var newAdminId = Guid.NewGuid();
 					var newAdminUser = new User
 					{
@@ -78,13 +79,7 @@ namespace ElecWasteCollection.Application.Services
 						CollectionCompanyId = importData.CollectionCompanyId
 					};
 
-					// Thêm vào Repo User
-					await _userRepository.AddAsync(newAdminUser);
-
-					//// C. Tạo Account và Hash Password
-					//// Sử dụng BCrypt để bảo mật (Cần cài package BCrypt.Net-Next)
-					//string passwordHash = BCrypt.Net.BCrypt.HashPassword(rawPassword);
-
+					await _unitOfWork.Users.AddAsync(newAdminUser);
 					var newAccount = new Account
 					{
 						AccountId = Guid.NewGuid(),
@@ -93,7 +88,7 @@ namespace ElecWasteCollection.Application.Services
 						PasswordHash = rawPassword
 					};
 
-					await _accountRepository.AddAsync(newAccount);
+					await _unitOfWork.Accounts.AddAsync(newAccount);
 					result.Messages.Add($"Thêm mới công ty '{importData.Name}' và tài khoản Admin thành công.");
 				}
 
@@ -119,7 +114,7 @@ namespace ElecWasteCollection.Application.Services
 			var company = await _collectionCompanyRepository.GetAsync(t => t.CollectionCompanyId == collectionCompanyId);
 			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
 			company.Status = CompanyStatus.Inactive.ToString();
-			_collectionCompanyRepository.Update(company);
+			_unitOfWork.CollectionCompanies.Update(company);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -209,7 +204,7 @@ namespace ElecWasteCollection.Application.Services
 			team.Name = collectionTeams.Name;
 			team.Phone = collectionTeams.Phone;
 			team.Status = collectionTeams.Status;
-			_collectionCompanyRepository.Update(team);
+			_unitOfWork.CollectionCompanies.Update(team);
 			await _unitOfWork.SaveAsync();
 			return true;
 

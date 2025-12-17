@@ -14,5 +14,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<string> LoginWithGoogleAsync(string token);
 
 		Task<string> Login(string userName, string password);
+
+		Task<bool> ChangePassword(string email, string newPassword, string confirmPassword);
 	}
 }

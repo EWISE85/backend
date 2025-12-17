@@ -7,11 +7,12 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.IServices
 {
-	public interface ISystemConfigService
+	public interface IForgotPasswordService
 	{
-		Task<List<SystemConfigModel>> GetAllSystemConfigActive();
-		Task<SystemConfigModel> GetSystemConfigByKey(string key);
+		Task<bool> SaveOTP(CreateForgotPasswordModel forgotPassword);
 
-		Task<bool> UpdateSystemConfig(UpdateSystemConfigModel model);
+		Task<OTPResponseModel?> GetOTPByUser (Guid userId);
+
+		Task<bool> CheckOTP(string email, string otp);
 	}
 }

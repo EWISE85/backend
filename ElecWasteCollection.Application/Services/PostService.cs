@@ -112,19 +112,16 @@ namespace ElecWasteCollection.Application.Services
 						});
 					}
 
-					// **Thêm tất cả ProductImages vào Context**
-					// Nếu có AddRangeAsync, hãy dùng nó.
 					foreach (var img in productImages)
 					{
-						await _unitOfWork.ProductImages.AddAsync(img); // Giữ await
+						await _unitOfWork.ProductImages.AddAsync(img);
 					}
 
-					// Cập nhật Status nếu AI Match
 					if (results.All(r => r.IsMatch))
 					{
 						currentStatus = "Đã Duyệt";
 						newProduct.Status = "Chờ gom nhóm";
-						statusDescription = "Yêu cầu được duyệt tự động bởi AI";
+						statusDescription = "Yêu cầu được duyệt tự động";
 					}
 				}
 
@@ -139,7 +136,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ProductId = newProductId,
 					ChangedAt = DateTime.UtcNow,
-					Status = newProduct.Status, // Sử dụng Status đã được AI cập nhật (nếu có)
+					Status = newProduct.Status, 
 					StatusDescription = statusDescription
 				};
 
@@ -148,21 +145,20 @@ namespace ElecWasteCollection.Application.Services
 					PostId = Guid.NewGuid(),
 					SenderId = createPostRequest.SenderId,
 					Date = DateTime.UtcNow,
-					Description = createPostRequest.Description, // Nên lấy từ request.Description
+					Description = createPostRequest.Description, 
 					Address = createPostRequest.Address,
 					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
-					Status = newProduct.Status, // Post Status nên khớp với Product Status
+					Status = currentStatus,
 					ProductId = newProductId,
-					EstimatePoint = 50, // Hoặc tính toán điểm thực tế
-					CheckMessage = new List<string>() // Nên gán CheckMessage = null hoặc list rỗng
+					EstimatePoint = 50, 
+					CheckMessage = new List<string>() 
 				};
 
 				await _unitOfWork.Products.AddAsync(newProduct);
 				await _unitOfWork.ProductStatusHistory.AddAsync(history);
 				await _unitOfWork.Posts.AddAsync(newPost);
 
-				// 4. THỰC THI GIAO DỊCH (Transaction)
-				// Gọi SaveAsync một lần duy nhất để lưu TẤT CẢ các thay đổi.
+
 				await _unitOfWork.SaveAsync();
 
 				return true;
@@ -170,8 +166,6 @@ namespace ElecWasteCollection.Application.Services
 			catch (Exception ex)
 			{
 				Console.WriteLine($"[FATAL ERROR] AddPost: {ex}");
-				// Quan trọng: Nếu đây là lỗi DB constraint (ví dụ: Primary Key trùng lặp), 
-				// bạn cần đảm bảo transaction được xử lý (thường EF Core sẽ tự rollback).
 				throw;
 			}
 		}
@@ -388,7 +382,7 @@ namespace ElecWasteCollection.Application.Services
 			if (product != null)
 			{
 				product.Status = "Chờ gom nhóm";
-				_productService.UpdateProductStatusByProductId(product.ProductId, product.Status);
+				await _productService.UpdateProductStatusByProductId(product.ProductId, product.Status);
 				var history = new ProductStatusHistory
 				{
 					ProductId = post.ProductId,
@@ -396,9 +390,11 @@ namespace ElecWasteCollection.Application.Services
 					Status = "Chờ gom nhóm",
 					StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
 				};
-				await _productStatusHistoryRepository.AddAsync(history);
+				await _unitOfWork.ProductStatusHistory.AddAsync(history);
 
 			}
+			_unitOfWork.Posts.Update(post);
+			await _unitOfWork.SaveAsync();
 			return true;
 
 		}
@@ -414,11 +410,14 @@ namespace ElecWasteCollection.Application.Services
 			if (post == null) throw new AppException("Post không tồn tại", 404);
 			post.Status = "Đã Từ Chối";
 			post.RejectMessage = rejectMessage;
-			var product = await _postRepository.GetAsync(p => p.ProductId == post.ProductId);
-			if (product != null)
-			{
-				product.Status = "Đã Từ Chối";
-			}
+			var product = await _productRepository.GetAsync(p => p.ProductId == post.ProductId);
+			if (product == null) throw new AppException("Product không tồn tại", 404);
+
+			product.Status = "Đã Từ Chối";
+			
+			_unitOfWork.Products.Update(product);
+			_unitOfWork.Posts.Update(post);
+			await _unitOfWork.SaveAsync();
 			return true;
 
 		}

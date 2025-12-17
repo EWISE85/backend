@@ -18,7 +18,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public TimeOnly EstimatedTime { get; set; }
 		public TimeOnly? Actual_Time { get; set; }
 
-		public List<string> ConfirmImages { get; set; }
+		public List<string>? ConfirmImages { get; set; }
 
 
 		public string? RejectMessage { get; set; }

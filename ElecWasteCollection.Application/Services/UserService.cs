@@ -98,10 +98,6 @@ namespace ElecWasteCollection.Application.Services
 			var user = await _userRepository.GetAsync(u => u.Email == email);
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var points = await _userPointService.GetPointByUserId(user.UserId);
-			if (user == null)
-			{
-				throw new Exception("User not found");
-			}
 			var userProfile = new UserProfileResponse
 			{
 				UserId = user.UserId,

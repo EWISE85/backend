@@ -68,7 +68,7 @@ packages/*
 
 appsettings*.json   
 elecWasteCollection.json
-
+.env
 # DotNet Core   
 
 project.lock.json   

@@ -7,9 +7,32 @@ services:
       dockerfile: ElecWasteCollection.API/Dockerfile
     container_name: elecwastecollection-api-container
     ports:
-      - "5000:8080" # Map cổng 5000 máy chủ (host) đến cổng 8080 trong container
+      - "5000:8080" 
     environment:
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__DefaultConnection=${ConnectionStrings__DefaultConnection}
+    depends_on:
+      db:
+        condition: service_healthy 
+
+  db:
+    image: postgres:15-alpine
+    container_name: elecWasteCollection-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432" 
     volumes:
-      - /root/.aspnet/DataProtection-Keys:/root/.aspnet/DataProtection-Keys # Nếu có cần volume cho Data Protection keys
+      - elecWasteCollection_pgdata:/var/lib/postgresql/data
+    healthcheck: 
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  elecWasteCollection_pgdata:
