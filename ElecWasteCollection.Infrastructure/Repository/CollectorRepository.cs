@@ -23,7 +23,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (!string.IsNullOrEmpty(status))
 			{
-				query = query.Where(u => u.Status == status);
+				var trimmedStatus = status.Trim().ToLower();
+				query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
 			}
 
 			if (companyId != null)

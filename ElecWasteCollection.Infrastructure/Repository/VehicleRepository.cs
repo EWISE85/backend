@@ -49,7 +49,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			// 4. Lọc theo Trạng thái
 			if (!string.IsNullOrEmpty(status))
 			{
-				query = query.Where(v => v.Status == status);
+				var trimmedStatus = status.Trim().ToLower();
+				query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
 			}
 
 			// Đếm tổng

@@ -21,7 +21,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (!string.IsNullOrEmpty(status))
 			{
-				query = query.Where(c => c.Status == status);
+				var trimmedStatus = status.Trim().ToLower();
+				query = query.Where(c => !string.IsNullOrEmpty(c.Status) && c.Status.ToLower() == trimmedStatus);
 			}
 
 			var totalCount = await query.CountAsync();
