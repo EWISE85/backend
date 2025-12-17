@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using System;
@@ -60,7 +61,7 @@ namespace ElecWasteCollection.Application.Services
 			return accessToken;
 		}
 
-		public async Task<string> Login(string userName, string password)
+		public async Task<LoginResponseModel> Login(string userName, string password)
 		{
 			var account = await _accountRepository.GetAsync(u => u.Username == userName && u.PasswordHash == password);
 			if (account == null)
@@ -73,7 +74,12 @@ namespace ElecWasteCollection.Application.Services
 				throw new AppException("User không tồn tại", 404);
 			}
 			var accessToken = await _tokenService.GenerateToken(user);
-			return accessToken;
+			var loginResponse = new LoginResponseModel
+			{
+				AccessToken = accessToken,
+				IsFirstLogin = account.IsFirstLogin
+			};
+			return loginResponse;
 		}
 
 		public async Task<bool> ChangePassword(string email, string newPassword, string confirmPassword)

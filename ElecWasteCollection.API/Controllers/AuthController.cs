@@ -24,7 +24,7 @@ namespace ElecWasteCollection.API.Controllers
 		public async Task<IActionResult> Login([FromBody] LoginRequest request)
 		{
 			var response = await _accountService.Login(request.Username, request.Password);
-			return Ok(new { token = response });
+			return Ok(response);
 		}
 
 
