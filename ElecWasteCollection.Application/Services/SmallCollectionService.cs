@@ -52,6 +52,7 @@ namespace ElecWasteCollection.Application.Services
 					Avatar = "https://example.com/default-avatar.png",
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
+					Status = UserStatus.Active.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
 					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,
 				};
@@ -62,6 +63,7 @@ namespace ElecWasteCollection.Application.Services
 					UserId = newAdminWarehouse.UserId,
 					Username = adminUsername,
 					PasswordHash = adminPassword,
+					IsFirstLogin = true
 				};
 				await _unitOfWork.Accounts.AddAsync(adminAccount);
 				result.Messages.Add($"Tạo tài khoản quản trị kho với tên đăng nhập '{adminUsername}'.");
