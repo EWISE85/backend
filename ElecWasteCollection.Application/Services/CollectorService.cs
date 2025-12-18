@@ -46,7 +46,8 @@ namespace ElecWasteCollection.Application.Services
 				{
 					Username = collectorUsername,
 					PasswordHash = password,
-					UserId = collector.UserId
+					UserId = collector.UserId,
+					IsFirstLogin = true
 				};
 				await _unitOfWork.Accounts.AddAsync(account);
 				result.Messages.Add($"Thêm thu gom viên '{collector.Name}' thành công.");

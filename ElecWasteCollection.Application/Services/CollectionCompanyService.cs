@@ -85,7 +85,8 @@ namespace ElecWasteCollection.Application.Services
 						AccountId = Guid.NewGuid(),
 						UserId = newAdminId,
 						Username = adminUsername,
-						PasswordHash = rawPassword
+						PasswordHash = rawPassword,
+						IsFirstLogin = true
 					};
 
 					await _unitOfWork.Accounts.AddAsync(newAccount);

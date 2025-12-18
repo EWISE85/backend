@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
 using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.IServices;
@@ -87,97 +88,169 @@ namespace ElecWasteCollection.Application.Services
 		private async Task ImportVehicleAsync(IXLWorksheet worksheet, ImportResult result)
 		{
 			int rowCount = worksheet.RowsUsed().Count();
-			for (int row = 2; row <= rowCount; row++) // Skip header row
+			for (int row = 2; row <= rowCount; row++)
 			{
-				var id = worksheet.Cell(row, 1).Value.ToString();
-				var plateNumber = worksheet.Cell(row, 2).Value.ToString();
-				var vehicleType = worksheet.Cell(row, 3).Value.ToString();
-				var capacityKg = worksheet.Cell(row, 4).Value.ToString();
-				var capacityM3 = worksheet.Cell(row, 5).Value.ToString();
-				var radiusKm = worksheet.Cell(row, 6).Value.ToString();
-				var smallColelctionPoint = worksheet.Cell(row, 7).Value.ToString();
-				var status = worksheet.Cell(row, 8).Value.ToString();
+				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim();
+				var plateNumber = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var vehicleType = worksheet.Cell(row, 4).Value.ToString()?.Trim();
+				var capacityKgStr = worksheet.Cell(row, 5).Value.ToString();
+				int.TryParse(capacityKgStr, out int capacityKg);
+				var capacityM3Str = worksheet.Cell(row, 6).Value.ToString();
+				int.TryParse(capacityM3Str, out int capacityM3);
+				var smallCollectionPointId = worksheet.Cell(row, 7).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 8).Value.ToString();
+
+				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(plateNumber) || string.IsNullOrEmpty(smallCollectionPointId))
+				{
+					result.Messages.Add($"Dữ liệu thiếu ở dòng {row}.");
+					continue;
+				}
+
+				// 3. XỬ LÝ TRẠNG THÁI (Status Logic)
+				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
+				string statusToSave;
+
+				if (statusNormalized == "còn hoạt động" || statusNormalized == "active")
+				{
+					statusToSave = VehicleStatus.Active.ToString(); // Hoặc Enum
+				}
+				else
+				{
+					statusToSave = VehicleStatus.Inactive.ToString();
+				}
 
 				var vehicleModel = new CreateVehicleModel
 				{
 					VehicleId = id,
 					Plate_Number = plateNumber,
 					Vehicle_Type = vehicleType,
-					Capacity_Kg = int.Parse(capacityKg),
-					Capacity_M3 = int.Parse(capacityM3),
-					Radius_Km = int.Parse(radiusKm),
-					Small_Collection_Point = smallColelctionPoint,
-					Status = status
+					Capacity_Kg = capacityKg,
+					Capacity_M3 = capacityM3,
+					Small_Collection_Point = smallCollectionPointId,
+					Status = statusToSave
 				};
+
 				var importResult = await _vehicleService.CheckAndUpdateVehicleAsync(vehicleModel);
 				result.Messages.AddRange(importResult.Messages);
 			}
 		}
 
+		// chưa sửa lại id của collector
 		private async Task ImportShiftAsync(IXLWorksheet worksheet, ImportResult result)
 		{
 			int rowCount = worksheet.RowsUsed().Count();
-			for (int row = 2; row <= rowCount; row++) // Skip header row
+			for (int row = 2; row <= rowCount; row++)
 			{
-				var id = worksheet.Cell(row, 1).Value.ToString();
-				var collectorId = worksheet.Cell(row, 2).Value.ToString();
-				var collectorName = worksheet.Cell(row, 3).Value.ToString();
-				string dateString = worksheet.Cell(row, 4).GetValue<string>();
-				var starTime = worksheet.Cell(row, 5).Value.ToString();
-				var endTime = worksheet.Cell(row, 6).Value.ToString();
-				var smallColelctionPoint = worksheet.Cell(row, 7).Value.ToString();
-				var status = worksheet.Cell(row, 8).Value.ToString();
-				string[] formats = { "dd-MM-yyyy", "d-M-yyyy", "dd/MM/yyyy", "d/M/yyyy" };
+				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim();
+				var collectorId = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var dateString = worksheet.Cell(row, 5).Value.ToString()?.Trim();
+				var startTimeString = worksheet.Cell(row, 6).Value.ToString()?.Trim();
+				var endTimeString = worksheet.Cell(row, 7).Value.ToString()?.Trim();
+				var smallCollectionPointId = worksheet.Cell(row, 8).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 9).Value.ToString();
 
-				DateOnly finalDate;
-				DateOnly workDate = new DateOnly();
-				// 3. Parse an toàn
-				// DateTimeStyles.None: Bắt buộc chuỗi phải sạch, không có khoảng trắng thừa
-				// CultureInfo.InvariantCulture: Đảm bảo chạy đúng trên mọi máy chủ (Window/Linux/Docker)
-				if (DateOnly.TryParseExact(dateString, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out finalDate))
+				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(collectorId) || string.IsNullOrEmpty(dateString))
 				{
-					// Thành công!
-					workDate = finalDate;
+					result.Messages.Add($"Dữ liệu thiếu ở dòng {row}.");
+					continue;
 				}
-				var shifModel = new CreateShiftModel
+
+				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
+				string statusToSave = (statusNormalized == "còn hoạt động" || statusNormalized == "active") ? "Active" : "Inactive";
+
+				// Parse Ngày
+				string[] formats = { "dd-MM-yyyy", "d-M-yyyy", "dd/MM/yyyy", "d/M/yyyy" };
+				if (!DateOnly.TryParseExact(dateString, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly workDate))
+				{
+					result.Messages.Add($"Ngày làm lỗi định dạng dòng {row}: {dateString}");
+					continue;
+				}
+
+				DateTime shiftStartDateTime;
+				DateTime shiftEndDateTime;
+				try
+				{
+					var timeStart = TimeOnly.Parse(startTimeString); 
+					var timeEnd = TimeOnly.Parse(endTimeString);
+
+					var tempStart = workDate.ToDateTime(timeStart);
+					var tempEnd = workDate.ToDateTime(timeEnd);
+
+
+					var tempStartUtc = tempStart.AddHours(-7);
+					var tempEndUtc = tempEnd.AddHours(-7);
+
+					shiftStartDateTime = DateTime.SpecifyKind(tempStartUtc, DateTimeKind.Utc);
+					shiftEndDateTime = DateTime.SpecifyKind(tempEndUtc, DateTimeKind.Utc);
+				}
+				catch
+				{
+					result.Messages.Add($"Giờ làm lỗi định dạng dòng {row}.");
+					continue;
+				}
+
+				var shiftModel = new CreateShiftModel
 				{
 					ShiftId = id,
 					CollectorId = Guid.Parse(collectorId),
 					WorkDate = workDate,
-					Shift_Start_Time = DateTime.Parse(starTime),
-					Shift_End_Time = DateTime.Parse(endTime),
-					Status = status
+					Shift_Start_Time = shiftStartDateTime,
+					Shift_End_Time = shiftEndDateTime,
+					Status = statusToSave
 				};
-				var importResult = await _shiftService.CheckAndUpdateShiftAsync(shifModel);
+
+				var importResult = await _shiftService.CheckAndUpdateShiftAsync(shiftModel);
 				result.Messages.AddRange(importResult.Messages);
 			}
-			
-
 		}
 
+		// chưa sửa lại id của collector
 		private async Task ImportCollectorAsync(IXLWorksheet worksheet, ImportResult result)
 		{
 			int rowCount = worksheet.RowsUsed().Count();
-			for (int row = 2; row <= rowCount; row++) // Skip header row
+			for (int row = 2; row <= rowCount; row++) // Bỏ qua dòng tiêu đề
 			{
-				var id = worksheet.Cell(row, 1).Value.ToString();
-				var name = worksheet.Cell(row, 2).Value.ToString();
-				var email = worksheet.Cell(row, 3).Value.ToString();
-				var phone = worksheet.Cell(row, 4).Value.ToString();
-				var avatar = worksheet.Cell(row, 5).Value.ToString();
-				var smallCollectionPointId = worksheet.Cell(row, 6).Value.ToString();
-				var companyId = worksheet.Cell(row, 7).Value.ToString();
-				var status = worksheet.Cell(row, 7).Value.ToString();
-				var collectorUsername = worksheet.Cell(row, 8).Value.ToString();
-				var collectorPassword = worksheet.Cell(row, 9).Value.ToString();
-				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || smallCollectionPointId == "0")
+				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim(); 
+				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var email = worksheet.Cell(row, 4).Value.ToString()?.Trim(); 
+				var phone = worksheet.Cell(row, 5).Value.ToString()?.Trim(); 
+				var avatar = worksheet.Cell(row, 6).Value.ToString()?.Trim(); 
+				var smallCollectionPointId = worksheet.Cell(row, 7).Value.ToString()?.Trim(); 
+				var companyId = worksheet.Cell(row, 8).Value.ToString()?.Trim(); 
+				var rawStatus = worksheet.Cell(row, 9).Value.ToString(); 
+				var collectorUsername = worksheet.Cell(row, 10).Value.ToString()?.Trim(); 
+				var collectorPassword = worksheet.Cell(row, 11).Value.ToString()?.Trim();
+
+				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
+				string statusToSave;
+
+				// Map "Đang làm việc" -> Active
+				if (statusNormalized == "đang làm việc")
 				{
-					result.Messages.Add($"Dữ liệu không hợp lệ ở dòng {row}.");
+					statusToSave = UserStatus.Active.ToString(); // Hoặc UserStatus.Active.ToString()
+				}
+				else if (statusNormalized == "nghỉ việc" || statusNormalized == "ngưng hoạt động")
+				{
+					statusToSave = UserStatus.Inactive.ToString();
+				}
+				else
+				{
+					statusToSave = UserStatus.Inactive.ToString();
+				}
+
+				// 3. VALIDATE
+				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(smallCollectionPointId) || smallCollectionPointId == "0")
+				{
+					result.Messages.Add($"Dữ liệu thiếu hoặc không hợp lệ ở dòng {row}.");
 					continue;
 				}
+
+				// 4. TẠO OBJECT
+				// Lưu ý: ID trong Excel là "FPT-C-01" (String), không thể Parse sang Guid được.
+				// Nếu UserId trong DB là String:
 				var collector = new User
 				{
-					UserId = Guid.Parse(id),
+					UserId = Guid.Parse(id), // Sửa: Bỏ Guid.Parse vì ID excel là string "FPT-C-01"
 					Name = name,
 					Email = email,
 					Phone = phone,
@@ -185,35 +258,50 @@ namespace ElecWasteCollection.Application.Services
 					SmallCollectionPointId = smallCollectionPointId,
 					CollectionCompanyId = companyId,
 					Role = UserRole.Collector.ToString(),
-					Status = status
+					Status = statusToSave, // Dùng status đã xử lý
 				};
 				var importResult = await _collectorService.CheckAndUpdateCollectorAsync(collector, collectorUsername, collectorPassword);
 				result.Messages.AddRange(importResult.Messages);
-
 			}
-
 		}
 
 		private async Task ImportSmallCollectionPointAsync(IXLWorksheet worksheet, ImportResult result)
 		{
 			int rowCount = worksheet.RowsUsed().Count();
-			for (int row = 2; row <= rowCount; row++) // Skip header row
+			for (int row = 2; row <= rowCount; row++)
 			{
-				var id = worksheet.Cell(row, 1).Value.ToString();
-				var name = worksheet.Cell(row, 2).Value.ToString();
-				var address = worksheet.Cell(row, 3).Value.ToString();
-				var latitude = double.TryParse(worksheet.Cell(row, 4).Value.ToString(), out var lat) ? lat : 0;
-				var longitude = double.TryParse(worksheet.Cell(row, 5).Value.ToString(), out var lon) ? lon : 0;
-				var openTime = worksheet.Cell(row, 6).Value.ToString();
-				var companyId = worksheet.Cell(row, 7).Value.ToString();
-				var status = worksheet.Cell(row, 8).Value.ToString();
-				var adminUsername = worksheet.Cell(row, 9).Value.ToString();
-				var adminPassword = worksheet.Cell(row, 10).Value.ToString();
+				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim();
+				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var address = worksheet.Cell(row, 4).Value.ToString()?.Trim();
+				var latitudeVal = worksheet.Cell(row, 5).Value.ToString();
+				var latitude = double.TryParse(latitudeVal, out var lat) ? lat : 0;
+				var longitudeVal = worksheet.Cell(row, 6).Value.ToString();
+				var longitude = double.TryParse(longitudeVal, out var lon) ? lon : 0;
+				var openTime = worksheet.Cell(row, 7).Value.ToString()?.Trim();
+				var companyId = worksheet.Cell(row, 8).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 9).Value.ToString();
+				var adminUsername = worksheet.Cell(row, 10).Value.ToString()?.Trim();
+				var adminPassword = worksheet.Cell(row, 11).Value.ToString()?.Trim();
+				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
+				string statusToSave;
 
-				// Validate required fields
-				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(address) || companyId == "0")
+				if (statusNormalized == "còn hoạt động")
 				{
-					result.Messages.Add($"Dữ liệu không hợp lệ ở dòng {row}.");
+					statusToSave = SmallCollectionPointStatus.Active.ToString(); 
+				}
+				else if (statusNormalized == "ngưng hoạt động")
+				{
+					statusToSave = SmallCollectionPointStatus.Inactive.ToString();
+				}
+				else
+				{
+					statusToSave = SmallCollectionPointStatus.Inactive.ToString();
+
+				}
+
+				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(address) || string.IsNullOrEmpty(companyId) || companyId == "0")
+				{
+					result.Messages.Add($"Dữ liệu thiếu hoặc không hợp lệ ở dòng {row}.");
 					continue;
 				}
 
@@ -224,14 +312,12 @@ namespace ElecWasteCollection.Application.Services
 					Address = address,
 					Latitude = latitude,
 					Longitude = longitude,
-					Status = status,
+					Status = statusToSave, 
 					CompanyId = companyId,
 					OpenTime = openTime,
 					Created_At = DateTime.UtcNow,
 					Updated_At = DateTime.UtcNow
 				};
-
-				// Call service method to check and update the SmallCollectionPoint
 				var importResult = await _smallCollectionPointService.CheckAndUpdateSmallCollectionPointAsync(smallCollectionPoint, adminUsername, adminPassword);
 				result.Messages.AddRange(importResult.Messages);
 			}
@@ -240,16 +326,34 @@ namespace ElecWasteCollection.Application.Services
 		private async Task ImportCompanyAsync(IXLWorksheet worksheet, ImportResult result)
 		{
 			int rowCount = worksheet.RowsUsed().Count();
+
 			for (int row = 2; row <= rowCount; row++)
 			{
-				var id = worksheet.Cell(row, 1).Value.ToString();
-				var name = worksheet.Cell(row, 2).Value.ToString();
-				var companyEmail = worksheet.Cell(row, 3).Value.ToString();
-				var phone = worksheet.Cell(row, 4).Value.ToString();
-				var address = worksheet.Cell(row, 5).Value.ToString();
-				var status = worksheet.Cell(row, 6).Value.ToString();
-				var adminUsername = worksheet.Cell(row, 7).Value.ToString();
-				var adminPassword = worksheet.Cell(row, 8).Value.ToString();
+				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim();
+				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var companyEmail = worksheet.Cell(row, 4).Value.ToString()?.Trim();
+				var phone = worksheet.Cell(row, 5).Value.ToString()?.Trim();
+				var address = worksheet.Cell(row, 6).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 7).Value.ToString()?.Trim();
+				var adminUsername = worksheet.Cell(row, 8).Value.ToString()?.Trim();
+				var adminPassword = worksheet.Cell(row, 9).Value.ToString()?.Trim();
+				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
+
+				string statusToSave;
+
+				if (statusNormalized == "còn hoạt động")
+				{
+					statusToSave = CompanyStatus.Active.ToString();
+				}
+				else if (statusNormalized == "ngưng hoạt động")
+				{
+					statusToSave = CompanyStatus.Inactive.ToString();
+				}
+				else
+				{
+					statusToSave = CompanyStatus.Inactive.ToString();
+				}
+
 				var company = new CollectionCompany
 				{
 					CollectionCompanyId = id,
@@ -257,12 +361,12 @@ namespace ElecWasteCollection.Application.Services
 					CompanyEmail = companyEmail,
 					Phone = phone,
 					Address = address,
-					Status = CompanyStatus.Active.ToString(),
+					Status = statusToSave, 
 					Created_At = DateTime.UtcNow,
 					Updated_At = DateTime.UtcNow
 				};
 
-				// Gọi phương thức CheckAndUpdateCompanyAsync thay vì kiểm tra và cập nhật trực tiếp
+				// Gọi phương thức CheckAndUpdateCompanyAsync
 				var importResult = await _collectionCompanyService.CheckAndUpdateCompanyAsync(company, adminUsername, adminPassword);
 				result.Messages.AddRange(importResult.Messages);
 			}

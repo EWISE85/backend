@@ -90,34 +90,35 @@ namespace ElecWasteCollection.Application.Services
 				// 2. Xử lý Images và AI Check (Task.WhenAll)
 				if (createPostRequest.Images != null && createPostRequest.Images.Any())
 				{
-					// Category cần thiết cho AI check (async call)
+					// Lấy Category Name một lần duy nhất để dùng cho AI
 					var category = await _categoryRepository.GetByIdAsync(createPostRequest.Product.SubCategoryId);
 					var categoryName = category?.Name ?? "unknown";
 
-					var checkTasks = createPostRequest.Images
-						.Select(img => _imageRecognitionService.AnalyzeImageCategoryAsync(img, categoryName))
-						.ToList();
-					var results = await Task.WhenAll(checkTasks); // Chờ tất cả AI check
+					bool allImagesMatch = true; // Biến cờ kiểm tra xem tất cả ảnh có hợp lệ không
 
-					// Chuẩn bị ProductImages
-					var productImages = new List<ProductImages>();
-					for (int i = 0; i < createPostRequest.Images.Count; i++)
+					foreach (var imgUrl in createPostRequest.Images)
 					{
-						productImages.Add(new ProductImages
+						var aiResult = await _imageRecognitionService.AnalyzeImageCategoryAsync(imgUrl, categoryName);
+
+						if (aiResult == null || !aiResult.IsMatch)
+						{
+							allImagesMatch = false;
+						}
+
+						// Tạo và Add luôn vào UnitOfWork
+						var productImg = new ProductImages
 						{
 							ProductImagesId = Guid.NewGuid(),
 							ProductId = newProductId,
-							ImageUrl = createPostRequest.Images[i],
-							AiDetectedLabelsJson = results[i].DetectedTagsJson
-						});
+							ImageUrl = imgUrl,
+							AiDetectedLabelsJson = aiResult?.DetectedTagsJson ?? "[]"
+						};
+
+						await _unitOfWork.ProductImages.AddAsync(productImg);
 					}
 
-					foreach (var img in productImages)
-					{
-						await _unitOfWork.ProductImages.AddAsync(img);
-					}
-
-					if (results.All(r => r.IsMatch))
+					// Logic cập nhật trạng thái nếu tất cả ảnh đều hợp lệ
+					if (allImagesMatch)
 					{
 						currentStatus = "Đã Duyệt";
 						newProduct.Status = "Chờ gom nhóm";
@@ -386,7 +387,7 @@ namespace ElecWasteCollection.Application.Services
 				var history = new ProductStatusHistory
 				{
 					ProductId = post.ProductId,
-					ChangedAt = DateTime.Now,
+					ChangedAt = DateTime.UtcNow,
 					Status = "Chờ gom nhóm",
 					StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
 				};
