@@ -193,6 +193,13 @@ namespace ElecWasteCollection.Application.Services
                     var att = await GetProductAttributesAsync(p.ProductId);
                     var userAddress = await _unitOfWork.UserAddresses.GetAsync(ua => ua.UserId == user.UserId);
 
+                    string displayAddress = p.Address;
+                    if (string.IsNullOrEmpty(displayAddress))
+                    {
+                        var defaultAddr = await _unitOfWork.UserAddresses.GetAsync(ua => ua.UserId == user.UserId && ua.isDefault);
+                        displayAddress = defaultAddr?.Address ?? "Chưa cập nhật";
+                    }
+
                     pool.Add(new
                     {
                         Post = p,
@@ -204,7 +211,7 @@ namespace ElecWasteCollection.Application.Services
                         Weight = att.weight,
                         Volume = att.volume,
                         UserName = user.Name,
-                        Address = userAddress?.Address ?? "Chưa cập nhật"
+                        Address = displayAddress
                     });
                 }
             }
@@ -783,6 +790,7 @@ namespace ElecWasteCollection.Application.Services
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
                 var cat = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var att = await GetProductAttributesAsync(p.ProductId);
+
 
                 result.Add(new PendingPostModel
                 {
