@@ -98,10 +98,8 @@ namespace ElecWasteCollection.Application.Services
 
 					foreach (var imgUrl in createPostRequest.Images)
 					{
-						// Gọi AI Check (Await từng cái một -> An toàn cho DB Context)
 						var aiResult = await _imageRecognitionService.AnalyzeImageCategoryAsync(imgUrl, categoryName);
 
-						// Nếu có bất kỳ ảnh nào AI không khớp, đánh dấu flag là false
 						if (aiResult == null || !aiResult.IsMatch)
 						{
 							allImagesMatch = false;
@@ -113,7 +111,6 @@ namespace ElecWasteCollection.Application.Services
 							ProductImagesId = Guid.NewGuid(),
 							ProductId = newProductId,
 							ImageUrl = imgUrl,
-							// Nếu lỗi mạng/API thì lưu chuỗi rỗng hoặc mặc định
 							AiDetectedLabelsJson = aiResult?.DetectedTagsJson ?? "[]"
 						};
 
@@ -390,7 +387,7 @@ namespace ElecWasteCollection.Application.Services
 				var history = new ProductStatusHistory
 				{
 					ProductId = post.ProductId,
-					ChangedAt = DateTime.Now,
+					ChangedAt = DateTime.UtcNow,
 					Status = "Chờ gom nhóm",
 					StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
 				};
