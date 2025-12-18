@@ -26,7 +26,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             if (!companies.Any())
                 throw new Exception("Chưa có cấu hình company.");
 
-            //Tính toán MinRange/MaxRange (Dùng DTO tạm thời)
             var sortedConfig = companies.OrderBy(c => c.CollectionCompanyId).ToList();
             double totalPercent = sortedConfig.Sum(c => c.AssignRatio);
 
@@ -57,14 +56,19 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
                     if (post == null) continue;
 
-                    var userAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == post.SenderId);
-                    if (userAddress == null)
+                    if (string.IsNullOrEmpty(post.Address))
                     {
-                        result.Details.Add(new { productId = product.ProductId, status = "failed", reason = "User address not found" });
+                        result.Details.Add(new { productId = product.ProductId, status = "failed", reason = "Post address is empty" });
                         continue;
                     }
+                    var matchedAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == post.SenderId && a.Address == post.Address);
 
-                    // Roulette Wheel
+                    if (matchedAddress == null || matchedAddress.Iat == null || matchedAddress.Ing == null)
+                    {
+                        result.Details.Add(new { productId = product.ProductId, status = "failed", reason = "Coordinates not found for this address" });
+                        continue;
+                    }
+            
                     double magicNumber = GetStableHashRatio(product.ProductId);
 
                     var targetConfig = rangeConfigs.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange);
@@ -72,7 +76,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     ProductAssignCandidate? chosenCandidate = null;
 
-                    var targetCandidate = await FindBestSmallPointForCompanyAsync(targetConfig.CompanyEntity, userAddress);
+                    var targetCandidate = await FindBestSmallPointForCompanyAsync(targetConfig.CompanyEntity, matchedAddress);
 
                     if (targetCandidate != null)
                     {
@@ -83,7 +87,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         double bestDistance = double.MaxValue;
                         foreach (var otherConfig in rangeConfigs.Where(c => c.CompanyEntity.CollectionCompanyId != targetConfig.CompanyEntity.CollectionCompanyId))
                         {
-                            var candidate = await FindBestSmallPointForCompanyAsync(otherConfig.CompanyEntity, userAddress);
+                            var candidate = await FindBestSmallPointForCompanyAsync(otherConfig.CompanyEntity, matchedAddress);
                             if (candidate != null && candidate.RoadKm < bestDistance)
                             {
                                 bestDistance = candidate.RoadKm;
@@ -140,7 +144,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             if (company.SmallCollectionPoints == null) return null;
 
-            foreach (var sp in company.SmallCollectionPoints) 
+            foreach (var sp in company.SmallCollectionPoints)
             {
                 // Tinh toán khoảng cách Haversine trước
                 double hvDistance = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, address.Iat ?? 0, address.Ing ?? 0);
@@ -155,7 +159,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     minRoadKm = roadKm;
                     best = new ProductAssignCandidate
                     {
-                        ProductId = Guid.Empty, 
+                        ProductId = Guid.Empty,
                         CompanyId = company.CollectionCompanyId,
                         SmallPointId = sp.SmallCollectionPointsId,
                         RoadKm = roadKm,
@@ -190,8 +194,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 if (!dates.Contains(workDate))
                     continue;
 
-                var addressEntity = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == post.SenderId);
-                string userAddrStr = addressEntity?.Address ?? "Unknown Address";
+                string displayAddr = post.Address ?? "Chưa cập nhật";
 
                 result.Add(new ProductByDateModel
                 {
@@ -200,7 +203,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     CategoryName = post.Product.Category?.Name ?? "Unknown Category",
                     BrandName = post.Product.Brand?.Name ?? "Unknown Brand",
                     UserName = post.Sender?.Name ?? "Unknown User",
-                    Address = userAddrStr
+                    Address = displayAddr 
                 });
             }
 
@@ -237,7 +240,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         private class ScheduleDayDto
         {
             public string? PickUpDate { get; set; }
-            public object? Slots { get; set; } 
+            public object? Slots { get; set; }
         }
     }
 }

@@ -193,12 +193,12 @@ namespace ElecWasteCollection.Application.Services
                     var att = await GetProductAttributesAsync(p.ProductId);
                     var userAddress = await _unitOfWork.UserAddresses.GetAsync(ua => ua.UserId == user.UserId);
 
-                    string displayAddress = p.Address;
-                    if (string.IsNullOrEmpty(displayAddress))
-                    {
-                        var defaultAddr = await _unitOfWork.UserAddresses.GetAsync(ua => ua.UserId == user.UserId && ua.isDefault);
-                        displayAddress = defaultAddr?.Address ?? "Chưa cập nhật";
-                    }
+                    //string displayAddress = p.Address;
+                    //if (string.IsNullOrEmpty(displayAddress))
+                    //{
+                    //    var defaultAddr = await _unitOfWork.UserAddresses.GetAsync(ua => ua.UserId == user.UserId && ua.isDefault);
+                    //    displayAddress = defaultAddr?.Address ?? "Chưa cập nhật";
+                    //}
 
                     pool.Add(new
                     {
@@ -211,7 +211,7 @@ namespace ElecWasteCollection.Application.Services
                         Weight = att.weight,
                         Volume = att.volume,
                         UserName = user.Name,
-                        Address = displayAddress
+                        Address = userAddress?.Address ?? "Chưa cập nhật"
                     });
                 }
             }
