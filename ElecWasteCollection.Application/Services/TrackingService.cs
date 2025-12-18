@@ -23,21 +23,45 @@ namespace ElecWasteCollection.Application.Services
 		public async Task<List<CollectionTimelineModel>> GetFullTimelineByProductIdAsync(Guid productId)
 		{
 			var timeline = await _trackingRepository.GetsAsync(h => h.ProductId == productId);
+
 			if (timeline == null || !timeline.Any())
 			{
 				return new List<CollectionTimelineModel>();
 			}
-			var response = timeline.Select(h => new CollectionTimelineModel
+
+			string timeZoneId = "SE Asia Standard Time";
+			TimeZoneInfo vnTimeZone;
+
+			try
 			{
-				Status = h.Status,
-				Description = h.StatusDescription,
-				Date = h.ChangedAt.ToString("dd/MM/yyyy"), // Format
-				Time = h.ChangedAt.ToString("HH:mm")
+				vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
+			}
+			catch (TimeZoneNotFoundException)
+			{
+				// Fallback cho môi trường Linux/Docker nếu thiếu library map
+				vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
+			}
+
+			var response = timeline.Select(h =>
+			{
+				var utcTime = h.ChangedAt.Kind == DateTimeKind.Utc
+							  ? h.ChangedAt
+							  : DateTime.SpecifyKind(h.ChangedAt, DateTimeKind.Utc);
+
+				var vnTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, vnTimeZone);
+
+				return new CollectionTimelineModel
+				{
+					Status = h.Status,
+					Description = h.StatusDescription,
+					Date = vnTime.ToString("dd/MM/yyyy"), 
+					Time = vnTime.ToString("HH:mm")       
+				};
 			}).ToList();
 
 			return response;
 		}
 
-		
+
 	}
 }
