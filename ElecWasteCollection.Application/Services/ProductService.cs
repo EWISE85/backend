@@ -87,7 +87,7 @@ namespace ElecWasteCollection.Application.Services
 					ProductId = newProduct.ProductId,
 					Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
 				};
-				 await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
+				 await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction,false);
 			}
 			await _unitOfWork.SaveAsync();
 			return await BuildProductDetailModelAsync(newProduct);
@@ -273,7 +273,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status, UserReceivePointFromCollectionPointModel model)
 		{
-			var product = await _productRepository.GetAsync(p => p.QRCode == productQrCode);
+			var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == productQrCode); 
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với mã QR đã cho", 404);
 
 			var description = "";
@@ -288,11 +288,12 @@ namespace ElecWasteCollection.Application.Services
 			var pointTransaction = new CreatePointTransactionModel
 			{
 				UserId = product.UserId,
-				ProductId = model.ProductId,
+				ProductId = product.ProductId,
 				Point = model.Point,
 				Desciption = description,
 			};
 			product.Status = status;
+			_unitOfWork.Products.Update(product);
 			var newHistory = new ProductStatusHistory
 			{
 				ProductStatusHistoryId = Guid.NewGuid(),
@@ -301,9 +302,8 @@ namespace ElecWasteCollection.Application.Services
 				StatusDescription = "Sản phẩm đã về đến kho",
 				Status = status
 			};
-			_unitOfWork.Products.Update(product);
-			await _productStatusHistoryRepository.AddAsync(newHistory);
-			await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction);
+			await _unitOfWork.ProductStatusHistory.AddAsync(newHistory); 
+			await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction,false);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}

@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IPointTransactionService
 	{
-		Task<Guid> ReceivePointFromCollectionPoint(CreatePointTransactionModel createPointTransactionModel);
+		Task<Guid> ReceivePointFromCollectionPoint(CreatePointTransactionModel createPointTransactionModel, bool saveChanges = true);
 
 		Task<List<PointTransactionModel>> GetAllPointHistoryByUserId(Guid id);
 	}

@@ -32,7 +32,7 @@ namespace ElecWasteCollection.API.Controllers
                 Point = request.Point,
                 Desciption = request.Desciption,
             };
-            var result = await _pointTransactionService.ReceivePointFromCollectionPoint(model);
+            var result = await _pointTransactionService.ReceivePointFromCollectionPoint(model,true);
             return Ok(result);
         }
         [HttpGet("points-transaction/{userId}")]

@@ -33,13 +33,29 @@ namespace ElecWasteCollection.Application.Services
 			return userPointModel;
 		}
 
-		public async Task<bool> UpdatePointForUser(Guid userId, double point)
+		public async Task<bool> UpdatePointForUser(Guid userId, double pointToAdd)
 		{
-			var userPoint = await _userPointRepository.GetAsync(up => up.UserId == userId);
-			if (userPoint == null) throw new AppException("Không tìm thấy điểm người dùng", 404);
-			userPoint.Points += point;
-			_unitOfWork.UserPoints.Update(userPoint);
-			await _unitOfWork.SaveAsync();
+			// 1. Tìm xem user đã có record trong bảng UserPoints chưa
+			var userPoint = await _unitOfWork.UserPoints.GetAsync(up => up.UserId == userId);
+
+			if (userPoint == null)
+			{
+				// KHÔNG THROW EXCEPTION Ở ĐÂY
+				// Nếu chưa tìm thấy -> Tự động Tạo Mới (Insert)
+				var newUserPoint = new UserPoints
+				{
+					UserPointId = Guid.NewGuid(),
+					UserId = userId,
+					Points = pointToAdd, 
+				};
+				await _unitOfWork.UserPoints.AddAsync(newUserPoint);
+			}
+			else
+			{
+				// Nếu đã có -> Cộng dồn (Update)
+				userPoint.Points += pointToAdd;
+				_unitOfWork.UserPoints.Update(userPoint);
+			}
 			return true;
 		}
 	}

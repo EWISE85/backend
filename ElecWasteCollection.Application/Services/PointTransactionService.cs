@@ -59,22 +59,33 @@ namespace ElecWasteCollection.Application.Services
 			return result;
 		}
 
-		public async Task<Guid> ReceivePointFromCollectionPoint(CreatePointTransactionModel createPointTransactionModel)
+		// Thêm tham số mặc định là true
+		public async Task<Guid> ReceivePointFromCollectionPoint(CreatePointTransactionModel model, bool saveChanges = true)
 		{
 			var points = new PointTransactions
 			{
 				PointTransactionId = Guid.NewGuid(),
-				ProductId = createPointTransactionModel.ProductId,
-				UserId = createPointTransactionModel.UserId,
-				Desciption = createPointTransactionModel.Desciption,
-				Point = createPointTransactionModel.Point,
+				ProductId = model.ProductId,
+				UserId = model.UserId,
+				Desciption = model.Desciption,
+				Point = model.Point,
 				CreatedAt = DateTime.UtcNow,
 				TransactionType = PointTransactionType.Earned.ToString()
 			};
-			var userPoint = await _userPointService.GetPointByUserId(createPointTransactionModel.UserId);
+
+			// 1. Add Transaction
 			await _unitOfWork.PointTransactions.AddAsync(points);
-			var result =  await _userPointService.UpdatePointForUser(createPointTransactionModel.UserId, points.Point);
-			await _unitOfWork.SaveAsync();
+
+			// 2. Update User (Hàm này đã bỏ Save, chỉ update RAM)
+			await _userPointService.UpdatePointForUser(model.UserId, points.Point);
+
+			// 3. Xử lý SAVE dựa vào cờ
+			if (saveChanges)
+			{
+				// Nếu gọi 1 mình -> Lưu ngay lập tức (Lưu cả Trans + UserPoint)
+				await _unitOfWork.SaveAsync();
+			}
+
 			return points.PointTransactionId;
 		}
 	}
