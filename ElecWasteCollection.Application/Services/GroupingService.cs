@@ -191,14 +191,8 @@ namespace ElecWasteCollection.Application.Services
                 {
                     var user = await _unitOfWork.Users.GetByIdAsync(p.SenderId);
                     var att = await GetProductAttributesAsync(p.ProductId);
-                    var userAddress = await _unitOfWork.UserAddresses.GetAsync(ua => ua.UserId == user.UserId);
 
-                    //string displayAddress = p.Address;
-                    //if (string.IsNullOrEmpty(displayAddress))
-                    //{
-                    //    var defaultAddr = await _unitOfWork.UserAddresses.GetAsync(ua => ua.UserId == user.UserId && ua.isDefault);
-                    //    displayAddress = defaultAddr?.Address ?? "Chưa cập nhật";
-                    //}
+                    string postAddress = !string.IsNullOrEmpty(p.Address) ? p.Address : "Chưa cập nhật";
 
                     pool.Add(new
                     {
@@ -211,7 +205,7 @@ namespace ElecWasteCollection.Application.Services
                         Weight = att.weight,
                         Volume = att.volume,
                         UserName = user.Name,
-                        Address = userAddress?.Address ?? "Chưa cập nhật"
+                        Address = postAddress
                     });
                 }
             }
@@ -449,18 +443,28 @@ namespace ElecWasteCollection.Application.Services
 
                 foreach (var p in posts)
                 {
-                    var user = await _unitOfWork.Users.GetByIdAsync(p.SenderId);
-                    var address = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == p.SenderId);
+                
+                    if (string.IsNullOrEmpty(p.Address)) continue;
 
-                    if (address == null || !TryGetTimeWindowForDate(p.ScheduleJson!, workDate, out var st, out var en))
+                    var matchedAddress = await _unitOfWork.UserAddresses.GetAsync(a =>
+                        a.UserId == p.SenderId &&
+                        a.Address == p.Address
+                    );
+
+                    if (matchedAddress == null || matchedAddress.Iat == null || matchedAddress.Ing == null)
                         continue;
+
+                    if (!TryGetTimeWindowForDate(p.ScheduleJson!, workDate, out var st, out var en))
+                        continue;
+
+                    var user = await _unitOfWork.Users.GetByIdAsync(p.SenderId);
 
                     var shiftStart = TimeOnly.FromDateTime(mainShift.Shift_Start_Time.AddHours(7));
                     var shiftEnd = TimeOnly.FromDateTime(mainShift.Shift_End_Time.AddHours(7));
                     var actualStart = st > shiftStart ? st : shiftStart;
                     var actualEnd = en < shiftEnd ? en : shiftEnd;
 
-                    if (actualStart >= actualEnd) continue; 
+                    if (actualStart >= actualEnd) continue;
 
                     st = actualStart;
                     en = actualEnd;
@@ -470,7 +474,7 @@ namespace ElecWasteCollection.Application.Services
                     var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
                     var att = await GetProductAttributesAsync(p.ProductId);
 
-                    locations.Add((address.Iat ?? point.Latitude, address.Ing ?? point.Longitude));
+                    locations.Add((matchedAddress.Iat.Value, matchedAddress.Ing.Value));
 
                     nodesToOptimize.Add(new OptimizationNode
                     {
@@ -485,7 +489,7 @@ namespace ElecWasteCollection.Application.Services
                     {
                         Post = p,
                         User = user,
-                        Address = address,
+                        Address = p.Address, 
                         CategoryName = cat?.Name ?? "Unknown",
                         BrandName = brand?.Name ?? "Unknown",
                         Att = new
@@ -568,10 +572,10 @@ namespace ElecWasteCollection.Application.Services
                         PickupOrder = i + 1,
                         ProductId = data.Post.ProductId,
                         UserName = data.User.Name,
-                        Address = data.Address.Address,
+                        Address = data.Address, // CẬP NHẬT: Lấy từ data.Address (là Post.Address)
                         DistanceKm = Math.Round(distMeters / 1000.0, 2),
                         EstimatedArrival = arrival.ToString("HH:mm"),
-                        Schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>((string)data.Post.ScheduleJson, 
+                        Schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>((string)data.Post.ScheduleJson,
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
                         CategoryName = data.CategoryName,
                         BrandName = data.BrandName,
@@ -595,7 +599,7 @@ namespace ElecWasteCollection.Application.Services
                         });
                     }
 
-                    cursorTime = arrival.AddMinutes(serviceTime); 
+                    cursorTime = arrival.AddMinutes(serviceTime);
                     prevLocIdx = currentLocIdx;
                     totalKg += node.Weight;
                     totalM3 += node.Volume;
@@ -720,11 +724,14 @@ namespace ElecWasteCollection.Application.Services
                 if (post == null) continue;
 
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
-                var userAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == user.UserId);
+
+                // CẬP NHẬT: Không cần lấy UserAddress nữa
+                // var userAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == user.UserId);
+
                 var product = await _unitOfWork.Products.GetByIdAsync(r.ProductId);
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
-                var att = await GetProductAttributesAsync(post.ProductId); 
+                var att = await GetProductAttributesAsync(post.ProductId);
 
                 totalWeight += att.weight;
                 totalVolume += att.volume;
@@ -735,14 +742,14 @@ namespace ElecWasteCollection.Application.Services
                     productId = post.ProductId,
                     postId = post.PostId,
                     userName = user.Name,
-                    address = userAddress.Address,
+                    address = post.Address ?? "N/A", // Sử dụng Post Address
                     categoryName = category?.Name ?? "Unknown",
                     brandName = brand?.Name ?? "Unknown",
                     dimensionText = att.dimensionText,
                     weightKg = att.weight,
                     volumeM3 = att.volume,
                     distanceKm = r.DistanceKm,
-                    schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(　post.ScheduleJson!,
+                    schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(post.ScheduleJson!,
                     new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
                     estimatedArrival = r.EstimatedTime.ToString("HH:mm")
                 });
