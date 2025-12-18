@@ -153,27 +153,33 @@ namespace ElecWasteCollection.Application.Services
 				return new List<ProductDetailModel>();
 			}
 
-			var productDetailTasks = products.Select(async p =>
+			var resultList = new List<ProductDetailModel>();
+
+			// 2. Dùng FOREACH để chạy tuần tự (Thay vì Select + Task.WhenAll)
+			foreach (var p in products)
 			{
 				List<ProductValueDetailModel> attributesList = new List<ProductValueDetailModel>();
+
 				if (p.ProductValues != null)
 				{
-					var attributeTasks = p.ProductValues.Select(pv =>
+					// Inner Loop: Cũng chạy tuần tự luôn để an toàn
+					foreach (var pv in p.ProductValues)
 					{
+						ProductValueDetailModel detail;
 						if (pv.AttributeOptionId.HasValue)
 						{
-							return MapProductValueDetailWithOptionAsync(pv);
+							detail = await MapProductValueDetailWithOptionAsync(pv);
 						}
 						else
 						{
-							return Task.FromResult(MapProductValueDetail(pv, null));
+							detail = MapProductValueDetail(pv, null);
 						}
-					}).ToList();
-
-					attributesList = (await Task.WhenAll(attributeTasks)).ToList();
+						attributesList.Add(detail);
+					}
 				}
 
-				return new ProductDetailModel
+				// 3. Map sang Model
+				var model = new ProductDetailModel
 				{
 					ProductId = p.ProductId,
 					Description = p.Description,
@@ -182,16 +188,15 @@ namespace ElecWasteCollection.Application.Services
 					CategoryId = p.CategoryId,
 					CategoryName = p.Category?.Name,
 					QrCode = p.QRCode,
-					Attributes = attributesList, 
+					Attributes = attributesList, // List đã được fill đầy đủ
 					IsChecked = p.isChecked,
 					Status = p.Status
 				};
-			}).ToList();
 
-			// 3. Chờ tất cả Products được map xong
-			var productDetails = await Task.WhenAll(productDetailTasks);
+				resultList.Add(model);
+			}
 
-			return productDetails.ToList();
+			return resultList;
 		}
 
 		private ProductValueDetailModel MapProductValueDetail(ProductValues pv, AttributeOptions? option)
