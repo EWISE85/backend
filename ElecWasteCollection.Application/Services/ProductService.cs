@@ -343,22 +343,20 @@ namespace ElecWasteCollection.Application.Services
 			List<ProductValueDetailModel> productAttributes = new List<ProductValueDetailModel>();
 			if (product.ProductValues != null)
 			{
-				var attributeTasks = product.ProductValues.Select(pv =>
+				foreach (var pv in product.ProductValues)
 				{
+					ProductValueDetailModel detail;
 					if (pv.AttributeOptionId.HasValue)
 					{
-						// Gọi hàm bất đồng bộ để lấy OptionName
-						return MapProductValueDetailWithOptionAsync(pv);
+						// Await ngay tại đây để xong cái này mới làm cái kia
+						detail = await MapProductValueDetailWithOptionAsync(pv);
 					}
 					else
 					{
-						// Trường hợp không có OptionId, trả về kết quả đồng bộ
-						return Task.FromResult(MapProductValueDetail(pv, null));
+						detail = MapProductValueDetail(pv, null);
 					}
-				}).ToList();
-
-				// Chờ tất cả các Task hoàn thành
-				productAttributes = (await Task.WhenAll(attributeTasks)).ToList();
+					productAttributes.Add(detail);
+				}
 			}
 
 			// 4. Xử lý Schedule (Deserialization)
