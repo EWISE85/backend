@@ -13,7 +13,6 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class BrandService : IBrandService
 	{
-		private readonly List<Brand> _brands = FakeDataSeeder.brands;
 		private readonly IBrandRepository _brandRepository;
 		public BrandService(IBrandRepository brandRepository)
 		{

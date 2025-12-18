@@ -14,14 +14,16 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ICollectionRouteRepository _collectionRouteRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IProductStatusHistoryRepository _productStatusHistoryRepository;
+		private readonly IUserAddressRepository _userAddressRepository;
 
 
-		public CollectionRouteService(IShippingNotifierService notifierService, ICollectionRouteRepository collectionRouteRepository, IUnitOfWork unitOfWork, IProductStatusHistoryRepository productStatusHistoryRepository)
+		public CollectionRouteService(IShippingNotifierService notifierService, ICollectionRouteRepository collectionRouteRepository, IUnitOfWork unitOfWork, IProductStatusHistoryRepository productStatusHistoryRepository, IUserAddressRepository userAddressRepository)
 		{
 			_notifierService = notifierService;
 			_collectionRouteRepository = collectionRouteRepository;
 			_unitOfWork = unitOfWork;
 			_productStatusHistoryRepository = productStatusHistoryRepository;
+			_userAddressRepository = userAddressRepository;
 		}
 
 		public async Task<bool> CancelCollection(Guid collectionRouteId, string rejectMessage)
@@ -97,10 +99,19 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var routes = await _collectionRouteRepository.GetRoutesByDateWithDetailsAsync(PickUpDate);
 
-			var results = routes
-				.Select(r => BuildCollectionRouteModel(r))
-				.Where(model => model != null)
-				.ToList();
+			var results = new List<CollectionRouteModel>();
+
+			foreach (var r in routes)
+			{
+				// Await từng cái một -> Tránh lỗi "A second operation..."
+				var model = await BuildCollectionRouteModel(r);
+
+				if (model != null)
+				{
+					results.Add(model);
+				}
+			}
+
 			return results;
 		}
 
@@ -111,10 +122,19 @@ namespace ElecWasteCollection.Application.Services
 				collectionPointId: collectionPointId
 			);
 
-			var results = routes
-				.Select(r => BuildCollectionRouteModel(r))
-				.Where(model => model != null)
-				.ToList();
+			// SỬA: Dùng vòng lặp foreach để chạy tuần tự và lấy kết quả thực
+			var results = new List<CollectionRouteModel>();
+
+			foreach (var r in routes)
+			{
+				// Await từng cái một -> Tránh lỗi "A second operation..."
+				var model = await BuildCollectionRouteModel(r);
+
+				if (model != null)
+				{
+					results.Add(model);
+				}
+			}
 
 			return results;
 		}
@@ -126,7 +146,7 @@ namespace ElecWasteCollection.Application.Services
 			if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
 			
 
-			return BuildCollectionRouteModel(route);
+			return await BuildCollectionRouteModel(route);
 		}
 
 		public async Task<List<CollectionRouteModel>> GetRoutesByCollectorId(DateOnly PickUpDate, Guid collectorId)
@@ -141,10 +161,18 @@ namespace ElecWasteCollection.Application.Services
 				return new List<CollectionRouteModel>();
 			}
 
-			var results = routes
-				.Select(r => BuildCollectionRouteModel(r))
-				.Where(model => model != null)
-				.ToList();
+			var results = new List<CollectionRouteModel>();
+
+			foreach (var r in routes)
+			{
+				// Await từng cái một -> Tránh lỗi "A second operation..."
+				var model = await BuildCollectionRouteModel(r);
+
+				if (model != null)
+				{
+					results.Add(model);
+				}
+			}
 
 			return results;
 		}
@@ -196,7 +224,7 @@ namespace ElecWasteCollection.Application.Services
 			}
 		}
 
-		private CollectionRouteModel BuildCollectionRouteModel(CollectionRoutes route)
+		private async Task<CollectionRouteModel> BuildCollectionRouteModel(CollectionRoutes route)
 		{
 			if (route == null) return null;
 
@@ -223,7 +251,6 @@ namespace ElecWasteCollection.Application.Services
 					Phone = senderUser.Phone,
 					Avatar = senderUser.Avatar,
 					Role = senderUser.Role
-					// Map thêm các field khác nếu cần
 				};
 			}
 
@@ -252,7 +279,11 @@ namespace ElecWasteCollection.Application.Services
 			// 4. Xử lý địa chỉ
 			// Nếu tìm thấy Post thì lấy Address của Post, nếu không thì báo N/A
 			string address = relatedPost?.Address ?? "Không tìm thấy địa chỉ";
-
+			var userAddress = await _userAddressRepository.GetAsync(ua => ua.UserId == senderUser.UserId && ua.Address == address); 
+			if (userAddress == null)
+			{
+				throw new AppException("Không tìm thấy địa chỉ người dùng", 404);
+			}
 			// 5. Trả về Model
 			return new CollectionRouteModel
 			{
@@ -269,8 +300,8 @@ namespace ElecWasteCollection.Application.Services
 
 				// Address & Geo
 				Address = address,
-				Iat = 0, // Hiện tại Entity Post chưa có Latitude/Longitude, gán tạm 0
-				Ing = 0,
+				Iat = userAddress.Iat.Value,
+				Ing = userAddress.Ing.Value,
 
 				// People
 				Sender = senderModel,
@@ -312,14 +343,23 @@ namespace ElecWasteCollection.Application.Services
 			);
 
 			// 4. Map dữ liệu sang Model
-			var resultModels = routes
-				.Select(route => BuildCollectionRouteModel(route))
-				.Where(m => m != null) // Lọc bỏ các item null nếu có lỗi
-				.ToList();
+			var results = new List<CollectionRouteModel>();
+
+			foreach (var r in routes)
+			{
+				// Await từng cái một -> Tránh lỗi "A second operation..."
+				var model = await BuildCollectionRouteModel(r);
+
+				if (model != null)
+				{
+					results.Add(model);
+				}
+			}
+
 
 			// 5. Trả về kết quả
 			return new PagedResultModel<CollectionRouteModel>(
-				resultModels,
+				results,
 				page,
 				limit,
 				totalItems

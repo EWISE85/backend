@@ -14,7 +14,6 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class AttributeOptionService : IAttributeOptionService
 	{
-		private readonly List<AttributeOptions> _attributeOptions = FakeDataSeeder.attributeOptions;
 		private readonly IAttributeOptionRepository _attributeOptionRepository;
 		public AttributeOptionService(IAttributeOptionRepository attributeOptionRepository)
 		{
