@@ -170,16 +170,18 @@ namespace ElecWasteCollection.Application.Services
 				DateTime shiftEndDateTime;
 				try
 				{
-					var timeStart = TimeOnly.Parse(startTimeString);
+					var timeStart = TimeOnly.Parse(startTimeString); 
 					var timeEnd = TimeOnly.Parse(endTimeString);
 
-					// Gộp Date + Time
 					var tempStart = workDate.ToDateTime(timeStart);
 					var tempEnd = workDate.ToDateTime(timeEnd);
 
-					// Gán Kind = UTC để tránh lỗi DbUpdateException
-					shiftStartDateTime = DateTime.SpecifyKind(tempStart, DateTimeKind.Utc);
-					shiftEndDateTime = DateTime.SpecifyKind(tempEnd, DateTimeKind.Utc);
+
+					var tempStartUtc = tempStart.AddHours(-7);
+					var tempEndUtc = tempEnd.AddHours(-7);
+
+					shiftStartDateTime = DateTime.SpecifyKind(tempStartUtc, DateTimeKind.Utc);
+					shiftEndDateTime = DateTime.SpecifyKind(tempEndUtc, DateTimeKind.Utc);
 				}
 				catch
 				{
