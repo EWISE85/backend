@@ -554,7 +554,7 @@ namespace ElecWasteCollection.Application.Services
                             {
                                 ProductStatusHistoryId = Guid.NewGuid(),
                                 ProductId = productToUpdate.ProductId,
-                                ChangedAt = DateTime.UtcNow.AddHours(7),
+                                ChangedAt = DateTime.UtcNow,
                                 Status = "Chờ thu gom",
                                 StatusDescription = $"Đơn hàng đã được xếp lịch cho xe {vehicle.Plate_Number}."
                             });

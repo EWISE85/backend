@@ -42,7 +42,7 @@ namespace ElecWasteCollection.Application.Services
 				vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
 			}
 
-			var response = timeline.Select(h =>
+			var response = timeline.OrderByDescending(h => h.ChangedAt).Select(h =>
 			{
 				var utcTime = h.ChangedAt.Kind == DateTimeKind.Utc
 							  ? h.ChangedAt
