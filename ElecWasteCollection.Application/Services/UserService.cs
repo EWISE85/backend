@@ -151,6 +151,7 @@ namespace ElecWasteCollection.Application.Services
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			user.Status = UserStatus.Inactive.ToString();
 			user.AppleId = null;
+			user.Email = null;
 			_unitOfWork.Users.Update(user);
 			await _unitOfWork.SaveAsync();
 			return true;
