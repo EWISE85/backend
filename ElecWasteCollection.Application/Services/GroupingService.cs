@@ -725,8 +725,6 @@ namespace ElecWasteCollection.Application.Services
 
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
 
-                // CẬP NHẬT: Không cần lấy UserAddress nữa
-                // var userAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == user.UserId);
 
                 var product = await _unitOfWork.Products.GetByIdAsync(r.ProductId);
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
@@ -742,7 +740,7 @@ namespace ElecWasteCollection.Application.Services
                     productId = post.ProductId,
                     postId = post.PostId,
                     userName = user.Name,
-                    address = post.Address ?? "N/A", // Sử dụng Post Address
+                    address = post.Address ?? "N/A", 
                     categoryName = category?.Name ?? "Unknown",
                     brandName = brand?.Name ?? "Unknown",
                     dimensionText = att.dimensionText,
@@ -792,19 +790,17 @@ namespace ElecWasteCollection.Application.Services
             foreach (var p in pendingPosts)
             {
                 var user = await _unitOfWork.Users.GetByIdAsync(p.SenderId);
-                var address = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == user.UserId);
                 var product = p.Product;
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
                 var cat = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var att = await GetProductAttributesAsync(p.ProductId);
-
 
                 result.Add(new PendingPostModel
                 {
                     PostId = p.PostId,
                     ProductId = p.ProductId,
                     UserName = user.Name,
-                    Address = address?.Address ?? "N/A",
+                    Address = !string.IsNullOrEmpty(p.Address) ? p.Address : "N/A", 
                     ProductName = $"{brand?.Name} {cat?.Name}",
                     Length = att.length,
                     Width = att.width,

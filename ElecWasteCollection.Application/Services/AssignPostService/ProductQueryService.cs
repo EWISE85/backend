@@ -170,12 +170,31 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     var user = post.Sender;
                     if (product == null || user == null) continue;
 
-                    var addressEntity = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == user.UserId);
+                    string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Unknown";
+
+                    double lat = 0, lng = 0;
+                    if (!string.IsNullOrEmpty(post.Address))
+                    {
+                        var addressEntity = await _unitOfWork.UserAddresses.GetAsync(
+                            a => a.UserId == user.UserId && a.Address == post.Address
+                        );
+                        if (addressEntity != null && addressEntity.Iat.HasValue && addressEntity.Ing.HasValue)
+                        {
+                            lat = addressEntity.Iat.Value;
+                            lng = addressEntity.Ing.Value;
+                        }
+                    }
 
                     var metrics = await GetProductMetricsAsync(product.ProductId, attMap);
 
-                    double radiusKm = GeoHelper.DistanceKm(spEntity.Latitude, spEntity.Longitude, addressEntity?.Iat ?? 0, addressEntity?.Ing ?? 0);
-                    double roadKm = await _distance.GetRoadDistanceKm(spEntity.Latitude, spEntity.Longitude, addressEntity?.Iat ?? 0, addressEntity?.Ing ?? 0);
+                    double radiusKm = 0;
+                    double roadKm = 0;
+
+                    if (lat != 0 && lng != 0)
+                    {
+                        radiusKm = GeoHelper.DistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
+                        roadKm = await _distance.GetRoadDistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
+                    }
 
                     spDto.Products.Add(new ProductDetailDto
                     {
@@ -183,7 +202,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         ProductId = product.ProductId,
                         SenderId = user.UserId,
                         UserName = user.Name,
-                        Address = addressEntity?.Address ?? "Unknown",
+                        Address = displayAddress,
                         CategoryName = product.Category?.Name ?? "Unknown",
                         BrandName = product.Brand?.Name ?? "Unknown",
                         WeightKg = metrics.weight,
