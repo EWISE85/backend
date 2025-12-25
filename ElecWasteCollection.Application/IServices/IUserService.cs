@@ -22,5 +22,8 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<bool> UpdateProfile(UserProfileUpdateModel model);
 
+		Task<bool> DeleteUser(Guid accountId);
+
+
 	}
 }

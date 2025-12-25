@@ -17,5 +17,8 @@ namespace ElecWasteCollection.Application.IServices
 		Task<LoginResponseModel> Login(string userName, string password);
 
 		Task<bool> ChangePassword(string email, string newPassword, string confirmPassword);
+
+		Task<LoginResponseModel> LoginWithAppleAsync(string identityToken, string? firstName, string? lastName);
+
 	}
 }

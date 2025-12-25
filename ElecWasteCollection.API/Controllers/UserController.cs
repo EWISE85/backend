@@ -75,5 +75,15 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(user);
 		}
+		[HttpDelete("{userId}")]
+		public async Task<IActionResult> DeleteUser([FromRoute] Guid userId)
+		{
+			var result = await _userService.DeleteUser(userId);
+			if (!result)
+			{
+				return BadRequest(new { message = "Failed to delete user." });
+			}
+			return Ok(new { message = "User deleted successfully." });
+		}
 	}
 }

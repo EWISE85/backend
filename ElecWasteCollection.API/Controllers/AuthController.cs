@@ -26,6 +26,12 @@ namespace ElecWasteCollection.API.Controllers
 			var response = await _accountService.Login(request.Username, request.Password);
 			return Ok(response);
 		}
+		[HttpPost("login-apple")]
+		public async Task<IActionResult> LoginWithApple([FromBody] AppleLoginRequest request)
+		{
+			var response = await _accountService.LoginWithAppleAsync(request.IdentityToken, request.FirstName, request.LastName);
+			return Ok(new { token = response });
+		}
 
 
 	}

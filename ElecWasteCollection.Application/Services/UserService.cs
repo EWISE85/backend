@@ -144,5 +144,16 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
+
+		public async Task<bool> DeleteUser(Guid userId)
+		{
+			var user = await _userRepository.GetAsync(u => u.UserId == userId);
+			if (user == null) throw new AppException("User không tồn tại", 404);
+			user.Status = UserStatus.Inactive.ToString();
+			user.AppleId = null;
+			_unitOfWork.Users.Update(user);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
 	}
 }

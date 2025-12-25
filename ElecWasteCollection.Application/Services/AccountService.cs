@@ -20,14 +20,16 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IFirebaseService _firebaseService;
 		private readonly ITokenService _tokenService;
 		private readonly IUserRepository _userRepository;
+		private readonly IAppleAuthService _appleAuthService;
 
-		public AccountService(IUnitOfWork unitOfWork, IAccountRepsitory accountRepository, IFirebaseService firebaseService, ITokenService tokenService, IUserRepository userRepository)
+		public AccountService(IUnitOfWork unitOfWork, IAccountRepsitory accountRepository, IFirebaseService firebaseService, ITokenService tokenService, IUserRepository userRepository, IAppleAuthService appleAuthService)
 		{
 			_unitOfWork = unitOfWork;
 			_accountRepository = accountRepository;
 			_firebaseService = firebaseService;
 			_tokenService = tokenService;
 			_userRepository = userRepository;
+			_appleAuthService = appleAuthService;
 		}
 		public async Task<bool> AddNewAccount(Account account)
 		{
@@ -43,7 +45,7 @@ namespace ElecWasteCollection.Application.Services
 			if (email == null) throw new Exception("Không lấy được email từ trong token firebase");
 			string name = decodedToken.Claims.ContainsKey("name") ? decodedToken.Claims["name"].ToString() : email;
 			string picture = decodedToken.Claims.ContainsKey("picture") ? decodedToken.Claims["picture"].ToString() : null;
-			var user = await _userRepository.GetAsync(u => u.Email == email);
+			var user = await _userRepository.GetAsync(u => u.Email == email && u.Status == UserStatus.Active.ToString());
 			if (user == null)
 			{
 				user = new User
@@ -82,6 +84,10 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("User không tồn tại", 404);
 			}
+			if (user.Status != UserStatus.Active.ToString())
+			{
+				throw new AppException("Tài khoản đã bị khóa", 403);
+			}
 			var accessToken = await _tokenService.GenerateToken(user);
 			var loginResponse = new LoginResponseModel
 			{
@@ -112,6 +118,46 @@ namespace ElecWasteCollection.Application.Services
 			_unitOfWork.Accounts.Update(account);
 			await _unitOfWork.SaveAsync();
 			return true;
+		}
+
+		public async Task<LoginResponseModel> LoginWithAppleAsync(string identityToken, string? firstName, string? lastName)
+		{
+			var appleUserId = await _appleAuthService.ValidateTokenAndGetAppleUserIdAsync(identityToken);
+			if (appleUserId == null)
+			{
+				throw new AppException("Apple Token không hợp lệ!", 400);
+			}
+			var user = await _userRepository.GetAsync(u => u.AppleId == appleUserId && u.Status == UserStatus.Active.ToString());
+			if (user == null)
+			{
+				user = new User
+				{
+					UserId = Guid.NewGuid(),
+					AppleId = appleUserId,
+					Email = null,
+					Phone = null,
+					Name = (firstName ?? "AppleUser") + " " + (lastName ?? ""),
+					Avatar = null,
+					Role = UserRole.User.ToString(),
+					Status = UserStatus.Active.ToString()
+				};
+				var point = new UserPoints
+				{
+					UserPointId = Guid.NewGuid(),
+					UserId = user.UserId,
+					Points = 0
+				};
+			    await _unitOfWork.Users.AddAsync(user);
+				await _unitOfWork.UserPoints.AddAsync(point);
+				await _unitOfWork.SaveAsync();
+			}
+			var accessToken = await _tokenService.GenerateToken(user);
+			var loginResponse = new LoginResponseModel
+			{
+				AccessToken = accessToken,
+				IsFirstLogin = false
+			};
+			return loginResponse;
 		}
 	}
 }

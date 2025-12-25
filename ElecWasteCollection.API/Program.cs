@@ -14,6 +14,7 @@ using ElecWasteCollection.Domain.IRepository;
 using ElecWasteCollection.Infrastructure.Configuration;
 using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
+using ElecWasteCollection.Infrastructure.ExternalService.Apple;
 using ElecWasteCollection.Infrastructure.ExternalService.Email;
 using ElecWasteCollection.Infrastructure.ExternalService.Imagga;
 using ElecWasteCollection.Infrastructure.Implementations;
@@ -148,6 +149,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IForgotPasswordService, ForgotPasswordService>();
 			builder.Services.AddScoped<IForgotPasswordRepository, ForgotPasswordRepository>();
 			builder.Services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
+			builder.Services.AddScoped<IAppleAuthService, AppleAuthService>();
 
 			builder.Services.AddCors(options =>
 			{
@@ -160,6 +162,7 @@ namespace ElecWasteCollection.API
 				});
 			});
 			builder.Services.Configure<ImaggaSettings>(builder.Configuration.GetSection("ImaggaAuth"));
+			builder.Services.Configure<AppleAuthSettings>(builder.Configuration.GetSection("AppleAuthSettings"));
 			var jwtSettings = builder.Configuration.GetSection("Jwt");
 			var secretKey = jwtSettings["SecretKey"];
 			builder.Services.AddAuthentication(options =>
