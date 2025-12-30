@@ -2,6 +2,7 @@
 {
 	public class UpdateSystemConfigRequest
 	{
-		public string Value { get; set; }
+		public IFormFile? ExcelFile { get; set; }
+		public string? Value { get; set; }
 	}
 }

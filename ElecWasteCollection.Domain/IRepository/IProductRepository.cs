@@ -25,5 +25,6 @@ namespace ElecWasteCollection.Domain.IRepository
 				string? categoryName,
 				string? collectionCompanyId
 			);
+		Task<Dictionary<string, int>> GetProductCountsByCategoryAsync(DateTime from, DateTime to);
 	}
 }

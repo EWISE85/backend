@@ -1,5 +1,4 @@
-﻿using ElecWasteCollection.Application.Data;
-using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;

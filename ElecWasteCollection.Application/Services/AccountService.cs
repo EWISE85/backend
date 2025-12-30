@@ -1,5 +1,4 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
-using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;

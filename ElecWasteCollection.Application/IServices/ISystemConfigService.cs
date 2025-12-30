@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Model;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,5 +14,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<SystemConfigModel> GetSystemConfigByKey(string key);
 
 		Task<bool> UpdateSystemConfig(UpdateSystemConfigModel model);
+		Task<bool> CreateNewConfigWithFileAsync(IFormFile file);
+		Task<(byte[] fileBytes, string fileName)> DownloadFileByConfigIdAsync(Guid id);
 	}
 }

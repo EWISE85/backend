@@ -26,7 +26,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             if (!companies.Any())
                 throw new Exception("Chưa có cấu hình company.");
 
-            var sortedConfig = companies.OrderBy(c => c.CollectionCompanyId).ToList();
+            var sortedConfig = companies.OrderBy(c => c.CompanyId).ToList();
             double totalPercent = sortedConfig.Sum(c => c.AssignRatio);
 
             if (Math.Abs(totalPercent - 100) > 0.1)
@@ -85,7 +85,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     else
                     {
                         double bestDistance = double.MaxValue;
-                        foreach (var otherConfig in rangeConfigs.Where(c => c.CompanyEntity.CollectionCompanyId != targetConfig.CompanyEntity.CollectionCompanyId))
+                        foreach (var otherConfig in rangeConfigs.Where(c => c.CompanyEntity.CompanyId != targetConfig.CompanyEntity.CompanyId))
                         {
                             var candidate = await FindBestSmallPointForCompanyAsync(otherConfig.CompanyEntity, matchedAddress);
                             if (candidate != null && candidate.RoadKm < bestDistance)
@@ -113,7 +113,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         _unitOfWork.Products.Update(product);
 
                         result.TotalAssigned++;
-                        string note = (chosenCandidate.CompanyId == targetConfig.CompanyEntity.CollectionCompanyId) ? "Target Match" : "Fallback Geo";
+                        string note = (chosenCandidate.CompanyId == targetConfig.CompanyEntity.CompanyId) ? "Target Match" : "Fallback Geo";
 
                         result.Details.Add(new
                         {
@@ -137,7 +137,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             return result;
         }
 
-        private async Task<ProductAssignCandidate?> FindBestSmallPointForCompanyAsync(CollectionCompany company, UserAddress address)
+        private async Task<ProductAssignCandidate?> FindBestSmallPointForCompanyAsync(Company company, UserAddress address)
         {
             ProductAssignCandidate? best = null;
             double minRoadKm = double.MaxValue;
@@ -160,7 +160,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     best = new ProductAssignCandidate
                     {
                         ProductId = Guid.Empty,
-                        CompanyId = company.CollectionCompanyId,
+                        CompanyId = company.CompanyId,
                         SmallPointId = sp.SmallCollectionPointsId,
                         RoadKm = roadKm,
                         HaversineKm = hvDistance
@@ -232,7 +232,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         private class CompanyRangeConfig
         {
-            public CollectionCompany CompanyEntity { get; set; } = null!;
+            public Company CompanyEntity { get; set; } = null!;
             public double MinRange { get; set; }
             public double MaxRange { get; set; }
         }

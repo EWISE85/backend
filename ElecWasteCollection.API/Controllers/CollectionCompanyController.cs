@@ -11,10 +11,10 @@ namespace ElecWasteCollection.API.Controllers
 	public class CollectionCompanyController : ControllerBase
 	{
 		private readonly IExcelImportService _excelImportService;
-		private readonly ICollectionCompanyService _collectionCompanyService;
+		private readonly ICompanyService _collectionCompanyService;
 		public CollectionCompanyController(
 			IExcelImportService excelImportService,
-			ICollectionCompanyService collectionCompanyService)
+			ICompanyService collectionCompanyService)
 		{
 			_excelImportService = excelImportService;
 			_collectionCompanyService = collectionCompanyService;

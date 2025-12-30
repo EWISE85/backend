@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Infrastructure.Repository
 {
-	public class CollectionCompanyRepository : GenericRepository<CollectionCompany>, ICollectionCompanyRepository
+	public class CompanyRepository : GenericRepository<Company>, ICompanyRepository
 	{
-		public CollectionCompanyRepository(DbContext context) : base(context)
+		public CompanyRepository(DbContext context) : base(context)
 		{
 		}
 
-		public async Task<(List<CollectionCompany> Items, int TotalCount)> GetPagedCompaniesAsync(string? status,int page,int limit)
+		public async Task<(List<Company> Items, int TotalCount)> GetPagedCompaniesAsync(string? status,int page,int limit)
 		{
 			var query = _dbSet.AsNoTracking();
 

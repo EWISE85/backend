@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.AspNetCore.Http;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,6 +11,8 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Guid SystemConfigId { get; set; }
 
-		public string Value { get; set; }
+		public IFormFile? ExcelFile { get; set; }
+
+		public string? Value { get; set; }
 	}
 }

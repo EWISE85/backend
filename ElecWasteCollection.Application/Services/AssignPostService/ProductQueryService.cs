@@ -1,5 +1,4 @@
-﻿using ElecWasteCollection.Application.Data;
-using ElecWasteCollection.Application.Helpers;
+﻿using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
@@ -123,7 +122,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var attMap = await GetAttributeIdMapAsync();
 
             var companyEntity = await _unitOfWork.CollectionCompanies.GetAsync(
-                filter: c => c.CollectionCompanyId == companyId,
+                filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
 
             if (companyEntity == null) throw new Exception("Company not found.");
@@ -321,7 +320,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             return companies.Select(company => new CompanyWithPointsResponse
             {
-                CompanyId = company.CollectionCompanyId,
+                CompanyId = company.CompanyId,
                 CompanyName = company.Name,
                 SmallPoints = company.SmallCollectionPoints.Select(sp => new SmallPointDto
                 {
@@ -339,7 +338,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<SmallPointDto>> GetSmallPointsByCompanyIdAsync(string companyId)
         {
             var company = await _unitOfWork.CollectionCompanies.GetAsync(
-                filter: c => c.CollectionCompanyId == companyId,
+                filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
 
             if (company == null) throw new Exception("Company not found.");
@@ -359,14 +358,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(string companyId)
         {
             var company = await _unitOfWork.CollectionCompanies.GetAsync(
-                filter: c => c.CollectionCompanyId == companyId,
+                filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
 
             if (company == null) throw new Exception("Company not found.");
 
             return new CompanyConfigDto
             {
-                CompanyId = company.CollectionCompanyId,
+                CompanyId = company.CompanyId,
                 CompanyName = company.Name,
                 RatioPercent = company.AssignRatio,
                 SmallPoints = company.SmallCollectionPoints.Select(sp => new SmallPointDto

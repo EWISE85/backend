@@ -1,5 +1,4 @@
-﻿using ElecWasteCollection.Application.Data;
-using ElecWasteCollection.Application.Exceptions;
+﻿using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
@@ -373,54 +372,97 @@ namespace ElecWasteCollection.Application.Services
 				AggregatedAiLabels = aggregatedLabels
 			};
 		}
-		public async Task<bool> ApprovePost(Guid postId)
+		public async Task<bool> ApprovePost(List<Guid> postIds)
 		{
-			var post = await _postRepository.GetAsync(p => p.PostId == postId);
-			if (post == null) throw new AppException("Post không tồn tại", 404);
-			post.Status = "Đã Duyệt";
+			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId));
 
-			var product = await _postRepository.GetAsync(p => p.ProductId == post.ProductId);
-			if (product != null)
+			if (posts == null || !posts.Any())
 			{
-				product.Status = "Chờ gom nhóm";
-				await _productService.UpdateProductStatusByProductId(product.ProductId, product.Status);
-				var history = new ProductStatusHistory
-				{
-					ProductId = post.ProductId,
-					ChangedAt = DateTime.UtcNow,
-					Status = "Chờ gom nhóm",
-					StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
-				};
-				await _unitOfWork.ProductStatusHistory.AddAsync(history);
-
+				// Hoặc return 0 tùy logic controller
+				throw new AppException("Không tìm thấy bài viết nào hợp lệ", 404);
 			}
-			_unitOfWork.Posts.Update(post);
-			await _unitOfWork.SaveAsync();
-			return true;
 
+			foreach (var post in posts)
+			{
+				if (post.Status == "Đã Duyệt") continue;
+
+				post.Status = "Đã Duyệt";
+				_unitOfWork.Posts.Update(post);
+
+				if (post.ProductId != Guid.Empty && post.ProductId != null)
+				{
+					var product = await _unitOfWork.Products.GetByIdAsync(post.ProductId);
+
+					if (product != null)
+					{
+						product.Status = "Chờ gom nhóm";
+						_unitOfWork.Products.Update(product);
+
+						var history = new ProductStatusHistory
+						{
+							ProductId = post.ProductId, 
+							ChangedAt = DateTime.UtcNow,
+							Status = "Chờ gom nhóm",
+							StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
+						};
+
+						await _unitOfWork.ProductStatusHistory.AddAsync(history);
+					}
+				}
+			}
+
+			 await _unitOfWork.SaveAsync();
+			return true;
 		}
 
-		public async Task<bool> RejectPost(Guid postId, string rejectMessage)
+		public async Task<bool> RejectPost(List<Guid> postIds, string rejectMessage)
 		{
 			var checkBadWord = await _profanityChecker.ContainsProfanityAsync(rejectMessage);
 			if (checkBadWord)
 			{
-				return false;
+				throw new AppException("Lý do từ chối chứa từ ngữ không phù hợp.", 400);
 			}
-			var post = await _postRepository.GetAsync(p => p.PostId == postId);
-			if (post == null) throw new AppException("Post không tồn tại", 404);
-			post.Status = "Đã Từ Chối";
-			post.RejectMessage = rejectMessage;
-			var product = await _productRepository.GetAsync(p => p.ProductId == post.ProductId);
-			if (product == null) throw new AppException("Product không tồn tại", 404);
 
-			product.Status = "Đã Từ Chối";
-			
-			_unitOfWork.Products.Update(product);
-			_unitOfWork.Posts.Update(post);
+			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId));
+
+			if (posts == null || !posts.Any())
+			{
+				throw new AppException("Không tìm thấy bài viết nào hợp lệ.", 404);
+			}
+
+			foreach (var post in posts)
+			{
+				if (post.Status == "Đã Từ Chối") continue;
+
+				post.Status = "Đã Từ Chối";
+				post.RejectMessage = rejectMessage;
+				_unitOfWork.Posts.Update(post);
+
+				if (post.ProductId != null && post.ProductId != Guid.Empty)
+				{
+					var product = await _unitOfWork.Products.GetByIdAsync(post.ProductId);
+
+					if (product != null)
+					{
+						product.Status = "Đã Từ Chối";
+						_unitOfWork.Products.Update(product);
+
+						var history = new ProductStatusHistory
+						{
+							ProductId = post.ProductId,
+							ChangedAt = DateTime.UtcNow,
+							Status = "Đã Từ Chối",
+							StatusDescription = $"Bài đăng bị từ chối. Lý do: {rejectMessage}"
+						};
+						await _unitOfWork.ProductStatusHistory.AddAsync(history);
+					}
+				}
+			}
+
+			// 4. Lưu tất cả thay đổi xuống DB cùng lúc
 			await _unitOfWork.SaveAsync();
-			return true;
 
+			return true;
 		}
 
 		public async Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model)

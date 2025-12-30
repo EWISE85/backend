@@ -1,8 +1,7 @@
 ﻿namespace ElecWasteCollection.API.DTOs.Request
 {
-	public class RejectPostRequest
+	public class ApprovePostRequest
 	{
 		public List<Guid> PostIds { get; set; }
-		public string RejectMessage { get; set; }
 	}
 }

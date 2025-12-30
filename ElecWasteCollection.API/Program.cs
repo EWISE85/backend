@@ -2,7 +2,6 @@
 using ElecWasteCollection.API.Helper;
 using ElecWasteCollection.API.Hubs;
 using ElecWasteCollection.API.MiddlewareCustom;
-using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Interfaces;
 
 //using ElecWasteCollection.Application.Interfaces;
@@ -15,6 +14,7 @@ using ElecWasteCollection.Infrastructure.Configuration;
 using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
 using ElecWasteCollection.Infrastructure.ExternalService.Apple;
+using ElecWasteCollection.Infrastructure.ExternalService.Cloudinary;
 using ElecWasteCollection.Infrastructure.ExternalService.Email;
 using ElecWasteCollection.Infrastructure.ExternalService.Imagga;
 using ElecWasteCollection.Infrastructure.Implementations;
@@ -109,7 +109,7 @@ namespace ElecWasteCollection.API
 
 			builder.Services.AddScoped<IAttributeOptionService, AttributeOptionService>();
 			builder.Services.AddScoped<IExcelImportService, ExcelImportService>();
-			builder.Services.AddScoped<ICollectionCompanyService, CollectionCompanyService>();
+			builder.Services.AddScoped<ICompanyService, CompanyService>();
 			builder.Services.AddScoped<IAccountService, AccountService>();
 			builder.Services.AddScoped<ISmallCollectionService, SmallCollectionService>();
 			builder.Services.AddScoped<IImageRecognitionService, ImaggaImageService>();
@@ -126,7 +126,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IBrandRepository, BrandRepository>();
 			builder.Services.AddScoped<ICategoryAttributeRepsitory, CategoryAttributeRepsitory>();
 			builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-			builder.Services.AddScoped<ICollectionCompanyRepository, CollectionCompanyRepository>();
+			builder.Services.AddScoped<ICompanyRepository, CompanyRepository>();
 			builder.Services.AddScoped<ICollectionRouteRepository, CollectionRouteRepository>();
 			builder.Services.AddScoped<ICollectorRepository, CollectorRepository>();
 			builder.Services.AddScoped<IPackageRepository, PackageRepository>();
@@ -150,7 +150,9 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IForgotPasswordRepository, ForgotPasswordRepository>();
 			builder.Services.AddScoped<ISystemConfigRepository, SystemConfigRepository>();
 			builder.Services.AddScoped<IAppleAuthService, AppleAuthService>();
-
+			builder.Services.AddScoped<IDashboardService, DashboardService>();
+			builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
+			builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
@@ -188,16 +190,6 @@ namespace ElecWasteCollection.API
 				};
 			});
 			var app = builder.Build();
-			_ = FakeDataSeeder.users;
-			_ = FakeDataSeeder.posts;
-			_ = FakeDataSeeder.collectionRoutes;
-			_ = FakeDataSeeder.categories;
-			_ = FakeDataSeeder.products;
-			_ = FakeDataSeeder.productValues;
-			_ = FakeDataSeeder.attributes;
-			_ = FakeDataSeeder.categoryAttributes;
-			_ = FakeDataSeeder.attributeOptions;
-			_ = FakeDataSeeder.productImages;
 
 
 

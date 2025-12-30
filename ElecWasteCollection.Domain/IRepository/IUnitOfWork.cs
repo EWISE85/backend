@@ -10,7 +10,7 @@ namespace ElecWasteCollection.Domain.IRepository
     public interface IUnitOfWork : IDisposable
     {
         IGenericRepository<User> Users { get; }
-        IGenericRepository<CollectionCompany> CollectionCompanies { get; }
+        IGenericRepository<Company> CollectionCompanies { get; }
         IGenericRepository<Products> Products { get; }
         IGenericRepository<Post> Posts { get; }
         IGenericRepository<UserAddress> UserAddresses { get; }

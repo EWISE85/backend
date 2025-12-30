@@ -56,7 +56,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         };
                     }
 
-                    var companyEntity = allCompanies.FirstOrDefault(c => c.CollectionCompanyId == companyDto.CompanyId);
+                    var companyEntity = allCompanies.FirstOrDefault(c => c.CompanyId == companyDto.CompanyId);
 
                     if (companyEntity != null)
                     {
@@ -94,7 +94,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                         updatedDtos.Add(new CompanyConfigDto
                         {
-                            CompanyId = companyEntity.CollectionCompanyId,
+                            CompanyId = companyEntity.CompanyId,
                             CompanyName = companyEntity.Name,
                             RatioPercent = companyEntity.AssignRatio,
                             SmallPoints = spDtos
@@ -129,7 +129,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 var companyDtos = companies.Select(c => new CompanyConfigDto
                 {
-                    CompanyId = c.CollectionCompanyId,
+                    CompanyId = c.CompanyId,
                     CompanyName = c.Name,
                     RatioPercent = c.AssignRatio,
                     SmallPoints = c.SmallCollectionPoints.Select(sp => new SmallPointDto

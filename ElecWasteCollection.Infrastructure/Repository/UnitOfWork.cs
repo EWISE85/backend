@@ -15,7 +15,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
         private readonly ElecWasteCollectionDbContext _context;
 
         public IGenericRepository<User> Users { get; }
-        public IGenericRepository<CollectionCompany> CollectionCompanies { get; }
+        public IGenericRepository<Company> CollectionCompanies { get; }
         public IGenericRepository<Products> Products { get; }
         public IGenericRepository<Post> Posts { get; }
         public IGenericRepository<UserAddress> UserAddresses { get; }
@@ -56,7 +56,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
             _context = context;
 
             Users = new GenericRepository<User>(_context);
-            CollectionCompanies = new GenericRepository<CollectionCompany>(_context);
+            CollectionCompanies = new GenericRepository<Company>(_context);
             Products = new GenericRepository<Products>(_context);
             Posts = new GenericRepository<Post>(_context);
             UserAddresses = new GenericRepository<UserAddress>(_context);

@@ -1,7 +1,4 @@
 ﻿using ClosedXML.Excel;
-using DocumentFormat.OpenXml.Office2010.Excel;
-using DocumentFormat.OpenXml.Office2016.Drawing.ChartDrawing;
-using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -16,16 +13,16 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class ExcelImportService : IExcelImportService
 	{
-		private readonly ICollectionCompanyService _collectionCompanyService;
+		private readonly ICompanyService _collectionCompanyService;
 		private readonly IAccountService _accountService;
 		private readonly IUserService _userService;
-		private readonly ISmallCollectionService _smallCollectionPointService; // New service
-		private readonly ICollectorService _collectorService; // New service
+		private readonly ISmallCollectionService _smallCollectionPointService;
+		private readonly ICollectorService _collectorService;
 		private readonly IShiftService _shiftService;
 		private readonly IVehicleService _vehicleService;
 
 
-		public ExcelImportService(ICollectionCompanyService collectionCompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService)
+		public ExcelImportService(ICompanyService collectionCompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService)
 		{
 			_collectionCompanyService = collectionCompanyService;
 			_accountService = accountService;
@@ -50,19 +47,19 @@ namespace ElecWasteCollection.Application.Services
 				}
 				else if (importType.Equals("SmallCollectionPoint", StringComparison.OrdinalIgnoreCase))
 				{
-					await ImportSmallCollectionPointAsync(worksheet, result); // New import for SmallCollectionPoint
+					await ImportSmallCollectionPointAsync(worksheet, result); 
 				}
 				else if (importType.Equals("Collector", StringComparison.OrdinalIgnoreCase))
 				{
-					await ImportCollectorAsync(worksheet, result); // New import for collector
+					await ImportCollectorAsync(worksheet, result); 
 				}
 				else if (importType.Equals("Shift", StringComparison.OrdinalIgnoreCase))
 				{
-					await ImportShiftAsync(worksheet, result); // New import for collector
+					await ImportShiftAsync(worksheet, result); 
 				}
 				else if (importType.Equals("Vehicle", StringComparison.OrdinalIgnoreCase))
 				{
-					await ImportVehicleAsync(worksheet, result); // New import for collector
+					await ImportVehicleAsync(worksheet, result); 
 				}
 				else if (importType.Equals("User", StringComparison.OrdinalIgnoreCase))
 				{
@@ -334,12 +331,14 @@ namespace ElecWasteCollection.Application.Services
 				var companyEmail = worksheet.Cell(row, 4).Value.ToString()?.Trim();
 				var phone = worksheet.Cell(row, 5).Value.ToString()?.Trim();
 				var address = worksheet.Cell(row, 6).Value.ToString()?.Trim();
-				var rawStatus = worksheet.Cell(row, 7).Value.ToString()?.Trim();
-				var adminUsername = worksheet.Cell(row, 8).Value.ToString()?.Trim();
-				var adminPassword = worksheet.Cell(row, 9).Value.ToString()?.Trim();
+				var companyType = worksheet.Cell(row, 7).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 8).Value.ToString()?.Trim();
+				var adminUsername = worksheet.Cell(row, 9).Value.ToString()?.Trim();
+				var adminPassword = worksheet.Cell(row, 10).Value.ToString()?.Trim();
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 
 				string statusToSave;
+				string companyTypeToSave;
 
 				if (statusNormalized == "còn hoạt động")
 				{
@@ -354,13 +353,26 @@ namespace ElecWasteCollection.Application.Services
 					statusToSave = CompanyStatus.Inactive.ToString();
 				}
 
-				var company = new CollectionCompany
+				if (companyType.Equals("Collection Company", StringComparison.OrdinalIgnoreCase) || companyType.Equals("Công ty thu gom", StringComparison.OrdinalIgnoreCase))
 				{
-					CollectionCompanyId = id,
+					companyTypeToSave = CompanyType.CollectionCompany.ToString();
+				}
+				else if (companyType.Equals("Recycling Company", StringComparison.OrdinalIgnoreCase) || companyType.Equals("Công ty tái chế", StringComparison.OrdinalIgnoreCase))
+				{
+					companyTypeToSave = CompanyType.RecyclingCompany.ToString();
+				}
+				else
+				{
+					companyTypeToSave = CompanyType.CollectionCompany.ToString();
+				}
+				var company = new Company
+				{
+					CompanyId = id,
 					Name = name,
 					CompanyEmail = companyEmail,
 					Phone = phone,
 					Address = address,
+					CompanyType = companyTypeToSave,
 					Status = statusToSave, 
 					Created_At = DateTime.UtcNow,
 					Updated_At = DateTime.UtcNow

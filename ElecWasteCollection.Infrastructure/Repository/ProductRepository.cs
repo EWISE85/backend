@@ -203,6 +203,32 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return (productsPaged, totalRecords);
 		}
+		// Thêm vào trong file ElecWasteCollection.Infrastructure.Repository.ProductRepository.cs
+
+		public async Task<Dictionary<string, int>> GetProductCountsByCategoryAsync(DateTime from, DateTime to)
+		{
+			var fromDateOnly = DateOnly.FromDateTime(from);
+			var toDateOnly = DateOnly.FromDateTime(to);
+
+			var query = _dbSet.AsNoTracking();
+
+			var result = await query
+				.Where(p => p.CreateAt.HasValue &&
+							p.CreateAt.Value >= fromDateOnly &&
+							p.CreateAt.Value <= toDateOnly)
+				.GroupBy(p => p.Category.Name) 
+				.Select(g => new
+				{
+					CategoryName = g.Key,
+					Count = g.Count()
+				})
+				.ToDictionaryAsync(
+					k => k.CategoryName ?? "Chưa phân loại",
+					v => v.Count
+				);
+
+			return result;
+		}
 	}
 }
 

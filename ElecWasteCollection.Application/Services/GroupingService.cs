@@ -836,7 +836,7 @@ namespace ElecWasteCollection.Application.Services
 
             var response = new CompanySettingsResponse
             {
-                CompanyId = company.CollectionCompanyId,
+                CompanyId = company.CompanyId,
                 CompanyName = company.Name,
                 Points = new List<PointSettingDetailDto>()
             };
@@ -861,7 +861,7 @@ namespace ElecWasteCollection.Application.Services
             var company = await _unitOfWork.CollectionCompanies.GetByIdAsync(point.CompanyId);
             return new SinglePointSettingResponse
             {
-                CompanyId = company?.CollectionCompanyId ?? "Unknown",
+                CompanyId = company?.CompanyId ?? "Unknown",
                 CompanyName = company?.Name ?? "Unknown Company",
                 SmallPointId = point.SmallCollectionPointsId,
                 SmallPointName = point.Name,

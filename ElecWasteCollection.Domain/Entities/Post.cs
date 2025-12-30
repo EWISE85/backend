@@ -32,7 +32,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public User Sender { get; set; }
 
-		public CollectionCompany? CollectionCompany { get; set; }
+		public Company? CollectionCompany { get; set; }
 
 		public SmallCollectionPoints? AssignedSmallPoint { get; set; }
 	}

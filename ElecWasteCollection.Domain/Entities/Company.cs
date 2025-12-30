@@ -11,14 +11,22 @@ namespace ElecWasteCollection.Domain.Entities
 		Active,
 		Inactive,
 	}
-	public class CollectionCompany
+    public enum CompanyType
     {
-        public string CollectionCompanyId { get; set; }
+        CollectionCompany,
+		RecyclingCompany,
+	}
+	public class Company
+    {
+        public string CompanyId { get; set; }
         public string Name { get; set; } = null!;
         public string CompanyEmail { get; set; } = null!;
         public string Phone { get; set; } = null!;
         public string Address { get; set; } = null!;
-        public string Status { get; set; } = null!;
+
+        public string CompanyType { get; set; } = null!;
+		public string Status { get; set; } = null!;
+
         public DateTime Created_At { get; set; }
         public DateTime Updated_At { get; set; }
 

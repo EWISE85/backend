@@ -1,5 +1,4 @@
 ﻿using DocumentFormat.OpenXml.Math;
-using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
@@ -14,13 +13,13 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
-	public class CollectionCompanyService : ICollectionCompanyService
+	public class CompanyService : ICompanyService
 	{
-		private readonly ICollectionCompanyRepository _collectionCompanyRepository;
+		private readonly ICompanyRepository _collectionCompanyRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IAccountRepsitory _accountRepository;
 		private readonly IUserRepository _userRepository;
-		public CollectionCompanyService(ICollectionCompanyRepository collectionCompanyRepository, IUnitOfWork unitOfWork, IAccountRepsitory accountRepository, IUserRepository userRepository)
+		public CompanyService(ICompanyRepository collectionCompanyRepository, IUnitOfWork unitOfWork, IAccountRepsitory accountRepository, IUserRepository userRepository)
 		{
 			_collectionCompanyRepository = collectionCompanyRepository;
 			_unitOfWork = unitOfWork;
@@ -28,7 +27,7 @@ namespace ElecWasteCollection.Application.Services
 			_userRepository = userRepository;
 		}
 
-		public async Task<bool> AddNewCompany(CollectionCompany collectionTeams)
+		public async Task<bool> AddNewCompany(Company collectionTeams)
 		{
 			await _unitOfWork.CollectionCompanies.AddAsync(collectionTeams);
 			await _unitOfWork.SaveAsync();
@@ -36,7 +35,7 @@ namespace ElecWasteCollection.Application.Services
 
 		}
 
-		public async Task<ImportResult> CheckAndUpdateCompanyAsync(CollectionCompany importData, string adminUsername, string rawPassword)
+		public async Task<ImportResult> CheckAndUpdateCompanyAsync(Company importData, string adminUsername, string rawPassword)
 		{
 			var result = new ImportResult();
 			if (importData == null)
@@ -48,7 +47,7 @@ namespace ElecWasteCollection.Application.Services
 
 			try
 			{
-				var existingCompany = await _collectionCompanyRepository.GetAsync(c => c.CollectionCompanyId == importData.CollectionCompanyId);
+				var existingCompany = await _collectionCompanyRepository.GetAsync(c => c.CompanyId == importData.CompanyId);
 
 				if (existingCompany != null)
 				{
@@ -76,7 +75,7 @@ namespace ElecWasteCollection.Application.Services
 						Avatar = null,
 						Role = UserRole.AdminCompany.ToString(),
 						Status = UserStatus.Active.ToString(),
-						CollectionCompanyId = importData.CollectionCompanyId
+						CollectionCompanyId = importData.CompanyId
 					};
 
 					await _unitOfWork.Users.AddAsync(newAdminUser);
@@ -112,7 +111,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> DeleteCompany(string collectionCompanyId)
 		{
-			var company = await _collectionCompanyRepository.GetAsync(t => t.CollectionCompanyId == collectionCompanyId);
+			var company = await _collectionCompanyRepository.GetAsync(t => t.CompanyId == collectionCompanyId);
 			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
 			company.Status = CompanyStatus.Inactive.ToString();
 			_unitOfWork.CollectionCompanies.Update(company);
@@ -125,7 +124,7 @@ namespace ElecWasteCollection.Application.Services
 			var company = await _collectionCompanyRepository.GetAllAsync();
 			var response = company.Select(team => new CollectionCompanyResponse
 			{
-				Id = team.CollectionCompanyId,
+				Id = team.CompanyId,
 				Name = team.Name,
 				CompanyEmail = team.CompanyEmail,
 				Phone = team.Phone,
@@ -138,11 +137,11 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<CollectionCompanyResponse>? GetCompanyById(string collectionCompanyId)
 		{
-			var company = await _collectionCompanyRepository.GetAsync(c => c.CollectionCompanyId == collectionCompanyId);
+			var company = await _collectionCompanyRepository.GetAsync(c => c.CompanyId == collectionCompanyId);
 			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
 			var response = new CollectionCompanyResponse
 			{
-				Id = company.CollectionCompanyId,
+				Id = company.CompanyId,
 				Name = company.Name,
 				CompanyEmail = company.CompanyEmail,
 				Phone = company.Phone,
@@ -158,7 +157,7 @@ namespace ElecWasteCollection.Application.Services
 			if (companies == null) throw new AppException("Không tìm thấy công ty", 404);
 			var response = companies.Select(team => new CollectionCompanyResponse
 			{
-				Id = team.CollectionCompanyId,
+				Id = team.CompanyId,
 				Name = team.Name,
 				CompanyEmail = team.CompanyEmail,
 				Phone = team.Phone,
@@ -178,7 +177,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var resultList = entities.Select(company => new CollectionCompanyResponse
 			{
-				Id = company.CollectionCompanyId,
+				Id = company.CompanyId,
 				Name = company.Name,
 				CompanyEmail = company.CompanyEmail,
 				Phone = company.Phone,
@@ -196,9 +195,9 @@ namespace ElecWasteCollection.Application.Services
 		}
 
 
-		public async Task<bool> UpdateCompany(CollectionCompany collectionTeams)
+		public async Task<bool> UpdateCompany(Company collectionTeams)
 		{
-			var team = await _collectionCompanyRepository.GetAsync(t => t.CollectionCompanyId == collectionTeams.CollectionCompanyId);
+			var team = await _collectionCompanyRepository.GetAsync(t => t.CompanyId == collectionTeams.CompanyId);
 			if (team == null) throw new AppException("Không tìm thấy công ty", 404);
 			team.Address = collectionTeams.Address;
 			team.CompanyEmail = collectionTeams.CompanyEmail;

@@ -92,5 +92,13 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 			_dbSet.Add(entity);
 		}
+		public async Task<int> CountAsync(Expression<Func<T, bool>> predicate = null)
+		{
+			if (predicate == null)
+			{
+				return await _context.Set<T>().CountAsync();
+			}
+			return await _context.Set<T>().CountAsync(predicate);
+		}
 	}
 }

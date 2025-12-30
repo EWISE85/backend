@@ -1,5 +1,4 @@
-﻿using ElecWasteCollection.Application.Data;
-using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Domain.Entities;
 using FirebaseAdmin.Auth;
 using System;
@@ -12,8 +11,6 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 {
 	public class FirebaseService : IFirebaseService
 	{
-		private readonly List<User> _users = FakeDataSeeder.users;
-
 		public async Task<FirebaseToken> VerifyIdTokenAsync(string idToken)
 		{
 			try

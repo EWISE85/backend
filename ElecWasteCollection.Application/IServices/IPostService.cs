@@ -15,9 +15,9 @@ namespace ElecWasteCollection.Application.IServices
 		Task<List<PostSummaryModel>> GetAll();
 		Task<List<PostDetailModel>> GetPostBySenderId(Guid senderId);
 		Task<PostDetailModel> GetById(Guid id);
-		Task<bool> ApprovePost(Guid postId);
+		Task<bool> ApprovePost(List<Guid> postId);
 
-		Task<bool> RejectPost(Guid postId, string rejectMessage);
+		Task<bool> RejectPost(List<Guid> postId, string rejectMessage);
 		Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model);
 	}
 }

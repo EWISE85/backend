@@ -8,14 +8,14 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.IServices
 {
-    public interface ICollectionCompanyService
+    public interface ICompanyService
     {
-		Task<bool> AddNewCompany(CollectionCompany collectionTeams);
-		Task<bool> UpdateCompany(CollectionCompany collectionTeams);
+		Task<bool> AddNewCompany(Company collectionTeams);
+		Task<bool> UpdateCompany(Company collectionTeams);
 		Task<bool> DeleteCompany(string collectionCompanyId);
 		Task<List<CollectionCompanyResponse>> GetAllCollectionCompaniesAsync();
 
-		Task<ImportResult> CheckAndUpdateCompanyAsync(CollectionCompany collectionTeams, string adminUsername, string password);
+		Task<ImportResult> CheckAndUpdateCompanyAsync(Company collectionTeams, string adminUsername, string password);
 		Task<CollectionCompanyResponse?> GetCompanyById(string collectionCompanyId);
 
 		Task<List<CollectionCompanyResponse>?> GetCompanyByName(string companyName);

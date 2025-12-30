@@ -22,7 +22,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 		public DbSet<Attributes> Attributes { get; set; }
 		public DbSet<AttributeOptions> AttributeOptions { get; set; }
 		public DbSet<CategoryAttributes> CategoryAttributes { get; set; }
-		public DbSet<CollectionCompany> CollectionCompanies { get; set; }
+		public DbSet<Company> Companies { get; set; }
 		public DbSet<SmallCollectionPoints> SmallCollectionPoints { get; set; }
 		public DbSet<CollectionGroups> CollectionGroups { get; set; }
 		public DbSet<CollectionRoutes> CollectionRoutes { get; set; }
@@ -42,12 +42,13 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
-			modelBuilder.Entity<CollectionCompany>(entity =>
+			modelBuilder.Entity<Company>(entity =>
 			{
-				entity.ToTable("CollectionCompany");
-				entity.HasKey(e => e.CollectionCompanyId);
+				entity.ToTable("Company"); 
+				entity.HasKey(e => e.CompanyId);
 				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
 				entity.HasIndex(e => e.Name).IsUnique();
+				entity.HasIndex(e => e.Created_At);
 			});
 
 			modelBuilder.Entity<SmallCollectionPoints>(entity =>
@@ -56,6 +57,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasKey(e => e.SmallCollectionPointsId);
 				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
 				entity.HasIndex(e => e.Name).IsUnique();
+				entity.HasIndex(e => e.Created_At);
 
 				entity.HasOne(e => e.CollectionCompany)
 					  .WithMany(c => c.SmallCollectionPoints)
@@ -70,6 +72,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.Property(e => e.UserId).ValueGeneratedOnAdd();
 				entity.Property(e => e.CollectionCompanyId).IsRequired(false);
 				entity.Property(e => e.SmallCollectionPointId).IsRequired(false);
+				entity.HasIndex(e => e.CreateAt);
 
 				entity.HasOne(e => e.CollectionCompany)
 					  .WithMany(c => c.Users)
@@ -190,6 +193,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasIndex(e => e.QRCode).IsUnique();
 				entity.Property(e => e.SmallCollectionPointId).IsRequired(false);
 				entity.Property(e => e.PackageId).IsRequired(false);
+				entity.HasIndex(e => e.CreateAt);
 
 				entity.HasOne(e => e.User)
 					  .WithMany(u => u.Products)

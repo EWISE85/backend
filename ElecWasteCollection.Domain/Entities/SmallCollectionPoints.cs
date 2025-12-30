@@ -26,7 +26,7 @@
         public double ServiceTimeMinutes { get; set; } = 10;
         public double AvgTravelTimeMinutes { get; set; } = 10;
 
-        public CollectionCompany CollectionCompany { get; set; } = null!;
+        public Company CollectionCompany { get; set; } = null!;
 
         public virtual ICollection<User> Users { get; set; } = new List<User>();
 

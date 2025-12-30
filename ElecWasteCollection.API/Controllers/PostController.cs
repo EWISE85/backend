@@ -1,5 +1,4 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
-using ElecWasteCollection.Application.Data;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -78,31 +77,31 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(posts);
 		}
 
-		[HttpPut("approve/{postId}")]
-		public async Task<IActionResult> ApprovePost(Guid postId)
+		[HttpPut("approve")]
+		public async Task<IActionResult> ApprovePost([FromBody] ApprovePostRequest request)
 		{
-			var isApproved = await _postService.ApprovePost(postId);
+			var isApproved = await _postService.ApprovePost(request.PostIds);
 
 			if (isApproved)
 			{
-				return Ok(new { message = $"Post {postId} approved successfully." });
+				return Ok(new { message = $"Post approved successfully." });
 			}
 			else
 			{
-				return StatusCode(400, $"An error occurred while approving the post {postId}.");
+				return StatusCode(400, $"An error occurred while approving the post.");
 			}
 		}
-		[HttpPut("reject/{postId}")]
-		public async Task<IActionResult> RejectPost([FromRoute] Guid postId, [FromBody] RejectPostRequest rejectPostRequest)
+		[HttpPut("reject")]
+		public async Task<IActionResult> RejectPost([FromBody] RejectPostRequest rejectPostRequest)
 		{
-			var isRejected = await _postService.RejectPost(postId, rejectPostRequest.RejectMessage);
+			var isRejected = await _postService.RejectPost(rejectPostRequest.PostIds, rejectPostRequest.RejectMessage);
 			if (isRejected)
 			{
-				return Ok(new { message = $"Post {postId} rejected successfully." });
+				return Ok(new { message = $"Post  rejected successfully." });
 			}
 			else
 			{
-				return StatusCode(400, $"An error occurred while rejecting the post {postId}.");
+				return StatusCode(400, $"An error occurred while rejecting the post.");
 			}
 		}
 
