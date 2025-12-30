@@ -29,7 +29,6 @@ namespace ElecWasteCollection.Application.Services
 		{
 			string fileUrl = await _cloudinaryService.UploadRawFileAsync(file, SystemConfigKey.FORMAT_IMPORT_VEHICLE.ToString());
 
-			// 3. Tạo Entity mới
 			var newConfig = new SystemConfig
 			{
 				SystemConfigId = Guid.NewGuid(),
@@ -78,7 +77,9 @@ namespace ElecWasteCollection.Application.Services
 				Key = config.Key,
 				Value = config.Value,
 				DisplayName = config.DisplayName,
-				GroupName = config.GroupName
+				GroupName = config.GroupName,
+				Status = config.Status
+				
 			}).ToList();
 
 			return result;

@@ -17,5 +17,7 @@ namespace ElecWasteCollection.Application.Model
 		public string DisplayName { get; set; }
 
 		public string GroupName { get; set; }
+
+		public string Status { get; set; }
 	}
 }
