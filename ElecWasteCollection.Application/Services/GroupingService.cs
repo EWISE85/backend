@@ -13,6 +13,7 @@ namespace ElecWasteCollection.Application.Services
         private const double DEFAULT_SERVICE_TIME = 15;
         private const double DEFAULT_TRAVEL_TIME = 15;
 
+        // Lưu trữ tạm thời trong RAM 
         private static readonly List<StagingAssignDayModel> _inMemoryStaging = new();
 
         private readonly IUnitOfWork _unitOfWork;
@@ -23,32 +24,8 @@ namespace ElecWasteCollection.Application.Services
             _unitOfWork = unitOfWork;
             _matrixClient = matrixClient;
         }
-        private sealed class TimeSlotDetailDto
-        {
-            public string? StartTime { get; set; }
-            public string? EndTime { get; set; }
-        }
-        private sealed class DailyTimeSlotsDto
-        {
-            public string? DayName { get; set; }
-            public string? PickUpDate { get; set; }
-            public TimeSlotDetailDto? Slots { get; set; }
-        }
-        private class PostScheduleInfo
-        {
-            public DateOnly MinDate { get; set; }
-            public DateOnly MaxDate { get; set; }
-            public List<DateOnly> SpecificDates { get; set; } = new();
-        }
-        private class StagingAssignDayModel
-        {
-            public Guid StagingId { get; set; } = Guid.NewGuid();
-            public DateOnly Date { get; set; }
-            public string PointId { get; set; } = null!;
-            public string VehicleId { get; set; } = null!;
-            public List<Guid> ProductIds { get; set; } = new();
-        }
 
+      
         private async Task<(double length, double width, double height, double weight, double volume, string dimensionText)> GetProductAttributesAsync(Guid productId)
         {
             var pValues = await _unitOfWork.ProductValues.GetAllAsync(v => v.ProductId == productId);
@@ -96,7 +73,7 @@ namespace ElecWasteCollection.Application.Services
 
             if (length > 0 && width > 0 && height > 0)
             {
-                volume = (length * width * height) / 1_000_000.0; 
+                volume = (length * width * height) / 1_000_000.0;
                 dimText = $"{length} x {width} x {height} cm";
             }
 
@@ -162,13 +139,75 @@ namespace ElecWasteCollection.Application.Services
             }
             catch { return false; }
         }
+
+        private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
+        {
+            var config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.SmallCollectionPointId == pointId &&
+                pointId != null);
+
+            if (config == null && companyId != null)
+            {
+                config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == null);
+            }
+
+            if (config == null)
+            {
+                config = configs.FirstOrDefault(x =>
+               x.Key == key.ToString() &&
+               x.CompanyId == null &&
+               x.SmallCollectionPointId == null);
+            }
+
+            if (config != null && double.TryParse(config.Value, out double result))
+            {
+                return result;
+            }
+            return defaultValue;
+        }
+
+        private async Task UpsertConfigAsync(string? companyId, string? pointId, SystemConfigKey key, string value)
+        {
+            var existingConfig = await _unitOfWork.SystemConfig.GetAsync(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == pointId);
+
+            if (existingConfig != null)
+            {
+                existingConfig.Value = value;
+                _unitOfWork.SystemConfig.Update(existingConfig);
+            }
+            else
+            {
+                var newConfig = new SystemConfig
+                {
+                    SystemConfigId = Guid.NewGuid(),
+                    Key = key.ToString(),
+                    Value = value,
+                    CompanyId = companyId,
+                    SmallCollectionPointId = pointId,
+                    Status = SystemConfigStatus.Active.ToString(),
+                    DisplayName = key.ToString(),
+                    GroupName = pointId != null ? "PointConfig" : "CompanyConfig"
+                };
+                await _unitOfWork.SystemConfig.AddAsync(newConfig);
+            }
+        }
+
+
         public async Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request)
         {
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
-            double serviceTime = point.ServiceTimeMinutes > 0 ? point.ServiceTimeMinutes : DEFAULT_SERVICE_TIME;
-            double avgTravelTime = point.AvgTravelTimeMinutes > 0 ? point.AvgTravelTimeMinutes : DEFAULT_TRAVEL_TIME;
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+            double serviceTime = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, DEFAULT_SERVICE_TIME);
+            double avgTravelTime = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, DEFAULT_TRAVEL_TIME);
 
             var vehicles = await _unitOfWork.Vehicles.GetAllAsync(v => v.Small_Collection_Point == request.CollectionPointId && v.Status == "active");
             var pointVehicles = vehicles.ToList();
@@ -224,7 +263,7 @@ namespace ElecWasteCollection.Application.Services
             foreach (var date in distinctDates)
             {
                 var availableVehicles = pointVehicles.OrderBy(v => v.Capacity_Kg).ToList();
-                double defaultWorkHours = 8.0; 
+                double defaultWorkHours = 8.0;
                 double totalWorkMinutes = availableVehicles.Count * defaultWorkHours * 60;
                 double estimatedMinutesPerPost = serviceTime + avgTravelTime;
                 int maxPostsByTime = (int)(totalWorkMinutes / estimatedMinutesPerPost);
@@ -350,7 +389,8 @@ namespace ElecWasteCollection.Application.Services
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm.");
 
-            double serviceTime = point.ServiceTimeMinutes > 0 ? point.ServiceTimeMinutes : DEFAULT_SERVICE_TIME;
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+            double serviceTime = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, DEFAULT_SERVICE_TIME);
 
             var staging = _inMemoryStaging
                 .Where(s => s.PointId == request.CollectionPointId)
@@ -443,7 +483,7 @@ namespace ElecWasteCollection.Application.Services
 
                 foreach (var p in posts)
                 {
-                
+
                     if (string.IsNullOrEmpty(p.Address)) continue;
 
                     var matchedAddress = await _unitOfWork.UserAddresses.GetAsync(a =>
@@ -489,7 +529,7 @@ namespace ElecWasteCollection.Application.Services
                     {
                         Post = p,
                         User = user,
-                        Address = p.Address, 
+                        Address = p.Address,
                         CategoryName = cat?.Name ?? "Unknown",
                         BrandName = brand?.Name ?? "Unknown",
                         Att = new
@@ -572,7 +612,7 @@ namespace ElecWasteCollection.Application.Services
                         PickupOrder = i + 1,
                         ProductId = data.Post.ProductId,
                         UserName = data.User.Name,
-                        Address = data.Address, // CẬP NHẬT: Lấy từ data.Address (là Post.Address)
+                        Address = data.Address,
                         DistanceKm = Math.Round(distMeters / 1000.0, 2),
                         EstimatedArrival = arrival.ToString("HH:mm"),
                         Schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>((string)data.Post.ScheduleJson,
@@ -725,7 +765,6 @@ namespace ElecWasteCollection.Application.Services
 
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
 
-
                 var product = await _unitOfWork.Products.GetByIdAsync(r.ProductId);
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
@@ -740,7 +779,7 @@ namespace ElecWasteCollection.Application.Services
                     productId = post.ProductId,
                     postId = post.PostId,
                     userName = user.Name,
-                    address = post.Address ?? "N/A", 
+                    address = post.Address ?? "N/A",
                     categoryName = category?.Name ?? "Unknown",
                     brandName = brand?.Name ?? "Unknown",
                     dimensionText = att.dimensionText,
@@ -800,7 +839,7 @@ namespace ElecWasteCollection.Application.Services
                     PostId = p.PostId,
                     ProductId = p.ProductId,
                     UserName = user.Name,
-                    Address = !string.IsNullOrEmpty(p.Address) ? p.Address : "N/A", 
+                    Address = !string.IsNullOrEmpty(p.Address) ? p.Address : "N/A",
                     ProductName = $"{brand?.Name} {cat?.Name}",
                     Length = att.length,
                     Width = att.width,
@@ -820,10 +859,16 @@ namespace ElecWasteCollection.Application.Services
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.PointId);
             if (point == null) throw new Exception("Trạm thu gom không tồn tại.");
 
-            if (request.ServiceTimeMinutes.HasValue) point.ServiceTimeMinutes = request.ServiceTimeMinutes.Value;
-            if (request.AvgTravelTimeMinutes.HasValue) point.AvgTravelTimeMinutes = request.AvgTravelTimeMinutes.Value;
+            if (request.ServiceTimeMinutes.HasValue)
+            {
+                await UpsertConfigAsync(null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, request.ServiceTimeMinutes.Value.ToString());
+            }
 
-            _unitOfWork.SmallCollectionPoints.Update(point);
+            if (request.AvgTravelTimeMinutes.HasValue)
+            {
+                await UpsertConfigAsync(null, point.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, request.AvgTravelTimeMinutes.Value.ToString());
+            }
+
             await _unitOfWork.SaveAsync();
             return true;
         }
@@ -833,6 +878,8 @@ namespace ElecWasteCollection.Application.Services
             var company = await _unitOfWork.CollectionCompanies.GetByIdAsync(companyId);
             if (company == null) throw new Exception($"Không tìm thấy công ty với ID: {companyId}");
             var points = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
+
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 
             var response = new CompanySettingsResponse
             {
@@ -846,8 +893,8 @@ namespace ElecWasteCollection.Application.Services
                 {
                     SmallPointId = p.SmallCollectionPointsId,
                     SmallPointName = p.Name,
-                    ServiceTimeMinutes = p.ServiceTimeMinutes,
-                    AvgTravelTimeMinutes = p.AvgTravelTimeMinutes,
+                    ServiceTimeMinutes = GetConfigValue(allConfigs, null, p.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, DEFAULT_SERVICE_TIME),
+                    AvgTravelTimeMinutes = GetConfigValue(allConfigs, null, p.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, DEFAULT_TRAVEL_TIME),
                     IsDefault = false
                 });
             }
@@ -859,16 +906,46 @@ namespace ElecWasteCollection.Application.Services
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId);
             if (point == null) throw new Exception("Trạm thu gom không tồn tại.");
             var company = await _unitOfWork.CollectionCompanies.GetByIdAsync(point.CompanyId);
+
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+
             return new SinglePointSettingResponse
             {
                 CompanyId = company?.CompanyId ?? "Unknown",
                 CompanyName = company?.Name ?? "Unknown Company",
                 SmallPointId = point.SmallCollectionPointsId,
                 SmallPointName = point.Name,
-                ServiceTimeMinutes = point.ServiceTimeMinutes,
-                AvgTravelTimeMinutes = point.AvgTravelTimeMinutes,
+                ServiceTimeMinutes = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, DEFAULT_SERVICE_TIME),
+                AvgTravelTimeMinutes = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, DEFAULT_TRAVEL_TIME),
                 IsDefault = false
             };
         }
+
+        private sealed class TimeSlotDetailDto
+        {
+            public string? StartTime { get; set; }
+            public string? EndTime { get; set; }
+        }
+        private sealed class DailyTimeSlotsDto
+        {
+            public string? DayName { get; set; }
+            public string? PickUpDate { get; set; }
+            public TimeSlotDetailDto? Slots { get; set; }
+        }
+        private class PostScheduleInfo
+        {
+            public DateOnly MinDate { get; set; }
+            public DateOnly MaxDate { get; set; }
+            public List<DateOnly> SpecificDates { get; set; } = new();
+        }
+        private class StagingAssignDayModel
+        {
+            public Guid StagingId { get; set; } = Guid.NewGuid();
+            public DateOnly Date { get; set; }
+            public string PointId { get; set; } = null!;
+            public string VehicleId { get; set; } = null!;
+            public List<Guid> ProductIds { get; set; } = new();
+        }
+
     }
 }

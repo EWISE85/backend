@@ -20,11 +20,6 @@
 
 		public DateTime Created_At { get; set; }
         public DateTime Updated_At { get; set; }
-        public double RadiusKm { get; set; }
-        public double MaxRoadDistanceKm { get; set; }
-
-        public double ServiceTimeMinutes { get; set; } = 10;
-        public double AvgTravelTimeMinutes { get; set; } = 10;
 
         public Company CollectionCompany { get; set; } = null!;
 
@@ -37,5 +32,6 @@
         public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
 
         public virtual ICollection<Vehicles> Vehicles { get; set; } = new List<Vehicles>();
-	}
+        public virtual ICollection<SystemConfig> CustomSettings { get; set; } = new List<SystemConfig>();
+    }
 }

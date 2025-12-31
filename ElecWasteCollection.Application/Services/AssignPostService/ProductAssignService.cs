@@ -21,15 +21,17 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<AssignProductResult> AssignProductsAsync(List<Guid> productIds, DateOnly workDate)
         {
             var result = new AssignProductResult();
-
             var companies = await _unitOfWork.CollectionCompanies.GetAllAsync(includeProperties: "SmallCollectionPoints");
 
             if (!companies.Any())
                 throw new Exception("Lỗi cấu hình: Chưa có đơn vị thu gom nào trong hệ thống.");
 
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+
             var sortedConfig = companies.OrderBy(c => c.CompanyId).ToList();
 
-            double totalPercent = sortedConfig.Sum(c => c.AssignRatio);
+            double totalPercent = sortedConfig.Sum(c => GetConfigValue(allConfigs, c.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0));
+
             if (Math.Abs(totalPercent - 100) > 0.1)
                 throw new Exception($"Lỗi cấu hình: Tổng tỉ lệ phân bổ hiện tại là {totalPercent}%, yêu cầu bắt buộc là 100%.");
 
@@ -38,12 +40,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             foreach (var comp in sortedConfig)
             {
+                double assignRatio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
+
                 var cfg = new CompanyRangeConfig
                 {
                     CompanyEntity = comp,
+                    AssignRatio = assignRatio, 
                     MinRange = currentPivot
                 };
-                currentPivot += (comp.AssignRatio / 100.0);
+                currentPivot += (assignRatio / 100.0);
                 cfg.MaxRange = currentPivot;
                 rangeConfigs.Add(cfg);
             }
@@ -76,13 +81,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         continue;
                     }
 
-                    //QUÉT VỊ TRÍ TRƯỚC -> CHIA TỶ LỆ SAU
+                    // QUÉT VỊ TRÍ TRƯỚC -> CHIA TỶ LỆ SAU
 
                     var validCandidates = new List<ProductAssignCandidate>();
 
                     foreach (var company in sortedConfig)
                     {
-                        var candidate = await FindBestSmallPointForCompanyAsync(company, matchedAddress);
+                        var candidate = await FindBestSmallPointForCompanyAsync(company, matchedAddress, allConfigs);
                         if (candidate != null)
                         {
                             validCandidates.Add(candidate);
@@ -108,10 +113,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                         continue;
                     }
-
                     else
                     {
-
                         double magicNumber = GetStableHashRatio(product.ProductId);
 
                         var targetConfig = rangeConfigs.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange);
@@ -122,11 +125,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         if (targetCandidate != null)
                         {
                             chosenCandidate = targetCandidate;
-                            assignNote = $"Đúng tuyến - Tỉ lệ {targetConfig.CompanyEntity.AssignRatio}%";
+                            assignNote = $"Đúng tuyến - Tỉ lệ {targetConfig.AssignRatio}%";
                         }
                         else
                         {
-
                             chosenCandidate = validCandidates.OrderBy(c => c.RoadKm).First();
                             assignNote = "Trái tuyến - Chọn kho gần nhất";
                         }
@@ -166,8 +168,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             return result;
         }
 
-
-        private async Task<ProductAssignCandidate?> FindBestSmallPointForCompanyAsync(Company company, UserAddress address)
+        private async Task<ProductAssignCandidate?> FindBestSmallPointForCompanyAsync(Company company, UserAddress address, IEnumerable<SystemConfig> configs)
         {
             ProductAssignCandidate? best = null;
             double minRoadKm = double.MaxValue;
@@ -176,20 +177,21 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             foreach (var sp in company.SmallCollectionPoints)
             {
-                // 1. Check khoảng cách đường chim bay 
-                double hvDistance = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, address.Iat ?? 0, address.Ing ?? 0);
-                if (hvDistance > sp.RadiusKm) continue;
+                double radiusKm = GetConfigValue(configs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10); 
+                double maxRoadKm = GetConfigValue(configs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15); 
 
-                // 2. Check khoảng cách đường bộ thực tế 
+                double hvDistance = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, address.Iat ?? 0, address.Ing ?? 0);
+                if (hvDistance > radiusKm) continue;
+
                 double roadKm = await _distanceCache.GetRoadDistanceKm(sp.Latitude, sp.Longitude, address.Iat ?? 0, address.Ing ?? 0);
-                if (roadKm > sp.MaxRoadDistanceKm) continue;
+                if (roadKm > maxRoadKm) continue;
 
                 if (roadKm < minRoadKm)
                 {
                     minRoadKm = roadKm;
                     best = new ProductAssignCandidate
                     {
-                        ProductId = Guid.Empty, 
+                        ProductId = Guid.Empty,
                         CompanyId = company.CompanyId,
                         SmallPointId = sp.SmallCollectionPointsId,
                         RoadKm = roadKm,
@@ -198,6 +200,36 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 }
             }
             return best;
+        }
+
+        private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
+        {
+            var config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.SmallCollectionPointId == pointId &&
+                pointId != null);
+
+            if (config == null && companyId != null)
+            {
+                config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == null);
+            }
+
+            if (config == null)
+            {
+                config = configs.FirstOrDefault(x =>
+               x.Key == key.ToString() &&
+               x.CompanyId == null &&
+               x.SmallCollectionPointId == null);
+            }
+
+            if (config != null && double.TryParse(config.Value, out double result))
+            {
+                return result;
+            }
+            return defaultValue;
         }
 
         private double GetStableHashRatio(Guid id)
@@ -262,6 +294,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         private class CompanyRangeConfig
         {
             public Company CompanyEntity { get; set; } = null!;
+            public double AssignRatio { get; set; } 
             public double MinRange { get; set; }
             public double MaxRange { get; set; }
         }
