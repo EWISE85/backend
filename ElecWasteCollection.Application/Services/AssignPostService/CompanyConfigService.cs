@@ -43,7 +43,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             try
             {
                 var companyRepo = _unitOfWork.CollectionCompanies;
+                var configRepo = _unitOfWork.SystemConfig;
+
                 var allCompanies = await companyRepo.GetAllAsync(includeProperties: "SmallCollectionPoints");
+
+                var allConfigs = await configRepo.GetAllAsync();
 
                 foreach (var companyDto in request.Companies)
                 {
@@ -60,8 +64,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     if (companyEntity != null)
                     {
-                        companyEntity.AssignRatio = companyDto.RatioPercent;
-                        companyEntity.Updated_At = DateTime.UtcNow;
+                        await UpsertConfigAsync(allConfigs, companyEntity.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, companyDto.RatioPercent.ToString());
+
+                        companyEntity.Updated_At = DateTime.UtcNow; 
+
                         var spDtos = new List<SmallPointDto>();
 
                         foreach (var spDto in companyDto.SmallPoints)
@@ -74,8 +80,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                             if (spEntity != null)
                             {
-                                spEntity.RadiusKm = spDto.RadiusKm;
-                                spEntity.MaxRoadDistanceKm = spDto.MaxRoadDistanceKm;
+                                await UpsertConfigAsync(allConfigs, null, spEntity.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, spDto.RadiusKm.ToString());
+                                await UpsertConfigAsync(allConfigs, null, spEntity.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, spDto.MaxRoadDistanceKm.ToString());
 
                                 spDtos.Add(new SmallPointDto
                                 {
@@ -83,8 +89,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                                     Name = spEntity.Name,
                                     Lat = spEntity.Latitude,
                                     Lng = spEntity.Longitude,
-                                    RadiusKm = spEntity.RadiusKm,
-                                    MaxRoadDistanceKm = spEntity.MaxRoadDistanceKm,
+                                    RadiusKm = spDto.RadiusKm, 
+                                    MaxRoadDistanceKm = spDto.MaxRoadDistanceKm,
                                     Active = true
                                 });
                             }
@@ -96,7 +102,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         {
                             CompanyId = companyEntity.CompanyId,
                             CompanyName = companyEntity.Name,
-                            RatioPercent = companyEntity.AssignRatio,
+                            RatioPercent = companyDto.RatioPercent,
                             SmallPoints = spDtos
                         });
                     }
@@ -125,21 +131,25 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             try
             {
                 var companyRepo = _unitOfWork.CollectionCompanies;
+                var configRepo = _unitOfWork.SystemConfig;
+
                 var companies = await companyRepo.GetAllAsync(includeProperties: "SmallCollectionPoints");
+                var allConfigs = await configRepo.GetAllAsync(); 
 
                 var companyDtos = companies.Select(c => new CompanyConfigDto
                 {
                     CompanyId = c.CompanyId,
                     CompanyName = c.Name,
-                    RatioPercent = c.AssignRatio,
+                    RatioPercent = GetConfigValue(allConfigs, c.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0),
+
                     SmallPoints = c.SmallCollectionPoints.Select(sp => new SmallPointDto
                     {
                         SmallPointId = sp.SmallCollectionPointsId,
                         Name = sp.Name,
                         Lat = sp.Latitude,
                         Lng = sp.Longitude,
-                        RadiusKm = sp.RadiusKm,
-                        MaxRoadDistanceKm = sp.MaxRoadDistanceKm,
+                        RadiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 0),
+                        MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
                         Active = true
                     }).ToList()
                 }).ToList();
@@ -154,6 +164,52 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             {
                 return new CompanyConfigResponse { Message = ex.Message };
             }
+        }
+
+
+        private async Task UpsertConfigAsync(IEnumerable<SystemConfig> allConfigs, string? companyId, string? pointId, SystemConfigKey key, string value)
+        {
+            var configRepo = _unitOfWork.SystemConfig;
+
+            var config = allConfigs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == pointId);
+
+            if (config != null)
+            {
+                config.Value = value;
+                configRepo.Update(config);
+            }
+            else
+            {
+                var newConfig = new SystemConfig
+                {
+                    SystemConfigId = Guid.NewGuid(),
+                    Key = key.ToString(),
+                    Value = value,
+                    CompanyId = companyId,
+                    SmallCollectionPointId = pointId,
+                    Status = SystemConfigStatus.Active.ToString(),
+                    DisplayName = key.ToString(),
+                    GroupName = companyId != null ? "CompanyConfig" : "PointConfig"
+                };
+                await configRepo.AddAsync(newConfig);
+            }
+        }
+
+        private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
+        {
+            var config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == pointId);
+
+            if (config != null && double.TryParse(config.Value, out double result))
+            {
+                return result;
+            }
+            return defaultValue;
         }
 
         private CompanyConfigResponse ErrorResponse(string msg)

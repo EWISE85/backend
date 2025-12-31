@@ -38,12 +38,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             var atts = await _unitOfWork.Attributes.GetAllAsync(filter: a => targetNames.Contains(a.Name));
 
-            return atts.ToDictionary(k => k.Name, v => v.AttributeId); 
+            return atts.ToDictionary(k => k.Name, v => v.AttributeId);
         }
 
-        private async Task<(double weight, double volume)> GetProductMetricsAsync(
-            Guid productId,
-            Dictionary<string, Guid> attMap)
+        private async Task<(double weight, double volume)> GetProductMetricsAsync(Guid productId, Dictionary<string, Guid> attMap)
         {
             var pValues = await _unitOfWork.ProductValues.GetAllAsync(filter: v => v.ProductId == productId);
 
@@ -121,6 +119,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         {
             var attMap = await GetAttributeIdMapAsync();
 
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+
             var companyEntity = await _unitOfWork.CollectionCompanies.GetAsync(
                 filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
@@ -155,12 +155,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 var spEntity = companyEntity.SmallCollectionPoints.FirstOrDefault(s => s.SmallCollectionPointsId == spId);
                 if (spEntity == null) continue;
 
+                double radiusConfig = GetConfigValue(allConfigs, null, spId, SystemConfigKey.RADIUS_KM, 0);
+                double maxRoadConfig = GetConfigValue(allConfigs, null, spId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0);
+
                 var spDto = new SmallPointProductGroupDto
                 {
                     SmallPointId = spId,
                     SmallPointName = spEntity.Name,
-                    RadiusMaxConfigKm = spEntity.RadiusKm,
-                    MaxRoadDistanceKm = spEntity.MaxRoadDistanceKm
+                    RadiusMaxConfigKm = radiusConfig,
+                    MaxRoadDistanceKm = maxRoadConfig
                 };
 
                 foreach (var post in grp)
@@ -231,6 +234,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<SmallPointProductGroupDto> GetSmallPointProductsAsync(string smallPointId, DateOnly workDate)
         {
             var attMap = await GetAttributeIdMapAsync();
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 
             var company = (await _unitOfWork.CollectionCompanies.GetAllAsync(includeProperties: "SmallCollectionPoints"))
                 .FirstOrDefault(c => c.SmallCollectionPoints.Any(sp => sp.SmallCollectionPointsId == smallPointId));
@@ -249,12 +253,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 return list.Contains(workDate);
             }).ToList();
 
+            double radiusConfig = GetConfigValue(allConfigs, null, smallPointId, SystemConfigKey.RADIUS_KM, 0);
+            double maxRoadConfig = GetConfigValue(allConfigs, null, smallPointId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0);
+
             var spDto = new SmallPointProductGroupDto
             {
                 SmallPointId = smallPointId,
                 SmallPointName = spEntity.Name,
-                RadiusMaxConfigKm = spEntity.RadiusKm,
-                MaxRoadDistanceKm = spEntity.MaxRoadDistanceKm
+                RadiusMaxConfigKm = radiusConfig,
+                MaxRoadDistanceKm = maxRoadConfig
             };
 
             foreach (var post in posts)
@@ -295,7 +302,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     ProductId = product.ProductId,
                     SenderId = user.UserId,
                     UserName = user.Name,
-                    Address = displayAddress, 
+                    Address = displayAddress,
                     CategoryName = product.Category?.Name ?? "Unknown",
                     BrandName = product.Brand?.Name ?? "Unknown",
                     WeightKg = metrics.weight,
@@ -317,6 +324,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync()
         {
             var companies = await _unitOfWork.CollectionCompanies.GetAllAsync(includeProperties: "SmallCollectionPoints");
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 
             return companies.Select(company => new CompanyWithPointsResponse
             {
@@ -328,8 +336,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     Name = sp.Name,
                     Lat = sp.Latitude,
                     Lng = sp.Longitude,
-                    RadiusKm = sp.RadiusKm,
-                    MaxRoadDistanceKm = sp.MaxRoadDistanceKm,
+                    RadiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 0),
+                    MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
                     Active = true
                 }).ToList()
             }).ToList();
@@ -343,14 +351,16 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             if (company == null) throw new Exception("Company not found.");
 
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+
             return company.SmallCollectionPoints.Select(sp => new SmallPointDto
             {
                 SmallPointId = sp.SmallCollectionPointsId,
                 Name = sp.Name,
                 Lat = sp.Latitude,
                 Lng = sp.Longitude,
-                RadiusKm = sp.RadiusKm,
-                MaxRoadDistanceKm = sp.MaxRoadDistanceKm,
+                RadiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 0),
+                MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
                 Active = true
             }).ToList();
         }
@@ -363,23 +373,27 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             if (company == null) throw new Exception("Company not found.");
 
+            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+
             return new CompanyConfigDto
             {
                 CompanyId = company.CompanyId,
                 CompanyName = company.Name,
-                RatioPercent = company.AssignRatio,
+                RatioPercent = GetConfigValue(allConfigs, company.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0),
                 SmallPoints = company.SmallCollectionPoints.Select(sp => new SmallPointDto
                 {
                     SmallPointId = sp.SmallCollectionPointsId,
                     Name = sp.Name,
                     Lat = sp.Latitude,
                     Lng = sp.Longitude,
-                    RadiusKm = sp.RadiusKm,
-                    MaxRoadDistanceKm = sp.MaxRoadDistanceKm,
+                    RadiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 0),
+                    MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
                     Active = true
                 }).ToList()
             };
         }
+
+
         private bool TryParseDates(string scheduleJson, out List<DateOnly> dates)
         {
             dates = new();
@@ -394,6 +408,25 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             }
             catch { return false; }
         }
+
+        private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
+        {
+            var config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == pointId);
+
+            if (config == null && companyId != null && pointId != null)
+            {
+            }
+
+            if (config != null && double.TryParse(config.Value, out double result))
+            {
+                return result;
+            }
+            return defaultValue;
+        }
+
         private class ScheduleDayDto { public string? PickUpDate { get; set; } }
     }
 }

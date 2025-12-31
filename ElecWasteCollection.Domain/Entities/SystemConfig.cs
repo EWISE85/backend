@@ -22,7 +22,12 @@ namespace ElecWasteCollection.Domain.Entities
 		FORMAT_IMPORT_COLLECTOR,
 		FORMAT_IMPORT_SHIFT,
 		FORMAT_IMPORT_VEHICLE,
-	}
+        ASSIGN_RATIO,             
+        RADIUS_KM,                
+        MAX_ROAD_DISTANCE_KM,     
+        SERVICE_TIME_MINUTES,     
+        AVG_TRAVEL_TIME_MINUTES   
+    }
 	public class SystemConfig
     {
         public Guid SystemConfigId { get; set; }
@@ -36,5 +41,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public string GroupName { get; set; }
 
 		public string Status { get; set; }
-	}
+        public string? CompanyId { get; set; }
+        public string? SmallCollectionPointId { get; set; }
+    }
 }
