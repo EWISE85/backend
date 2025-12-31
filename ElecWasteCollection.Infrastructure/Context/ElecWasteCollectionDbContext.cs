@@ -398,6 +398,16 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.ToTable("SystemConfig");
 				entity.HasKey(e => e.SystemConfigId);
 				entity.Property(e => e.SystemConfigId).ValueGeneratedOnAdd();
+
+				entity.HasOne(e => e.Company)
+					  .WithMany(c => c.CustomSettings)
+					  .HasForeignKey(e => e.CompanyId)
+					  .HasConstraintName("FK_SystemConfig_Company");
+
+				entity.HasOne(e => e.SmallCollectionPoint)
+				.WithMany(s => s.CustomSettings)
+					  .HasForeignKey(e => e.SmallCollectionPointId)
+					  .HasConstraintName("FK_SystemConfig_SmallCollectionPoints");
 			});
 		}
 	}

@@ -44,5 +44,9 @@ namespace ElecWasteCollection.Domain.Entities
 		public string Status { get; set; }
         public string? CompanyId { get; set; }
         public string? SmallCollectionPointId { get; set; }
-    }
+
+		public Company? Company { get; set; }
+
+		public SmallCollectionPoints? SmallCollectionPoint { get; set; }
+	}
 }
