@@ -31,7 +31,6 @@ namespace ElecWasteCollection.Application.Services
 			var newPackage = new Packages
 			{
 				PackageId = model.PackageId,
-				PackageName = model.PackageName,
 				SmallCollectionPointsId = model.SmallCollectionPointsId,
 				CreateAt = DateTime.UtcNow,
 				Status = "Đang đóng gói"
@@ -71,7 +70,6 @@ namespace ElecWasteCollection.Application.Services
 			var packageDetail = new PackageDetailModel
 			{
 				PackageId = package.PackageId,
-				PackageName = package.PackageName,
 				SmallCollectionPointsId = package.SmallCollectionPointsId,
 				Status = package.Status,
 				Products = productDetails
@@ -108,7 +106,6 @@ namespace ElecWasteCollection.Application.Services
 				return new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
-					PackageName = pkg.PackageName,
 					Status = pkg.Status,
 					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
 					Products = productDetails
@@ -138,7 +135,6 @@ namespace ElecWasteCollection.Application.Services
 				var model = new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
-					PackageName = pkg.PackageName,
 					Status = pkg.Status,
 					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
 					Products = productDetails
@@ -155,7 +151,6 @@ namespace ElecWasteCollection.Application.Services
 			var package = await _packageRepository.GetAsync(p => p.PackageId == model.PackageId);
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
-			package.PackageName = model.PackageName;
 			package.SmallCollectionPointsId = model.SmallCollectionPointsId;
 
 			var currentProductsInPackage = await _productService.GetProductsByPackageIdAsync(model.PackageId);
