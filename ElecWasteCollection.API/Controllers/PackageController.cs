@@ -26,7 +26,6 @@ namespace ElecWasteCollection.API.Controllers
 			var model = new CreatePackageModel
 			{
 				PackageId = newPackage.PackageId,
-				PackageName = newPackage.PackageName,
 				SmallCollectionPointsId = newPackage.SmallCollectionPointsId,
 				ProductsQrCode = newPackage.ProductsQrCode
 			};
@@ -83,7 +82,6 @@ namespace ElecWasteCollection.API.Controllers
 			var model = new UpdatePackageModel
 			{
 				PackageId = packageId,
-				PackageName = updatePackage.PackageName,
 				SmallCollectionPointsId = updatePackage.SmallCollectionPointsId,
 				ProductsQrCode = updatePackage.ProductsQrCode
 			};

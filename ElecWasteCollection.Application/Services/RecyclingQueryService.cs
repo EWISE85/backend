@@ -45,7 +45,6 @@ namespace ElecWasteCollection.Application.Services
                         Packages = readyPackages.Select(p => new PackageSimpleDto
                         {
                             PackageId = p.PackageId,
-                            PackageName = p.PackageName,
                             Status = p.Status,
                             CreateAt = p.CreateAt
                         }).ToList()
