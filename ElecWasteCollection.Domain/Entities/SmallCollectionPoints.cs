@@ -22,7 +22,8 @@
         public DateTime Updated_At { get; set; }
 
         public Company CollectionCompany { get; set; } = null!;
-
+        public string? RecyclingCompanyId { get; set; }
+        public Company? RecyclingCompany { get; set; }
         public virtual ICollection<User> Users { get; set; } = new List<User>();
 
 		public virtual ICollection<Products> Products { get; set; } = new List<Products>();

@@ -16,64 +16,6 @@ namespace ElecWasteCollection.API.Controllers
             _service = service;
         }
 
-        [HttpGet("configs")]
-        public async Task<IActionResult> GetConfigs()
-        {
-            try { return Ok(await _service.GetRecyclerConfigsAsync()); }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
-        }
-
-        [HttpPost("configs")]
-        public async Task<IActionResult> UpdateConfigs([FromBody] List<UpdateRecyclerRatioDto> configs)
-        {
-            try
-            {
-                await _service.UpdateRecyclerRatiosAsync(configs);
-                return Ok(new { message = "Cập nhật thành công" });
-            }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
-        }
-        [HttpGet("packages-by-date")]
-        public async Task<IActionResult> GetPackagesByDate([FromQuery] DateTime date)
-        {
-            try
-            {
-                var result = await _service.GetPackagesByDateAsync(date);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
-        [HttpPost("assign")]
-        public async Task<IActionResult> AssignPackages([FromBody] List<string> packageIds)
-        {
-            if (packageIds == null || !packageIds.Any()) return BadRequest("List ID trống");
-            try { return Ok(await _service.AssignPackagesToRecyclersAsync(packageIds)); }
-            catch (Exception ex) { return BadRequest(new { message = ex.Message }); }
-        }
-
-        [HttpGet("assigned-packages")]
-        public async Task<IActionResult> GetAssignedPackages([FromQuery] DateTime date, [FromQuery] string companyId)
-        {
-            if (string.IsNullOrEmpty(companyId))
-            {
-                return BadRequest(new { message = "CompanyId không được để trống" });
-            }
-
-            try
-            {
-                var result = await _service.GetAssignedPackagesByCompanyAsync(date, companyId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
-        }
-
         [HttpGet("recycling-companies")]
         public async Task<IActionResult> GetRecyclingCompanies()
         {
@@ -86,6 +28,51 @@ namespace ElecWasteCollection.API.Controllers
                     return Ok(new { message = "Không tìm thấy công ty tái chế nào.", data = result });
                 }
 
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPost("assign-scp")]
+        public async Task<IActionResult> AssignScpToCompany([FromBody] List<AssignScpToCompanyRequest> requests)
+        {
+            if (requests == null || !requests.Any())
+                return BadRequest(new { message = "Danh sách yêu cầu không được để trống." });
+
+            try
+            {
+                await _service.AssignScpToCompanyAsync(requests);
+                return Ok(new { message = $"Đã xử lý thành công {requests.Count} nhóm yêu cầu phân bổ." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpPut("scp/{scpId}/assign")]
+        public async Task<IActionResult> UpdateScpAssignment(string scpId, [FromBody] UpdateScpAssignmentRequest request)
+        {
+            try
+            {
+                await _service.UpdateScpAssignmentAsync(scpId, request.NewRecyclingCompanyId);
+                return Ok(new { message = "Cập nhật đơn vị tái chế thành công." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("list-scp")]
+        public async Task<IActionResult> GetAssignmentDashboard()
+        {
+            try
+            {
+                var result = await _service.GetAssignmentOverviewAsync();
                 return Ok(result);
             }
             catch (Exception ex)

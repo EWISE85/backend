@@ -37,5 +37,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
 
         public virtual ICollection<SystemConfig> CustomSettings { get; set; } = new List<SystemConfig>();
+
+        public virtual ICollection<SmallCollectionPoints> AssignedRecyclingPoints { get; set; } = new List<SmallCollectionPoints>();
     }
 }

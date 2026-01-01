@@ -51,21 +51,41 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasIndex(e => e.Created_At);
 			});
 
-			modelBuilder.Entity<SmallCollectionPoints>(entity =>
-			{
-				entity.ToTable("SmallCollectionPoints");
-				entity.HasKey(e => e.SmallCollectionPointsId);
-				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-				entity.HasIndex(e => e.Name).IsUnique();
-				entity.HasIndex(e => e.Created_At);
+            //modelBuilder.Entity<SmallCollectionPoints>(entity =>
+            //{
+            //	entity.ToTable("SmallCollectionPoints");
+            //	entity.HasKey(e => e.SmallCollectionPointsId);
+            //	entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+            //	entity.HasIndex(e => e.Name).IsUnique();
+            //	entity.HasIndex(e => e.Created_At);
 
-				entity.HasOne(e => e.CollectionCompany)
-					  .WithMany(c => c.SmallCollectionPoints)
+            //	entity.HasOne(e => e.CollectionCompany)
+            //		  .WithMany(c => c.SmallCollectionPoints)
+            //		  .HasForeignKey(e => e.CompanyId)
+            //		  .HasConstraintName("FK_SmallCollectionPoints_CollectionCompany");
+            //});
+            modelBuilder.Entity<SmallCollectionPoints>(entity =>
+            {
+                entity.ToTable("SmallCollectionPoints");
+                entity.HasKey(e => e.SmallCollectionPointsId);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasIndex(e => e.Created_At);
+
+				entity.HasOne(e => e.CollectionCompany)       
+					  .WithMany(c => c.SmallCollectionPoints)    
 					  .HasForeignKey(e => e.CompanyId)
 					  .HasConstraintName("FK_SmallCollectionPoints_CollectionCompany");
-			});
 
-			modelBuilder.Entity<User>(entity =>
+                entity.HasOne(e => e.RecyclingCompany)            
+                      .WithMany(c => c.AssignedRecyclingPoints)
+                      .HasForeignKey(e => e.RecyclingCompanyId)  
+                      .IsRequired(false)                          
+                      .OnDelete(DeleteBehavior.SetNull)
+                      .HasConstraintName("FK_SmallCollectionPoints_RecyclingCompany");
+            });
+
+            modelBuilder.Entity<User>(entity =>
 			{
 				entity.ToTable("User");
 				entity.HasKey(e => e.UserId);
