@@ -283,10 +283,10 @@ namespace ElecWasteCollection.Application.Services
 			// Nếu tìm thấy Post thì lấy Address của Post, nếu không thì báo N/A
 			string address = relatedPost?.Address ?? "Không tìm thấy địa chỉ";
 			var userAddress = await _userAddressRepository.GetAsync(ua => ua.UserId == senderUser.UserId && ua.Address == address); 
-			if (userAddress == null)
-			{
-				throw new AppException("Không tìm thấy địa chỉ người dùng", 404);
-			}
+			//if (userAddress == null)
+			//{
+			//	throw new AppException("Không tìm thấy địa chỉ người dùng", 404);
+			//}
 			// 5. Trả về Model
 			return new CollectionRouteModel
 			{
@@ -303,8 +303,8 @@ namespace ElecWasteCollection.Application.Services
 
 				// Address & Geo
 				Address = address,
-				Iat = userAddress.Iat.Value,
-				Ing = userAddress.Ing.Value,
+				Iat = userAddress?.Iat ?? 0,
+				Ing = userAddress?.Ing ?? 0,
 
 				// People
 				Sender = senderModel,
