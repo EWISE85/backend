@@ -244,7 +244,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.AssignedSmallPointId == smallPointId
-                && p.Status == "Chờ gom nhóm",
+                && p.Product.Status == "Chờ gom nhóm",
                 includeProperties: "Product,Product.Category,Product.Brand,Sender"
             );
 
