@@ -121,7 +121,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<CollectionCompanyResponse>> GetAllCollectionCompaniesAsync()
 		{
-			var company = await _collectionCompanyRepository.GetAllAsync();
+			var company = await _collectionCompanyRepository.GetAllAsync(filter: c => c.CompanyType == CompanyType.CollectionCompany.ToString());
 			var response = company.Select(team => new CollectionCompanyResponse
 			{
 				Id = team.CompanyId,

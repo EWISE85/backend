@@ -121,6 +121,50 @@ namespace ElecWasteCollection.Application.Services
 			};
 		}
 
+		// In your Service Class
+
+		public async Task<PagedResult<PackageDetailModel>> GetPackagesByRecylerQuery(PackageRecyclerSearchQueryModel query)
+		{
+			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesWithDetailsByRecyclerAsync(
+				query.RecyclerCompanyId, 
+				query.Status,
+				query.Page,
+				query.Limit
+			);
+
+			var resultItems = pagedPackages.Select(pkg =>
+			{
+				var productDetails = pkg.Products?.Select(product => new ProductDetailModel
+				{
+					ProductId = product.ProductId,
+					Description = product.Description,
+					BrandId = product.BrandId,
+					BrandName = product.Brand?.Name,
+					CategoryId = product.CategoryId,
+					CategoryName = product.Category?.Name,
+					QrCode = product.QRCode,
+					IsChecked = product.isChecked,
+					Status = product.Status
+				}).ToList() ?? new List<ProductDetailModel>();
+
+				return new PackageDetailModel
+				{
+					PackageId = pkg.PackageId,
+					Status = pkg.Status,
+					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+					Products = productDetails
+				};
+			}).ToList();
+
+			return new PagedResult<PackageDetailModel>
+			{
+				Data = resultItems,
+				TotalItems = totalCount,
+				Page = query.Page,
+				Limit = query.Limit,
+			};
+		}
+
 		public async Task<List<PackageDetailModel>> GetPackagesWhenDelivery()
 		{
 			var deliveringPackages = await _packageRepository.GetsAsync(p => p.Status == "Đang vận chuyển");

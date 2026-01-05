@@ -15,5 +15,11 @@ namespace ElecWasteCollection.Domain.IRepository
 			int page,
 			int limit
 		);
+		Task<(List<Packages> Items, int TotalCount)> GetPagedPackagesWithDetailsByRecyclerAsync(
+			string? recyclerId,
+			string? status,
+			int page,
+			int limit
+		);
 	}
 }

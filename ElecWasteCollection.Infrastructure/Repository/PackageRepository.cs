@@ -50,6 +50,47 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return (pagedPackages, totalCount);
 		}
+
+		public async Task<(List<Packages> Items, int TotalCount)> GetPagedPackagesWithDetailsByRecyclerAsync(
+	string? recyclerId,
+	string? status,
+	int page,
+	int limit)
+		{
+			var query = _dbSet.AsNoTracking().AsSplitQuery();
+
+			// Include necessary related data
+			query = query
+				.Include(p => p.Products)
+					.ThenInclude(pr => pr.Brand)
+				.Include(p => p.Products)
+					.ThenInclude(pr => pr.Category)
+				// IMPORTANT: Include SmallCollectionPoints to filter by RecyclingCompanyId
+				.Include(p => p.SmallCollectionPoints);
+
+			// Filter by Recycler ID
+			if (!string.IsNullOrEmpty(recyclerId))
+			{
+				query = query.Where(p => p.SmallCollectionPoints.RecyclingCompanyId == recyclerId);
+			}
+
+			// Filter by Status
+			if (!string.IsNullOrEmpty(status))
+			{
+				var trimmedStatus = status.Trim().ToLower();
+				query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
+			}
+
+			var totalCount = await query.CountAsync();
+
+			var pagedPackages = await query
+				.OrderByDescending(p => p.CreateAt)
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToListAsync();
+
+			return (pagedPackages, totalCount);
+		}
 	}
 
 }

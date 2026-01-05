@@ -12,6 +12,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<string> CreatePackageAsync(CreatePackageModel model);
 		Task<PackageDetailModel> GetPackageById(string packageId);
 		Task<PagedResult<PackageDetailModel>> GetPackagesByQuery(PackageSearchQueryModel query);
+		Task<PagedResult<PackageDetailModel>> GetPackagesByRecylerQuery(PackageRecyclerSearchQueryModel query);
 		Task<bool> UpdatePackageStatus(string packageId, string status);
 		Task<bool> UpdatePackageStatusDeliveryAndRecycler(string packageId, string status);
 		Task<bool> UpdatePackageAsync(UpdatePackageModel model);
