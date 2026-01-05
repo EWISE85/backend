@@ -61,6 +61,19 @@ namespace ElecWasteCollection.API.Controllers
 			var packages = await _packageService.GetPackagesByQuery(model);
 			return Ok(packages);
 		}
+		[HttpGet("recycler/filter")]
+		public async Task<IActionResult> GetPackagesRecyclerByQuery([FromQuery] PackageSearchRecyclerQueryRequest query)
+		{
+			var model = new PackageRecyclerSearchQueryModel
+			{
+				Limit = query.Limit,
+				Page = query.Page,
+				RecyclerCompanyId = query.RecyclerId,
+				Status = query.Status
+			};
+			var packages = await _packageService.GetPackagesByRecylerQuery(model);
+			return Ok(packages);
+		}
 		[HttpPut("{packageId}/status")]
 		public async Task<IActionResult> SealedPackageStatus([FromRoute] string packageId)
 		{
