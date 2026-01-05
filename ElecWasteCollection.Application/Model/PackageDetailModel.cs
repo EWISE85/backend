@@ -13,8 +13,10 @@ namespace ElecWasteCollection.Application.Model
 		public string SmallCollectionPointsId { get; set; }
 
 		public string Status { get; set; }
+        public string SmallCollectionPointsName { get; set; }
+        public string SmallCollectionPointsAddress { get; set; }
 
-		public List<ProductDetailModel> Products { get; set; }
+        public List<ProductDetailModel> Products { get; set; }
 	}
 	
 }

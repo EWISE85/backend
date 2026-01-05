@@ -22,4 +22,14 @@ namespace ElecWasteCollection.Application.Model
         public string Status { get; set; }
         public DateTime CreateAt { get; set; }
     }
+
+    public class RecyclerPackageFilterModel
+    {
+        public int Page { get; set; } = 1;
+        public int Limit { get; set; } = 10;
+        public string RecyclingCompanyId { get; set; } 
+        public string? Status { get; set; }
+    }
+
+
 }

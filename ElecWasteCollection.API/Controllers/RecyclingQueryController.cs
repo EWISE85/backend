@@ -1,4 +1,6 @@
 ﻿using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
@@ -24,6 +26,25 @@ namespace ElecWasteCollection.API.Controllers
             {
                 var result = await _queryService.GetPackagesToCollectAsync(recyclingCompanyId);
 
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+        [HttpGet("recycler-filter")]
+        public async Task<IActionResult> GetPackagesByRecyclerFilter([FromQuery] RecyclerPackageFilterModel query)
+        {
+            if (string.IsNullOrEmpty(query.RecyclingCompanyId))
+            {
+                return BadRequest(new { message = "Vui lòng truyền recyclingCompanyId." });
+            }
+
+            try
+            {
+                var result = await _queryService.GetPackagesByRecyclerFilterAsync(query);
                 return Ok(result);
             }
             catch (Exception ex)
