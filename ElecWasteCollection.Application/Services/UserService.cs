@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Security.Principal;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -95,12 +96,28 @@ namespace ElecWasteCollection.Application.Services
 
 		
 
-		public async Task<UserProfileResponse> Profile(string email)
+		public async Task<UserProfileResponse> Profile(Guid userId)
 		{
-			var user = await _userRepository.GetAsync(u => u.Email == email);
+			var user = await _userRepository.GetAsync(u => u.UserId == userId);
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var points = await _userPointRepository.GetAsync(p => p.UserId == user.UserId);
 			var pointsValue = points == null ? 0 : points.Points;
+			UserSettingsModel settingsObj;
+			if (string.IsNullOrEmpty(user.Preferences))
+			{
+				settingsObj = new UserSettingsModel { ShowMap = false };
+			}
+			else
+			{
+				try
+				{
+					settingsObj = JsonSerializer.Deserialize<UserSettingsModel>(user.Preferences)?? new UserSettingsModel { ShowMap = false };
+				}
+				catch
+				{
+					settingsObj = new UserSettingsModel { ShowMap = false };
+				}
+			}
 			var userProfile = new UserProfileResponse
 			{
 				UserId = user.UserId,
@@ -111,7 +128,8 @@ namespace ElecWasteCollection.Application.Services
 				Role = user.Role,
 				Points = pointsValue,
 				CollectionCompanyId = user.CollectionCompanyId,
-				SmallCollectionPointId = user.SmallCollectionPointId
+				SmallCollectionPointId = user.SmallCollectionPointId,
+				Settings = settingsObj
 			};
 			return userProfile;
 		}
@@ -140,6 +158,7 @@ namespace ElecWasteCollection.Application.Services
 			user.Email = model.Email ?? user.Email;
 			user.Avatar = model.AvatarUrl ?? user.Avatar;
 			user.Phone = model.phoneNumber ?? user.Phone;
+			user.Preferences = JsonSerializer.Serialize(model.Settings);
 			_unitOfWork.Users.Update(user);
 			await _unitOfWork.SaveAsync();
 			return true;

@@ -21,7 +21,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<CategoryAttributeModel>> GetCategoryAttributesByCategoryIdAsync(Guid categoryId)
 		{
-			var listEntities = await _categoryAttributeRepsitory.GetsAsync(x => x.CategoryId == categoryId,"Attribute");
+			var listEntities = await _categoryAttributeRepsitory.GetsAsync(x => x.CategoryId == categoryId && x.Attribute.Status == AttributeStatus.Active.ToString(),"Attribute");
 			if (listEntities == null)
 			{
 				return new List<CategoryAttributeModel>();

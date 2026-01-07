@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -37,7 +38,7 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
-		public async Task<string> LoginWithGoogleAsync(string token)
+		public async Task<LoginResponseModel> LoginWithGoogleAsync(string token)
 		{
 			var decodedToken = await _firebaseService.VerifyIdTokenAsync(token);
 			var email = decodedToken.Claims["email"].ToString();
@@ -47,6 +48,10 @@ namespace ElecWasteCollection.Application.Services
 			var user = await _userRepository.GetAsync(u => u.Email == email && u.Status == UserStatus.Active.ToString());
 			if (user == null)
 			{
+				var defaultSettings = new UserSettingsModel
+				{
+					ShowMap = false
+				};
 				user = new User
 				{
 					UserId = Guid.NewGuid(),
@@ -54,6 +59,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = name,
 					Avatar = picture,
 					Role = UserRole.User.ToString(),
+					Preferences = JsonSerializer.Serialize(defaultSettings),
 					Status = UserStatus.Active.ToString()
 				};
 				var point = new UserPoints
@@ -68,7 +74,12 @@ namespace ElecWasteCollection.Application.Services
 				await _unitOfWork.SaveAsync();
 			}
 			var accessToken = await _tokenService.GenerateToken(user);
-			return accessToken;
+			var loginResponse = new LoginResponseModel
+			{
+				AccessToken = accessToken,
+				IsFirstLogin = false
+			};
+			return loginResponse;
 		}
 
 		public async Task<LoginResponseModel> Login(string userName, string password)
@@ -126,36 +137,74 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Apple Token không hợp lệ!", 400);
 			}
+
+
 			var user = await _userRepository.GetAsync(u => u.AppleId == appleUser.AppleId && u.Status == UserStatus.Active.ToString());
+
 			if (user == null)
 			{
-				user = new User
+				
+				if (!string.IsNullOrEmpty(appleUser.Email))
 				{
-					UserId = Guid.NewGuid(),
-					AppleId = appleUser.AppleId,
-					Email = appleUser.Email,
-					Phone = null,
-					Name = (firstName ?? "AppleUser") + " " + (lastName ?? ""),
-					Avatar = null,
-					Role = UserRole.User.ToString(),
-					Status = UserStatus.Active.ToString()
-				};
-				var point = new UserPoints
+					user = await _userRepository.GetAsync(u => u.Email == appleUser.Email && u.Status == UserStatus.Active.ToString());
+				}
+
+				if (user != null)
 				{
-					UserPointId = Guid.NewGuid(),
-					UserId = user.UserId,
-					Points = 0
-				};
-			    await _unitOfWork.Users.AddAsync(user);
-				await _unitOfWork.UserPoints.AddAsync(point);
-				await _unitOfWork.SaveAsync();
+					
+					user.AppleId = appleUser.AppleId;
+
+					
+
+					_unitOfWork.Users.Update(user);
+					await _unitOfWork.SaveAsync();
+				}
+				else
+				{
+					var defaultSettings = new UserSettingsModel
+					{
+						ShowMap = false
+					};
+
+					string displayName = (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName))
+										 ? (firstName + " " + lastName).Trim()
+										 : (appleUser.Email ?? "Apple User");
+
+					user = new User
+					{
+						UserId = Guid.NewGuid(),
+						AppleId = appleUser.AppleId,
+						Email = appleUser.Email, 
+						Phone = null,
+						Name = displayName,
+						Avatar = null,
+						CreateAt = DateTime.UtcNow,
+						Role = UserRole.User.ToString(),
+						Preferences = JsonSerializer.Serialize(defaultSettings),
+						Status = UserStatus.Active.ToString()
+					};
+
+					var point = new UserPoints
+					{
+						UserPointId = Guid.NewGuid(),
+						UserId = user.UserId,
+						Points = 0
+					};
+
+					await _unitOfWork.Users.AddAsync(user);
+					await _unitOfWork.UserPoints.AddAsync(point);
+					await _unitOfWork.SaveAsync();
+				}
 			}
+
 			var accessToken = await _tokenService.GenerateToken(user);
+
 			var loginResponse = new LoginResponseModel
 			{
 				AccessToken = accessToken,
-				IsFirstLogin = false
+				
 			};
+
 			return loginResponse;
 		}
 	}

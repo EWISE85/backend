@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
+	public enum AttributeOptionStatus
+	{
+		Active,
+		Inactive
+	}
 	public class AttributeOptions
 	{
 		public Guid OptionId { get; set; }
@@ -17,6 +22,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public double? EstimateWeight { get; set; } // (kg)
 
 		public double? EstimateVolume { get; set; } // (m³)
+
+		public string Status { get; set; } = AttributeOptionStatus.Active.ToString();
 
 		public Attributes Attribute { get; set; }
 	}

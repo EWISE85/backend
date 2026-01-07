@@ -14,6 +14,12 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public Guid AttributeId { get; set; }
 
+		public double? MinValue { get; set; }
+
+		public double? MaxValue { get; set; }
+
+		public string Unit { get; set; }
+
 		public Category Category { get; set; }
 
 		public Attributes Attribute { get; set; }

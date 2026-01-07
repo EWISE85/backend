@@ -12,7 +12,7 @@ namespace ElecWasteCollection.Application.IServices
 	{
 		Task<bool> AddNewAccount(Account account);
 
-		Task<string> LoginWithGoogleAsync(string token);
+		Task<LoginResponseModel> LoginWithGoogleAsync(string token);
 
 		Task<LoginResponseModel> Login(string userName, string password);
 
