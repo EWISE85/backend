@@ -48,7 +48,7 @@ namespace ElecWasteCollection.API.Controllers
 			var notifications = await _notificationService.GetNotificationByUserIdAsync(userId);
 			return Ok(notifications);
 		}
-		[HttpPut("{notificationId}/read")]
+		[HttpPut("read")]
 		public async Task<IActionResult> ReadNotification([FromBody] ReadNotificationRequest request)
 		{
 			var result = await _notificationService.ReadNotificationAsync(request.NotificationIds);
