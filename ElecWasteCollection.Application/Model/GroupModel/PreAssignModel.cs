@@ -11,6 +11,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
     {
         public string CollectionPointId { get; set; }
         public double LoadThresholdPercent { get; set; } = 80;
+        public List<Guid>? ProductIds { get; set; }
     }
 
     public class PreAssignResponse

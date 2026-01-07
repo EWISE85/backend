@@ -120,7 +120,7 @@ namespace ElecWasteCollection.Application.Services
 					if (allImagesMatch)
 					{
 						currentStatus = "Đã Duyệt";
-						newProduct.Status = "Chờ gom nhóm";
+						newProduct.Status = "Chờ phân kho";
 						statusDescription = "Yêu cầu được duyệt tự động";
 					}
 				}
@@ -395,16 +395,16 @@ namespace ElecWasteCollection.Application.Services
 
 					if (product != null)
 					{
-						product.Status = "Chờ gom nhóm";
+						product.Status = "Chờ phân kho";
 						_unitOfWork.Products.Update(product);
 
 						var history = new ProductStatusHistory
 						{
 							ProductId = post.ProductId, 
 							ChangedAt = DateTime.UtcNow,
-							Status = "Chờ gom nhóm",
-							StatusDescription = "Yêu cầu được duyệt và chờ gom nhóm"
-						};
+							Status = "Chờ phân kho",
+							StatusDescription = "Yêu cầu được duyệt và chờ phân kho"
+                        };
 
 						await _unitOfWork.ProductStatusHistory.AddAsync(history);
 					}

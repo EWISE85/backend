@@ -25,192 +25,13 @@ namespace ElecWasteCollection.Application.Services
             _matrixClient = matrixClient;
         }
 
-      
-        private async Task<(double length, double width, double height, double weight, double volume, string dimensionText)> GetProductAttributesAsync(Guid productId)
-        {
-            var pValues = await _unitOfWork.ProductValues.GetAllAsync(v => v.ProductId == productId);
-            var pValuesList = pValues.ToList();
-
-            double weight = 0;
-            double volume = 0;
-            double length = 0;
-            double width = 0;
-            double height = 0;
-            string dimText = "";
-
-            foreach (var val in pValuesList)
-            {
-                if (val.AttributeOptionId.HasValue)
-                {
-                    var option = await _unitOfWork.AttributeOptions.GetByIdAsync(val.AttributeOptionId.Value);
-                    if (option != null)
-                    {
-                        if (option.EstimateWeight.HasValue && option.EstimateWeight.Value > 0)
-                        {
-                            weight = option.EstimateWeight.Value;
-                            if (string.IsNullOrEmpty(dimText)) dimText = option.OptionName;
-                        }
-
-                        if (option.EstimateVolume.HasValue && option.EstimateVolume.Value > 0)
-                        {
-                            volume = option.EstimateVolume.Value;
-                            dimText = option.OptionName;
-                        }
-                    }
-                }
-                else if (val.Value.HasValue && val.Value.Value > 0)
-                {
-                    var attribute = await _unitOfWork.Attributes.GetByIdAsync(val.AttributeId);
-                    if (attribute != null)
-                    {
-                        string nameLower = attribute.Name.ToLower();
-                        if (nameLower.Contains("dài")) length = val.Value.Value;
-                        else if (nameLower.Contains("rộng")) width = val.Value.Value;
-                        else if (nameLower.Contains("cao")) height = val.Value.Value;
-                    }
-                }
-            }
-
-            if (length > 0 && width > 0 && height > 0)
-            {
-                volume = (length * width * height) / 1_000_000.0;
-                dimText = $"{length} x {width} x {height} cm";
-            }
-
-            if (weight <= 0) weight = 1;
-            if (volume <= 0)
-            {
-                volume = 0.001;
-                if (string.IsNullOrEmpty(dimText)) dimText = "Không xác định";
-            }
-            else if (string.IsNullOrEmpty(dimText))
-            {
-                dimText = $"~ {Math.Round(volume, 3)} m3";
-            }
-
-            return (length, width, height, weight, volume, dimText);
-        }
-
-        private static bool TryParseScheduleInfo(string raw, out PostScheduleInfo info)
-        {
-            info = new PostScheduleInfo();
-            if (string.IsNullOrWhiteSpace(raw)) return false;
-            try
-            {
-                var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
-                if (days == null || !days.Any()) return false;
-
-                var valid = new List<DateOnly>();
-                foreach (var d in days)
-                {
-                    if (DateOnly.TryParse(d.PickUpDate, out var date) && d.Slots != null &&
-                        TimeOnly.TryParse(d.Slots.StartTime, out var s) && TimeOnly.TryParse(d.Slots.EndTime, out var e) && s < e)
-                    {
-                        valid.Add(date);
-                    }
-                }
-                if (!valid.Any()) return false;
-                valid.Sort();
-                info.SpecificDates = valid;
-                info.MinDate = valid.First();
-                info.MaxDate = valid.Last();
-                return true;
-            }
-            catch { return false; }
-        }
-
-        private static bool TryGetTimeWindowForDate(string raw, DateOnly target, out TimeOnly start, out TimeOnly end)
-        {
-            start = TimeOnly.MinValue;
-            end = TimeOnly.MaxValue;
-            try
-            {
-                var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
-                var match = days?.FirstOrDefault(d => DateOnly.TryParse(d.PickUpDate, out var dt) && dt == target);
-                if (match?.Slots != null && TimeOnly.TryParse(match.Slots.StartTime, out var s) && TimeOnly.TryParse(match.Slots.EndTime, out var e))
-                {
-                    start = s;
-                    end = e;
-                    return true;
-                }
-                return false;
-            }
-            catch { return false; }
-        }
-
-        private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
-        {
-            var config = configs.FirstOrDefault(x =>
-                x.Key == key.ToString() &&
-                x.SmallCollectionPointId == pointId &&
-                pointId != null);
-
-            if (config == null && companyId != null)
-            {
-                config = configs.FirstOrDefault(x =>
-                x.Key == key.ToString() &&
-                x.CompanyId == companyId &&
-                x.SmallCollectionPointId == null);
-            }
-
-            if (config == null)
-            {
-                config = configs.FirstOrDefault(x =>
-               x.Key == key.ToString() &&
-               x.CompanyId == null &&
-               x.SmallCollectionPointId == null);
-            }
-
-            if (config != null && double.TryParse(config.Value, out double result))
-            {
-                return result;
-            }
-            return defaultValue;
-        }
-
-        private async Task UpsertConfigAsync(string? companyId, string? pointId, SystemConfigKey key, string value)
-        {
-            var existingConfig = await _unitOfWork.SystemConfig.GetAsync(x =>
-                x.Key == key.ToString() &&
-                x.CompanyId == companyId &&
-                x.SmallCollectionPointId == pointId);
-
-            if (existingConfig != null)
-            {
-                existingConfig.Value = value;
-                _unitOfWork.SystemConfig.Update(existingConfig);
-            }
-            else
-            {
-                var newConfig = new SystemConfig
-                {
-                    SystemConfigId = Guid.NewGuid(),
-                    Key = key.ToString(),
-                    Value = value,
-                    CompanyId = companyId,
-                    SmallCollectionPointId = pointId,
-                    Status = SystemConfigStatus.Active.ToString(),
-                    DisplayName = key.ToString(),
-                    GroupName = pointId != null ? "PointConfig" : "CompanyConfig"
-                };
-                await _unitOfWork.SystemConfig.AddAsync(newConfig);
-            }
-        }
-
-
         public async Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request)
         {
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
-            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
-            double serviceTime = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, DEFAULT_SERVICE_TIME);
-            double avgTravelTime = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, DEFAULT_TRAVEL_TIME);
-
             var vehicles = await _unitOfWork.Vehicles.GetAllAsync(v => v.Small_Collection_Point == request.CollectionPointId && v.Status == "active");
-            var pointVehicles = vehicles.ToList();
+            var pointVehicles = vehicles.OrderBy(v => v.Capacity_Kg).ToList();
 
             if (!pointVehicles.Any()) throw new Exception("Trạm này hiện không có xe nào hoạt động.");
 
@@ -221,7 +42,12 @@ namespace ElecWasteCollection.Application.Services
 
             var validPosts = rawPosts.Where(p => p.Product != null && p.Product.Status == "Chờ gom nhóm").ToList();
 
-            if (!validPosts.Any()) throw new Exception("Không có bài đăng nào phù hợp trong hệ thống.");
+            if (request.ProductIds != null && request.ProductIds.Any())
+            {
+                validPosts = validPosts.Where(p => request.ProductIds.Contains(p.ProductId)).ToList();
+            }
+
+            if (!validPosts.Any()) throw new Exception("Không tìm thấy đơn hàng nào phù hợp với yêu cầu.");
 
             var pool = new List<dynamic>();
             foreach (var p in validPosts)
@@ -237,12 +63,9 @@ namespace ElecWasteCollection.Application.Services
                     {
                         Post = p,
                         Schedule = sch,
-                        Length = att.length,
-                        Width = att.width,
-                        Height = att.height,
-                        DimensionText = att.dimensionText,
                         Weight = att.weight,
                         Volume = att.volume,
+                        DimensionText = att.dimensionText,
                         UserName = user.Name,
                         Address = postAddress
                     });
@@ -252,7 +75,9 @@ namespace ElecWasteCollection.Application.Services
             if (!pool.Any()) throw new Exception("Không tìm thấy đơn hàng nào có lịch trình hợp lệ.");
 
             var distinctDates = pool.SelectMany(x => (List<DateOnly>)x.Schedule.SpecificDates)
-                                    .Distinct().OrderBy(x => x).ToList();
+                                    .Distinct()
+                                    .OrderBy(x => x)
+                                    .ToList();
 
             var res = new PreAssignResponse
             {
@@ -262,29 +87,22 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var date in distinctDates)
             {
-                var availableVehicles = pointVehicles.OrderBy(v => v.Capacity_Kg).ToList();
-                double defaultWorkHours = 8.0;
-                double totalWorkMinutes = availableVehicles.Count * defaultWorkHours * 60;
-                double estimatedMinutesPerPost = serviceTime + avgTravelTime;
-                int maxPostsByTime = (int)(totalWorkMinutes / estimatedMinutesPerPost);
-
                 var candidates = pool
                     .Where(x => ((List<DateOnly>)x.Schedule.SpecificDates).Contains(date))
-                    .OrderBy(x => x.Schedule.MaxDate)
+                    .OrderBy(x => x.Schedule.MaxDate) 
                     .ThenBy(x => x.Schedule.MinDate)
                     .ToList();
 
                 if (!candidates.Any()) continue;
 
-                var feasibleTimeBound = candidates.Take(maxPostsByTime).ToList();
+                double totalWeightNeed = candidates.Sum(x => (double)x.Weight);
+                double totalVolumeNeed = candidates.Sum(x => (double)x.Volume);
 
-                double totalWeightNeed = feasibleTimeBound.Sum(x => (double)x.Weight);
-                double totalVolumeNeedM3 = feasibleTimeBound.Sum(x => (double)x.Volume);
-
-                var suggested = availableVehicles.FirstOrDefault(v =>
+ 
+                var suggested = pointVehicles.FirstOrDefault(v =>
                     totalWeightNeed <= v.Capacity_Kg * (request.LoadThresholdPercent / 100.0) &&
-                    totalVolumeNeedM3 <= v.Capacity_M3 * (request.LoadThresholdPercent / 100.0)
-                ) ?? availableVehicles.Last();
+                    totalVolumeNeed <= v.Capacity_M3 * (request.LoadThresholdPercent / 100.0)
+                ) ?? pointVehicles.Last();
 
                 double ratio = request.LoadThresholdPercent / 100.0;
                 double allowedKg = suggested.Capacity_Kg * ratio;
@@ -292,20 +110,21 @@ namespace ElecWasteCollection.Application.Services
 
                 double curKg = 0;
                 double curM3 = 0;
-                var selected = new List<PreAssignProduct>();
+
+                var selectedProducts = new List<PreAssignProduct>();
                 var removeList = new List<dynamic>();
 
-                foreach (var item in feasibleTimeBound)
+                foreach (var item in candidates)
                 {
-                    double itemM3 = (double)item.Volume;
                     double itemKg = (double)item.Weight;
+                    double itemM3 = (double)item.Volume;
 
                     if (curKg + itemKg <= allowedKg && curM3 + itemM3 <= allowedM3)
                     {
                         curKg += itemKg;
                         curM3 += itemM3;
 
-                        selected.Add(new PreAssignProduct
+                        selectedProducts.Add(new PreAssignProduct
                         {
                             PostId = item.Post.PostId,
                             ProductId = item.Post.ProductId,
@@ -315,23 +134,24 @@ namespace ElecWasteCollection.Application.Services
                             Weight = itemKg,
                             Volume = Math.Round(itemM3, 5)
                         });
+
                         removeList.Add(item);
                     }
                 }
 
                 foreach (var x in removeList) pool.Remove(x);
 
-                if (selected.Any())
+                if (selectedProducts.Any())
                 {
                     res.Days.Add(new PreAssignDay
                     {
                         WorkDate = date,
-                        OriginalPostCount = selected.Count,
-                        TotalWeight = Math.Round(selected.Sum(x => x.Weight), 2),
-                        TotalVolume = Math.Round(selected.Sum(x => x.Volume), 5),
+                        OriginalPostCount = selectedProducts.Count,
+                        TotalWeight = Math.Round(selectedProducts.Sum(x => x.Weight), 2),
+                        TotalVolume = Math.Round(selectedProducts.Sum(x => x.Volume), 5),
                         SuggestedVehicle = new SuggestedVehicle
                         {
-                            Id = suggested.VehicleId,
+                            Id = suggested.VehicleId.ToString(), 
                             Plate_Number = suggested.Plate_Number,
                             Vehicle_Type = suggested.Vehicle_Type,
                             Capacity_Kg = suggested.Capacity_Kg,
@@ -339,7 +159,7 @@ namespace ElecWasteCollection.Application.Services
                             Capacity_M3 = Math.Round((double)suggested.Capacity_M3, 4),
                             AllowedCapacityM3 = Math.Round(allowedM3, 4)
                         },
-                        Products = selected
+                        Products = selectedProducts
                     });
                 }
                 if (!pool.Any()) break;
@@ -920,6 +740,181 @@ namespace ElecWasteCollection.Application.Services
                 IsDefault = false
             };
         }
+
+
+        private async Task<(double length, double width, double height, double weight, double volume, string dimensionText)> GetProductAttributesAsync(Guid productId)
+        {
+            var pValues = await _unitOfWork.ProductValues.GetAllAsync(v => v.ProductId == productId);
+            var pValuesList = pValues.ToList();
+
+            double weight = 0;
+            double volume = 0;
+            double length = 0;
+            double width = 0;
+            double height = 0;
+            string dimText = "";
+
+            foreach (var val in pValuesList)
+            {
+                if (val.AttributeOptionId.HasValue)
+                {
+                    var option = await _unitOfWork.AttributeOptions.GetByIdAsync(val.AttributeOptionId.Value);
+                    if (option != null)
+                    {
+                        if (option.EstimateWeight.HasValue && option.EstimateWeight.Value > 0)
+                        {
+                            weight = option.EstimateWeight.Value;
+                            if (string.IsNullOrEmpty(dimText)) dimText = option.OptionName;
+                        }
+
+                        if (option.EstimateVolume.HasValue && option.EstimateVolume.Value > 0)
+                        {
+                            volume = option.EstimateVolume.Value;
+                            dimText = option.OptionName;
+                        }
+                    }
+                }
+                else if (val.Value.HasValue && val.Value.Value > 0)
+                {
+                    var attribute = await _unitOfWork.Attributes.GetByIdAsync(val.AttributeId);
+                    if (attribute != null)
+                    {
+                        string nameLower = attribute.Name.ToLower();
+                        if (nameLower.Contains("dài")) length = val.Value.Value;
+                        else if (nameLower.Contains("rộng")) width = val.Value.Value;
+                        else if (nameLower.Contains("cao")) height = val.Value.Value;
+                    }
+                }
+            }
+
+            if (length > 0 && width > 0 && height > 0)
+            {
+                volume = (length * width * height) / 1_000_000.0;
+                dimText = $"{length} x {width} x {height} cm";
+            }
+
+            if (weight <= 0) weight = 1;
+            if (volume <= 0)
+            {
+                volume = 0.001;
+                if (string.IsNullOrEmpty(dimText)) dimText = "Không xác định";
+            }
+            else if (string.IsNullOrEmpty(dimText))
+            {
+                dimText = $"~ {Math.Round(volume, 3)} m3";
+            }
+
+            return (length, width, height, weight, volume, dimText);
+        }
+
+        private static bool TryParseScheduleInfo(string raw, out PostScheduleInfo info)
+        {
+            info = new PostScheduleInfo();
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            try
+            {
+                var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
+                if (days == null || !days.Any()) return false;
+
+                var valid = new List<DateOnly>();
+                foreach (var d in days)
+                {
+                    if (DateOnly.TryParse(d.PickUpDate, out var date) && d.Slots != null &&
+                        TimeOnly.TryParse(d.Slots.StartTime, out var s) && TimeOnly.TryParse(d.Slots.EndTime, out var e) && s < e)
+                    {
+                        valid.Add(date);
+                    }
+                }
+                if (!valid.Any()) return false;
+                valid.Sort();
+                info.SpecificDates = valid;
+                info.MinDate = valid.First();
+                info.MaxDate = valid.Last();
+                return true;
+            }
+            catch { return false; }
+        }
+
+        private static bool TryGetTimeWindowForDate(string raw, DateOnly target, out TimeOnly start, out TimeOnly end)
+        {
+            start = TimeOnly.MinValue;
+            end = TimeOnly.MaxValue;
+            try
+            {
+                var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
+                var match = days?.FirstOrDefault(d => DateOnly.TryParse(d.PickUpDate, out var dt) && dt == target);
+                if (match?.Slots != null && TimeOnly.TryParse(match.Slots.StartTime, out var s) && TimeOnly.TryParse(match.Slots.EndTime, out var e))
+                {
+                    start = s;
+                    end = e;
+                    return true;
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+
+        private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
+        {
+            var config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.SmallCollectionPointId == pointId &&
+                pointId != null);
+
+            if (config == null && companyId != null)
+            {
+                config = configs.FirstOrDefault(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == null);
+            }
+
+            if (config == null)
+            {
+                config = configs.FirstOrDefault(x =>
+               x.Key == key.ToString() &&
+               x.CompanyId == null &&
+               x.SmallCollectionPointId == null);
+            }
+
+            if (config != null && double.TryParse(config.Value, out double result))
+            {
+                return result;
+            }
+            return defaultValue;
+        }
+
+        private async Task UpsertConfigAsync(string? companyId, string? pointId, SystemConfigKey key, string value)
+        {
+            var existingConfig = await _unitOfWork.SystemConfig.GetAsync(x =>
+                x.Key == key.ToString() &&
+                x.CompanyId == companyId &&
+                x.SmallCollectionPointId == pointId);
+
+            if (existingConfig != null)
+            {
+                existingConfig.Value = value;
+                _unitOfWork.SystemConfig.Update(existingConfig);
+            }
+            else
+            {
+                var newConfig = new SystemConfig
+                {
+                    SystemConfigId = Guid.NewGuid(),
+                    Key = key.ToString(),
+                    Value = value,
+                    CompanyId = companyId,
+                    SmallCollectionPointId = pointId,
+                    Status = SystemConfigStatus.Active.ToString(),
+                    DisplayName = key.ToString(),
+                    GroupName = pointId != null ? "PointConfig" : "CompanyConfig"
+                };
+                await _unitOfWork.SystemConfig.AddAsync(newConfig);
+            }
+        }
+
 
         private sealed class TimeSlotDetailDto
         {
