@@ -35,6 +35,8 @@ namespace ElecWasteCollection.Domain.IRepository
 		IGenericRepository<ForgotPassword> ForgotPasswords { get; }
 
         IGenericRepository<SystemConfig> SystemConfig { get; }
+
+        IGenericRepository<UserDeviceToken> UserDeviceTokens { get; }
 		Task<int> SaveAsync();
     }
 }

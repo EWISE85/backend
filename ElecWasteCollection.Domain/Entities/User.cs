@@ -67,5 +67,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public virtual ICollection<ForgotPassword> ForgotPasswords { get; set; } = new List<ForgotPassword>();
 
+		public virtual ICollection<UserDeviceToken> UserDeviceTokens { get; set; } = new List<UserDeviceToken>();
+
 	}
 }
