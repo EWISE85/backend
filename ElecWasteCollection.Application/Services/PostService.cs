@@ -54,6 +54,9 @@ namespace ElecWasteCollection.Application.Services
 			DateTime transactionTimeUtc = DateTime.UtcNow;
 			try
 			{
+				var validationRules = await _unitOfWork.CategoryAttributes.GetsAsync(
+										x => x.CategoryId == createPostRequest.Product.SubCategoryId,
+										includeProperties: "Attribute");
 				string currentStatus = "Chờ Duyệt";
 				string statusDescription = "Yêu cầu đã được gửi";
 				Guid newProductId = Guid.NewGuid(); // Dùng ID này cho tất cả các bảng liên quan
@@ -72,6 +75,18 @@ namespace ElecWasteCollection.Application.Services
 
 				foreach (var attr in createPostRequest.Product.Attributes)
 				{
+					var rule = validationRules.FirstOrDefault(x => x.AttributeId == attr.AttributeId);
+					if (attr.OptionId == null && attr.Value.HasValue && rule != null)
+					{
+						if (rule.MinValue.HasValue && attr.Value.Value < rule.MinValue.Value)
+						{
+							throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá nhỏ. Tối thiểu phải là {rule.MinValue} {rule.Unit}.", 400);
+						}
+						//if (rule.MaxValue.HasValue && attr.Value.Value > rule.MaxValue.Value)
+						//{
+						//	throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá lớn. Tối đa chỉ được {rule.MaxValue} {rule.Unit}.", 400);
+						//}
+					}
 					var newProductValue = new ProductValues
 					{
 						ProductValuesId = Guid.NewGuid(),
@@ -86,14 +101,12 @@ namespace ElecWasteCollection.Application.Services
 				}
 
 
-				// 2. Xử lý Images và AI Check (Task.WhenAll)
 				if (createPostRequest.Images != null && createPostRequest.Images.Any())
 				{
-					// Lấy Category Name một lần duy nhất để dùng cho AI
 					var category = await _categoryRepository.GetByIdAsync(createPostRequest.Product.SubCategoryId);
 					var categoryName = category?.Name ?? "unknown";
 
-					bool allImagesMatch = true; // Biến cờ kiểm tra xem tất cả ảnh có hợp lệ không
+					bool allImagesMatch = true; 
 
 					foreach (var imgUrl in createPostRequest.Images)
 					{
@@ -104,7 +117,6 @@ namespace ElecWasteCollection.Application.Services
 							allImagesMatch = false;
 						}
 
-						// Tạo và Add luôn vào UnitOfWork
 						var productImg = new ProductImages
 						{
 							ProductImagesId = Guid.NewGuid(),
@@ -116,7 +128,6 @@ namespace ElecWasteCollection.Application.Services
 						await _unitOfWork.ProductImages.AddAsync(productImg);
 					}
 
-					// Logic cập nhật trạng thái nếu tất cả ảnh đều hợp lệ
 					if (allImagesMatch)
 					{
 						currentStatus = "Đã Duyệt";
@@ -126,7 +137,6 @@ namespace ElecWasteCollection.Application.Services
 				}
 
 
-				// 3. Chuẩn bị và Thêm Product, History, Post
 				if (newProduct.Status == "Chờ Duyệt")
 				{
 					statusDescription = "Yêu cầu đã được gửi.";

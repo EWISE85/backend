@@ -43,6 +43,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public DateTime CreateAt { get; set; }
 
+		public string? Preferences { get; set; } 
+
 		public string Status { get; set; }
 
 		public Company? CollectionCompany { get; set; }

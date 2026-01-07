@@ -16,7 +16,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<UserResponse>? GetById(Guid id);
 
 
-		Task<UserProfileResponse> Profile(string email);
+		Task<UserProfileResponse> Profile(Guid userId);
 
 		Task<UserResponse?> GetByPhone(string phone);
 

@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -66,6 +67,10 @@ namespace ElecWasteCollection.Application.Services
 					importData.Updated_At = DateTime.UtcNow;
 					await _unitOfWork.Companies.AddAsync(importData);
 					var newAdminId = Guid.NewGuid();
+					var defaultSettings = new UserSettingsModel
+					{
+						ShowMap = false 
+					};
 					var newAdminUser = new User
 					{
 						UserId = newAdminId,
@@ -74,6 +79,7 @@ namespace ElecWasteCollection.Application.Services
 						Phone = importData.Phone,
 						Avatar = null,
 						Role = UserRole.AdminCompany.ToString(),
+						Preferences = JsonSerializer.Serialize(defaultSettings),
 						Status = UserStatus.Active.ToString(),
 						CollectionCompanyId = importData.CompanyId
 					};
@@ -98,7 +104,6 @@ namespace ElecWasteCollection.Application.Services
 			}
 			catch (Exception ex)
 			{
-				// Log lỗi (Console hoặc Logger)
 				Console.WriteLine($"[ERROR] CheckAndUpdateCompanyAsync: {ex}");
 
 				result.Success = false;

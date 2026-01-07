@@ -59,22 +59,18 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 			var query = _dbSet.AsNoTracking().AsSplitQuery();
 
-			// Include necessary related data
 			query = query
 				.Include(p => p.Products)
 					.ThenInclude(pr => pr.Brand)
 				.Include(p => p.Products)
 					.ThenInclude(pr => pr.Category)
-				// IMPORTANT: Include SmallCollectionPoints to filter by RecyclingCompanyId
 				.Include(p => p.SmallCollectionPoints);
 
-			// Filter by Recycler ID
 			if (!string.IsNullOrEmpty(recyclerId))
 			{
 				query = query.Where(p => p.SmallCollectionPoints.RecyclingCompanyId == recyclerId);
 			}
 
-			// Filter by Status
 			if (!string.IsNullOrEmpty(status))
 			{
 				var trimmedStatus = status.Trim().ToLower();

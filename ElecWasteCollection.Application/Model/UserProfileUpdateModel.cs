@@ -14,5 +14,7 @@ namespace ElecWasteCollection.Application.Model
 		public string AvatarUrl { get; set; }
 
 		public string phoneNumber { get; set; }
+
+		public UserSettingsModel Settings { get; set; }
 	}
 }

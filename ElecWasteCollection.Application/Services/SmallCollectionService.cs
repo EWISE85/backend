@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -45,12 +46,17 @@ namespace ElecWasteCollection.Application.Services
 			{
 				await AddNewSmallCollectionPoint(smallCollectionPoints);
 				result.Messages.Add($"Thêm kho '{smallCollectionPoints.Name}' thành công.");
+				var defaultSettings = new UserSettingsModel
+				{
+					ShowMap = false
+				};
 				var newAdminWarehouse = new User
 				{
 					UserId = Guid.NewGuid(),
 					Avatar = "https://example.com/default-avatar.png",
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
+					Preferences = JsonSerializer.Serialize(defaultSettings),
 					Status = UserStatus.Active.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
 					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,

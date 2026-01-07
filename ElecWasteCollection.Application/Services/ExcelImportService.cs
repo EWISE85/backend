@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -242,12 +243,13 @@ namespace ElecWasteCollection.Application.Services
 					continue;
 				}
 
-				// 4. TẠO OBJECT
-				// Lưu ý: ID trong Excel là "FPT-C-01" (String), không thể Parse sang Guid được.
-				// Nếu UserId trong DB là String:
+				var defaultSettings = new UserSettingsModel
+				{
+					ShowMap = false 
+				};
 				var collector = new User
 				{
-					UserId = Guid.Parse(id), // Sửa: Bỏ Guid.Parse vì ID excel là string "FPT-C-01"
+					UserId = Guid.Parse(id), 
 					Name = name,
 					Email = email,
 					Phone = phone,
@@ -255,7 +257,8 @@ namespace ElecWasteCollection.Application.Services
 					SmallCollectionPointId = smallCollectionPointId,
 					CollectionCompanyId = companyId,
 					Role = UserRole.Collector.ToString(),
-					Status = statusToSave, // Dùng status đã xử lý
+					Preferences = JsonSerializer.Serialize(defaultSettings),
+					Status = statusToSave, 
 				};
 				var importResult = await _collectorService.CheckAndUpdateCollectorAsync(collector, collectorUsername, collectorPassword);
 				result.Messages.AddRange(importResult.Messages);
