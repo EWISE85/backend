@@ -388,7 +388,6 @@ namespace ElecWasteCollection.Application.Services
 
 			if (posts == null || !posts.Any())
 			{
-				// Hoặc return 0 tùy logic controller
 				throw new AppException("Không tìm thấy bài viết nào hợp lệ", 404);
 			}
 

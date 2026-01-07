@@ -43,7 +43,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public DateTime CreateAt { get; set; }
 
-		public string? Preferences { get; set; } 
+		//public string? Preferences { get; set; } 
 
 		public string Status { get; set; }
 
@@ -66,6 +66,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public virtual ICollection<Shifts> Shifts { get; set; } = new List<Shifts>();
 
 		public virtual ICollection<ForgotPassword> ForgotPasswords { get; set; } = new List<ForgotPassword>();
+
+		public virtual ICollection<UserDeviceToken> UserDeviceTokens { get; set; } = new List<UserDeviceToken>();
 
 	}
 }

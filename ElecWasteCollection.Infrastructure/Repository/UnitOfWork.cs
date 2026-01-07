@@ -51,6 +51,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 		public IGenericRepository<SystemConfig> SystemConfig { get; }
 
+		public IGenericRepository<UserDeviceToken> UserDeviceTokens { get; }
+
 		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
@@ -79,6 +81,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			ForgotPasswords = new GenericRepository<ForgotPassword>(_context);
 			SystemConfig = new GenericRepository<SystemConfig>(_context);
 			CollectionGroups = new GenericRepository<CollectionGroups>(_context);
+			UserDeviceTokens = new GenericRepository<UserDeviceToken>(_context);
 
 
 		}

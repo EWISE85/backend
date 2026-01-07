@@ -79,7 +79,7 @@ namespace ElecWasteCollection.Application.Services
 						Phone = importData.Phone,
 						Avatar = null,
 						Role = UserRole.AdminCompany.ToString(),
-						Preferences = JsonSerializer.Serialize(defaultSettings),
+						//Preferences = JsonSerializer.Serialize(defaultSettings),
 						Status = UserStatus.Active.ToString(),
 						CollectionCompanyId = importData.CompanyId
 					};

@@ -40,6 +40,8 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<SystemConfig> SystemConfigs { get; set; }
 
+		public DbSet<UserDeviceToken> UserDeviceTokens { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
@@ -428,6 +430,19 @@ namespace ElecWasteCollection.Infrastructure.Context
 				.WithMany(s => s.CustomSettings)
 					  .HasForeignKey(e => e.SmallCollectionPointId)
 					  .HasConstraintName("FK_SystemConfig_SmallCollectionPoints");
+			});
+
+			modelBuilder.Entity<UserDeviceToken>(entity =>
+			{
+				entity.ToTable("UserDeviceToken");
+				entity.HasKey(e => e.UserDeviceTokenId);
+				entity.Property(e => e.UserDeviceTokenId).ValueGeneratedOnAdd();
+				entity.Property(e => e.UserId).IsRequired();
+				entity.HasOne(e => e.User)
+					  .WithMany(u => u.UserDeviceTokens)
+					  .HasForeignKey(e => e.UserId)
+					  .HasConstraintName("FK_UserDeviceToken_User");
+
 			});
 		}
 	}

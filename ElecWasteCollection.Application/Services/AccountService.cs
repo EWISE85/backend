@@ -59,7 +59,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = name,
 					Avatar = picture,
 					Role = UserRole.User.ToString(),
-					Preferences = JsonSerializer.Serialize(defaultSettings),
+					//Preferences = JsonSerializer.Serialize(defaultSettings),
 					Status = UserStatus.Active.ToString()
 				};
 				var point = new UserPoints
@@ -180,7 +180,7 @@ namespace ElecWasteCollection.Application.Services
 						Avatar = null,
 						CreateAt = DateTime.UtcNow,
 						Role = UserRole.User.ToString(),
-						Preferences = JsonSerializer.Serialize(defaultSettings),
+						//Preferences = JsonSerializer.Serialize(defaultSettings),
 						Status = UserStatus.Active.ToString()
 					};
 

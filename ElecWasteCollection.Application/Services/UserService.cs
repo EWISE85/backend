@@ -102,22 +102,22 @@ namespace ElecWasteCollection.Application.Services
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var points = await _userPointRepository.GetAsync(p => p.UserId == user.UserId);
 			var pointsValue = points == null ? 0 : points.Points;
-			UserSettingsModel settingsObj;
-			if (string.IsNullOrEmpty(user.Preferences))
-			{
-				settingsObj = new UserSettingsModel { ShowMap = false };
-			}
-			else
-			{
-				try
-				{
-					settingsObj = JsonSerializer.Deserialize<UserSettingsModel>(user.Preferences)?? new UserSettingsModel { ShowMap = false };
-				}
-				catch
-				{
-					settingsObj = new UserSettingsModel { ShowMap = false };
-				}
-			}
+			//UserSettingsModel settingsObj;
+			//if (string.IsNullOrEmpty(user.Preferences))
+			//{
+			//	settingsObj = new UserSettingsModel { ShowMap = false };
+			//}
+			//else
+			//{
+			//	try
+			//	{
+			//		settingsObj = JsonSerializer.Deserialize<UserSettingsModel>(user.Preferences)?? new UserSettingsModel { ShowMap = false };
+			//	}
+			//	catch
+			//	{
+			//		settingsObj = new UserSettingsModel { ShowMap = false };
+			//	}
+			//}
 			var userProfile = new UserProfileResponse
 			{
 				UserId = user.UserId,
@@ -129,7 +129,7 @@ namespace ElecWasteCollection.Application.Services
 				Points = pointsValue,
 				CollectionCompanyId = user.CollectionCompanyId,
 				SmallCollectionPointId = user.SmallCollectionPointId,
-				Settings = settingsObj
+				//Settings = settingsObj
 			};
 			return userProfile;
 		}
@@ -158,7 +158,7 @@ namespace ElecWasteCollection.Application.Services
 			user.Email = model.Email ?? user.Email;
 			user.Avatar = model.AvatarUrl ?? user.Avatar;
 			user.Phone = model.phoneNumber ?? user.Phone;
-			user.Preferences = JsonSerializer.Serialize(model.Settings);
+			//user.Preferences = JsonSerializer.Serialize(model.Settings);
 			_unitOfWork.Users.Update(user);
 			await _unitOfWork.SaveAsync();
 			return true;

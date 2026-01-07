@@ -56,7 +56,7 @@ namespace ElecWasteCollection.Application.Services
 					Avatar = "https://example.com/default-avatar.png",
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
-					Preferences = JsonSerializer.Serialize(defaultSettings),
+					//Preferences = JsonSerializer.Serialize(defaultSettings),
 					Status = UserStatus.Active.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
 					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,

@@ -158,6 +158,8 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IDashboardService, DashboardService>();
 			builder.Services.Configure<CloudinarySettings>(builder.Configuration.GetSection("Cloudinary"));
 			builder.Services.AddScoped<ICloudinaryService, CloudinaryService>();
+			builder.Services.AddScoped<IUserDeviceTokenService, UserDeviceTokenService>();
+			builder.Services.AddScoped<IUserDeviceTokenRepository, UserDeviceTokenRepository>();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>

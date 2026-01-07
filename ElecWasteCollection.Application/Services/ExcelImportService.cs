@@ -257,7 +257,7 @@ namespace ElecWasteCollection.Application.Services
 					SmallCollectionPointId = smallCollectionPointId,
 					CollectionCompanyId = companyId,
 					Role = UserRole.Collector.ToString(),
-					Preferences = JsonSerializer.Serialize(defaultSettings),
+					//Preferences = JsonSerializer.Serialize(defaultSettings),
 					Status = statusToSave, 
 				};
 				var importResult = await _collectorService.CheckAndUpdateCollectorAsync(collector, collectorUsername, collectorPassword);
