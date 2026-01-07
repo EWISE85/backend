@@ -142,7 +142,17 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         _unitOfWork.Posts.Update(post);
 
                         product.SmallCollectionPointId = chosenCandidate.SmallPointId;
+                        product.Status = "Chờ gom nhóm";
                         _unitOfWork.Products.Update(product);
+
+                        var history = new ProductStatusHistory
+                        {
+                            ProductId = product.ProductId,
+                            ChangedAt = DateTime.UtcNow,
+                            Status = "Chờ gom nhóm",
+                            StatusDescription = $"Đã phân bổ về kho: {chosenCandidate.SmallPointId} - {assignNote}"
+                        };
+                        await _unitOfWork.ProductStatusHistory.AddAsync(history);
 
                         result.TotalAssigned++;
 
@@ -242,7 +252,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<ProductByDateModel>> GetProductsByWorkDateAsync(DateOnly workDate)
         {
             var posts = await _unitOfWork.Posts.GetAllAsync(
-                filter: p => p.Product != null && p.Product.Status == "Chờ gom nhóm",
+                filter: p => p.Product != null && p.Product.Status == "Chờ phân kho",
                 includeProperties: "Product,Sender,Product.Category,Product.Brand"
             );
 
