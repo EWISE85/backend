@@ -59,7 +59,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = name,
 					Avatar = picture,
 					Role = UserRole.User.ToString(),
-					//Preferences = JsonSerializer.Serialize(defaultSettings),
+					CreateAt = DateTime.UtcNow,
 					Status = UserStatus.Active.ToString()
 				};
 				var point = new UserPoints
