@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.IServices
 {
-	public interface IDashboardService
-	{
-		Task<DashboardSummaryModel> GetDashboardSummary(DateOnly from, DateOnly to);
-	}
+    public interface IDashboardService
+    {
+        Task<DashboardSummaryModel> GetDashboardSummary(DateOnly from, DateOnly to);
+        Task<PackageDashboardResponse> GetPackageDashboardStats(string smallCollectionPointId, DateOnly from, DateOnly to);
+        Task<ProductCollectDashboardResponse> GetCollectedProductStatsAsync(
+                    string smallCollectionPointId,
+                    DateOnly from,
+                    DateOnly to);
+    }
 }

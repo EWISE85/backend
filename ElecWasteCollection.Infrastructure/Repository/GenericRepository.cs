@@ -100,5 +100,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			}
 			return await _context.Set<T>().CountAsync(predicate);
 		}
-	}
+        public IQueryable<T> GetQueryable()
+        {
+            return _dbSet.AsNoTracking(); 
+        }
+    }
 }

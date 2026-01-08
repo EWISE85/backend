@@ -55,7 +55,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 		public IGenericRepository<Notifications> Notifications { get; }
 
-		public UnitOfWork(ElecWasteCollectionDbContext context)
+        public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
 
@@ -86,8 +86,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			UserDeviceTokens = new GenericRepository<UserDeviceToken>(_context);
 			Notifications = new GenericRepository<Notifications>(_context);
 
-
-		}
+        }
 
 		public async Task<int> SaveAsync()
         {

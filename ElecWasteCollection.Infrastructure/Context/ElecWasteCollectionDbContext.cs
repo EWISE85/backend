@@ -218,8 +218,11 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.Property(e => e.SmallCollectionPointId).IsRequired(false);
 				entity.Property(e => e.PackageId).IsRequired(false);
 				entity.HasIndex(e => e.CreateAt);
+                entity.Property(e => e.Status).HasColumnName("Status");
+                entity.Property(e => e.CreateAt).HasColumnName("CreateAt");
 
-				entity.HasOne(e => e.User)
+
+                entity.HasOne(e => e.User)
 					  .WithMany(u => u.Products)
 					  .HasForeignKey(e => e.UserId)
 					  .HasConstraintName("FK_Products_User");

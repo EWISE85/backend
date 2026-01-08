@@ -31,14 +31,10 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<UserPoints> UserPoints { get; }
         IGenericRepository<Vehicles> Vehicles { get; }
 		IGenericRepository<CollectionGroups> CollectionGroups { get; }
-
 		IGenericRepository<ForgotPassword> ForgotPasswords { get; }
-
         IGenericRepository<SystemConfig> SystemConfig { get; }
-
         IGenericRepository<UserDeviceToken> UserDeviceTokens { get; }
-
         IGenericRepository<Notifications> Notifications { get; }
-		Task<int> SaveAsync();
+        Task<int> SaveAsync();
     }
 }
