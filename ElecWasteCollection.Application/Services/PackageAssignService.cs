@@ -120,37 +120,34 @@ namespace ElecWasteCollection.Application.Services.AssignPackageService
 
             return result;
         }
-        public async Task<ScpAssignmentDetailDto> GetScpAssignmentDetailAsync(string smallCollectionPointId)
+        public async Task<ScpAssignmentDetailDto> GetScpAssignmentDetailAsync(string companyId)
         {
-            var scp = await _unitOfWork.SmallCollectionPoints.GetAsync(
-                filter: s => s.SmallCollectionPointsId == smallCollectionPointId,
-                includeProperties: "CollectionCompany,RecyclingCompany"
+            var company = await _unitOfWork.Companies.GetAsync(
+                filter: c => c.CompanyId == companyId,
+                includeProperties: "SmallCollectionPoints.RecyclingCompany"
             );
 
-            if (scp == null)
+            if (company == null)
             {
-                throw new Exception($"Không tìm thấy điểm thu gom với ID: {smallCollectionPointId}");
+                throw new Exception($"Không tìm thấy công ty thu gom với ID: {companyId}");
             }
 
             var result = new ScpAssignmentDetailDto
             {
-                CompanyId = scp.CollectionCompany?.CompanyId ?? "Unknown",
-                CompanyName = scp.CollectionCompany?.Name ?? "Không xác định",
-                SmallPoints = new List<SmallPointDetailDto>
-        {
-            new SmallPointDetailDto
-            {
-                SmallPointId = scp.SmallCollectionPointsId,
-                Name = scp.Name,
-                Address = scp.Address,
-
-                RecyclingCompany = scp.RecyclingCompany == null ? null : new RecyclerSimpleInfoDto
+                CompanyId = company.CompanyId,
+                CompanyName = company.Name,
+                SmallPoints = company.SmallCollectionPoints?.Select(scp => new SmallPointDetailDto
                 {
-                    CompanyId = scp.RecyclingCompany.CompanyId,
-                    Name = scp.RecyclingCompany.Name
-                }
-            }
-        }
+                    SmallPointId = scp.SmallCollectionPointsId,
+                    Name = scp.Name,
+                    Address = scp.Address,
+
+                    RecyclingCompany = scp.RecyclingCompany == null ? null : new RecyclerSimpleInfoDto
+                    {
+                        CompanyId = scp.RecyclingCompany.CompanyId,
+                        Name = scp.RecyclingCompany.Name
+                    }
+                }).ToList() ?? new List<SmallPointDetailDto>() 
             };
 
             return result;

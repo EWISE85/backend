@@ -13,6 +13,6 @@ namespace ElecWasteCollection.Application.IServices
         Task AssignScpToCompanyAsync(List<AssignScpToCompanyRequest> requests);
         Task UpdateScpAssignmentAsync(string scpId, string newCompanyId);
         Task<List<CollectionCompanyGroupDto>> GetAssignmentOverviewAsync();
-        Task<ScpAssignmentDetailDto> GetScpAssignmentDetailAsync(string smallCollectionPointId);
+        Task<ScpAssignmentDetailDto> GetScpAssignmentDetailAsync(string companyId);
     }
 }

@@ -81,15 +81,15 @@ namespace ElecWasteCollection.API.Controllers
             }
         }
 
-        [HttpGet("scp-assignment-detail/{id}")]
-        public async Task<IActionResult> GetScpAssignmentDetail(string id)
+        [HttpGet("scp-assignment-detail/{companyId}")]
+        public async Task<IActionResult> GetScpAssignmentDetail(string companyId)
         {
-            if (string.IsNullOrEmpty(id))
-                return BadRequest(new { message = "Vui lòng truyền ID điểm thu gom." });
+            if (string.IsNullOrEmpty(companyId))
+                return BadRequest(new { message = "Vui lòng truyền ID công ty thu gom." });
 
             try
             {
-                var result = await _service.GetScpAssignmentDetailAsync(id);
+                var result = await _service.GetScpAssignmentDetailAsync(companyId);
                 return Ok(result);
             }
             catch (Exception ex)
