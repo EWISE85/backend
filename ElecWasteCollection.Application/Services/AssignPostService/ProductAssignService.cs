@@ -108,7 +108,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             reason = "Không có đơn vị thu gom gần đây"
                         });
 
-                        product.Status = "Không tìm thấy điểm thu gom";
+                        product.Status = ProductStatus.KHONG_TIM_THAY_DIEM_THU_GOM.ToString();
                         _unitOfWork.Products.Update(product);
 
                         continue;
@@ -142,14 +142,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         _unitOfWork.Posts.Update(post);
 
                         product.SmallCollectionPointId = chosenCandidate.SmallPointId;
-                        product.Status = "Chờ gom nhóm";
+                        product.Status = ProductStatus.CHO_GOM_NHOM.ToString();
                         _unitOfWork.Products.Update(product);
 
                         var history = new ProductStatusHistory
                         {
                             ProductId = product.ProductId,
                             ChangedAt = DateTime.UtcNow,
-                            Status = "Chờ gom nhóm",
+                            Status = ProductStatus.CHO_GOM_NHOM.ToString(),
                             StatusDescription = $"Đã phân bổ về kho: {chosenCandidate.SmallPointId} - {assignNote}"
                         };
                         await _unitOfWork.ProductStatusHistory.AddAsync(history);
@@ -252,7 +252,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<ProductByDateModel>> GetProductsByWorkDateAsync(DateOnly workDate)
         {
             var posts = await _unitOfWork.Posts.GetAllAsync(
-                filter: p => p.Product != null && p.Product.Status == "Chờ phân kho",
+                filter: p => p.Product != null && p.Product.Status == ProductStatus.CHO_PHAN_KHO.ToString(),
                 includeProperties: "Product,Sender,Product.Category,Product.Brand"
             );
 

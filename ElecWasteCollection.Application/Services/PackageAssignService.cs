@@ -22,7 +22,7 @@ namespace ElecWasteCollection.Application.Services.AssignPackageService
         public async Task<List<RecyclingCompanyDto>> GetRecyclingCompaniesAsync()
         {
             var companies = await _unitOfWork.Companies.GetAllAsync(
-                filter: c => c.CompanyType == "RecyclingCompany"
+                filter: c => c.CompanyType == CompanyType.RecyclingCompany.ToString()
             );
 
             return companies.Select(c => new RecyclingCompanyDto
@@ -48,7 +48,7 @@ namespace ElecWasteCollection.Application.Services.AssignPackageService
                 if (company == null)
                     throw new Exception($"Không tìm thấy công ty có ID: {req.RecyclingCompanyId}");
 
-                if (company.CompanyType != "RecyclingCompany")
+                if (company.CompanyType != CompanyType.RecyclingCompany.ToString())
                     throw new Exception($"Công ty '{company.Name}' không phải là công ty tái chế.");
 
                 var scpsToAssign = await _unitOfWork.SmallCollectionPoints.GetAllAsync(
@@ -85,7 +85,7 @@ namespace ElecWasteCollection.Application.Services.AssignPackageService
             if (company == null)
                 throw new Exception($"Không tìm thấy công ty có ID: {newCompanyId}");
 
-            if (company.CompanyType != "RecyclingCompany")
+            if (company.CompanyType != CompanyType.RecyclingCompany.ToString())
                 throw new Exception($"Công ty '{company.Name}' không phải là công ty tái chế.");
 
             scp.RecyclingCompanyId = newCompanyId;
@@ -97,7 +97,7 @@ namespace ElecWasteCollection.Application.Services.AssignPackageService
         public async Task<List<CollectionCompanyGroupDto>> GetAssignmentOverviewAsync()
         {
             var collectionCompanies = await _unitOfWork.Companies.GetAllAsync(
-                filter: c => c.CompanyType == "CollectionCompany",
+                filter: c => c.CompanyType == CompanyType.CollectionCompany.ToString(),
                 includeProperties: "SmallCollectionPoints,SmallCollectionPoints.RecyclingCompany"
             );
 

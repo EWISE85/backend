@@ -110,11 +110,11 @@ namespace ElecWasteCollection.Application.Services
 
 				if (statusNormalized == "còn hoạt động" || statusNormalized == "active")
 				{
-					statusToSave = VehicleStatus.Active.ToString(); // Hoặc Enum
+					statusToSave = VehicleStatus.HOAT_DONG.ToString(); // Hoặc Enum
 				}
 				else
 				{
-					statusToSave = VehicleStatus.Inactive.ToString();
+					statusToSave = VehicleStatus.KHONG_HOAT_DONG.ToString();
 				}
 
 				var vehicleModel = new CreateVehicleModel
@@ -287,15 +287,15 @@ namespace ElecWasteCollection.Application.Services
 
 				if (statusNormalized == "còn hoạt động")
 				{
-					statusToSave = SmallCollectionPointStatus.Active.ToString(); 
+					statusToSave = SmallCollectionPointStatus.HOAT_DONG.ToString(); 
 				}
-				else if (statusNormalized == "ngưng hoạt động")
+				else if (statusNormalized == "không hoạt động")
 				{
-					statusToSave = SmallCollectionPointStatus.Inactive.ToString();
+					statusToSave = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
 				}
 				else
 				{
-					statusToSave = SmallCollectionPointStatus.Inactive.ToString();
+					statusToSave = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
 
 				}
 

@@ -15,7 +15,9 @@ namespace ElecWasteCollection.Domain.Entities
 		DA_TU_CHOI,
 		[Description("Chờ phân kho")]
 		CHO_PHAN_KHO,
-		[Description("Chờ gom nhóm")]
+        [Description("Không tìm thấy điểm thu gom")]
+        KHONG_TIM_THAY_DIEM_THU_GOM,
+        [Description("Chờ gom nhóm")]
 		CHO_GOM_NHOM,
 		[Description("Chờ thu gom")]
 		CHO_THU_GOM,

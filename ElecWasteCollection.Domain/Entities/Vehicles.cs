@@ -1,14 +1,16 @@
-﻿using System.Text.Json.Serialization;
+﻿using System.ComponentModel;
+using System.Text.Json.Serialization;
 
 namespace ElecWasteCollection.Domain.Entities
 {
     public enum VehicleStatus
-	{
-		Active,
-		Inactive,
-		
-	}
-	public class Vehicles
+    {
+        [Description("Hoạt động")]
+        HOAT_DONG,
+        [Description("Không hoạt động")]
+        KHONG_HOAT_DONG
+    }
+    public class Vehicles
     {
         public string VehicleId { get; set; }
         public string Plate_Number { get; set; } = null!;

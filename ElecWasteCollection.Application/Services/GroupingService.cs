@@ -30,7 +30,7 @@ namespace ElecWasteCollection.Application.Services
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
-            var vehicles = await _unitOfWork.Vehicles.GetAllAsync(v => v.Small_Collection_Point == request.CollectionPointId && v.Status == "active");
+            var vehicles = await _unitOfWork.Vehicles.GetAllAsync(v => v.Small_Collection_Point == request.CollectionPointId && v.Status == VehicleStatus.HOAT_DONG.ToString());
             var pointVehicles = vehicles.OrderBy(v => v.Capacity_Kg).ToList();
 
             if (!pointVehicles.Any()) throw new Exception("Trạm này hiện không có xe nào hoạt động.");
@@ -40,7 +40,7 @@ namespace ElecWasteCollection.Application.Services
                 includeProperties: "Product"
             );
 
-            var validPosts = rawPosts.Where(p => p.Product != null && p.Product.Status == "Chờ gom nhóm").ToList();
+            var validPosts = rawPosts.Where(p => p.Product != null && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString()).ToList();
 
             if (request.ProductIds != null && request.ProductIds.Any())
             {
@@ -250,7 +250,7 @@ namespace ElecWasteCollection.Application.Services
                 {
                     var availableShifts = await _unitOfWork.Shifts.GetAllAsync(s =>
                           s.WorkDate == workDate &&
-                          s.Status == "Available" &&
+                          s.Status == ShiftStatus.CO_SAN.ToString() &&
                           string.IsNullOrEmpty(s.Vehicle_Id)
                     );
 
@@ -270,7 +270,7 @@ namespace ElecWasteCollection.Application.Services
                     if (selectedShift != null)
                     {
                         selectedShift.Vehicle_Id = assignDay.VehicleId;
-                        selectedShift.Status = "Scheduled";
+                        selectedShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
                         selectedShift.WorkDate = workDate;
                         mainShift = selectedShift;
                         _unitOfWork.Shifts.Update(mainShift);
@@ -281,19 +281,21 @@ namespace ElecWasteCollection.Application.Services
                     }
                 }
 
-                if (mainShift.Status == "Available" || mainShift.Status == "Assigned")
+                if (mainShift.Status == ShiftStatus.CO_SAN.ToString())
                 {
-                    mainShift.Status = "Scheduled";
+                    mainShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
                     _unitOfWork.Shifts.Update(mainShift);
                 }
 
                 var oldGroups = await _unitOfWork.CollectionGroups.GetAllAsync(g => g.Shift_Id == mainShift.ShiftId);
+
                 foreach (var g in oldGroups)
                 {
                     var routes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.CollectionGroupId == g.CollectionGroupId);
                     foreach (var r in routes) _unitOfWork.CollecctionRoutes.Delete(r);
                     _unitOfWork.CollectionGroups.Delete(g);
                 }
+
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(assignDay.VehicleId);
                 var locations = new List<(double lat, double lng)>();
                 var nodesToOptimize = new List<OptimizationNode>();
@@ -350,8 +352,8 @@ namespace ElecWasteCollection.Application.Services
                         Post = p,
                         User = user,
                         Address = p.Address,
-                        CategoryName = cat?.Name ?? "Unknown",
-                        BrandName = brand?.Name ?? "Unknown",
+                        CategoryName = cat?.Name ?? "Không rõ",
+                        BrandName = brand?.Name ?? "Không rõ",
                         Att = new
                         {
                             Length = att.length,
@@ -405,7 +407,7 @@ namespace ElecWasteCollection.Application.Services
                     var productToUpdate = await _unitOfWork.Products.GetByIdAsync((Guid)data.Post.ProductId);
                     if (productToUpdate != null)
                     {
-                        productToUpdate.Status = "Chờ thu gom";
+                        productToUpdate.Status = ProductStatus.CHO_THU_GOM.ToString();
                         _unitOfWork.Products.Update(productToUpdate);
 
                         if (request.SaveResult)
@@ -415,7 +417,7 @@ namespace ElecWasteCollection.Application.Services
                                 ProductStatusHistoryId = Guid.NewGuid(),
                                 ProductId = productToUpdate.ProductId,
                                 ChangedAt = DateTime.UtcNow,
-                                Status = "Chờ thu gom",
+                                Status = ProductStatus.CHO_THU_GOM.ToString(),
                                 StatusDescription = $"Đơn hàng đã được xếp lịch cho xe {vehicle.Plate_Number}."
                             });
                         }
@@ -454,7 +456,7 @@ namespace ElecWasteCollection.Application.Services
                             CollectionDate = workDate,
                             EstimatedTime = arrival,
                             DistanceKm = Math.Round(distMeters / 1000.0, 2),
-                            Status = "Chưa bắt đầu",
+                            Status = CollectionRouteStatus.CHUA_BAT_DAU.ToString(),
                             ConfirmImages = new List<string>()
                         });
                     }
@@ -502,8 +504,8 @@ namespace ElecWasteCollection.Application.Services
                 if (shift == null) continue;
 
                 bool isMatch = false;
-                string vehicleInfo = "Unknown";
-                string collectorInfo = "Unknown";
+                string vehicleInfo = "Không rõ";
+                string collectorInfo = "Không rõ";
 
                 if (!string.IsNullOrEmpty(shift.Vehicle_Id))
                 {
@@ -582,9 +584,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == r.ProductId);
                 if (post == null) continue;
-
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
-
                 var product = await _unitOfWork.Products.GetByIdAsync(r.ProductId);
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
@@ -599,9 +599,9 @@ namespace ElecWasteCollection.Application.Services
                     productId = post.ProductId,
                     postId = post.PostId,
                     userName = user.Name,
-                    address = post.Address ?? "N/A",
-                    categoryName = category?.Name ?? "Unknown",
-                    brandName = brand?.Name ?? "Unknown",
+                    address = post.Address ?? "Không có",
+                    categoryName = category?.Name ?? "Không rõ",
+                    brandName = brand?.Name ?? "Không rõ",
                     dimensionText = att.dimensionText,
                     weightKg = att.weight,
                     volumeM3 = att.volume,
@@ -617,10 +617,10 @@ namespace ElecWasteCollection.Application.Services
                 groupId = group.CollectionGroupId,
                 groupCode = group.Group_Code,
                 shiftId = group.Shift_Id,
-                vehicle = vehicle != null ? $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})" : "Unknown",
-                collector = collector?.Name ?? "Unknown",
+                vehicle = vehicle != null ? $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})" : "Không rõ",
+                collector = collector?.Name ?? "Không rõ",
                 groupDate = shift.WorkDate.ToString("yyyy-MM-dd"),
-                collectionPoint = point?.Name ?? "Unknown",
+                collectionPoint = point?.Name ?? "Không rõ",
                 totalPosts = sortedRoutes.Count,
                 totalWeightKg = Math.Round(totalWeight, 2),
                 totalVolumeM3 = Math.Round(totalVolume, 2),
@@ -630,20 +630,22 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<List<Vehicles>> GetVehiclesAsync()
         {
-            var list = await _unitOfWork.Vehicles.GetAllAsync(v => v.Status == "active");
+            var list = await _unitOfWork.Vehicles.GetAllAsync(v => v.Status == VehicleStatus.HOAT_DONG.ToString());
             return list.OrderBy(v => v.VehicleId).ToList();
         }
 
         public async Task<List<Vehicles>> GetVehiclesBySmallPointAsync(string smallPointId)
         {
-            var list = await _unitOfWork.Vehicles.GetAllAsync(v => v.Status == "active" && v.Small_Collection_Point == smallPointId);
+            var list = await _unitOfWork.Vehicles.GetAllAsync(v => 
+            v.Status == VehicleStatus.HOAT_DONG.ToString() 
+            && v.Small_Collection_Point == smallPointId );
             return list.OrderBy(v => v.VehicleId).ToList();
         }
 
         public async Task<List<PendingPostModel>> GetPendingPostsAsync()
         {
             var posts = await _unitOfWork.Posts.GetAllAsync(includeProperties: "Product");
-            var pendingPosts = posts.Where(p => p.Product != null && p.Product.Status == "Chờ gom nhóm").ToList();
+            var pendingPosts = posts.Where(p => p.Product != null && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString()).ToList();
             var result = new List<PendingPostModel>();
 
             foreach (var p in pendingPosts)
@@ -659,7 +661,7 @@ namespace ElecWasteCollection.Application.Services
                     PostId = p.PostId,
                     ProductId = p.ProductId,
                     UserName = user.Name,
-                    Address = !string.IsNullOrEmpty(p.Address) ? p.Address : "N/A",
+                    Address = !string.IsNullOrEmpty(p.Address) ? p.Address : "Không có",
                     ProductName = $"{brand?.Name} {cat?.Name}",
                     Length = att.length,
                     Width = att.width,
@@ -731,8 +733,8 @@ namespace ElecWasteCollection.Application.Services
 
             return new SinglePointSettingResponse
             {
-                CompanyId = company?.CompanyId ?? "Unknown",
-                CompanyName = company?.Name ?? "Unknown Company",
+                CompanyId = company?.CompanyId ?? "Không rõ",
+                CompanyName = company?.Name ?? "Không rõ",
                 SmallPointId = point.SmallCollectionPointsId,
                 SmallPointName = point.Name,
                 ServiceTimeMinutes = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, DEFAULT_SERVICE_TIME),

@@ -1,12 +1,17 @@
-﻿namespace ElecWasteCollection.Domain.Entities
+﻿using System.ComponentModel;
+
+namespace ElecWasteCollection.Domain.Entities
 {
     public enum SmallCollectionPointStatus
-	{
-		Active,
-		Inactive,
-		UnderMaintenance
-	}
-	public class SmallCollectionPoints
+    {
+        [Description("Hoạt động")]
+        HOAT_DONG,
+        [Description("Không hoạt động")]
+        KHONG_HOAT_DONG,
+        [Description("Bảo trì")]
+        BAO_TRI
+    }
+    public class SmallCollectionPoints
     {
         public string SmallCollectionPointsId { get; set; }
         public string Name { get; set; } = null!;
