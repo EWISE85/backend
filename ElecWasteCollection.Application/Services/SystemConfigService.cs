@@ -4,11 +4,6 @@ using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -36,7 +31,7 @@ namespace ElecWasteCollection.Application.Services
 				Value = fileUrl,
 				DisplayName = "Mẫu phương tiện excel",
 				GroupName = "Excel",
-				Status = SystemConfigStatus.Active.ToString()
+				Status = SystemConfigStatus.DANG_HOAT_DONG.ToString()
 			};
 
 			// 4. Lưu xuống DB
@@ -66,7 +61,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<SystemConfigModel>> GetAllSystemConfigActive()
 		{
-			var activeConfigs = await _systemConfigRepository.GetsAsync(config => config.Status == SystemConfigStatus.Active.ToString());
+			var activeConfigs = await _systemConfigRepository.GetsAsync(config => config.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
 			if (activeConfigs == null || !activeConfigs.Any())
 			{
 				return new List<SystemConfigModel>();
@@ -90,7 +85,7 @@ namespace ElecWasteCollection.Application.Services
 			// Chuyển cả 2 vế về viết thường để so sánh
 			var config = await _systemConfigRepository
 				.GetAsync(c => c.Key.ToLower() == key.ToLower()
-							   && c.Status == SystemConfigStatus.Active.ToString());
+							   && c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
 
 			if (config == null) throw new AppException("không tìm thấy config", 404);
 

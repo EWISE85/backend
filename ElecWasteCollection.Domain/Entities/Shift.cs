@@ -1,11 +1,17 @@
-﻿namespace ElecWasteCollection.Domain.Entities
+﻿using System.ComponentModel;
+
+namespace ElecWasteCollection.Domain.Entities
 {
     public enum ShiftStatus
-	{
-		Active,
-		Inactive,   
-	}
-	public class Shifts
+    {
+        [Description("Có sẵn")]
+        CO_SAN,
+        [Description("Đã hủy")]
+        DA_HUY,
+        [Description("Đã lên lịch")]
+        DA_LEN_LICH
+    }
+    public class Shifts
     {
         public string ShiftId { get; set; }
         public Guid CollectorId { get; set; }

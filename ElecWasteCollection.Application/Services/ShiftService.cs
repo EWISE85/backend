@@ -67,15 +67,15 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		public async Task<bool> DeleteShiftAsync(string shiftId)
-		{
-			var shift = await _shiftRepository.GetAsync(s => s.ShiftId == shiftId);
-			if (shift == null) throw new AppException("Không tìm thấy ca làm", 404);
-			shift.Status = ShiftStatus.Inactive.ToString();
-			_unitOfWork.Shifts.Update(shift);
-			await _unitOfWork.SaveAsync();
-			return true;
-		}
+		//public async Task<bool> DeleteShiftAsync(string shiftId)
+		//{
+		//	var shift = await _shiftRepository.GetAsync(s => s.ShiftId == shiftId);
+		//	if (shift == null) throw new AppException("Không tìm thấy ca làm", 404);
+		//	shift.Status = ShiftStatus.KHONG_CO.ToString();
+		//	_unitOfWork.Shifts.Update(shift);
+		//	await _unitOfWork.SaveAsync();
+		//	return true;
+		//}
 
 		public async Task<PagedResultModel<ShiftModel>> GetPagedShiftAsync(ShiftSearchModel model)
 		{

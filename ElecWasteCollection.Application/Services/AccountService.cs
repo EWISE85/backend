@@ -45,7 +45,7 @@ namespace ElecWasteCollection.Application.Services
 			if (email == null) throw new Exception("Không lấy được email từ trong token firebase");
 			string name = decodedToken.Claims.ContainsKey("name") ? decodedToken.Claims["name"].ToString() : email;
 			string picture = decodedToken.Claims.ContainsKey("picture") ? decodedToken.Claims["picture"].ToString() : null;
-			var user = await _userRepository.GetAsync(u => u.Email == email && u.Status == UserStatus.Active.ToString());
+			var user = await _userRepository.GetAsync(u => u.Email == email && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
 			if (user == null)
 			{
 				var defaultSettings = new UserSettingsModel
@@ -60,7 +60,7 @@ namespace ElecWasteCollection.Application.Services
 					Avatar = picture,
 					Role = UserRole.User.ToString(),
 					CreateAt = DateTime.UtcNow,
-					Status = UserStatus.Active.ToString()
+					Status = UserStatus.DANG_HOAT_DONG.ToString()
 				};
 				var point = new UserPoints
 				{
@@ -94,7 +94,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("User không tồn tại", 404);
 			}
-			if (user.Status != UserStatus.Active.ToString())
+			if (user.Status != UserStatus.DANG_HOAT_DONG.ToString())
 			{
 				throw new AppException("Tài khoản đã bị khóa", 403);
 			}
@@ -139,14 +139,14 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 
-			var user = await _userRepository.GetAsync(u => u.AppleId == appleUser.AppleId && u.Status == UserStatus.Active.ToString());
+			var user = await _userRepository.GetAsync(u => u.AppleId == appleUser.AppleId && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
 
 			if (user == null)
 			{
 				
 				if (!string.IsNullOrEmpty(appleUser.Email))
 				{
-					user = await _userRepository.GetAsync(u => u.Email == appleUser.Email && u.Status == UserStatus.Active.ToString());
+					user = await _userRepository.GetAsync(u => u.Email == appleUser.Email && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
 				}
 
 				if (user != null)
@@ -181,7 +181,7 @@ namespace ElecWasteCollection.Application.Services
 						CreateAt = DateTime.UtcNow,
 						Role = UserRole.User.ToString(),
 						//Preferences = JsonSerializer.Serialize(defaultSettings),
-						Status = UserStatus.Active.ToString()
+						Status = UserStatus.DANG_HOAT_DONG.ToString()
 					};
 
 					var point = new UserPoints

@@ -3,11 +3,6 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -59,7 +54,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var collector = await _collectorRepository.GetAsync(c => c.UserId == collectorId);
 			if (collector == null) throw new AppException("Không tìm thấy người thu gom",404);
-			collector.Status = UserStatus.Inactive.ToString();
+			collector.Status = UserStatus.KHONG_HOAT_DONG.ToString();
 			_unitOfWork.Users.Update(collector);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -166,7 +161,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = c.Phone,
 				Avatar = c.Avatar,
 				SmallCollectionPointId = c.SmallCollectionPointId,
-			}).ToList();
+            }).ToList();
 
 			return new PagedResultModel<CollectorResponse>(
 				resultList,

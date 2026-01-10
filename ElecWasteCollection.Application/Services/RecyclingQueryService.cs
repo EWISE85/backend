@@ -1,11 +1,8 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.Helper;
+using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -30,7 +27,7 @@ namespace ElecWasteCollection.Application.Services
             foreach (var scp in assignedScps)
             {
                 var readyPackages = scp.Packages
-                    .Where(p => p.Status == "Đã đóng thùng")
+                    .Where(p => p.Status == PackageStatus.DA_DONG_THUNG.ToString())
                     .OrderBy(p => p.CreateAt)
                     .ToList();
 
@@ -45,7 +42,7 @@ namespace ElecWasteCollection.Application.Services
                         Packages = readyPackages.Select(p => new PackageSimpleDto
                         {
                             PackageId = p.PackageId,
-                            Status = p.Status,
+                            Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(p.Status),
                             CreateAt = p.CreateAt
                         }).ToList()
                     });
@@ -79,7 +76,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 PackageId = pkg.PackageId,
                 SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-                Status = pkg.Status,
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 
                 SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name ?? "Không xác định",
                 SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address ?? "Không xác định",
@@ -88,7 +85,7 @@ namespace ElecWasteCollection.Application.Services
                 {
                     ProductId = prod.ProductId,
                     QrCode = prod.QRCode,
-                    Status = prod.Status,
+                    Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(prod.Status),
                     Description = prod.Description,
                     BrandId = prod.BrandId,
                     BrandName = prod.Brand?.Name,

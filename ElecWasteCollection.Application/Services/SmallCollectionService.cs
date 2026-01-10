@@ -57,7 +57,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
 					//Preferences = JsonSerializer.Serialize(defaultSettings),
-					Status = UserStatus.Active.ToString(),
+					Status = UserStatus.DANG_HOAT_DONG.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
 					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,
 				};
@@ -82,7 +82,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.SmallCollectionPointsId == smallCollectionPointId);
 			if (smallPoint == null) throw new AppException("Không tìm thấy kho",404);
-			smallPoint.Status = SmallCollectionPointStatus.Inactive.ToString();
+			smallPoint.Status = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
 			_unitOfWork.SmallCollectionPoints.Update(smallPoint);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -136,7 +136,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointActive()
 		{
-			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == SmallCollectionPointStatus.Active.ToString());
+			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString());
 			return smallPoints.Select(point => new SmallCollectionPointsResponse
 			{
 				Id = point.SmallCollectionPointsId,

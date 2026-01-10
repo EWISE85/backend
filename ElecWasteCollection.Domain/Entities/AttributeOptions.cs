@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
-	public enum AttributeOptionStatus
-	{
-		Active,
-		Inactive
-	}
-	public class AttributeOptions
+    public enum AttributeOptionStatus
+    {
+        [Description("Đang hoạt động")]
+        DANG_HOAT_DONG,
+
+        [Description("Không hoạt động")]
+        KHONG_HOAT_DONG
+    }
+    public class AttributeOptions
 	{
 		public Guid OptionId { get; set; }
 
@@ -23,7 +27,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public double? EstimateVolume { get; set; } // (m³)
 
-		public string Status { get; set; } = AttributeOptionStatus.Active.ToString();
+		public string Status { get; set; } = AttributeOptionStatus.DANG_HOAT_DONG.ToString();
 
 		public Attributes Attribute { get; set; }
 	}

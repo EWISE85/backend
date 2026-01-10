@@ -125,7 +125,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
 
-            if (companyEntity == null) throw new Exception("Company not found.");
+            if (companyEntity == null) throw new Exception("Không tìm thấy công ty nào.");
 
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.CollectionCompanyId == companyId,
@@ -172,7 +172,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     var user = post.Sender;
                     if (product == null || user == null) continue;
 
-                    string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Unknown";
+                    string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Không có";
 
                     double lat = 0, lng = 0;
                     if (!string.IsNullOrEmpty(post.Address))
@@ -205,8 +205,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         SenderId = user.UserId,
                         UserName = user.Name,
                         Address = displayAddress,
-                        CategoryName = product.Category?.Name ?? "Unknown",
-                        BrandName = product.Brand?.Name ?? "Unknown",
+                        CategoryName = product.Category?.Name ?? "Không rõ",
+                        BrandName = product.Brand?.Name ?? "Không rõ",
                         WeightKg = metrics.weight,
                         VolumeM3 = Math.Round(metrics.volume, 4),
                         RadiusKm = $"{Math.Round(radiusKm, 2):0.00} km",
@@ -239,12 +239,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var company = (await _unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints"))
                 .FirstOrDefault(c => c.SmallCollectionPoints.Any(sp => sp.SmallCollectionPointsId == smallPointId));
 
-            if (company == null) throw new Exception("Small Point not found.");
+            if (company == null) throw new Exception("Không tìm thấy trạm thu gom nào.");
             var spEntity = company.SmallCollectionPoints.First(s => s.SmallCollectionPointsId == smallPointId);
 
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.AssignedSmallPointId == smallPointId
-                && p.Product.Status == "Chờ gom nhóm",
+                && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product,Product.Category,Product.Brand,Sender"
             );
 
@@ -271,7 +271,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 var user = post.Sender;
                 if (product == null || user == null) continue;
 
-                string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Unknown";
+                string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Không có";
 
                 double lat = 0, lng = 0;
                 if (!string.IsNullOrEmpty(post.Address))
@@ -304,8 +304,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     SenderId = user.UserId,
                     UserName = user.Name,
                     Address = displayAddress,
-                    CategoryName = product.Category?.Name ?? "Unknown",
-                    BrandName = product.Brand?.Name ?? "Unknown",
+                    CategoryName = product.Category?.Name ?? "Không rõ",
+                    BrandName = product.Brand?.Name ?? "Không rõ",
                     WeightKg = metrics.weight,
                     VolumeM3 = Math.Round(metrics.volume, 4),
                     RadiusKm = $"{Math.Round(radiusKm, 2):0.00} km",
@@ -325,7 +325,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync()
         {
             var companies = await _unitOfWork.Companies.GetAllAsync(
-                filter: c => c.CompanyType == "CollectionCompany",
+                filter: c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString(),
                 includeProperties: "SmallCollectionPoints");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
@@ -353,7 +353,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
 
-            if (company == null) throw new Exception("Company not found.");
+            if (company == null) throw new Exception("Không tìm thấy trạm thu gom nào.");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 
@@ -375,7 +375,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
 
-            if (company == null) throw new Exception("Company not found.");
+            if (company == null) throw new Exception("Không tìm thấy trạm thu gom nào.");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 

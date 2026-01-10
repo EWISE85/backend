@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -7,16 +8,22 @@ using System.Threading.Tasks;
 namespace ElecWasteCollection.Domain.Entities
 {
     public enum CompanyStatus
-	{
-		Active,
-		Inactive,
-	}
+    {
+        [Description("Đang hoạt động")]
+        DANG_HOAT_DONG,
+
+        [Description("Không hoạt động")]
+        KHONG_HOAT_DONG
+    }
     public enum CompanyType
     {
-        CollectionCompany,
-		RecyclingCompany,
-	}
-	public class Company
+        [Description("Công ty thu gom")]
+        CTY_THU_GOM,
+
+        [Description("Công ty tái chế")]
+        CTY_TAI_CHE
+    }
+    public class Company
     {
         public string CompanyId { get; set; }
         public string Name { get; set; } = null!;
