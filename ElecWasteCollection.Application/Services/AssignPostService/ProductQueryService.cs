@@ -12,7 +12,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapboxDistanceCacheService _distance;
 
-        // Xử lý sau 
         private const string NAME_TRONG_LUONG = "Trọng lượng";
         private const string NAME_KHOI_LUONG_GIAT = "Khối lượng giặt";
         private const string NAME_CHIEU_DAI = "Chiều dài";
@@ -29,61 +28,80 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         private async Task<Dictionary<string, Guid>> GetAttributeIdMapAsync()
         {
-            var targetNames = new[]
+            var targetKeywords = new[]
             {
                 NAME_TRONG_LUONG, NAME_KHOI_LUONG_GIAT,
                 NAME_CHIEU_DAI, NAME_CHIEU_RONG, NAME_CHIEU_CAO,
                 NAME_DUNG_TICH, NAME_KICH_THUOC_MAN
             };
 
-            var atts = await _unitOfWork.Attributes.GetAllAsync(filter: a => targetNames.Contains(a.Name));
+            var allAttributes = await _unitOfWork.Attributes.GetAllAsync();
+            var map = new Dictionary<string, Guid>();
 
-            return atts.ToDictionary(k => k.Name, v => v.AttributeId);
+            foreach (var key in targetKeywords)
+            {
+                var match = allAttributes.FirstOrDefault(a => a.Name.Contains(key, StringComparison.OrdinalIgnoreCase));
+                if (match != null && !map.ContainsKey(key))
+                {
+                    map.Add(key, match.AttributeId);
+                }
+            }
+            return map;
         }
 
-        private async Task<(double weight, double volume)> GetProductMetricsAsync(Guid productId, Dictionary<string, Guid> attMap)
+        private async Task<(double weight, double volume, double length, double width, double height)> GetProductMetricsAsync(Guid productId, Dictionary<string, Guid> attMap)
         {
             var pValues = await _unitOfWork.ProductValues.GetAllAsync(filter: v => v.ProductId == productId);
 
             var optionIds = pValues.Where(v => v.AttributeOptionId.HasValue).Select(v => v.AttributeOptionId.Value).ToList();
-            var relatedOptions = await _unitOfWork.AttributeOptions.GetAllAsync(filter: o => optionIds.Contains(o.OptionId));
+
+            var relatedOptions = optionIds.Any()
+                ? (await _unitOfWork.AttributeOptions.GetAllAsync(filter: o => optionIds.Contains(o.OptionId))).ToList()
+                : new List<AttributeOptions>();
 
             double weight = 0;
-
             var weightKeys = new[] { NAME_TRONG_LUONG, NAME_KHOI_LUONG_GIAT, NAME_DUNG_TICH };
 
             foreach (var key in weightKeys)
             {
                 if (!attMap.ContainsKey(key)) continue;
                 var attId = attMap[key];
-
                 var pVal = pValues.FirstOrDefault(v => v.AttributeId == attId);
-                if (pVal != null && pVal.AttributeOptionId.HasValue)
+
+                if (pVal != null)
                 {
-                    var opt = relatedOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
-                    if (opt != null && opt.EstimateWeight.HasValue && opt.EstimateWeight.Value > 0)
+                    if (pVal.AttributeOptionId.HasValue)
                     {
-                        weight = opt.EstimateWeight.Value;
+                        var opt = relatedOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
+                        if (opt != null && opt.EstimateWeight.HasValue && opt.EstimateWeight.Value > 0)
+                        {
+                            weight = opt.EstimateWeight.Value;
+                            break;
+                        }
+                    }
+                    if (pVal.Value.HasValue && pVal.Value.Value > 0)
+                    {
+                        weight = pVal.Value.Value;
                         break;
                     }
                 }
             }
             if (weight <= 0) weight = 1;
 
-            double volume = 0;
-
             double GetAttributeValue(string attrName)
             {
                 if (attMap.ContainsKey(attrName))
                 {
-                    return pValues.FirstOrDefault(v => v.AttributeId == attMap[attrName])?.Value ?? 0;
+                    var pVal = pValues.FirstOrDefault(v => v.AttributeId == attMap[attrName]);
+                    return pVal?.Value ?? 0;
                 }
                 return 0;
             }
 
-            double length = GetAttributeValue(NAME_CHIEU_DAI);
-            double width = GetAttributeValue(NAME_CHIEU_RONG);
-            double height = GetAttributeValue(NAME_CHIEU_CAO);
+            double length = GetAttributeValue(NAME_CHIEU_DAI); 
+            double width = GetAttributeValue(NAME_CHIEU_RONG); 
+            double height = GetAttributeValue(NAME_CHIEU_CAO); 
+            double volume = 0;
 
             if (length > 0 && width > 0 && height > 0)
             {
@@ -96,8 +114,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 {
                     if (!attMap.ContainsKey(key)) continue;
                     var attId = attMap[key];
-
                     var pVal = pValues.FirstOrDefault(v => v.AttributeId == attId);
+
                     if (pVal != null && pVal.AttributeOptionId.HasValue)
                     {
                         var opt = relatedOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
@@ -112,15 +130,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             if (volume <= 0) volume = 1000;
 
-            return (weight, volume / 1_000_000.0);
+            return (weight, volume / 1_000_000.0, length, width, height);
         }
 
         public async Task<GetCompanyProductsResponse> GetCompanyProductsAsync(string companyId, DateOnly workDate)
         {
             var attMap = await GetAttributeIdMapAsync();
-
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
-
             var companyEntity = await _unitOfWork.Companies.GetAsync(
                 filter: c => c.CompanyId == companyId,
                 includeProperties: "SmallCollectionPoints");
@@ -191,12 +207,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     double radiusKm = 0;
                     double roadKm = 0;
-
                     if (lat != 0 && lng != 0)
                     {
                         radiusKm = GeoHelper.DistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
                         roadKm = await _distance.GetRoadDistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
                     }
+
+                    string dimensionStr = (metrics.length > 0 && metrics.width > 0 && metrics.height > 0)
+                        ? $"{metrics.length} x {metrics.width} x {metrics.height}"
+                        : "Chưa cập nhật";
 
                     spDto.Products.Add(new ProductDetailDto
                     {
@@ -209,6 +228,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         BrandName = product.Brand?.Name ?? "Không rõ",
                         WeightKg = metrics.weight,
                         VolumeM3 = Math.Round(metrics.volume, 4),
+
+                        Length = metrics.length,
+                        Width = metrics.width,
+                        Height = metrics.height,
+                        Dimensions = dimensionStr, 
+
                         RadiusKm = $"{Math.Round(radiusKm, 2):0.00} km",
                         RoadKm = $"{Math.Round(roadKm, 2):0.00} km"
                     });
@@ -272,7 +297,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 if (product == null || user == null) continue;
 
                 string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Không có";
-
                 double lat = 0, lng = 0;
                 if (!string.IsNullOrEmpty(post.Address))
                 {
@@ -290,12 +314,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 double radiusKm = 0;
                 double roadKm = 0;
-
                 if (lat != 0 && lng != 0)
                 {
                     radiusKm = GeoHelper.DistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
                     roadKm = await _distance.GetRoadDistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
                 }
+
+                string dimensionStr = (metrics.length > 0 && metrics.width > 0 && metrics.height > 0)
+                        ? $"{metrics.length} x {metrics.width} x {metrics.height}"
+                        : "Chưa cập nhật";
 
                 spDto.Products.Add(new ProductDetailDto
                 {
@@ -308,6 +335,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     BrandName = product.Brand?.Name ?? "Không rõ",
                     WeightKg = metrics.weight,
                     VolumeM3 = Math.Round(metrics.volume, 4),
+
+                    Length = metrics.length,
+                    Width = metrics.width,
+                    Height = metrics.height,
+                    Dimensions = dimensionStr, 
+
                     RadiusKm = $"{Math.Round(radiusKm, 2):0.00} km",
                     RoadKm = $"{Math.Round(roadKm, 2):0.00} km"
                 });
@@ -397,7 +430,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             };
         }
 
-
         private bool TryParseDates(string scheduleJson, out List<DateOnly> dates)
         {
             dates = new();
@@ -419,10 +451,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 x.Key == key.ToString() &&
                 x.CompanyId == companyId &&
                 x.SmallCollectionPointId == pointId);
-
-            if (config == null && companyId != null && pointId != null)
-            {
-            }
 
             if (config != null && double.TryParse(config.Value, out double result))
             {

@@ -39,9 +39,13 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
         public string UserName { get; set; } = "";
         public string Address { get; set; } = "";
-        public string DimensionText { get; set; } = "";  
         public double Weight { get; set; }
-        public double Volume { get; set; }
+        public double Volume { get; set; } 
+        public double Length { get; set; }
+        public double Width { get; set; }
+        public double Height { get; set; }
+        public string DimensionText { get; set; } = "";  
+
     }
 
     public class SuggestedVehicle
