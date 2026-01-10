@@ -2,10 +2,6 @@
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services.AssignPostService
 {
@@ -55,7 +51,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     {
                         return new CompanyConfigResponse
                         {
-                            Message = $"Company {companyDto.CompanyId} không có smallPoints.",
+                            Message = $"Công ty {companyDto.CompanyId} không có trạm thu gom nào.",
                             Companies = new List<CompanyConfigDto>()
                         };
                     }
@@ -72,8 +68,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                         foreach (var spDto in companyDto.SmallPoints)
                         {
-                            if (spDto.RadiusKm <= 0) return ErrorResponse($"SmallPoint {spDto.SmallPointId} radiusKm không hợp lệ.");
-                            if (spDto.MaxRoadDistanceKm <= 0) return ErrorResponse($"SmallPoint {spDto.SmallPointId} maxRoadDistanceKm không hợp lệ.");
+                            if (spDto.RadiusKm <= 0) return ErrorResponse($"Trạm thu gom {spDto.SmallPointId} có bán kính thu gom không hợp lệ.");
+                            if (spDto.MaxRoadDistanceKm <= 0) return ErrorResponse($"Trạm thu gom {spDto.SmallPointId} có quãng đường thu gom tối đa không hợp lệ.");
 
                             var spEntity = companyEntity.SmallCollectionPoints
                                 .FirstOrDefault(p => p.SmallCollectionPointsId == spDto.SmallPointId);
@@ -112,7 +108,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 return new CompanyConfigResponse
                 {
-                    Message = "Company configuration updated successfully.",
+                    Message = "Cập nhật thành công",
                     Companies = updatedDtos
                 };
             }
@@ -134,7 +130,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 var configRepo = _unitOfWork.SystemConfig;
 
                 var companies = await companyRepo.GetAllAsync(
-                    filter: c => c.CompanyType == CompanyType.CollectionCompany.ToString(),
+                    filter: c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString(),
                     includeProperties: "SmallCollectionPoints"
                 );
 
@@ -160,7 +156,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 return new CompanyConfigResponse
                 {
-                    Message = "Success",
+                    Message = "Thành công",
                     Companies = companyDtos
                 };
             }
@@ -194,7 +190,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     Value = value,
                     CompanyId = companyId,
                     SmallCollectionPointId = pointId,
-                    Status = SystemConfigStatus.Active.ToString(),
+                    Status = SystemConfigStatus.DANG_HOAT_DONG.ToString(),
                     DisplayName = key.ToString(),
                     GroupName = companyId != null ? "CompanyConfig" : "PointConfig"
                 };

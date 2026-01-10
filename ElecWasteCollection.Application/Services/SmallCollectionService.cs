@@ -57,7 +57,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
 					//Preferences = JsonSerializer.Serialize(defaultSettings),
-					Status = UserStatus.Active.ToString(),
+					Status = UserStatus.DANG_HOAT_DONG.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
 					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,
 				};
@@ -136,7 +136,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointActive()
 		{
-			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == SmallCollectionPointStatus.HOAT_DONG.ToString());
+			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString());
 			return smallPoints.Select(point => new SmallCollectionPointsResponse
 			{
 				Id = point.SmallCollectionPointsId,

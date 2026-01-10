@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.Helper;
+using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
@@ -38,9 +39,9 @@ namespace ElecWasteCollection.Application.Services
             var isToday = targetDate == DateOnly.FromDateTime(nowVn);
 
             var allCollectors = await _unitOfWork.Users.GetAllAsync(
-                u => u.Role == "Collector" &&
+                u => u.Role == UserRole.Collector.ToString() &&
                      u.SmallCollectionPointId == smallCollectionPointId &&
-                     u.Status == "Active"
+                     u.Status == UserStatus.DANG_HOAT_DONG.ToString()
             );
 
             var shiftsInDay = await _unitOfWork.Shifts.GetAllAsync(
@@ -57,7 +58,7 @@ namespace ElecWasteCollection.Application.Services
 
                 var availableShifts = userShifts.Where(s =>
                     string.IsNullOrEmpty(s.Vehicle_Id) &&
-                    (s.Status == "Available" || s.Status == "Standby")
+                    (s.Status == ShiftStatus.CO_SAN.ToString())
                 ).ToList();
 
                 if (availableShifts.Any())
@@ -100,7 +101,7 @@ namespace ElecWasteCollection.Application.Services
                             Phone = user.Phone,
                             IsAvailable = true,
                             ShiftTime = timeSlotsStr,
-                            StatusText = $"Sẵn sàng",
+                            StatusText = StatusEnumHelper.GetDescription(ShiftStatus.CO_SAN),
                             RemainingMinutes = $"{roundedMinutes} phút",
                             SortableMinutes = roundedMinutes
                         });
@@ -130,8 +131,8 @@ namespace ElecWasteCollection.Application.Services
             var oldShift = await _unitOfWork.Shifts.GetByIdAsync(group.Shift_Id)
                 ?? throw new Exception("Không tìm thấy ca làm việc gốc.");
 
-            if (oldShift.Status == "Completed")
-                throw new Exception("Lộ trình này đã hoàn thành, không thể thay thế.");
+            //if (oldShift.Status == "Completed")
+            //    throw new Exception("Lộ trình này đã hoàn thành, không thể thay thế.");
 
             var vehicleId = oldShift.Vehicle_Id;
             var workDate = oldShift.WorkDate;
@@ -145,7 +146,7 @@ namespace ElecWasteCollection.Application.Services
                 s.CollectorId == request.NewCollectorId &&
                 s.WorkDate == workDate &&
                 !string.IsNullOrEmpty(s.Vehicle_Id) && 
-                s.Status != "Cancelled" &&
+                s.Status != ShiftStatus.DA_HUY.ToString() &&
                 s.Shift_Start_Time < reqEnd &&
                 s.Shift_End_Time > reqStart
             );
@@ -158,7 +159,7 @@ namespace ElecWasteCollection.Application.Services
                 throw new Exception($"Nhân viên {newCollector.Name} đang bận chạy xe {busyVehicle?.Plate_Number ?? "khác"} ");
             }
 
-            oldShift.Status = "Cancelled";
+            oldShift.Status = ShiftStatus.DA_HUY.ToString();
             oldShift.Vehicle_Id = null;
             _unitOfWork.Shifts.Update(oldShift);
 
@@ -166,7 +167,7 @@ namespace ElecWasteCollection.Application.Services
                 s.CollectorId == request.NewCollectorId &&
                 s.WorkDate == workDate &&
                 string.IsNullOrEmpty(s.Vehicle_Id) &&
-                (s.Status == "Available" || s.Status == "Standby") &&
+                (s.Status == ShiftStatus.CO_SAN.ToString()) &&
                 s.Shift_Start_Time < reqEnd &&
                 s.Shift_End_Time > reqStart
             );
@@ -178,11 +179,11 @@ namespace ElecWasteCollection.Application.Services
             if (availableShift != null)
             {
                 availableShift.Vehicle_Id = vehicleId;
-                availableShift.Status = "Assigned";
+                availableShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
                 _unitOfWork.Shifts.Update(availableShift);
 
                 targetShiftId = availableShift.ShiftId;
-                messageAction = "đã cập nhật vào lịch chờ có sẵn";
+                messageAction = "Đã cập nhật vào lịch chờ có sẵn";
             }
             else
             {
@@ -196,12 +197,12 @@ namespace ElecWasteCollection.Application.Services
                     WorkDate = workDate,
                     Shift_Start_Time = reqStart,
                     Shift_End_Time = reqEnd,
-                    Status = "Assigned"
+                    Status = ShiftStatus.DA_LEN_LICH.ToString()
                 };
 
                 await _unitOfWork.Shifts.AddAsync(newShift);
                 targetShiftId = newId;
-                messageAction = "đã tạo ca làm việc mới";
+                messageAction = "Đã tạo ca làm việc mới";
             }
 
             group.Shift_Id = targetShiftId;

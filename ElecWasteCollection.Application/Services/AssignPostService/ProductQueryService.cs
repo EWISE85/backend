@@ -325,7 +325,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync()
         {
             var companies = await _unitOfWork.Companies.GetAllAsync(
-                filter: c => c.CompanyType == CompanyType.CollectionCompany.ToString(),
+                filter: c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString(),
                 includeProperties: "SmallCollectionPoints");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();

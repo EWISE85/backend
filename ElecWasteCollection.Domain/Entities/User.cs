@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -16,13 +17,18 @@ namespace ElecWasteCollection.Domain.Entities
 		Shipper,
 		Recycler
 	}
-	public enum UserStatus
-	{
-		Active,
-		Inactive,
-		Suspended
-	}
-	public class User
+    public enum UserStatus
+    {
+        [Description("Đang hoạt động")]
+        DANG_HOAT_DONG,     
+
+        [Description("Không hoạt động")]
+        KHONG_HOAT_DONG,
+
+        [Description("Bị đình chỉ")]
+        BI_DINH_CHI 
+    }
+    public class User
 	{
 		public Guid UserId { get; set; }
 

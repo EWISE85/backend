@@ -4,13 +4,8 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
-using FirebaseAdmin.Auth.Hash;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
+using ElecWasteCollection.Application.Helpers;
+using ElecWasteCollection.Application.Helper;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -80,7 +75,7 @@ namespace ElecWasteCollection.Application.Services
 						Avatar = null,
 						Role = UserRole.AdminCompany.ToString(),
 						//Preferences = JsonSerializer.Serialize(defaultSettings),
-						Status = UserStatus.Active.ToString(),
+						Status = UserStatus.DANG_HOAT_DONG.ToString(),
 						CollectionCompanyId = importData.CompanyId
 					};
 
@@ -118,7 +113,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var company = await _collectionCompanyRepository.GetAsync(t => t.CompanyId == collectionCompanyId);
 			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
-			company.Status = CompanyStatus.Inactive.ToString();
+			company.Status = CompanyStatus.KHONG_HOAT_DONG.ToString();
 			_unitOfWork.Companies.Update(company);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -126,7 +121,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<CollectionCompanyResponse>> GetAllCollectionCompaniesAsync()
 		{
-			var company = await _collectionCompanyRepository.GetAllAsync(filter: c => c.CompanyType == CompanyType.CollectionCompany.ToString());
+			var company = await _collectionCompanyRepository.GetAllAsync(filter: c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString());
 			var response = company.Select(team => new CollectionCompanyResponse
 			{
 				Id = team.CompanyId,
@@ -134,8 +129,8 @@ namespace ElecWasteCollection.Application.Services
 				CompanyEmail = team.CompanyEmail,
 				Phone = team.Phone,
 				City = team.Address,
-				Status = team.Status
-			}).ToList();
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(team.Status)
+            }).ToList();
 
 			return response;
 		}
@@ -151,8 +146,8 @@ namespace ElecWasteCollection.Application.Services
 				CompanyEmail = company.CompanyEmail,
 				Phone = company.Phone,
 				City = company.Address,
-				Status = company.Status
-			};
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(company.Status)
+            };
 			return response;
 		}
 
@@ -167,8 +162,8 @@ namespace ElecWasteCollection.Application.Services
 				CompanyEmail = team.CompanyEmail,
 				Phone = team.Phone,
 				City = team.Address,
-				Status = team.Status
-			}).ToList();
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(team.Status)
+            }).ToList();
 			return response;
 		}
 

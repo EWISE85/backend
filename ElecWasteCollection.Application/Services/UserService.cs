@@ -168,7 +168,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var user = await _userRepository.GetAsync(u => u.UserId == userId);
 			if (user == null) throw new AppException("User không tồn tại", 404);
-			user.Status = UserStatus.Inactive.ToString();
+			user.Status = UserStatus.KHONG_HOAT_DONG.ToString();
 			user.AppleId = null;
 			user.Email = null;
 			_unitOfWork.Users.Update(user);

@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -71,8 +72,8 @@ namespace ElecWasteCollection.Application.Services
 				VehicleType = vehicle.Vehicle_Type,
 				CapacityKg = vehicle.Capacity_Kg,
 				CapacityM3 = vehicle.Capacity_M3,
-				Status = vehicle.Status,
-				SmallCollectionPointId = vehicle.Small_Collection_Point,
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VehicleStatus>(vehicle.Status),
+                SmallCollectionPointId = vehicle.Small_Collection_Point,
 				SmallCollectionPointName = smallCollectionPoint?.Name ?? "Chưa gán điểm thu gom"
 			};
 
@@ -120,8 +121,8 @@ namespace ElecWasteCollection.Application.Services
 					VehicleType = v.Vehicle_Type,
 					CapacityKg = v.Capacity_Kg,
 					CapacityM3 = v.Capacity_M3,
-					Status = v.Status,
-					SmallCollectionPointId = v.Small_Collection_Point,
+                    Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VehicleStatus>(v.Status),
+                    SmallCollectionPointId = v.Small_Collection_Point,
 					SmallCollectionPointName = scpName
 				};
 			}).ToList();

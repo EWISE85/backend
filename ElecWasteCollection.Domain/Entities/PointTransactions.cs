@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
-	public enum PointTransactionType
-	{
-		Earned,
-		Redeemed,
-	}
-	public class PointTransactions
+    public enum PointTransactionType
+    {
+        [Description("Tích điểm")]
+        TICH_DIEM, // Thay cho Earned
+
+        [Description("Đổi điểm")]
+        DOI_DIEM   // Thay cho Redeemed
+    }
+    public class PointTransactions
 	{
 		public Guid PointTransactionId { get; set; }
 

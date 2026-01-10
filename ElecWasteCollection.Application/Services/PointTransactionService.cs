@@ -69,7 +69,7 @@ namespace ElecWasteCollection.Application.Services
 				Desciption = model.Desciption,
 				Point = model.Point,
 				CreatedAt = DateTime.UtcNow,
-				TransactionType = PointTransactionType.Earned.ToString()
+				TransactionType = PointTransactionType.TICH_DIEM.ToString()
 			};
 
 			// 1. Add Transaction

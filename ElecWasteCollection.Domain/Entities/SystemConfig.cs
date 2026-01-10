@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
-	public enum SystemConfigStatus
-	{
-		Active,
-		Inactive
-	}
-	public enum SystemConfigKey
+    public enum SystemConfigStatus
+    {
+        [Description("Đang hoạt động")]
+        DANG_HOAT_DONG,
+
+        [Description("Không hoạt động")]
+        KHONG_HOAT_DONG 
+    }
+    public enum SystemConfigKey
 	{
 		QR_SCAN_RADIUS_METERS,
 		DAYS_TO_MARK_MISSING,

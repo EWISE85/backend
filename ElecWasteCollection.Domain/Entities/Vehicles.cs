@@ -5,8 +5,8 @@ namespace ElecWasteCollection.Domain.Entities
 {
     public enum VehicleStatus
     {
-        [Description("Hoạt động")]
-        HOAT_DONG,
+        [Description("Đang hoạt động")]
+        DANG_HOAT_DONG,
         [Description("Không hoạt động")]
         KHONG_HOAT_DONG
     }

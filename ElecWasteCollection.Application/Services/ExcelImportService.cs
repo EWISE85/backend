@@ -110,7 +110,7 @@ namespace ElecWasteCollection.Application.Services
 
 				if (statusNormalized == "còn hoạt động" || statusNormalized == "active")
 				{
-					statusToSave = VehicleStatus.HOAT_DONG.ToString(); // Hoặc Enum
+					statusToSave = VehicleStatus.DANG_HOAT_DONG.ToString(); // Hoặc Enum
 				}
 				else
 				{
@@ -225,15 +225,15 @@ namespace ElecWasteCollection.Application.Services
 				// Map "Đang làm việc" -> Active
 				if (statusNormalized == "đang làm việc")
 				{
-					statusToSave = UserStatus.Active.ToString(); // Hoặc UserStatus.Active.ToString()
+					statusToSave = UserStatus.DANG_HOAT_DONG.ToString(); // Hoặc UserStatus.Active.ToString()
 				}
 				else if (statusNormalized == "nghỉ việc" || statusNormalized == "ngưng hoạt động")
 				{
-					statusToSave = UserStatus.Inactive.ToString();
+					statusToSave = UserStatus.KHONG_HOAT_DONG.ToString();
 				}
 				else
 				{
-					statusToSave = UserStatus.Inactive.ToString();
+					statusToSave = UserStatus.KHONG_HOAT_DONG.ToString();
 				}
 
 				// 3. VALIDATE
@@ -287,7 +287,7 @@ namespace ElecWasteCollection.Application.Services
 
 				if (statusNormalized == "còn hoạt động")
 				{
-					statusToSave = SmallCollectionPointStatus.HOAT_DONG.ToString(); 
+					statusToSave = SmallCollectionPointStatus.DANG_HOAT_DONG.ToString(); 
 				}
 				else if (statusNormalized == "không hoạt động")
 				{
@@ -343,30 +343,30 @@ namespace ElecWasteCollection.Application.Services
 				string statusToSave;
 				string companyTypeToSave;
 
-				if (statusNormalized == "còn hoạt động")
+				if (statusNormalized == "Còn hoạt động")
 				{
-					statusToSave = CompanyStatus.Active.ToString();
+					statusToSave = CompanyStatus.DANG_HOAT_DONG.ToString();
 				}
-				else if (statusNormalized == "ngưng hoạt động")
+				else if (statusNormalized == "Ngưng hoạt động")
 				{
-					statusToSave = CompanyStatus.Inactive.ToString();
+					statusToSave = CompanyStatus.KHONG_HOAT_DONG.ToString();
 				}
 				else
 				{
-					statusToSave = CompanyStatus.Inactive.ToString();
+					statusToSave = CompanyStatus.KHONG_HOAT_DONG.ToString();
 				}
 
 				if (companyType.Equals("Collection Company", StringComparison.OrdinalIgnoreCase) || companyType.Equals("Công ty thu gom", StringComparison.OrdinalIgnoreCase))
 				{
-					companyTypeToSave = CompanyType.CollectionCompany.ToString();
+					companyTypeToSave = CompanyType.CTY_THU_GOM.ToString();
 				}
 				else if (companyType.Equals("Recycling Company", StringComparison.OrdinalIgnoreCase) || companyType.Equals("Công ty tái chế", StringComparison.OrdinalIgnoreCase))
 				{
-					companyTypeToSave = CompanyType.RecyclingCompany.ToString();
+					companyTypeToSave = CompanyType.CTY_TAI_CHE.ToString();
 				}
 				else
 				{
-					companyTypeToSave = CompanyType.CollectionCompany.ToString();
+					companyTypeToSave = CompanyType.CTY_THU_GOM.ToString();
 				}
 				var company = new Company
 				{

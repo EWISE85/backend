@@ -30,7 +30,7 @@ namespace ElecWasteCollection.Application.Services
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
-            var vehicles = await _unitOfWork.Vehicles.GetAllAsync(v => v.Small_Collection_Point == request.CollectionPointId && v.Status == VehicleStatus.HOAT_DONG.ToString());
+            var vehicles = await _unitOfWork.Vehicles.GetAllAsync(v => v.Small_Collection_Point == request.CollectionPointId && v.Status == VehicleStatus.DANG_HOAT_DONG.ToString());
             var pointVehicles = vehicles.OrderBy(v => v.Capacity_Kg).ToList();
 
             if (!pointVehicles.Any()) throw new Exception("Trạm này hiện không có xe nào hoạt động.");
@@ -89,7 +89,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 var candidates = pool
                     .Where(x => ((List<DateOnly>)x.Schedule.SpecificDates).Contains(date))
-                    .OrderBy(x => x.Schedule.MaxDate) 
+                    .OrderBy(x => x.Schedule.MaxDate)
                     .ThenBy(x => x.Schedule.MinDate)
                     .ToList();
 
@@ -98,7 +98,7 @@ namespace ElecWasteCollection.Application.Services
                 double totalWeightNeed = candidates.Sum(x => (double)x.Weight);
                 double totalVolumeNeed = candidates.Sum(x => (double)x.Volume);
 
- 
+
                 var suggested = pointVehicles.FirstOrDefault(v =>
                     totalWeightNeed <= v.Capacity_Kg * (request.LoadThresholdPercent / 100.0) &&
                     totalVolumeNeed <= v.Capacity_M3 * (request.LoadThresholdPercent / 100.0)
@@ -151,7 +151,7 @@ namespace ElecWasteCollection.Application.Services
                         TotalVolume = Math.Round(selectedProducts.Sum(x => x.Volume), 5),
                         SuggestedVehicle = new SuggestedVehicle
                         {
-                            Id = suggested.VehicleId.ToString(), 
+                            Id = suggested.VehicleId.ToString(),
                             Plate_Number = suggested.Plate_Number,
                             Vehicle_Type = suggested.Vehicle_Type,
                             Capacity_Kg = suggested.Capacity_Kg,
@@ -630,15 +630,15 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<List<Vehicles>> GetVehiclesAsync()
         {
-            var list = await _unitOfWork.Vehicles.GetAllAsync(v => v.Status == VehicleStatus.HOAT_DONG.ToString());
+            var list = await _unitOfWork.Vehicles.GetAllAsync(v => v.Status == VehicleStatus.DANG_HOAT_DONG.ToString());
             return list.OrderBy(v => v.VehicleId).ToList();
         }
 
         public async Task<List<Vehicles>> GetVehiclesBySmallPointAsync(string smallPointId)
         {
-            var list = await _unitOfWork.Vehicles.GetAllAsync(v => 
-            v.Status == VehicleStatus.HOAT_DONG.ToString() 
-            && v.Small_Collection_Point == smallPointId );
+            var list = await _unitOfWork.Vehicles.GetAllAsync(v =>
+            v.Status == VehicleStatus.DANG_HOAT_DONG.ToString()
+            && v.Small_Collection_Point == smallPointId);
             return list.OrderBy(v => v.VehicleId).ToList();
         }
 
@@ -909,7 +909,7 @@ namespace ElecWasteCollection.Application.Services
                     Value = value,
                     CompanyId = companyId,
                     SmallCollectionPointId = pointId,
-                    Status = SystemConfigStatus.Active.ToString(),
+                    Status = SystemConfigStatus.DANG_HOAT_DONG.ToString(),
                     DisplayName = key.ToString(),
                     GroupName = pointId != null ? "PointConfig" : "CompanyConfig"
                 };
