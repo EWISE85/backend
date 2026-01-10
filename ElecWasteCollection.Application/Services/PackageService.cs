@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -33,7 +34,7 @@ namespace ElecWasteCollection.Application.Services
 				PackageId = model.PackageId,
 				SmallCollectionPointsId = model.SmallCollectionPointsId,
 				CreateAt = DateTime.UtcNow,
-				Status = "Đang đóng gói"
+				Status = PackageStatus.DANG_DONG_GOI.ToString()
 			};
 			await _unitOfWork.Packages.AddAsync(newPackage);
 			foreach (var qrCode in model.ProductsQrCode)
@@ -43,14 +44,14 @@ namespace ElecWasteCollection.Application.Services
 				if (product != null)
 				{
 					await _productService.AddPackageIdToProductByQrCode(product.QrCode, newPackage.PackageId);
-					await _productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
+					await _productService.UpdateProductStatusByQrCode(product.QrCode, ProductStatus.DA_DONG_THUNG.ToString());
 					var newHistory = new ProductStatusHistory
 					{
 						ProductStatusHistoryId = Guid.NewGuid(),
 						ProductId = product.ProductId,
 						ChangedAt = DateTime.UtcNow,
 						StatusDescription = "Sản phẩm đã được đóng gói",
-						Status = "Đã đóng thùng"
+						Status = ProductStatus.DA_DONG_THUNG.ToString()
 					};
 					await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 
@@ -81,9 +82,15 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<PagedResult<PackageDetailModel>> GetPackagesByQuery(PackageSearchQueryModel query)
 		{
+			string? statusEnum = null;
+			if (!string.IsNullOrEmpty(query.Status))
+			{
+				var statusValue = StatusEnumHelper.GetValueFromDescription<PackageStatus>(query.Status);
+				statusEnum = statusValue.ToString();
+			}
 			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesWithDetailsAsync(
 				query.SmallCollectionPointsId,
-				query.Status,
+				statusEnum,
 				query.Page,
 				query.Limit
 			);
@@ -100,7 +107,7 @@ namespace ElecWasteCollection.Application.Services
 					CategoryName = product.Category?.Name, 
 					QrCode = product.QRCode,
 					IsChecked = product.isChecked,
-					Status = product.Status
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status)
 				}).ToList() ?? new List<ProductDetailModel>();
 
 				return new PackageDetailModel
@@ -121,13 +128,18 @@ namespace ElecWasteCollection.Application.Services
 			};
 		}
 
-		// In your Service Class
 
 		public async Task<PagedResult<PackageDetailModel>> GetPackagesByRecylerQuery(PackageRecyclerSearchQueryModel query)
 		{
+			string? statusEnum = null;
+			if (!string.IsNullOrEmpty(query.Status))
+			{
+				var statusValue = StatusEnumHelper.GetValueFromDescription<PackageStatus>(query.Status);
+				statusEnum = statusValue.ToString();
+			}
 			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesWithDetailsByRecyclerAsync(
 				query.RecyclerCompanyId, 
-				query.Status,
+				statusEnum,
 				query.Page,
 				query.Limit
 			);
@@ -144,7 +156,7 @@ namespace ElecWasteCollection.Application.Services
 					CategoryName = product.Category?.Name,
 					QrCode = product.QRCode,
 					IsChecked = product.isChecked,
-					Status = product.Status
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status)
 				}).ToList() ?? new List<ProductDetailModel>();
 
 				return new PackageDetailModel
@@ -167,7 +179,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<PackageDetailModel>> GetPackagesWhenDelivery()
 		{
-			var deliveringPackages = await _packageRepository.GetsAsync(p => p.Status == "Đang vận chuyển");
+			var deliveringPackages = await _packageRepository.GetsAsync(p => p.Status == PackageStatus.DANG_VAN_CHUYEN.ToString());
 				
 
 			var result = new List<PackageDetailModel>();
@@ -207,10 +219,9 @@ namespace ElecWasteCollection.Application.Services
 				{
 					await _productService.AddPackageIdToProductByQrCode(existingProduct.QrCode, null);
 
-					// Trả lại trạng thái ban đầu (ví dụ: "Nhập kho")
-					await _productService.UpdateProductStatusByQrCode(existingProduct.QrCode, "Nhập kho");
+					await _productService.UpdateProductStatusByQrCode(existingProduct.QrCode, ProductStatus.NHAP_KHO.ToString());
 
-					var oldHistory = await _productStatusHistoryRepository.GetAsync(h => h.ProductId == existingProduct.ProductId && h.Status == "Đã đóng thùng");
+					var oldHistory = await _productStatusHistoryRepository.GetAsync(h => h.ProductId == existingProduct.ProductId && h.Status == ProductStatus.DA_DONG_THUNG.ToString());
 					if (oldHistory != null)
 					{
 						_unitOfWork.ProductStatusHistory.Delete(oldHistory);
@@ -226,7 +237,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					await _productService.AddPackageIdToProductByQrCode(product.QrCode, package.PackageId);
 
-					await _productService.UpdateProductStatusByQrCode(product.QrCode, "Đã đóng thùng");
+					await _productService.UpdateProductStatusByQrCode(product.QrCode, ProductStatus.DA_DONG_THUNG.ToString());
 				}
 			}
 			_unitOfWork.Packages.Update(package);
@@ -239,8 +250,11 @@ namespace ElecWasteCollection.Application.Services
 			var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
 
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
+			var products = await _productService.GetProductsByPackageIdAsync(packageId);
+			if (products.Count == 0 ) throw new AppException("Package không có sản phẩm nào", 400);
 
-			package.Status = status;
+			var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
+			package.Status = statusEnum.ToString();
 			_unitOfWork.Packages.Update(package);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -254,7 +268,8 @@ namespace ElecWasteCollection.Application.Services
 			{
 				return false;
 			}
-			package.Status = status;
+			var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
+			package.Status = statusEnum.ToString();
 			foreach (var product in productList)
 			{
 				await _productService.UpdateProductStatusByQrCode(product.QrCode, status);
@@ -263,8 +278,8 @@ namespace ElecWasteCollection.Application.Services
 					ProductStatusHistoryId = Guid.NewGuid(),
 					ProductId = product.ProductId,
 					ChangedAt = DateTime.UtcNow,
-					StatusDescription = status == "Đang vận chuyển" ? "Sản phẩm đang được vận chuyển" : "Sản phẩm đã được tái chế",
-					Status = status
+					StatusDescription = statusEnum.ToString() == PackageStatus.DANG_VAN_CHUYEN.ToString() ? "Sản phẩm đang được vận chuyển" : "Sản phẩm đã được tái chế",
+					Status = statusEnum.ToString()
 				};
 				await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 			}

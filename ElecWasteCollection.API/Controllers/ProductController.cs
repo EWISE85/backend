@@ -12,6 +12,7 @@ namespace ElecWasteCollection.API.Controllers
 	{
 		private readonly IProductService _productService;
 		private readonly IShippingNotifierService _shippingNotifierService;
+		private const string NHAP_KHO = "Nhập kho";
 		public ProductController(IProductService productService, IShippingNotifierService shippingNotifierService)
 		{
 			_productService = productService;
@@ -36,7 +37,8 @@ namespace ElecWasteCollection.API.Controllers
 				Description = request.Description,
 				Point = request.Point
 			};
-			var result = await _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode,"Nhập kho", model);
+
+			var result = await _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode, NHAP_KHO, model);
 			 
 			if (!result) 
 			{

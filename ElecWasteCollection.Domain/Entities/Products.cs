@@ -1,11 +1,35 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
+	public enum ProductStatus
+	{
+		[Description("Chờ duyệt")]
+		CHO_DUYET,
+		[Description("Đã từ chối")]
+		DA_TU_CHOI,
+		[Description("Chờ phân kho")]
+		CHO_PHAN_KHO,
+		[Description("Chờ gom nhóm")]
+		CHO_GOM_NHOM,
+		[Description("Chờ thu gom")]
+		CHO_THU_GOM,
+		[Description("Đã thu gom")]
+		DA_THU_GOM,
+		[Description("Hủy bỏ")]
+		HUY_BO,
+		[Description("Nhập kho")]
+		NHAP_KHO,
+		[Description("Đã đóng thùng")]
+		DA_DONG_THUNG,
+		[Description("Tái chế")]
+		TAI_CHE
+	}
 	public class Products
 	{
 		public Guid ProductId { get; set; }

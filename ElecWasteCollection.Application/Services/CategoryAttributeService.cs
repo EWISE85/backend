@@ -31,7 +31,8 @@ namespace ElecWasteCollection.Application.Services
 			var result = listEntities.Select(ca => new CategoryAttributeModel
 			{
 				Id = ca.AttributeId,
-				Name = ca.Attribute?.Name ?? "Không tìm thấy tên"
+				Name = ca.Attribute?.Name ?? "Không tìm thấy tên",
+				MinValue = ca.MinValue
 			}).ToList();
 			return result;
 		}

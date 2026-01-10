@@ -4,6 +4,7 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Google.Apis.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -49,17 +50,16 @@ namespace ElecWasteCollection.Application.Services
 		{
 
 			if (createPostRequest.Product == null) throw new AppException("Product đang trống", 400);
-			if (createPostRequest.Product.Attributes == null || !createPostRequest.Product.Attributes.Any())
-				throw new AppException("Thuộc tính sản phẩm đang trống", 400);
+			if (createPostRequest.Product.Attributes == null || !createPostRequest.Product.Attributes.Any()) throw new AppException("Thuộc tính sản phẩm đang trống", 400);
 			DateTime transactionTimeUtc = DateTime.UtcNow;
 			try
 			{
 				var validationRules = await _unitOfWork.CategoryAttributes.GetsAsync(
 										x => x.CategoryId == createPostRequest.Product.SubCategoryId,
 										includeProperties: "Attribute");
-				string currentStatus = "Chờ Duyệt";
+				string currentStatus = PostStatus.CHO_DUYET.ToString();
 				string statusDescription = "Yêu cầu đã được gửi";
-				Guid newProductId = Guid.NewGuid(); // Dùng ID này cho tất cả các bảng liên quan
+				Guid newProductId = Guid.NewGuid();
 
 				var newProduct = new Products
 				{
@@ -130,14 +130,14 @@ namespace ElecWasteCollection.Application.Services
 
 					if (allImagesMatch)
 					{
-						currentStatus = "Đã Duyệt";
-						newProduct.Status = "Chờ phân kho";
+						currentStatus = PostStatus.DA_DUYET.ToString();
+						newProduct.Status = ProductStatus.CHO_PHAN_KHO.ToString();
 						statusDescription = "Yêu cầu được duyệt tự động";
 					}
 				}
 
 
-				if (newProduct.Status == "Chờ Duyệt")
+				if (newProduct.Status == ProductStatus.CHO_DUYET.ToString())
 				{
 					statusDescription = "Yêu cầu đã được gửi.";
 				}
@@ -249,10 +249,8 @@ namespace ElecWasteCollection.Application.Services
 		{
 			if (post == null) throw new AppException("Post không tồn tại", 404);
 			var senderName = post.Sender?.Name ?? "Không rõ";
-			if (post.Product == null)
-			{
-				throw new AppException("Product của Post không tồn tại", 404);
-			}
+			if (post.Product == null) throw new AppException("Product của Post không tồn tại", 404);
+			
 			string finalCategoryName = "Không rõ";
 			var directCategory = post.Product.Category;
 
@@ -278,7 +276,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				Id = post.PostId,
 				Category = finalCategoryName,
-				Status = post.Status,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
 				Date = post.Date,
 				Address = post.Address,
 				SenderName = senderName,
@@ -368,7 +366,7 @@ namespace ElecWasteCollection.Application.Services
 				Id = post.PostId,
 				ParentCategory = parentCategoryName,
 				SubCategory = categoryName,
-				Status = post.Status,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
 				RejectMessage = post.RejectMessage,
 				Date = post.Date,
 				Address = post.Address,
@@ -393,9 +391,9 @@ namespace ElecWasteCollection.Application.Services
 
 			foreach (var post in posts)
 			{
-				if (post.Status == "Đã Duyệt") continue;
+				if (post.Status == PostStatus.DA_DUYET.ToString()) continue;
 
-				post.Status = "Đã Duyệt";
+				post.Status = PostStatus.DA_DUYET.ToString();
 				_unitOfWork.Posts.Update(post);
 
 				if (post.ProductId != Guid.Empty && post.ProductId != null)
@@ -404,14 +402,14 @@ namespace ElecWasteCollection.Application.Services
 
 					if (product != null)
 					{
-						product.Status = "Chờ phân kho";
+						product.Status = ProductStatus.CHO_PHAN_KHO.ToString();
 						_unitOfWork.Products.Update(product);
 
 						var history = new ProductStatusHistory
 						{
 							ProductId = post.ProductId, 
 							ChangedAt = DateTime.UtcNow,
-							Status = "Chờ phân kho",
+							Status = ProductStatus.CHO_PHAN_KHO.ToString(),
 							StatusDescription = "Yêu cầu được duyệt và chờ phân kho"
                         };
 
@@ -427,23 +425,19 @@ namespace ElecWasteCollection.Application.Services
 		public async Task<bool> RejectPost(List<Guid> postIds, string rejectMessage)
 		{
 			var checkBadWord = await _profanityChecker.ContainsProfanityAsync(rejectMessage);
-			if (checkBadWord)
-			{
-				throw new AppException("Lý do từ chối chứa từ ngữ không phù hợp.", 400);
-			}
+			if (checkBadWord) throw new AppException("Lý do từ chối chứa từ ngữ không phù hợp.", 400);
+			
 
 			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId));
 
-			if (posts == null || !posts.Any())
-			{
-				throw new AppException("Không tìm thấy bài viết nào hợp lệ.", 404);
-			}
+			if (posts == null || !posts.Any()) throw new AppException("Không tìm thấy bài viết nào hợp lệ.", 404);
+			
 
 			foreach (var post in posts)
 			{
-				if (post.Status == "Đã Từ Chối") continue;
+				if (post.Status == PostStatus.DA_TU_CHOI.ToString()) continue;
 
-				post.Status = "Đã Từ Chối";
+				post.Status = PostStatus.DA_TU_CHOI.ToString();
 				post.RejectMessage = rejectMessage;
 				_unitOfWork.Posts.Update(post);
 
@@ -453,14 +447,14 @@ namespace ElecWasteCollection.Application.Services
 
 					if (product != null)
 					{
-						product.Status = "Đã Từ Chối";
+						product.Status = ProductStatus.DA_TU_CHOI.ToString();
 						_unitOfWork.Products.Update(product);
 
 						var history = new ProductStatusHistory
 						{
 							ProductId = post.ProductId,
 							ChangedAt = DateTime.UtcNow,
-							Status = "Đã Từ Chối",
+							Status = ProductStatus.DA_TU_CHOI.ToString(),
 							StatusDescription = $"Bài đăng bị từ chối. Lý do: {rejectMessage}"
 						};
 						await _unitOfWork.ProductStatusHistory.AddAsync(history);
@@ -468,7 +462,6 @@ namespace ElecWasteCollection.Application.Services
 				}
 			}
 
-			// 4. Lưu tất cả thay đổi xuống DB cùng lúc
 			await _unitOfWork.SaveAsync();
 
 			return true;
@@ -476,8 +469,17 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model)
 		{
+			if (model == null)
+			{
+				throw new AppException("Invalid search model.", 400);
+			}
+			string? statusEnum = null;
+			if (model.Status != null)
+			{
+				statusEnum = StatusEnumHelper.GetValueFromDescription<PostStatus>(model.Status).ToString();
+			}
 			var (posts, totalItems) = await _postRepository.GetPagedPostsAsync(
-				status: model.Status,
+				status: statusEnum,
 				search: model.Search,
 				order: model.Order,
 				page: model.Page,

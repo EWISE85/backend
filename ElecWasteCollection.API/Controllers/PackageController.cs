@@ -11,6 +11,9 @@ namespace ElecWasteCollection.API.Controllers
 	public class PackageController : ControllerBase
 	{
 		private readonly IPackageService _packageService;
+		private const string DANG_VAN_CHUYEN = "Đang vận chuyển";
+		private const string TAI_CHE = "Tái chế";
+		private const string DA_DONG_THUNG = "Đã đóng thùng";
 		public PackageController(IPackageService packageService)
 		{
 			_packageService = packageService;
@@ -77,7 +80,7 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPut("{packageId}/status")]
 		public async Task<IActionResult> SealedPackageStatus([FromRoute] string packageId)
 		{
-			var result = await _packageService.UpdatePackageStatus(packageId, "Đã đóng thùng");
+			var result = await _packageService.UpdatePackageStatus(packageId, DA_DONG_THUNG);
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");
@@ -116,7 +119,7 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPut("{packageId}/delivery")]
 		public async Task<IActionResult> UpdatePackageStatusToDelivering([FromRoute] string packageId)
 		{
-			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, "Đang vận chuyển");
+			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, DANG_VAN_CHUYEN);
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");
@@ -126,7 +129,7 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPut("{packageId}/recycler")]
 		public async Task<IActionResult> UpdatePackageStatusToRecycled([FromRoute] string packageId)
 		{
-			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, "Tái chế");
+			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, TAI_CHE);
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");

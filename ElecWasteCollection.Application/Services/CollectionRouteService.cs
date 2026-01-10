@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -31,19 +32,19 @@ namespace ElecWasteCollection.Application.Services
 
 			if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
 
-			route.Status = "Hủy bỏ";
+			route.Status = CollectionRouteStatus.HUY_BO.ToString();
 			route.RejectMessage = rejectMessage;
 
 			if (route.Product != null)
 			{
-				route.Product.Status = "Hủy bỏ";
+				route.Product.Status = ProductStatus.HUY_BO.ToString();
 
 				var history = new ProductStatusHistory
 				{
 					ProductStatusHistoryId = Guid.NewGuid(), 
 					ProductId = route.Product.ProductId,
 					ChangedAt = DateTime.UtcNow, 
-					Status = "Hủy bỏ",
+					Status = ProductStatus.HUY_BO.ToString(),
 					StatusDescription = $"Hủy thu gom: {rejectMessage}"
 				};
 
@@ -67,14 +68,14 @@ namespace ElecWasteCollection.Application.Services
 			if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
 
 
-			route.Status = "Hoàn thành";
+			route.Status = CollectionRouteStatus.HOAN_THANH.ToString();
 			route.ConfirmImages = confirmImages;
 			route.Actual_Time = TimeOnly.FromDateTime(DateTime.UtcNow);
 
 			if (route.Product != null)
 			{
 				route.Product.QRCode = QRCode;
-				route.Product.Status = "Đã thu gom";
+				route.Product.Status = ProductStatus.DA_THU_GOM.ToString();
 				var checkExistQrCode = await _unitOfWork.Products.GetAsync(p => p.QRCode == QRCode && p.ProductId != route.Product.ProductId);
 				if (checkExistQrCode != null)
 				{
@@ -86,7 +87,7 @@ namespace ElecWasteCollection.Application.Services
 					ProductId = route.Product.ProductId,
 					ChangedAt = DateTime.UtcNow, 
 					StatusDescription = "Sản phẩm đã được thu gom thành công",
-					Status = "Đã thu gom"
+					Status = ProductStatus.DA_THU_GOM.ToString()
 				};
 
 				await _unitOfWork.ProductStatusHistory.AddAsync(history);
@@ -106,7 +107,6 @@ namespace ElecWasteCollection.Application.Services
 
 			foreach (var r in routes)
 			{
-				// Await từng cái một -> Tránh lỗi "A second operation..."
 				var model = await BuildCollectionRouteModel(r);
 
 				if (model != null)
@@ -125,12 +125,10 @@ namespace ElecWasteCollection.Application.Services
 				collectionPointId: collectionPointId
 			);
 
-			// SỬA: Dùng vòng lặp foreach để chạy tuần tự và lấy kết quả thực
 			var results = new List<CollectionRouteModel>();
 
 			foreach (var r in routes)
 			{
-				// Await từng cái một -> Tránh lỗi "A second operation..."
 				var model = await BuildCollectionRouteModel(r);
 
 				if (model != null)
@@ -168,7 +166,6 @@ namespace ElecWasteCollection.Application.Services
 
 			foreach (var r in routes)
 			{
-				// Await từng cái một -> Tránh lỗi "A second operation..."
 				var model = await BuildCollectionRouteModel(r);
 
 				if (model != null)
@@ -279,8 +276,6 @@ namespace ElecWasteCollection.Application.Services
 				productImages = product.ProductImages.Select(x => x.ImageUrl).ToList();
 			}
 
-			// 4. Xử lý địa chỉ
-			// Nếu tìm thấy Post thì lấy Address của Post, nếu không thì báo N/A
 			string address = relatedPost?.Address ?? "Không tìm thấy địa chỉ";
 			var userAddress = await _userAddressRepository.GetAsync(ua => ua.UserId == senderUser.UserId && ua.Address == address); 
 			//if (userAddress == null)
@@ -292,55 +287,49 @@ namespace ElecWasteCollection.Application.Services
 			{
 				CollectionRouteId = route.CollectionRouteId,
 
-				// Post Info (Lấy từ Post tìm được)
 				PostId = relatedPost?.PostId ?? Guid.Empty,
 
-				// Product Info
 				ProductId = route.ProductId,
 				BrandName = product?.Brand?.Name ?? "Không rõ",
 				SubCategoryName = product?.Category?.Name ?? "Không rõ",
 				PickUpItemImages = productImages,
 
-				// Address & Geo
 				Address = address,
 				Iat = userAddress?.Iat ?? 0,
 				Ing = userAddress?.Ing ?? 0,
 
-				// People
 				Sender = senderModel,
 				Collector = collectorModel,
 
-				// Route Detail
 				CollectionDate = route.CollectionDate,
 				EstimatedTime = route.EstimatedTime,
 				Actual_Time = route.Actual_Time,
-				Status = route.Status,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CollectionRouteStatus>(route.Status),
 				DistanceKm = route.DistanceKm,
 				LicensePlate = vehicle?.Plate_Number ?? "Chưa gán xe",
 
-				// Confirm Images (Xử lý null)
 				ConfirmImages = route.ConfirmImages ?? new List<string>()
 			};
 		}
 		public async Task<PagedResultModel<CollectionRouteModel>> GetPagedRoutes(RouteSearchQueryModel parameters)
 		{
-			// 1. Chuẩn bị tham số phân trang
 			int page = parameters.Page <= 0 ? 1 : parameters.Page;
 			int limit = parameters.Limit <= 0 ? 10 : parameters.Limit;
 
-			// 2. Chuyển đổi PickUpDate từ DateTime? sang DateOnly? (nếu Model truyền vào là DateTime)
 			DateOnly? dateParam = null;
 			if (parameters.PickUpDate.HasValue)
 			{
 				dateParam =parameters.PickUpDate.Value;
 			}
-
-			// 3. Gọi Repository
-			// (Lưu ý: Repo nhận collectionPointId là string, DateOnly?, status, page, limit)
+			string? statusEnum = null;
+			if (!string.IsNullOrEmpty(parameters.Status))
+			{
+				statusEnum = StatusEnumHelper.GetValueFromDescription<CollectionRouteStatus>(parameters.Status).ToString();
+			}
 			var (routes, totalItems) = await _collectionRouteRepository.GetPagedRoutesAsync(
-				collectionPointId: parameters.CollectionPointId, // Giả sử model truyền string
+				collectionPointId: parameters.CollectionPointId,
 				pickUpDate: dateParam,
-				status: parameters.Status,
+				status: statusEnum,
 				page: page,
 				limit: limit
 			);

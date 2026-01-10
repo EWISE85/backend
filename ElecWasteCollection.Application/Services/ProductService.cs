@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -60,7 +61,7 @@ namespace ElecWasteCollection.Application.Services
 				CreateAt = DateOnly.FromDateTime(DateTime.UtcNow),
 				SmallCollectionPointId = createProductRequest.SmallCollectionPointId,
 				isChecked = false,
-				Status = "Nhập kho"
+				Status = ProductStatus.NHAP_KHO.ToString()
 			};
 			await _unitOfWork.Products.AddAsync(newProduct);
 
@@ -106,7 +107,7 @@ namespace ElecWasteCollection.Application.Services
 				CategoryName = category?.Name,
 				QrCode = product.QRCode,
 				IsChecked = product.isChecked,
-				Status = product.Status
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status)
 			};
 		}
 
@@ -137,7 +138,7 @@ namespace ElecWasteCollection.Application.Services
 				CategoryName = product.Category?.Name ?? "N/A",
 				ProductImages = imageUrls,
 				QrCode = product.QRCode,
-				Status = product.Status,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				EstimatePoint = post?.EstimatePoint,
 				RealPoint = product.PointTransactions?.FirstOrDefault()?.Point,
 			};
@@ -154,14 +155,12 @@ namespace ElecWasteCollection.Application.Services
 
 			var resultList = new List<ProductDetailModel>();
 
-			// 2. Dùng FOREACH để chạy tuần tự (Thay vì Select + Task.WhenAll)
 			foreach (var p in products)
 			{
 				List<ProductValueDetailModel> attributesList = new List<ProductValueDetailModel>();
 
 				if (p.ProductValues != null)
 				{
-					// Inner Loop: Cũng chạy tuần tự luôn để an toàn
 					foreach (var pv in p.ProductValues)
 					{
 						ProductValueDetailModel detail;
@@ -177,7 +176,6 @@ namespace ElecWasteCollection.Application.Services
 					}
 				}
 
-				// 3. Map sang Model
 				var model = new ProductDetailModel
 				{
 					ProductId = p.ProductId,
@@ -187,9 +185,9 @@ namespace ElecWasteCollection.Application.Services
 					CategoryId = p.CategoryId,
 					CategoryName = p.Category?.Name,
 					QrCode = p.QRCode,
-					Attributes = attributesList, // List đã được fill đầy đủ
+					Attributes = attributesList, 
 					IsChecked = p.isChecked,
-					Status = p.Status
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(p.Status)
 				};
 
 				resultList.Add(model);
@@ -200,18 +198,16 @@ namespace ElecWasteCollection.Application.Services
 
 		private ProductValueDetailModel MapProductValueDetail(ProductValues pv, AttributeOptions? option)
 		{
-			// Lưu ý: pv.Attribute đã được Include từ Repository
 			return new ProductValueDetailModel
 			{
 				AttributeId = pv.AttributeId.Value,
 				AttributeName = pv.Attribute?.Name,
 				OptionId = pv.AttributeOptionId,
 				Value = pv.Value.ToString(),
-				OptionName = option?.OptionName, // Lấy từ kết quả query Option
+				OptionName = option?.OptionName, 
 			};
 		}
 
-		// Trong CollectionService hoặc ProductService
 		public async Task<List<ProductComeWarehouseDetailModel>> ProductsComeWarehouseByDateAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId)
 		{
 			var productsFromRoutesTask = await _productRepository.GetProductsCollectedByRouteAsync(fromDate, toDate, smallCollectionPointId);
@@ -236,7 +232,6 @@ namespace ElecWasteCollection.Application.Services
 
 
 
-		// Hàm Mapping (đã hoàn chỉnh)
 
 		private ProductComeWarehouseDetailModel MapToDetailModel(Products product, Post? post)
 		{
@@ -259,7 +254,7 @@ namespace ElecWasteCollection.Application.Services
 				CategoryName = product.Category?.Name ?? "N/A",
 				ProductImages = imageUrls,
 				QrCode = product.QRCode,
-				Status = product.Status,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				EstimatePoint = post?.EstimatePoint,
 				RealPoint = realPoint,
 			};
@@ -296,7 +291,8 @@ namespace ElecWasteCollection.Application.Services
 				Point = model.Point,
 				Desciption = description,
 			};
-			product.Status = status;
+			var statusEnum = StatusEnumHelper.GetValueFromDescription<ProductStatus>(status);
+			product.Status = statusEnum.ToString();
 			_unitOfWork.Products.Update(product);
 			var newHistory = new ProductStatusHistory
 			{
@@ -304,7 +300,7 @@ namespace ElecWasteCollection.Application.Services
 				ProductId = product.ProductId,
 				ChangedAt = DateTime.UtcNow,
 				StatusDescription = "Sản phẩm đã về đến kho",
-				Status = status
+				Status = statusEnum.ToString()
 			};
 			await _unitOfWork.ProductStatusHistory.AddAsync(newHistory); 
 			await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction,false);
@@ -334,16 +330,13 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId)
 		{
-			// 1. Gọi Repository (Lấy Product kèm TẤT CẢ chi tiết trong 1-2 truy vấn SQL)
 			var product = await _productRepository.GetProductDetailWithAllRelationsAsync(productId);
 			if (product == null) return null;
 
-			// 2. Tìm Post liên quan (Post đầu tiên/chính)
-			// Post và Sender đã được Include
+
 			var post = product.Posts?.FirstOrDefault();
 			if (post == null) return null;
 
-			// 3. Xử lý Attributes (Sử dụng Task.WhenAll để gọi các Repository lẻ tẻ song song)
 			List<ProductValueDetailModel> productAttributes = new List<ProductValueDetailModel>();
 			if (product.ProductValues != null)
 			{
@@ -352,7 +345,6 @@ namespace ElecWasteCollection.Application.Services
 					ProductValueDetailModel detail;
 					if (pv.AttributeOptionId.HasValue)
 					{
-						// Await ngay tại đây để xong cái này mới làm cái kia
 						detail = await MapProductValueDetailWithOptionAsync(pv);
 					}
 					else
@@ -363,7 +355,6 @@ namespace ElecWasteCollection.Application.Services
 				}
 			}
 
-			// 4. Xử lý Schedule (Deserialization)
 			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 			List<DailyTimeSlots> schedule = new List<DailyTimeSlots>();
 			if (!string.IsNullOrEmpty(post.ScheduleJson))
@@ -372,14 +363,12 @@ namespace ElecWasteCollection.Application.Services
 				catch (JsonException) { schedule = new List<DailyTimeSlots>(); }
 			}
 
-			// 5. Lấy dữ liệu Route, Collector và RealPoint (Đã được Include)
 			var route = product.CollectionRoutes?.FirstOrDefault();
 			var shifts = route?.CollectionGroup?.Shifts;
 			var sender = post.Sender;
 			var collector = shifts?.Collector;
 			var realPoint = product.PointTransactions?.FirstOrDefault()?.Point;
 
-			// 6. Mapping và trả về (Sử dụng dữ liệu đã được Include)
 			var userResponse = new UserResponse
 			{
 				UserId = sender?.UserId ?? Guid.Empty,
@@ -395,24 +384,26 @@ namespace ElecWasteCollection.Application.Services
 			{
 				ProductId = product.ProductId,
 				CategoryId = product.CategoryId,
-				CategoryName = product.Category?.Name ?? "Không rõ", // Đã Include
+				CategoryName = product.Category?.Name ?? "Không rõ",
 				BrandId = product.BrandId,
-				BrandName = product.Brand?.Name ?? "Không rõ", // Đã Include
+				BrandName = product.Brand?.Name ?? "Không rõ", 
 				Description = product.Description,
-				ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(), // Đã Include
-				Status = product.Status,
+				ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				EstimatePoint = post.EstimatePoint,
 				Sender = userResponse,
 				Address = post.Address,
 				Schedule = schedule,
-				Attributes = productAttributes, // Kết quả đã được await
+				Attributes = productAttributes, 
 				RejectMessage = post.RejectMessage,
 				QRCode = product.QRCode,
 				IsChecked = product.isChecked,
 				RealPoints = realPoint,
 
-				// === Dữ liệu từ Route/Shift ===
-				Collector = collector != null ? new CollectorResponse { CollectorId = collector.UserId, Name = collector.Name /*...*/ } : null,
+				Collector = collector != null ? new CollectorResponse { 
+					CollectorId = collector.UserId,
+					Name = collector.Name 
+				} : null,
 				PickUpDate = route?.CollectionDate,
 				EstimatedTime = route?.EstimatedTime,
 				CollectionRouterId = route?.CollectionRouteId
@@ -461,7 +452,6 @@ namespace ElecWasteCollection.Application.Services
 		public async Task<PagedResultModel<ProductDetail>> AdminGetProductsAsync(AdminFilterProductModel model)
 		{
 
-			// Gọi Repository với các tham số đã tách
 			var (productsPaged, totalRecords) = await _productRepository.GetPagedProductsForAdminAsync(
 				page: model.Page,
 				limit: model.Limit,
@@ -480,7 +470,6 @@ namespace ElecWasteCollection.Application.Services
 				var sender = post?.Sender;
 				var collector = shifts?.Collector;
 
-				// Lấy địa chỉ liên quan (Đã Include qua Sender)
 				var userAddress = sender?.UserAddresses?.FirstOrDefault(ua => ua.Address == post?.Address);
 
 				var realPoint = product.PointTransactions?.FirstOrDefault()?.Point;
@@ -496,7 +485,6 @@ namespace ElecWasteCollection.Application.Services
 					SmallCollectionPointId = sender?.SmallCollectionPointId
 				};
 
-				// Map ProductDetail
 				return new ProductDetail
 				{
 					ProductId = product.ProductId,
@@ -508,16 +496,14 @@ namespace ElecWasteCollection.Application.Services
 					IsChecked = product.isChecked,
 					RealPoints = realPoint,
 
-					// Dữ liệu từ Include
 					CategoryName = product.Category?.Name ?? "Không rõ",
 					Description = product.Description,
 					BrandName = product.Brand?.Name ?? "Không rõ",
 					ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
-					Status = product.Status,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 					Sender = userResponse,
 					Address = userAddress?.Address ?? post?.Address ?? "N/A",
 
-					// Dữ liệu từ Route/Shift
 					Collector = collector != null ? new CollectorResponse { CollectorId = collector.UserId, Name = collector.Name } : null,
 					PickUpDate = route?.CollectionDate,
 					EstimatedTime = route?.EstimatedTime,
@@ -526,8 +512,30 @@ namespace ElecWasteCollection.Application.Services
 			.Where(pd => pd != null) 
 			.ToList();
 
-			// 3. Trả về kết quả phân trang
 			return new PagedResultModel<ProductDetail>(productDetails, model.Page, model.Limit, totalRecords);
+		}
+
+		public async Task<bool> RejectProduct(Guid productId, string rejectMessage)
+		{
+			var product = await _productRepository.GetAsync(p => p.ProductId == productId);
+			if (product == null) throw new AppException("Không tìm thấy sản phẩm với Id đã cho", 404);
+			var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == productId);
+			if (post == null) throw new AppException("Không tìm thấy bài đăng liên quan đến sản phẩm", 404);
+			post.RejectMessage = rejectMessage;
+			post.Status = PostStatus.DA_TU_CHOI.ToString();
+			product.Status = ProductStatus.DA_DONG_THUNG.ToString();
+			var newHistory = new ProductStatusHistory
+			{
+				ProductStatusHistoryId = Guid.NewGuid(),
+				ProductId = product.ProductId,
+				ChangedAt = DateTime.UtcNow,
+				StatusDescription = "Sản phẩm đã bị từ chối: " + rejectMessage,
+				Status = ProductStatus.DA_DONG_THUNG.ToString()
+			};
+			_unitOfWork.Posts.Update(post);
+			_unitOfWork.Products.Update(product);
+			await _unitOfWork.SaveAsync();
+			return true;
 		}
 	}
 }

@@ -1,11 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
+	public enum PostStatus
+	{
+		[Description("Chờ duyệt")]
+		CHO_DUYET,
+		[Description("Đã duyệt")]
+		DA_DUYET,
+		[Description("Đã từ chối")]
+		DA_TU_CHOI
+	}
 	public class Post
 	{
 		public Guid PostId { get; set; }

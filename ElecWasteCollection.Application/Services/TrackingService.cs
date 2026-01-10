@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.Helper;
+using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
@@ -51,7 +52,7 @@ namespace ElecWasteCollection.Application.Services
 
 				return new CollectionTimelineModel
 				{
-					Status = h.Status,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(h.Status).ToString(),
 					Description = h.StatusDescription,
 					Date = vnTime.ToString("dd/MM/yyyy"), 
 					Time = vnTime.ToString("HH:mm")       
