@@ -25,7 +25,12 @@ namespace ElecWasteCollection.API.Controllers
 		public async Task<IActionResult> GetRoutesByCollectorId([FromRoute] DateOnly pickUpDate, [FromRoute] Guid id)
 		{
 			var routes = await _collectionRouteService.GetRoutesByCollectorId(pickUpDate, id);
-			return Ok(routes);
+			return Ok(new
+			{
+				data = routes,
+				serverTime = DateTime.Now,
+				serverDate = DateOnly.FromDateTime(DateTime.Now)
+			});
 		}
 		[HttpGet("collection-point/date/filter")]
 		public async Task<IActionResult> GetRoutesByCollectionPointId([FromQuery] RouteSearchQueryRequest searchQueryRequest)
