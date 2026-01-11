@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.API.DTOs.Request;
+﻿using ElecWasteCollection.API.DTOs;
+using ElecWasteCollection.API.DTOs.Request;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using Microsoft.AspNetCore.Http;
@@ -39,15 +40,15 @@ namespace ElecWasteCollection.API.Controllers
 			};
 
 			var result = await _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode, NHAP_KHO, model);
-			 
-			if (!result) 
+
+			if (!result)
 			{
 				return BadRequest("Failed to update product status.");
 			}
 			return Ok(new { message = "Product status updated successfully." });
 		}
 		[HttpGet("from-date-to-date")]
-		public async Task<IActionResult> GetProductsComingToWarehouse([FromQuery] DateOnly fromDate, [FromQuery] DateOnly toDate, [FromQuery] string smallCollectionPointId )
+		public async Task<IActionResult> GetProductsComingToWarehouse([FromQuery] DateOnly fromDate, [FromQuery] DateOnly toDate, [FromQuery] string smallCollectionPointId)
 		{
 			var products = await _productService.ProductsComeWarehouseByDateAsync(fromDate, toDate, smallCollectionPointId);
 			return Ok(products);
@@ -138,6 +139,17 @@ namespace ElecWasteCollection.API.Controllers
 			};
 			var result = await _productService.AdminGetProductsAsync(model);
 			return Ok(result);
+		}
+		[HttpPut("cancel/{productId}")]
+		public async Task<IActionResult> CancelProduct([FromRoute] Guid productId,[FromBody] CancelProductRequest request)
+		{
+			var result = await _productService.RejectProduct(productId, request.Reason);
+			if (!result)
+			{
+				return BadRequest("Failed to cancel product.");
+			}
+			return Ok(new { message = "Product cancelled successfully." });
+
 		}
 	}
 }

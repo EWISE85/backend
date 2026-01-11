@@ -14,7 +14,9 @@ namespace ElecWasteCollection.Domain.Entities
 		[Description("Đã duyệt")]
 		DA_DUYET,
 		[Description("Đã từ chối")]
-		DA_TU_CHOI
+		DA_TU_CHOI,
+		[Description("Đã hủy")]
+		DA_HUY
 	}
 	public class Post
 	{

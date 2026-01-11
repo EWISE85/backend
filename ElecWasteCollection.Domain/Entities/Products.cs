@@ -11,6 +11,8 @@ namespace ElecWasteCollection.Domain.Entities
 	{
 		[Description("Chờ duyệt")]
 		CHO_DUYET,
+		[Description("Đã hủy")]
+		DA_HUY,
 		[Description("Đã từ chối")]
 		DA_TU_CHOI,
 		[Description("Chờ phân kho")]
