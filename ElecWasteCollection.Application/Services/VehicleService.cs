@@ -4,12 +4,6 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
-using System;
-using System.CodeDom;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -33,8 +27,9 @@ namespace ElecWasteCollection.Application.Services
 				existingVehicle.Plate_Number = vehicle.Plate_Number;
 				existingVehicle.Vehicle_Type = vehicle.Vehicle_Type;
 				existingVehicle.Capacity_Kg = vehicle.Capacity_Kg;
-				existingVehicle.Capacity_M3 = vehicle.Capacity_M3;
-				existingVehicle.Status = vehicle.Status;
+                existingVehicle.Length_M = vehicle.Length_M;
+                existingVehicle.Width_M = vehicle.Width_M;
+                existingVehicle.Height_M = vehicle.Height_M; existingVehicle.Status = vehicle.Status;
 				existingVehicle.Small_Collection_Point = vehicle.Small_Collection_Point;
 				 _unitOfWork.Vehicles.Update(existingVehicle);
 			}
@@ -46,8 +41,10 @@ namespace ElecWasteCollection.Application.Services
 					Plate_Number = vehicle.Plate_Number,
 					Vehicle_Type = vehicle.Vehicle_Type,
 					Capacity_Kg = vehicle.Capacity_Kg,
-					Capacity_M3 = vehicle.Capacity_M3,
-					Status = vehicle.Status,
+                    Length_M = vehicle.Length_M,
+                    Width_M = vehicle.Width_M,
+                    Height_M = vehicle.Height_M,
+                    Status = vehicle.Status,
 					Small_Collection_Point = vehicle.Small_Collection_Point
 				};
 				await _unitOfWork.Vehicles.AddAsync(newVehicle);
@@ -71,7 +68,9 @@ namespace ElecWasteCollection.Application.Services
 				PlateNumber = vehicle.Plate_Number,
 				VehicleType = vehicle.Vehicle_Type,
 				CapacityKg = vehicle.Capacity_Kg,
-				CapacityM3 = vehicle.Capacity_M3,
+                LengthM = vehicle.Length_M,
+                WidthM = vehicle.Width_M,
+                HeightM = vehicle.Height_M,
                 Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VehicleStatus>(vehicle.Status),
                 SmallCollectionPointId = vehicle.Small_Collection_Point,
 				SmallCollectionPointName = smallCollectionPoint?.Name ?? "Chưa gán điểm thu gom"
@@ -120,7 +119,9 @@ namespace ElecWasteCollection.Application.Services
 					PlateNumber = v.Plate_Number,
 					VehicleType = v.Vehicle_Type,
 					CapacityKg = v.Capacity_Kg,
-					CapacityM3 = v.Capacity_M3,
+                    LengthM = v.Length_M,
+                    WidthM = v.Width_M,
+                    HeightM = v.Height_M,
                     Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VehicleStatus>(v.Status),
                     SmallCollectionPointId = v.Small_Collection_Point,
 					SmallCollectionPointName = scpName

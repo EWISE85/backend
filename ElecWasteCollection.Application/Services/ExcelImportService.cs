@@ -93,10 +93,16 @@ namespace ElecWasteCollection.Application.Services
 				var vehicleType = worksheet.Cell(row, 4).Value.ToString()?.Trim();
 				var capacityKgStr = worksheet.Cell(row, 5).Value.ToString();
 				int.TryParse(capacityKgStr, out int capacityKg);
-				var capacityM3Str = worksheet.Cell(row, 6).Value.ToString();
-				int.TryParse(capacityM3Str, out int capacityM3);
-				var smallCollectionPointId = worksheet.Cell(row, 7).Value.ToString()?.Trim();
-				var rawStatus = worksheet.Cell(row, 8).Value.ToString();
+                //var capacityM3Str = worksheet.Cell(row, 6).Value.ToString();
+                //int.TryParse(capacityM3Str, out int capacityM3);
+                var lengthStr = worksheet.Cell(row, 6).Value.ToString();
+                double.TryParse(lengthStr, out double lengthM);
+                var widthStr = worksheet.Cell(row, 7).Value.ToString();
+                double.TryParse(widthStr, out double widthM);
+                var heightStr = worksheet.Cell(row, 8).Value.ToString();
+                double.TryParse(heightStr, out double heightM);
+                var smallCollectionPointId = worksheet.Cell(row, 9).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 10).Value.ToString();
 
 				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(plateNumber) || string.IsNullOrEmpty(smallCollectionPointId))
 				{
@@ -123,8 +129,10 @@ namespace ElecWasteCollection.Application.Services
 					Plate_Number = plateNumber,
 					Vehicle_Type = vehicleType,
 					Capacity_Kg = capacityKg,
-					Capacity_M3 = capacityM3,
-					Small_Collection_Point = smallCollectionPointId,
+                    Length_M = lengthM,
+                    Width_M = widthM,
+                    Height_M = heightM,
+                    Small_Collection_Point = smallCollectionPointId,
 					Status = statusToSave
 				};
 

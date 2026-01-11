@@ -12,9 +12,12 @@ namespace ElecWasteCollection.Application.Model
 		public string PlateNumber { get; set; } = null!;
 		public string VehicleType { get; set; } = null!;
 		public int CapacityKg { get; set; }
-		public int CapacityM3 { get; set; }
-		public int RadiusKm { get; set; }
-		public string Status { get; set; } = null!;
+        //public int CapacityM3 { get; set; }
+        //public int RadiusKm { get; set; }
+        public double LengthM { get; set; }
+        public double WidthM { get; set; }
+        public double HeightM { get; set; }
+        public string Status { get; set; } = null!;
 		public string SmallCollectionPointId { get; set; }
 
 		public string SmallCollectionPointName{ get; set; }
