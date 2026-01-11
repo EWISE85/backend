@@ -515,22 +515,22 @@ namespace ElecWasteCollection.Application.Services
 			return new PagedResultModel<ProductDetail>(productDetails, model.Page, model.Limit, totalRecords);
 		}
 
-		public async Task<bool> RejectProduct(Guid productId, string rejectMessage)
+		public async Task<bool> CancelProduct(Guid productId, string rejectMessage)
 		{
 			var product = await _productRepository.GetAsync(p => p.ProductId == productId);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với Id đã cho", 404);
 			var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == productId);
 			if (post == null) throw new AppException("Không tìm thấy bài đăng liên quan đến sản phẩm", 404);
 			post.RejectMessage = rejectMessage;
-			post.Status = PostStatus.DA_TU_CHOI.ToString();
-			product.Status = ProductStatus.DA_DONG_THUNG.ToString();
+			post.Status = PostStatus.DA_HUY.ToString();
+			product.Status = ProductStatus.DA_HUY.ToString();
 			var newHistory = new ProductStatusHistory
 			{
 				ProductStatusHistoryId = Guid.NewGuid(),
 				ProductId = product.ProductId,
 				ChangedAt = DateTime.UtcNow,
-				StatusDescription = "Sản phẩm đã bị từ chối: " + rejectMessage,
-				Status = ProductStatus.DA_DONG_THUNG.ToString()
+				StatusDescription = "Sản phẩm đã hủy: " + rejectMessage,
+				Status = ProductStatus.DA_HUY.ToString()
 			};
 			_unitOfWork.Posts.Update(post);
 			_unitOfWork.Products.Update(product);
