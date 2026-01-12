@@ -162,7 +162,7 @@ namespace ElecWasteCollection.Application.Services
 				return new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
-					Status = pkg.Status,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
 					Products = productDetails
 				};
