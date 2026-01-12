@@ -72,7 +72,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				PackageId = package.PackageId,
 				SmallCollectionPointsId = package.SmallCollectionPointsId,
-				Status = package.Status,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(package.Status),
 				Products = productDetails
 			};
 
