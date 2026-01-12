@@ -2,6 +2,7 @@
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Http.Timeouts;
 
 namespace ElecWasteCollection.API.Controllers
 {
@@ -38,7 +39,9 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
+
         [HttpPost("products")]
+        [RequestTimeout(600000)]
         public async Task<IActionResult> AssignProducts([FromBody] AssignProductRequest request)
         {
             if (request == null) return BadRequest("Request cannot be null.");
@@ -48,7 +51,12 @@ namespace ElecWasteCollection.API.Controllers
             try
             {
                 var result = await _productAssignService.AssignProductsAsync(request.ProductIds, workDate);
-                return Ok(result);
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Đã chia sản phẩm hoàn tất.", 
+                    Data = result 
+                });
             }
             catch (Exception ex)
             {
