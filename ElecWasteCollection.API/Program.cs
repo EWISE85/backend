@@ -39,10 +39,10 @@ namespace ElecWasteCollection.API
 			// Add services to the container.
 			builder.Services.AddSignalR();
 			builder.Services.AddControllers()
-	.AddJsonOptions(options =>
-	{
-		options.JsonSerializerOptions.Converters.Add(new VietnamDateTimeJsonConverter());
-	});
+				.AddJsonOptions(options =>
+				{
+					options.JsonSerializerOptions.Converters.Add(new VietnamDateTimeJsonConverter());
+				});
 			// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 			builder.Services.AddEndpointsApiExplorer();
 			builder.Services.AddSwaggerGen(c =>
@@ -73,7 +73,8 @@ namespace ElecWasteCollection.API
 				});
 			});
 			builder.Services.AddDbContext<ElecWasteCollectionDbContext>(opt =>
-				opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+				opt.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"),
+                sqlOptions => sqlOptions.CommandTimeout(300)));
 			if (FirebaseApp.DefaultInstance == null)
 			{
 				FirebaseApp.Create(new AppOptions()
@@ -199,7 +200,8 @@ namespace ElecWasteCollection.API
 					IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
 				};
 			});
-			var app = builder.Build();
+            builder.Services.AddRequestTimeouts();
+            var app = builder.Build();
 
 
 
@@ -212,8 +214,8 @@ namespace ElecWasteCollection.API
 				app.UseSwagger();
 				app.UseSwaggerUI();
 			}
-
-			app.UseHttpsRedirection();
+            app.UseRequestTimeouts();
+            app.UseHttpsRedirection();
 			app.UseMiddleware<HandlingException>();
 			app.UseAuthentication();
 			app.UseAuthorization();
