@@ -53,19 +53,31 @@ namespace ElecWasteCollection.Application.Services
         }
         public async Task<PagedResult<PackageDetailModel>> GetPackagesByRecyclerFilterAsync(RecyclerPackageFilterModel query)
         {
-
             string includeProps = "SmallCollectionPoints,Products,Products.Brand,Products.Category";
 
-            string searchStatus = query.Status?.Trim().ToLower();
+            string? searchStatusEnum = null;
+
+            if (!string.IsNullOrEmpty(query.Status))
+            {
+
+                try
+                {
+                    var statusValue = StatusEnumHelper.GetValueFromDescription<PackageStatus>(query.Status);
+                    searchStatusEnum = statusValue.ToString();
+                }
+                catch
+                {
+                    searchStatusEnum = null;
+                }
+            }
 
             var allPackages = await _unitOfWork.Packages.GetAllAsync(
                 filter: p => p.SmallCollectionPoints.RecyclingCompanyId == query.RecyclingCompanyId &&
-                    (string.IsNullOrEmpty(searchStatus) || p.Status.ToLower().Contains(searchStatus)), 
+                     (string.IsNullOrEmpty(searchStatusEnum) || p.Status == searchStatusEnum),
                 includeProperties: includeProps
             );
 
             var totalCount = allPackages.Count();
-
             var pagedPackages = allPackages
                 .OrderByDescending(p => p.CreateAt)
                 .Skip((query.Page - 1) * query.Limit)
@@ -76,6 +88,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 PackageId = pkg.PackageId,
                 SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+
                 Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 
                 SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name ?? "Không xác định",
