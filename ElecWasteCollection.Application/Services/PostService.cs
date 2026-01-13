@@ -73,31 +73,34 @@ namespace ElecWasteCollection.Application.Services
 					Status = currentStatus
 				};
 
-				foreach (var attr in createPostRequest.Product.Attributes)
+				if (createPostRequest.Product.Attributes != null)
 				{
-					var rule = validationRules.FirstOrDefault(x => x.AttributeId == attr.AttributeId);
-					if (attr.OptionId == null && attr.Value.HasValue && rule != null)
+					foreach (var attr in createPostRequest.Product.Attributes)
 					{
-						if (rule.MinValue.HasValue && attr.Value.Value < rule.MinValue.Value)
+						var rule = validationRules.FirstOrDefault(x => x.AttributeId == attr.AttributeId);
+						if (attr.OptionId == null && attr.Value.HasValue && rule != null)
 						{
-							throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá nhỏ. Tối thiểu phải là {rule.MinValue} {rule.Unit}.", 400);
+							if (rule.MinValue.HasValue && attr.Value.Value < rule.MinValue.Value)
+							{
+								throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá nhỏ. Tối thiểu phải là {rule.MinValue} {rule.Unit}.", 400);
+							}
+							//if (rule.MaxValue.HasValue && attr.Value.Value > rule.MaxValue.Value)
+							//{
+							//	throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá lớn. Tối đa chỉ được {rule.MaxValue} {rule.Unit}.", 400);
+							//}
 						}
-						//if (rule.MaxValue.HasValue && attr.Value.Value > rule.MaxValue.Value)
-						//{
-						//	throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá lớn. Tối đa chỉ được {rule.MaxValue} {rule.Unit}.", 400);
-						//}
-					}
-					var newProductValue = new ProductValues
-					{
-						ProductValuesId = Guid.NewGuid(),
-						ProductId = newProductId,
-						AttributeId = attr.AttributeId,
-						AttributeOptionId = attr.OptionId,
-						Value = attr.Value
-					};
+						var newProductValue = new ProductValues
+						{
+							ProductValuesId = Guid.NewGuid(),
+							ProductId = newProductId,
+							AttributeId = attr.AttributeId,
+							AttributeOptionId = attr.OptionId,
+							Value = attr.Value
+						};
 
-					await _unitOfWork.ProductValues.AddAsync(newProductValue); 
-																   
+						await _unitOfWork.ProductValues.AddAsync(newProductValue);
+
+					}
 				}
 
 
