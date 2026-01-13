@@ -3,6 +3,7 @@ using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.Timeouts;
+using System.Security.Claims;
 
 namespace ElecWasteCollection.API.Controllers
 {
@@ -41,23 +42,28 @@ namespace ElecWasteCollection.API.Controllers
 
 
         [HttpPost("products")]
-        [RequestTimeout(600000)]
-        public async Task<IActionResult> AssignProducts([FromBody] AssignProductRequest request)
+        //[RequestTimeout(600000)]
+        public  IActionResult AssignProducts([FromBody] AssignProductRequest request)
         {
             if (request == null) return BadRequest("Request cannot be null.");
             if (request.ProductIds == null || !request.ProductIds.Any()) return BadRequest("ProductIds cannot be empty.");
             if (!DateOnly.TryParse(request.WorkDate, out var workDate)) return BadRequest("WorkDate không hợp lệ. Hãy nhập yyyy-MM-dd.");
+			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			if (string.IsNullOrEmpty(userId))
+			{
+				return Unauthorized("Không xác định được danh tính người dùng.");
+			}
 
-            try
+			try
             {
-                var result = await _productAssignService.AssignProductsAsync(request.ProductIds, workDate);
-                return Ok(new
-                {
-                    Success = true,
-                    Message = "Đã chia sản phẩm hoàn tất.", 
-                    Data = result 
-                });
-            }
+				_productAssignService.AssignProductsInBackground(request.ProductIds, workDate, userId);
+				return Accepted(new
+				{
+					Success = true,
+					Message = "Hệ thống đang xử lý phân bổ ngầm. Vui lòng đợi thông báo kết quả...",
+					IsProcessingInBackground = true
+				});
+			}
             catch (Exception ex)
             {
                 return BadRequest(new { Message = ex.Message });
