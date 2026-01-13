@@ -14,12 +14,14 @@ namespace ElecWasteCollection.API.Hubs
 
 		public async Task SendNotificationAsync(string userId, string title, string message, string type = "info", object? data = null)
 		{
-			await _hubContext.Clients.User(userId).SendAsync("ReceiveNotification", new
+			// SỬA: Đổi Clients.User thành Clients.Group
+			// Lúc này hệ thống sẽ tìm Group có tên trùng với userId để gửi
+			await _hubContext.Clients.Group(userId).SendAsync("ReceiveNotification", new
 			{
 				Title = title,
 				Message = message,
-				Type = type, 
-				Data = data,  
+				Type = type,
+				Data = data,
 				Timestamp = DateTime.UtcNow
 			});
 		}
