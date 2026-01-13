@@ -33,7 +33,7 @@ namespace ElecWasteCollection.Application.Services
 			var claims = new List<Claim>
 	{
         new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-        new Claim(JwtRegisteredClaimNames.Sub, user.UserId.ToString())
+		new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
 	};
 
 			if (!string.IsNullOrEmpty(user.Email))

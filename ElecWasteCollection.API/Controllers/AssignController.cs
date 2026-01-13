@@ -48,7 +48,7 @@ namespace ElecWasteCollection.API.Controllers
             if (request == null) return BadRequest("Request cannot be null.");
             if (request.ProductIds == null || !request.ProductIds.Any()) return BadRequest("ProductIds cannot be empty.");
             if (!DateOnly.TryParse(request.WorkDate, out var workDate)) return BadRequest("WorkDate không hợp lệ. Hãy nhập yyyy-MM-dd.");
-			var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 			if (string.IsNullOrEmpty(userId))
 			{
 				return Unauthorized("Không xác định được danh tính người dùng.");
