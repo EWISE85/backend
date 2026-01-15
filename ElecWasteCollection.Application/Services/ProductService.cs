@@ -55,6 +55,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				ProductId = Guid.NewGuid(),
 				CategoryId = createProductRequest.SubCategoryId,
+				UserId = createProductRequest.SenderId ?? Guid.Empty,
 				BrandId = createProductRequest.BrandId,
 				Description = createProductRequest.Description,
 				QRCode = createProductRequest.QrCode,
