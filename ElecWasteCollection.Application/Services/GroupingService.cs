@@ -29,16 +29,20 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request)
         {
+            // 1. Lấy thông tin Trạm
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
                 ?? throw new Exception($"Không tìm thấy trạm (ID: {request.CollectionPointId})");
 
+            // 2. Lấy danh sách xe khả dụng (Vehicle) -> Xác định năng lực TẢI TRỌNG
             var vehicles = await _unitOfWork.Vehicles.GetAllAsync(v =>
                 v.Small_Collection_Point == request.CollectionPointId &&
                 v.Status == VehicleStatus.DANG_HOAT_DONG.ToString());
 
             var availableVehicles = vehicles.OrderByDescending(v => v.Capacity_Kg).ToList();
-            if (!availableVehicles.Any()) throw new Exception($"Trạm '{point.Name}' hiện không có xe nào đang hoạt động.");
+            if (!availableVehicles.Any())
+                throw new Exception($"Trạm '{point.Name}' hiện không có xe nào đang hoạt động.");
 
+            // 3. Lấy đơn hàng (Posts)
             var rawPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.AssignedSmallPointId == request.CollectionPointId,
                 includeProperties: "Product"
@@ -55,8 +59,10 @@ namespace ElecWasteCollection.Application.Services
                 statusPosts = statusPosts.Where(p => request.ProductIds.Contains(p.ProductId)).ToList();
             }
 
-            if (!statusPosts.Any()) throw new Exception("Không có đơn hàng nào hợp lệ.");
+            if (!statusPosts.Any())
+                throw new Exception("Không có đơn hàng nào hợp lệ.");
 
+            // 4. Configs
             var pool = new List<dynamic>();
             var attIdMap = await GetAttributeIdMapAsync();
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
@@ -64,10 +70,7 @@ namespace ElecWasteCollection.Application.Services
             double serviceTimeMin = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, 5);
             double avgTravelTimeMin = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, 10);
 
-            // Ca làm việc tối đa (phút)
-            double maxShiftMinutes = 13 * 60;
-            TimeOnly shiftStartBase = new TimeOnly(7, 0);
-
+            // 5. Parse Data
             foreach (var p in statusPosts)
             {
                 if (TryParseScheduleInfo(p.ScheduleJson!, out var sch))
@@ -93,8 +96,24 @@ namespace ElecWasteCollection.Application.Services
                 }
             }
 
+            // 6. Lấy danh sách ngày cần xử lý
             var distinctDates = pool.SelectMany(x => (List<DateOnly>)x.Schedule.SpecificDates)
                 .Distinct().OrderBy(x => x).ToList();
+
+            // =========================================================================================
+            // [LOGIC QUAN TRỌNG] Lấy Shifts của nhân viên -> Xác định năng lực THỜI GIAN
+            // Điều kiện:
+            // 1. Ngày làm việc trùng với ngày có đơn.
+            // 2. Trạng thái CO_SAN (Sẵn sàng đi làm).
+            // 3. Nhân viên đó thuộc về Trạm hiện tại (SmallCollectionPointId).
+            // =========================================================================================
+            var shifts = await _unitOfWork.Shifts.GetAllAsync(
+                filter: s =>
+                    distinctDates.Contains(s.WorkDate) &&
+                    s.Status == ShiftStatus.CO_SAN.ToString() &&
+                    s.Collector.SmallCollectionPointId == request.CollectionPointId, // Check nhân viên thuộc trạm
+                includeProperties: "Collector" // Include để check được thuộc tính của Collector
+            );
 
             var res = new PreAssignResponse
             {
@@ -103,9 +122,34 @@ namespace ElecWasteCollection.Application.Services
                 Days = new List<PreAssignDay>()
             };
 
-
             foreach (var date in distinctDates)
             {
+                // 7.1 Xác định khung giờ làm việc (Operational Window) của ngày hôm đó
+                // Lấy đại diện một ca làm việc hợp lệ trong ngày. 
+                // (Giả sử các nhân viên trong trạm làm cùng khung giờ hoặc ta lấy khung giờ phổ biến nhất)
+                var dailyShift = shifts.FirstOrDefault(s => s.WorkDate == date);
+
+                if (dailyShift == null)
+                {
+                    // Trường hợp: Có xe, có hàng, nhưng KHÔNG CÓ NHÂN VIÊN nào đăng ký lịch làm việc ngày này.
+                    // -> Không thể xếp lịch. Bỏ qua ngày này.
+                    continue;
+                }
+
+                // 7.2 Tính toán thời gian từ Shift của nhân viên
+                DateTime startDt = dailyShift.Shift_Start_Time.ToLocalTime(); // Ví dụ: 07:00
+                DateTime endDt = dailyShift.Shift_End_Time.ToLocalTime();     // Ví dụ: 19:00
+
+                // Mốc bắt đầu tính giờ trong thuật toán
+                TimeOnly shiftStartBase = TimeOnly.FromDateTime(startDt);
+
+                // Giới hạn thời gian tối đa cho 1 xe (dựa trên sức người)
+                // Ví dụ: 19h - 7h = 12 tiếng = 720 phút.
+                // Thuật toán sẽ không xếp quá 720 phút cho 1 xe.
+                double maxShiftMinutes = (endDt - startDt).TotalMinutes;
+
+                // -------------------------------------------------------------------------------------
+
                 var candidatesRaw = pool
                     .Where(x => ((List<DateOnly>)x.Schedule.SpecificDates).Contains(date))
                     .ToList();
@@ -118,46 +162,53 @@ namespace ElecWasteCollection.Application.Services
                 foreach (var item in candidatesRaw)
                 {
                     TryGetTimeWindowForDate((string)item.Post.ScheduleJson, date, out var s, out var e);
+
+                    // Logic: Khách đặt 6h sáng, nhưng nhân viên 7h mới làm -> Xe 7h mới bắt đầu chạy được.
                     if (s < shiftStartBase) s = shiftStartBase;
 
                     queue.Add(new { Data = item, WindowStart = s, WindowEnd = e });
 
                     totalDemandWeight += (double)item.Weight;
                     totalDemandVolume += (double)item.Volume;
-                    totalDemandTime += (serviceTimeMin + avgTravelTimeMin); 
+                    totalDemandTime += (serviceTimeMin + avgTravelTimeMin);
                 }
 
-                // Sắp xếp: Deadline sớm -> Nặng
                 queue = queue.OrderBy(x => x.WindowEnd).ThenByDescending(x => x.Data.Weight).ToList();
 
                 if (!queue.Any()) continue;
 
-                // 3.2 QUYẾT ĐỊNH SỐ LƯỢNG XE CẦN DÙNG (AUTO SCALING)
+                // 7.3 Auto Scaling (Tính số xe)
                 var vehiclesToUse = new List<Vehicles>();
                 double currentCapKg = 0;
                 double currentCapM3 = 0;
 
                 foreach (var v in availableVehicles)
                 {
-                    vehiclesToUse.Add(v);
+                    vehiclesToUse.Add(v); // Thêm xe vào đội hình
 
                     currentCapKg += v.Capacity_Kg * (request.LoadThresholdPercent / 100.0);
                     currentCapM3 += (v.Length_M * v.Width_M * v.Height_M) * (request.LoadThresholdPercent / 100.0);
+
+                    // Tính trung bình thời gian mỗi xe phải chạy
                     double estimatedTimePerVehicle = totalDemandTime / vehiclesToUse.Count;
+
                     bool enoughWeight = currentCapKg >= totalDemandWeight;
                     bool enoughVolume = currentCapM3 >= totalDemandVolume;
+
+                    // Kiểm tra: Nếu chia đều ra thì mỗi nhân viên có làm kịp trong ca (maxShiftMinutes) không?
                     bool enoughTime = estimatedTimePerVehicle <= maxShiftMinutes;
 
                     if (enoughWeight && enoughVolume && enoughTime)
                     {
-                        break;
+                        break; // Đủ xe và đủ người làm, dừng lại.
                     }
                 }
 
+                // 7.4 Khởi tạo Bucket (Thùng chứa hàng tương ứng với Xe + Nhân viên)
                 var buckets = vehiclesToUse.Select(v => new VehicleBucket
                 {
                     Vehicle = v,
-                    CurrentTimeMin = 0,
+                    CurrentTimeMin = 0, // Phút thứ 0 (tương ứng với Shift Start Time)
                     CurrentKg = 0,
                     CurrentM3 = 0,
                     Products = new List<PreAssignProduct>(),
@@ -165,30 +216,40 @@ namespace ElecWasteCollection.Application.Services
                     MaxM3 = (v.Length_M * v.Width_M * v.Height_M) * (request.LoadThresholdPercent / 100.0)
                 }).ToList();
 
+                // 7.5 Phân phối đơn hàng
                 foreach (var itemWrapper in queue)
                 {
                     var item = itemWrapper.Data;
                     double w = (double)item.Weight;
                     double v = (double)item.Volume;
 
+                    // Tìm xe còn trống Tải trọng VÀ còn Thời gian trong ca
                     var bestBucket = buckets
-                        .Where(b => (b.CurrentKg + w <= b.MaxKg) && (b.CurrentM3 + v <= b.MaxM3)) 
-                        .OrderBy(b => b.CurrentTimeMin) 
+                        .Where(b => (b.CurrentKg + w <= b.MaxKg) && (b.CurrentM3 + v <= b.MaxM3))
+                        .OrderBy(b => b.CurrentTimeMin) // Ưu tiên xe nào đang rảnh (hoàn thành task trước đó sớm nhất)
                         .FirstOrDefault();
 
                     if (bestBucket == null)
                     {
+                        // Fallback: Nếu xe nào cũng đầy, dồn vào xe rảnh nhất (chấp nhận Overload nhẹ hoặc làm thêm giờ tí xíu)
                         bestBucket = buckets.OrderBy(b => b.CurrentTimeMin).First();
                     }
 
+                    // Tính thời điểm xe đến điểm thu gom
                     double arrival = bestBucket.CurrentTimeMin + avgTravelTimeMin;
+
+                    // Tính thời điểm khách mở cửa (tính bằng phút từ lúc bắt đầu ca)
                     double openTime = (itemWrapper.WindowStart - shiftStartBase).TotalMinutes;
+
+                    // Nếu xe đến sớm quá (khách chưa mở cửa), xe phải chờ
                     if (arrival < openTime) arrival = openTime;
 
+                    // Cập nhật trạng thái xe sau khi nhận task này
                     bestBucket.CurrentTimeMin = arrival + serviceTimeMin;
                     bestBucket.CurrentKg += w;
                     bestBucket.CurrentM3 += v;
 
+                    // Convert ngược ra giờ đồng hồ để hiển thị
                     TimeOnly estArrival = shiftStartBase.AddMinutes(arrival);
 
                     bestBucket.Products.Add(new PreAssignProduct
@@ -203,10 +264,11 @@ namespace ElecWasteCollection.Application.Services
                         Width = item.Width,
                         Height = item.Height,
                         DimensionText = item.DimensionText,
-                        EstimatedArrival = estArrival.ToString("HH:mm")
+                        //EstimatedArrival = estArrival.ToString("HH:mm") // Giờ đến dự kiến chuẩn theo ca làm việc
                     });
                 }
 
+                // 7.6 Tổng hợp kết quả
                 foreach (var bucket in buckets)
                 {
                     if (bucket.Products.Any())
@@ -233,12 +295,10 @@ namespace ElecWasteCollection.Application.Services
                 }
             }
 
-
             _previewCache.RemoveAll(x => x.CollectionPoint == point.Name);
             _previewCache.Add(res);
 
             return res;
-
         }
 
         public Task<object> GetPreviewProductsAsync(string vehicleId, DateOnly workDate)
