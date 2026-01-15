@@ -269,6 +269,7 @@ namespace ElecWasteCollection.Application.Services
 				return false;
 			}
 			var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
+			var productStatusEnum = statusEnum == PackageStatus.DANG_VAN_CHUYEN ? ProductStatus.DANG_VAN_CHUYEN : ProductStatus.TAI_CHE;
 			package.Status = statusEnum.ToString();
 			foreach (var product in productList)
 			{
@@ -279,7 +280,7 @@ namespace ElecWasteCollection.Application.Services
 					ProductId = product.ProductId,
 					ChangedAt = DateTime.UtcNow,
 					StatusDescription = statusEnum.ToString() == PackageStatus.DANG_VAN_CHUYEN.ToString() ? "Sản phẩm đang được vận chuyển" : "Sản phẩm đã được tái chế",
-					Status = statusEnum.ToString()
+					Status = productStatusEnum.ToString()
 				};
 				await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 			}

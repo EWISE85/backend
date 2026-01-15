@@ -31,6 +31,8 @@ namespace ElecWasteCollection.Domain.Entities
 		NHAP_KHO,
 		[Description("Đã đóng thùng")]
 		DA_DONG_THUNG,
+		[Description("Đang vận chuyển")]
+		DANG_VAN_CHUYEN,
 		[Description("Tái chế")]
 		TAI_CHE
 	}

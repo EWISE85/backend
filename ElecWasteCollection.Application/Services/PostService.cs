@@ -58,6 +58,7 @@ namespace ElecWasteCollection.Application.Services
 										x => x.CategoryId == createPostRequest.Product.SubCategoryId,
 										includeProperties: "Attribute");
 				string currentStatus = PostStatus.CHO_DUYET.ToString();
+				string currentProductStatus = ProductStatus.CHO_DUYET.ToString();
 				string statusDescription = "Yêu cầu đã được gửi";
 				Guid newProductId = Guid.NewGuid();
 
@@ -70,7 +71,7 @@ namespace ElecWasteCollection.Application.Services
 					CreateAt = DateOnly.FromDateTime(transactionTimeUtc),
 					UserId = createPostRequest.SenderId,
 					isChecked = false,
-					Status = currentStatus
+					Status = currentProductStatus
 				};
 
 				if (createPostRequest.Product.Attributes != null)
@@ -149,7 +150,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ProductId = newProductId,
 					ChangedAt = DateTime.UtcNow,
-					Status = currentStatus, 
+					Status = newProduct.Status, 
 					StatusDescription = statusDescription
 				};
 
