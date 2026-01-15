@@ -83,5 +83,14 @@ namespace ElecWasteCollection.API.Controllers
 				return NotFound(new { message = ex.Message });
 			}
 		}
+		[HttpGet("server-time")]
+		public IActionResult GetServerTime()
+		{
+			return Ok(new
+			{
+				serverTime = DateTime.Now,
+				serverDate = DateOnly.FromDateTime(DateTime.Now)
+			});
+		}
 	}
 }
