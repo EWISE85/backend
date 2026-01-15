@@ -89,5 +89,19 @@ namespace ElecWasteCollection.API.Controllers
 
             return Ok(result);
         }
+
+        [HttpGet("ids")]
+        public async Task<IActionResult> GetProductIdsByDate([FromQuery] DateOnly date)
+        {
+            try
+            {
+                var result = await _productAssignService.GetProductIdsForWorkDateAsync(date);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
     }
 }

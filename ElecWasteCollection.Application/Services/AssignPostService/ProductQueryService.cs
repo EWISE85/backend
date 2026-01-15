@@ -430,6 +430,41 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             };
         }
 
+        public async Task<object> GetProductIdsAtSmallPointAsync(string smallPointId, DateOnly workDate)
+        {
+            // 1. Lấy tất cả bài đăng đã được gán về trạm này và đang chờ gom
+            var posts = await _unitOfWork.Posts.GetAllAsync(
+                filter: p => p.AssignedSmallPointId == smallPointId
+                          && p.Product != null
+                          && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
+                includeProperties: "Product"
+            );
+
+            var listIds = new List<string>();
+
+            // 2. Lọc theo ngày làm việc (xử lý JSON Schedule)
+            foreach (var post in posts)
+            {
+                // Tái sử dụng hàm TryParseDates có sẵn trong class
+                if (!TryParseDates(post.ScheduleJson!, out var dates))
+                    continue;
+
+                if (dates.Contains(workDate))
+                {
+                    listIds.Add(post.ProductId.ToString());
+                }
+            }
+
+            // 3. Trả về object kết quả
+            return new
+            {
+                Total = listIds.Count,
+                List = listIds
+            };
+        }
+
+
+
         private bool TryParseDates(string scheduleJson, out List<DateOnly> dates)
         {
             dates = new();

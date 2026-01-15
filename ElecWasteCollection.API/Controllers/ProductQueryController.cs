@@ -59,6 +59,12 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _productQueryService.GetCompanyConfigByCompanyIdAsync(companyId);
             return Ok(result);
         }
+        [HttpGet("small-point/product-ids")]
+        public async Task<IActionResult> GetIdsAtPoint([FromQuery] string smallPointId, [FromQuery] DateOnly workDate)
+        {
+            var result = await _productQueryService.GetProductIdsAtSmallPointAsync(smallPointId, workDate);
+            return Ok(result);
+        }
     }
 
 }

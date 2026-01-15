@@ -8,6 +8,7 @@ namespace ElecWasteCollection.Application.IServices.IAssignPost
         Task<SmallPointProductGroupDto> GetSmallPointProductsAsync(string smallPointId, DateOnly workDate);
         Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync();
         Task<List<SmallPointDto>> GetSmallPointsByCompanyIdAsync(string companyId);
-        Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(string companyId); 
+        Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(string companyId);
+        Task<object> GetProductIdsAtSmallPointAsync(string smallPointId, DateOnly workDate);
     }
 }

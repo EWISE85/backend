@@ -22,6 +22,27 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("preview-products")]
+        public async Task<IActionResult> GetPreviewProducts([FromQuery] string vehicleId, [FromQuery] DateOnly workDate)
+        {
+            var result = await _groupingService.GetPreviewProductsAsync(vehicleId, workDate);
+            return Ok(result);
+        }
+
+        [HttpGet("preview-vehicles")]
+        public async Task<IActionResult> GetPreviewVehicles([FromQuery] DateOnly workDate)
+        {
+            try
+            {
+                var result = await _groupingService.GetPreviewVehiclesAsync(workDate);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
         [HttpPost("assign-day")]
         public async Task<IActionResult> AssignDay([FromBody] AssignDayRequest request)
         {

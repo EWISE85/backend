@@ -17,5 +17,7 @@ namespace ElecWasteCollection.Application.Interfaces
         Task<SinglePointSettingResponse> GetPointSettingAsync(string pointId);
         Task<CompanySettingsResponse> GetCompanySettingsAsync(string companyId);
         Task<bool> UpdatePointSettingAsync(UpdatePointSettingRequest request);
+        Task<object> GetPreviewProductsAsync(string vehicleId, DateOnly workDate);
+        Task<object> GetPreviewVehiclesAsync(DateOnly workDate);
     }
 }
