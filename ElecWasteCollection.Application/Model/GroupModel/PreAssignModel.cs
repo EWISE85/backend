@@ -45,7 +45,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public double Width { get; set; }
         public double Height { get; set; }
         public string DimensionText { get; set; } = "";  
-        public string EstimatedArrival { get; set; }
+        //public string EstimatedArrival { get; set; }
 
     }
 
