@@ -10,8 +10,12 @@ namespace ElecWasteCollection.Application.Model.GroupModel
     {
         public string CollectionPointId { get; set; }
         public DateOnly WorkDate { get; set; }
+        public List<VehicleAssignmentDetail> Assignments { get; set; } = new List<VehicleAssignmentDetail>();
+    }
+    public class VehicleAssignmentDetail
+    {
         public string VehicleId { get; set; }
-        public List<Guid> ProductIds { get; set; } = new();
+        public List<Guid> ProductIds { get; set; } = new List<Guid>();
     }
 
     public class AssignDayResponse
