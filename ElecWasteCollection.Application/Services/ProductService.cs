@@ -51,6 +51,11 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<ProductDetailModel> AddProduct(CreateProductAtWarehouseModel createProductRequest)
 		{
+			var existingProduct = await _productRepository.GetAsync(p => p.QRCode == createProductRequest.QrCode);
+			if (existingProduct != null)
+			{
+				throw new AppException("Sản phẩm với mã QR này đã tồn tại.", 400);
+			}
 			var newProduct = new Products
 			{
 				ProductId = Guid.NewGuid(),
