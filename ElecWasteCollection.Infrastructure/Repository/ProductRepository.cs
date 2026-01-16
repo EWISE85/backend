@@ -117,9 +117,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Posts);
 
-			query = query.Where(p =>
-				p.Posts.Any(post => post.SenderId == senderId)
-			);
+			query = query.Where(p => p.UserId == senderId);
 
 			return await query
 				.OrderByDescending(p => p.CreateAt) 

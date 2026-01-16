@@ -336,7 +336,7 @@ namespace ElecWasteCollection.Application.Services
 
 
 			var post = product.Posts?.FirstOrDefault();
-			if (post == null) return null;
+			//if (post == null) return null;
 
 			List<ProductValueDetailModel> productAttributes = new List<ProductValueDetailModel>();
 			if (product.ProductValues != null)
@@ -358,17 +358,22 @@ namespace ElecWasteCollection.Application.Services
 
 			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 			List<DailyTimeSlots> schedule = new List<DailyTimeSlots>();
-			if (!string.IsNullOrEmpty(post.ScheduleJson))
+			if(post != null)
 			{
-				try { schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options) ?? new List<DailyTimeSlots>(); }
-				catch (JsonException) { schedule = new List<DailyTimeSlots>(); }
+				if (!string.IsNullOrEmpty(post.ScheduleJson))
+				{
+					try { schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options) ?? new List<DailyTimeSlots>(); }
+					catch (JsonException) { schedule = new List<DailyTimeSlots>(); }
+				}
 			}
 
 			var route = product.CollectionRoutes?.FirstOrDefault();
 			var shifts = route?.CollectionGroup?.Shifts;
-			var sender = post.Sender;
+			var senderId = product.UserId;
 			var collector = shifts?.Collector;
 			var realPoint = product.PointTransactions?.FirstOrDefault()?.Point;
+			var sender = await _unitOfWork.Users.GetAsync(u => u.UserId == senderId);
+			if (sender == null) throw new AppException("Không tìm thấy người gửi", 404);
 
 			var userResponse = new UserResponse
 			{
@@ -377,7 +382,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = sender?.Phone,
 				Email = sender?.Email,
 				Avatar = sender?.Avatar,
-				Role = sender?.Role,
+				Role = sender.Role,
 				SmallCollectionPointId = sender?.SmallCollectionPointId
 			};
 
@@ -391,12 +396,12 @@ namespace ElecWasteCollection.Application.Services
 				Description = product.Description,
 				ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
-				EstimatePoint = post.EstimatePoint,
+				EstimatePoint = post?.EstimatePoint,
 				Sender = userResponse,
-				Address = post.Address,
+				Address = post?.Address ?? "Không có địa chỉ",
 				Schedule = schedule,
-				Attributes = productAttributes, 
-				RejectMessage = post.RejectMessage,
+				Attributes = productAttributes,
+				RejectMessage = post?.RejectMessage ?? "Không có lý do",
 				QRCode = product.QRCode,
 				IsChecked = product.isChecked,
 				RealPoints = realPoint,
