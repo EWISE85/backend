@@ -39,6 +39,8 @@ namespace ElecWasteCollection.Application.Services
 			_packageRepository = packageRepository;
 		}
 
+
+
 		public async Task<bool> AddPackageIdToProductByQrCode(string qrCode, string? packageId)
 		{
 			var product = await _productRepository.GetAsync(p => p.QRCode == qrCode);
