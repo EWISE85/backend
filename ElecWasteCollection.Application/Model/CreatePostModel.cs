@@ -10,7 +10,7 @@ namespace ElecWasteCollection.Application.Model
 	public class CreatePostModel
 	{
 		public Guid SenderId { get; set; }
-		public string Name { get; set; }
+		//public string Name { get; set; }
 		public string Description { get; set; }
 		public string Address { get; set; }
 		public List<string> Images { get; set; }
@@ -22,8 +22,8 @@ namespace ElecWasteCollection.Application.Model
 		public Guid ParentCategoryId { get; set; }
 
 		public Guid SubCategoryId { get; set; }
+		public Guid BrandId { get; set; }
 
-		public Guid? SizeTierId { get; set; }
 
 		public List<ProductValueModel>? Attributes { get; set; }
 	}
@@ -31,6 +31,8 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Guid AttributeId { get; set; }
 
-		public string Value { get; set; }
+		public Guid? OptionId { get; set; }
+
+		public double? Value { get; set; }
 	}
 }

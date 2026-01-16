@@ -1,37 +1,60 @@
-﻿# Stage 1: Build - Sử dụng SDK để khôi phục và biên dịch
+﻿# --- GIAI ĐOẠN 1: BUILD ---
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
-# Sao chép các tệp .csproj và file solution (.sln) nếu có
-# Việc này giúp restore toàn bộ dependencies cho tất cả các dự án
 COPY ElecWasteCollection.API/*.csproj ./ElecWasteCollection.API/
 COPY ElecWasteCollection.Application/*.csproj ./ElecWasteCollection.Application/
 COPY ElecWasteCollection.Domain/*.csproj ./ElecWasteCollection.Domain/
 COPY ElecWasteCollection.Infrastructure/*.csproj ./ElecWasteCollection.Infrastructure/
-# Giả định file solution (.sln) nằm ở thư mục gốc của context
-# COPY ElecWasteCollection.sln . 
 
-# Chạy restore (sử dụng solution hoặc dự án API)
-# Sử dụng dự án API để restore các dependencies bên ngoài
-RUN dotnet restore ElecWasteCollection.API/ElecWasteCollection.API.csproj
+RUN dotnet restore ElecWasteCollection.API/ElecWasteCollection.API.csproj -r linux-x64
 
-# Sao chép toàn bộ mã nguồn
 COPY . .
-
-# Chuyển context sang dự án API
 WORKDIR /src/ElecWasteCollection.API
 
-# Chạy lệnh PUBLISH. Xuất bản tệp vào thư mục /app/publish
-# Đây là cách chuẩn để tách biệt tệp build và tệp runtime
-RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
+RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false -r linux-x64 --self-contained false --no-restore
 
-# ---
+# Copy file .so
+RUN find /root/.nuget/packages -name "libcvextern.so" | head -n 1 | xargs -I {} cp {} /app/publish/libcvextern.so
 
-# Stage 2: Runtime image
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
+# --- GIAI ĐOẠN 2: RUNTIME ---
+FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy AS runtime
+
+# Cài đặt thư viện
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgdiplus \
+    libgl1 \
+    libgtk-3-0 \
+    libgeotiff5 \
+    libdc1394-25 \
+    ffmpeg \
+    libgstreamer1.0-0 \
+    libgstreamer-plugins-base1.0-0 \
+    libopenjp2-7 \
+    libhdf5-103 \
+    libvtk9.1 \
+    liblapack3 \
+    libopenblas-base \
+    libatlas-base-dev \
+    libsm6 \
+    libxext6 \
+    libxrender1 \
+    libfontconfig1 \
+    libice6 \
+    libc6-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Config môi trường
+ENV DOTNET_SYSTEM_DRAWING_CHECK_SUPPORTED=false
+ENV OPENCV_OPENCL_DEVICE=disabled
+
+ENV LD_LIBRARY_PATH=/usr/lib:/app:$LD_LIBRARY_PATH
+
 WORKDIR /app
-# 📢 SỬA LỖI: COPY TỪ /app/publish (của stage build) ĐẾN /app (của stage runtime)
 COPY --from=build /app/publish .
-EXPOSE 8080
 
+# Copy file vào hệ thống
+RUN cp libcvextern.so /usr/lib/libcvextern.so && chmod 755 /usr/lib/libcvextern.so
+
+EXPOSE 8080
 ENTRYPOINT ["dotnet", "ElecWasteCollection.API.dll"]

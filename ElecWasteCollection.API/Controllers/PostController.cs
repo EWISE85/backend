@@ -29,23 +29,24 @@ namespace ElecWasteCollection.API.Controllers
 				Address = newItem.Address,
 				Description = newItem.Description,
 				Images = newItem.Images,
-				Name = newItem.Name,
+				//Name = newItem.Name,
 				CollectionSchedule = newItem.CollectionSchedule,
 				SenderId = newItem.SenderId,
 				Product = new CreateProductModel
 				{
 					ParentCategoryId = newItem.Product.ParentCategoryId,
 					SubCategoryId = newItem.Product.SubCategoryId,
-					SizeTierId = newItem.Product.SizeTierId,
+					BrandId = newItem.Product.BrandId,
 					Attributes = newItem.Product.Attributes?.Select(attr => new ProductValueModel
 					{
 						AttributeId = attr.AttributeId,
+						OptionId = attr.OptionId,
 						Value = attr.Value
 					}).ToList()
 				}
 			};
-			var result =  await _postService.AddPost(model);
-			if (result == null)
+			var result = await _postService.AddPost(model);
+			if (!result)
 			{
 				return StatusCode(400, "An error occurred while creating the post.");
 			}
@@ -54,15 +55,15 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Post created successfully.", item = result });
 		}
 		[HttpGet]
-		public IActionResult GetAllPosts()
+		public async Task<IActionResult> GetAllPosts()
 		{
-			var posts = _postService.GetAll();
+			var posts = await _postService.GetAll();
 			return Ok(posts);
 		}
 		[HttpGet("{postId}")]
-		public IActionResult GetPostById(Guid postId)
+		public async Task<IActionResult> GetPostById(Guid postId)
 		{
-			var post = _postService.GetById(postId);
+			var post = await _postService.GetById(postId);
 			if (post == null)
 			{
 				return NotFound($"Post with ID {postId} not found.");
@@ -70,41 +71,49 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(post);
 		}
 		[HttpGet("sender/{senderId}")]
-		public IActionResult GetPostsBySenderId([FromRoute] Guid senderId)
+		public async Task<IActionResult> GetPostsBySenderId([FromRoute] Guid senderId)
 		{
-			var posts = _postService.GetPostBySenderId(senderId);
+			var posts = await _postService.GetPostBySenderId(senderId);
 			return Ok(posts);
 		}
 
-		[HttpPut("approve/{postId}")]
-		public async Task<IActionResult> ApprovePost(Guid postId)
+		[HttpPut("approve")]
+		public async Task<IActionResult> ApprovePost([FromBody] ApprovePostRequest request)
 		{
-			var isApproved = await _postService.ApprovePost(postId);
+			var isApproved = await _postService.ApprovePost(request.PostIds);
 
 			if (isApproved)
 			{
-				return Ok(new { message = $"Post {postId} approved successfully." });
+				return Ok(new { message = $"Post approved successfully." });
 			}
 			else
 			{
-				return StatusCode(400, $"An error occurred while approving the post {postId}.");
+				return StatusCode(400, $"An error occurred while approving the post.");
 			}
 		}
-		[HttpPut("reject/{postId}")]
-		public IActionResult RejectPost([FromRoute] Guid postId, [FromBody] RejectPostRequest rejectPostRequest)
+		[HttpPut("reject")]
+		public async Task<IActionResult> RejectPost([FromBody] RejectPostRequest rejectPostRequest)
 		{
-			var isRejected = _postService.RejectPost(postId, rejectPostRequest.RejectMessage);
+			var isRejected = await _postService.RejectPost(rejectPostRequest.PostIds, rejectPostRequest.RejectMessage);
 			if (isRejected)
 			{
-				return Ok(new { message = $"Post {postId} rejected successfully." });
+				return Ok(new { message = $"Post  rejected successfully." });
 			}
 			else
 			{
-				return StatusCode(400, $"An error occurred while rejecting the post {postId}.");
+				return StatusCode(400, $"An error occurred while rejecting the post.");
 			}
 		}
 
-
+		[HttpGet("filter")]
+		[ProducesResponseType(StatusCodes.Status200OK)]
+		public async Task<IActionResult> GetPagedPosts(
+			[FromQuery] PostSearchQueryModel parameters)
+		{
+			// Gọi thẳng đến service, service sẽ lo toàn bộ logic
+			var pagedResult = await _postService.GetPagedPostsAsync(parameters);
+			return Ok(pagedResult);
+		}
 
 	}
 }

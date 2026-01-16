@@ -4,6 +4,8 @@
 	{
 		public Guid AttributeId { get; set; }
 
-		public string Value { get; set; }
+		public Guid? OptionId { get; set; }
+
+		public double? Value { get; set; }
 	}
 }

@@ -6,7 +6,8 @@
 
 		public Guid SubCategoryId { get; set; }
 
-		public Guid? SizeTierId { get; set; }
+		public Guid BrandId { get; set; }
+
 
 		public List<ProductValueRequest>? Attributes { get; set; }
 	}

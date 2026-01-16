@@ -7,18 +7,25 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="ExternalService\test.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Content Remove="C:\Users\ASUS\.nuget\packages\apiverve.api.profanityfilter\1.1.9\contentFiles\any\net6.0\favicon.ico" />
   </ItemGroup>
+	<ItemGroup Condition="'$(OS)' == 'Windows_NT'">
+		<PackageReference Include="Emgu.CV.runtime.windows" Version="4.9.0.5494" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="ExternalService\test.cs" />
-  </ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="CloudinaryDotNet" Version="1.27.9" />
+		<PackageReference Include="Emgu.CV.runtime.ubuntu-x64" Version="4.9.0.5494" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Emgu.CV" Version="4.9.0.5494" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.1" />
+		<PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="9.0.4" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.5" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5" />
 		<PackageReference Include="APIVerve.API.ProfanityFilter" Version="1.1.9" />
+		<PackageReference Include="MailKit" Version="4.13.0" />
+		<PackageReference Include="MimeKit" Version="4.13.0" />
 	</ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ElecWasteCollection.Application\ElecWasteCollection.Application.csproj" />

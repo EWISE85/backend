@@ -8,11 +8,17 @@ namespace ElecWasteCollection.Domain.Entities
 {
 	public class CategoryAttributes
 	{
-		public Guid Id { get; set; }
+		public Guid CategoryAttributeId { get; set; }
 
 		public Guid CategoryId { get; set; }
 
 		public Guid AttributeId { get; set; }
+
+		public double? MinValue { get; set; }
+
+		public double? MaxValue { get; set; }
+
+		public string Unit { get; set; }
 
 		public Category Category { get; set; }
 

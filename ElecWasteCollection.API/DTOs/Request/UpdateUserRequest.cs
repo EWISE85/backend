@@ -1,10 +1,10 @@
 ﻿namespace ElecWasteCollection.API.DTOs.Request
 {
 	public class UpdateUserRequest
-	{
-		public int Iat { get; set; }
-		public int Ing { get; set; }
+	{ 
+		public string Email { get; set; }
+		public string AvatarUrl { get; set; }
 
-		public string? avatarUrl { get; set; }
+		public string PhoneNumber { get; set; }
 	}
 }

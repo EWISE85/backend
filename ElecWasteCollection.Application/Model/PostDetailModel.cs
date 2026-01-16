@@ -10,8 +10,7 @@ namespace ElecWasteCollection.Application.Model
 	public class PostDetailModel
 	{
 		public Guid Id { get; set; }
-		public User Sender { get; set; } // Gửi đầy đủ thông tin người đăng
-		public string Name { get; set; } // Tiêu đề bài đăng
+		public UserResponse Sender { get; set; } // Gửi đầy đủ thông tin người đăng
 
 		public string ParentCategory { get; set; } // Tên Parent Category
 
@@ -33,6 +32,9 @@ namespace ElecWasteCollection.Application.Model
 
 		// 2. Danh sách tag đã được "GỘP LẠI"
 		public List<LabelModel> AggregatedAiLabels { get; set; }
+
+		public double EstimatePoint { get; set; }
+
 		// 4. Thông tin chi tiết của chính sản phẩm
 		public ProductDetailModel Product { get; set; }
 	}
@@ -40,17 +42,31 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Guid ProductId { get; set; }
 		public string Description { get; set; } // Mô tả SẢN PHẨM (ví dụ: "Tivi hỏng màn")
-		public string Condition { get; set; } // Tình trạng (từ Product.Condition)
+
+		public Guid CategoryId { get; set; } // Id danh mục sản phẩm
+
+		public string CategoryName { get; set; } // Tên danh mục sản phẩm (ví dụ: "Tivi")
+		public Guid BrandId { get; set; } // Id thương hiệu
+		public string BrandName { get; set; } // Tên thương hiệu (ví dụ: "Samsung")
+
+		public string? QrCode { get; set; } // Mã QR của sản phẩm
+		public string Status { get; set; } // Trạng thái hiện tại của sản phẩm (ví dụ: "Chờ thu gom", "Đã nhập kho", "Hủy")
 
 		// Thông tin kích thước (1 trong 2 sẽ có)
-		public string? SizeTierName { get; set; } // (ví dụ: "Tivi Lớn (Trên 55 inch)")
+
+		public bool IsChecked { get; set; }
 		public List<ProductValueDetailModel>? Attributes { get; set; } // (ví dụ: "Nặng: 55 kg")
 	}
 
 	public class ProductValueDetailModel
 	{
+		public Guid AttributeId { get; set; } // Id của thuộc tính (ví dụ: "Trọng lượng")
 		public string AttributeName { get; set; } // "Trọng lượng"
-		public string Value { get; set; } // "55"
-		public string Unit { get; set; } // "kg"
+
+		public Guid? OptionId { get; set; }
+
+		public string? OptionName { get; set; }
+
+		public string? Value { get; set; } // "55"
 	}
 }

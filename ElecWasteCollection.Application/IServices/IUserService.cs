@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Domain.Entities;
+﻿using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,8 +12,19 @@ namespace ElecWasteCollection.Application.IServices
 	{
 		void AddUser(User user);
 		void AddRange(IEnumerable<User> newUsers);
-		void UpdateUser(int iat, int ing, Guid id);
-		List<User> GetAll();
-		User GetById(Guid id);
+		Task<List<UserResponse>> GetAll();
+		Task<UserResponse>? GetById(Guid id);
+
+
+		Task<UserProfileResponse> Profile(Guid userId);
+
+		Task<UserResponse?> GetByPhone(string phone);
+		Task<UserResponse?> GetByEmailOrPhone(string infomation);
+
+		Task<bool> UpdateProfile(UserProfileUpdateModel model);
+
+		Task<bool> DeleteUser(Guid accountId);
+
+
 	}
 }

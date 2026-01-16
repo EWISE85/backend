@@ -1,26 +1,81 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
-	public class User
+	public enum UserRole
+	{
+		AdminWarehouse,
+		Collector,
+		User,
+		Admin,
+		AdminCompany,
+		Shipper,
+		Recycler
+	}
+    public enum UserStatus
+    {
+        [Description("Đang hoạt động")]
+        DANG_HOAT_DONG,     
+
+        [Description("Không hoạt động")]
+        KHONG_HOAT_DONG,
+
+        [Description("Bị đình chỉ")]
+        BI_DINH_CHI 
+    }
+    public class User
 	{
 		public Guid UserId { get; set; }
+
+		public string? AppleId { get; set; }
 		public string? Name { get; set; }
 
 		public string? Email { get; set; }
 
 		public string? Phone { get; set; }
 
-		public string? Address { get; set; }
-
 		public string? Avatar { get; set; }
 
-		public double? Iat { get; set; }
+		public string Role { get; set; }
 
-		public double? Ing { get; set; }
+		public string? SmallCollectionPointId { get; set; }
+
+		public string? CollectionCompanyId { get; set; }
+
+		public DateTime CreateAt { get; set; }
+
+		//public string? Preferences { get; set; } 
+
+		public string Status { get; set; }
+
+		public Company? CollectionCompany { get; set; }
+
+		public SmallCollectionPoints? SmallCollectionPoint { get; set; }
+
+		public virtual ICollection<UserAddress> UserAddresses { get; set; } = new List<UserAddress>();
+
+		public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
+
+		public virtual ICollection<UserPoints> UserPoints { get; set; } = new List<UserPoints>();
+
+		public virtual ICollection<Products> Products { get; set; } = new List<Products>();
+
+		public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
+
+		public virtual ICollection<PointTransactions> PointTransactions { get; set; } = new List<PointTransactions>();
+
+		public virtual ICollection<Shifts> Shifts { get; set; } = new List<Shifts>();
+
+		public virtual ICollection<ForgotPassword> ForgotPasswords { get; set; } = new List<ForgotPassword>();
+
+		public virtual ICollection<UserDeviceToken> UserDeviceTokens { get; set; } = new List<UserDeviceToken>();
+
+		public virtual ICollection<Notifications> Notifications { get; set; } = new List<Notifications>();
+
 	}
 }

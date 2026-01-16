@@ -1,3 +1,4 @@
+using ElecWasteCollection.Application.IServices;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
@@ -6,6 +7,8 @@ namespace ElecWasteCollection.API.Controllers
 	[Route("[controller]")]
 	public class WeatherForecastController : ControllerBase
 	{
+		private readonly IImageComparisonService _test;
+
 		private static readonly string[] Summaries = new[]
 		{
 			"Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
@@ -13,9 +16,10 @@ namespace ElecWasteCollection.API.Controllers
 
 		private readonly ILogger<WeatherForecastController> _logger;
 
-		public WeatherForecastController(ILogger<WeatherForecastController> logger)
+		public WeatherForecastController(ILogger<WeatherForecastController> logger, IImageComparisonService imageComparisonService)
 		{
 			_logger = logger;
+			_test = imageComparisonService;
 		}
 
 		[HttpGet(Name = "GetWeatherForecast")]
@@ -29,5 +33,16 @@ namespace ElecWasteCollection.API.Controllers
 			})
 			.ToArray();
 		}
+		[HttpPost]
+		public async Task<IActionResult> TestImageComparison([FromBody] test test)
+		{
+			var result = await _test.CompareImagesSimilarityAsync(test.Image1, test.Image2);
+			return Ok(new { AreSimilar = result });
+		}
+	}
+	public class test
+	{
+		public List<string> Image1 { get; set; }
+		public List<string> Image2 { get; set; }
 	}
 }

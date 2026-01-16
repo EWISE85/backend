@@ -12,15 +12,20 @@ namespace ElecWasteCollection.Application.Model
 		public Guid CollectionRouteId { get; set; }
 
 		public Guid PostId { get; set; }
+		public Guid ProductId { get; set; }
 
-		public string ItemName { get; set; }
+		//public string ItemName { get; set; }
 
-		public Collector Collector { get; set; }
+		public string BrandName { get; set; }
 
-		public User Sender { get; set; }
+		public string SubCategoryName { get; set; }
+
+		public CollectorResponse Collector { get; set; }
+
+		public UserResponse Sender { get; set; }
 		public DateOnly CollectionDate { get; set; }
 		public TimeOnly EstimatedTime { get; set; }
-		public TimeOnly Actual_Time { get; set; }
+		public TimeOnly? Actual_Time { get; set; }
 
 		public List<string> ConfirmImages { get; set; }
 
@@ -30,7 +35,11 @@ namespace ElecWasteCollection.Application.Model
 
 		public string Address { get; set; }
 
+		public double Iat { get; set; }
 
+		public double Ing { get; set; }
+
+		public double DistanceKm { get; set; }
 
 		public string Status { get; set; }
 	}

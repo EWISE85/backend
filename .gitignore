@@ -67,9 +67,8 @@ packages/*
 # Configuration files   
 
 appsettings*.json   
-prmFirebase.json
-  
-
+elecWasteCollection.json
+.env
 # DotNet Core   
 
 project.lock.json   

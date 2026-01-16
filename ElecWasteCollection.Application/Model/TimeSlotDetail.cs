@@ -17,6 +17,6 @@ namespace ElecWasteCollection.Application.Model
 
 		public DateOnly PickUpDate { get; set; }
 
-		public List<TimeSlotDetail> Slots { get; set; }
+		public TimeSlotDetail Slots { get; set; }
 	}
 }
