@@ -85,7 +85,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				p.CreateAt >= fromDate &&
 				p.CreateAt <= toDate &&
 				p.PackageId == null &&
-				p.Status == "Nhập kho"
+				p.Status == ProductStatus.NHAP_KHO.ToString()
 			);
 
 			return await query.ToListAsync();
