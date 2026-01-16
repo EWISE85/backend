@@ -27,17 +27,12 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPut("{id}")]
 		public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest updateUserRequest, [FromRoute] Guid id)
 		{
-			var settingModel = new UserSettingsModel
-			{
-				ShowMap = updateUserRequest.Settings.IsShowMap,
-			};
 			var model = new UserProfileUpdateModel
 			{
 				UserId = id,
 				Email = updateUserRequest.Email,
 				AvatarUrl = updateUserRequest.AvatarUrl,
 				phoneNumber = updateUserRequest.PhoneNumber,
-				Settings = settingModel
 			};
 			var result = await	 _userService.UpdateProfile(model);
 			return Ok(new { message = $"User {id} updated successfully." });

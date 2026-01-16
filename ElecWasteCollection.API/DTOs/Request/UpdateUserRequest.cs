@@ -6,7 +6,5 @@
 		public string AvatarUrl { get; set; }
 
 		public string PhoneNumber { get; set; }
-
-		public UpdateUserSettingRequest Settings { get; set; }
 	}
 }
