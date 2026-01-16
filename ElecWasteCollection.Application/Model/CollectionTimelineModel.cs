@@ -28,5 +28,7 @@ namespace ElecWasteCollection.Application.Model
 		public List<string> Images { get; set; }
 
 		public string? Address { get; set; }
+
+		public string Status { get; set; }
 	}
 }

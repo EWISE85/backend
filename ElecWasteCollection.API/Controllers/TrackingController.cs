@@ -29,11 +29,6 @@ namespace ElecWasteCollection.API.Controllers
 		public async Task<IActionResult> GetFullPostTimeline([FromRoute]Guid productId)
 		{
 			var timeline = await _trackingService.GetFullTimelineByProductIdAsync(productId);
-
-			if (timeline == null || !timeline.Any())
-			{
-				return NotFound("Không tìm thấy lịch sử cho yêu cầu này.");
-			}
 			return Ok(timeline);
 		}
 	}

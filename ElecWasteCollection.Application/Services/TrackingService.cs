@@ -25,60 +25,69 @@ namespace ElecWasteCollection.Application.Services
 			_postRepository = postRepository;
 		}
 
-		public async Task<List<CollectionTimelineModel>> GetFullTimelineByProductIdAsync(Guid productId)
+		public async Task<ProductTrackingTimelineResponse> GetFullTimelineByProductIdAsync(Guid productId)
 		{
 			var timeline = await _trackingRepository.GetsAsync(h => h.ProductId == productId);
 			var product = await _productRepository.GetProductWithDetailsAsync(productId);
+
 			if (product == null)
 			{
-				throw new AppException("Không tìm thấy sản phẩm",404);
+				throw new AppException("Không tìm thấy sản phẩm", 404);
 			}
+
 			var post = await _postRepository.GetAsync(p => p.ProductId == productId);
 
-			if (timeline == null || !timeline.Any())
-			{
-				return new List<CollectionTimelineModel>();
-			}
-
+			// Xử lý TimeZone (Giữ nguyên logic của bạn)
 			string timeZoneId = "SE Asia Standard Time";
 			TimeZoneInfo vnTimeZone;
-
 			try
 			{
 				vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId);
 			}
 			catch (TimeZoneNotFoundException)
 			{
-				// Fallback cho môi trường Linux/Docker nếu thiếu library map
 				vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
 			}
+
+			// 1. Chuẩn bị thông tin sản phẩm (ProductInfo)
 			var productResponse = new ProductDetailForTracking
 			{
 				CategoryName = product.Category.Name,
 				Description = product.Description,
 				BrandName = product.Brand.Name,
 				Images = product.ProductImages.Select(img => img.ImageUrl).ToList(),
-				Address = post != null ? post.Address : "Không có địa chỉ thu gom do người dùng tự mang đến kho"
-
+				Address = post != null ? post.Address : "Không có địa chỉ thu gom do người dùng tự mang đến kho",
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status).ToString()
 			};
-			var response = timeline.OrderByDescending(h => h.ChangedAt).Select(h =>
+
+			// 2. Chuẩn bị danh sách Timeline
+			var timelineResponse = new List<CollectionTimelineModel>();
+			if (timeline != null && timeline.Any())
 			{
-				var utcTime = h.ChangedAt.Kind == DateTimeKind.Utc
-							  ? h.ChangedAt
-							  : DateTime.SpecifyKind(h.ChangedAt, DateTimeKind.Utc);
-
-				var vnTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, vnTimeZone);
-
-				return new CollectionTimelineModel
+				timelineResponse = timeline.OrderByDescending(h => h.ChangedAt).Select(h =>
 				{
-					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(h.Status).ToString(),
-					Description = h.StatusDescription,
-					Date = vnTime.ToString("dd/MM/yyyy"), 
-					Time = vnTime.ToString("HH:mm")       
-				};
-			}).ToList();
+					var utcTime = h.ChangedAt.Kind == DateTimeKind.Utc
+								? h.ChangedAt
+								: DateTime.SpecifyKind(h.ChangedAt, DateTimeKind.Utc);
 
-			return response;
+					var vnTime = TimeZoneInfo.ConvertTimeFromUtc(utcTime, vnTimeZone);
+
+					return new CollectionTimelineModel
+					{
+						Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(h.Status).ToString(),
+						Description = h.StatusDescription,
+						Date = vnTime.ToString("dd/MM/yyyy"),
+						Time = vnTime.ToString("HH:mm")
+					};
+				}).ToList();
+			}
+
+			// 3. Trả về đối tượng tổng hợp
+			return new ProductTrackingTimelineResponse
+			{
+				ProductInfo = productResponse,
+				Timeline = timelineResponse
+			};
 		}
 
 
