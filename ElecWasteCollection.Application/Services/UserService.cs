@@ -175,5 +175,25 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
+
+		public async Task<UserResponse?> GetByEmailOrPhone(string infomation)
+		{
+			var user = await _userRepository.GetAsync(u => u.Email == infomation || u.Phone == infomation);
+			if (user == null) throw new AppException("User không tồn tại", 404);
+			var point = await _userPointRepository.GetAsync(p => p.UserId == user.UserId);
+			var userResponse = new UserResponse
+			{
+				UserId = user.UserId,
+				Name = user.Name,
+				Email = user.Email,
+				Phone = user.Phone,
+				Points = point?.Points,
+				Avatar = user.Avatar,
+				Role = user.Role,
+				SmallCollectionPointId = user.SmallCollectionPointId
+			};
+			return userResponse;
+
+		}
 	}
 }

@@ -16,10 +16,13 @@ namespace ElecWasteCollection.Application.Model
 
 		public string? Avatar { get; set; }
 
+		public double? Points { get; set; }
+
 		public string Role { get; set; }
 
 		public string? SmallCollectionPointId { get; set; }
 
 		public string? CollectionCompanyId { get; set; }
+
 	}
 }

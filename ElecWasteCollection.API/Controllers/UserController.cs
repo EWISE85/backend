@@ -68,10 +68,10 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(user);
 		}
 
-		[HttpGet("phone/{phone}")]
-		public async Task<IActionResult> GetUserByPhone([FromRoute] string phone)
+		[HttpGet("infomation/{infomation}")]
+		public async Task<IActionResult> GetUserByPhone([FromRoute] string infomation)
 		{
-			var user = await _userService.GetByPhone(phone);
+			var user = await _userService.GetByEmailOrPhone(infomation);
 			if (user == null)
 			{
 				return NotFound(new { message = "User not found." });
