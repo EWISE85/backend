@@ -90,6 +90,15 @@ namespace ElecWasteCollection.Application.Services
 				};
 				 await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction,false);
 			}
+			var newHistory = new ProductStatusHistory
+			{
+				ProductStatusHistoryId = Guid.NewGuid(),
+				ProductId = newProduct.ProductId,
+				ChangedAt = DateTime.UtcNow,
+				StatusDescription = "Sản phẩm đã nhập kho",
+				Status = ProductStatus.NHAP_KHO.ToString()
+			};
+			await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 			await _unitOfWork.SaveAsync();
 			return await BuildProductDetailModelAsync(newProduct);
 		}

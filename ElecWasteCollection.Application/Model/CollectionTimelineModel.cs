@@ -14,5 +14,19 @@ namespace ElecWasteCollection.Application.Model
 		public string Date { get; set; }
 
 		public string Time { get; set; }
+
+
+	}
+
+	public class ProductDetailForTracking
+	{
+		public string CategoryName { get; set; }
+		public string Description { get; set; }
+
+		public string BrandName { get; set; }
+
+		public List<string> Images { get; set; }
+
+		public string? Address { get; set; }
 	}
 }

@@ -19,6 +19,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<UserProfileResponse> Profile(Guid userId);
 
 		Task<UserResponse?> GetByPhone(string phone);
+		Task<UserResponse?> GetByEmailOrPhone(string infomation);
 
 		Task<bool> UpdateProfile(UserProfileUpdateModel model);
 
