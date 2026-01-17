@@ -19,5 +19,6 @@ namespace ElecWasteCollection.Domain.IRepository
 		void Add(T entity);
         IQueryable<T> GetQueryable();
         Task<int> CountAsync(Expression<Func<T, bool>> predicate = null);
+        IQueryable<T> AsQueryable();
     }
 }

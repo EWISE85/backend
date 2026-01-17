@@ -25,35 +25,22 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public IGenericRepository<AttributeOptions> AttributeOptions { get; }
         public IGenericRepository<Attributes> Attributes { get; }
 		public IGenericRepository<Account> Accounts { get; }
-		public IGenericRepository<CollectionGroups> CollectionGroups { get; }
-
-		public IGenericRepository<CategoryAttributes> CategoryAttributes { get; }
-
+        public IGenericRepository<CategoryAttributes> CategoryAttributes { get; }
 		public IGenericRepository<CollectionRoutes> CollecctionRoutes { get; }
-
 		public IGenericRepository<Packages> Packages { get; }
-
 		public IGenericRepository<PointTransactions> PointTransactions { get; }
-
 		public IGenericRepository<ProductImages> ProductImages { get; }
-
 		public IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
-
 		public IGenericRepository<Shifts> Shifts { get; }
-
 		public IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
-
 		public IGenericRepository<UserPoints> UserPoints { get; }
-
 		public IGenericRepository<Vehicles> Vehicles { get; }
-
 		public IGenericRepository<ForgotPassword> ForgotPasswords { get; }
-
 		public IGenericRepository<SystemConfig> SystemConfig { get; }
-
 		public IGenericRepository<UserDeviceToken> UserDeviceTokens { get; }
-
 		public IGenericRepository<Notifications> Notifications { get; }
+        public IGenericRepository<CollectionGroups> CollectionGroupGeneric { get; }
+        public ICollectionGroupRepository CollectionGroups { get; }
         public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
@@ -81,9 +68,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			Vehicles = new GenericRepository<Vehicles>(_context);
 			ForgotPasswords = new GenericRepository<ForgotPassword>(_context);
 			SystemConfig = new GenericRepository<SystemConfig>(_context);
-			CollectionGroups = new GenericRepository<CollectionGroups>(_context);
-			UserDeviceTokens = new GenericRepository<UserDeviceToken>(_context);
+            CollectionGroupGeneric = new GenericRepository<CollectionGroups>(_context);
+            CollectionGroups = new CollectionGroupRepository(_context);
+            UserDeviceTokens = new GenericRepository<UserDeviceToken>(_context);
 			Notifications = new GenericRepository<Notifications>(_context);
+            CollectionGroupGeneric = new GenericRepository<CollectionGroups>(_context);
+            CollectionGroups = new CollectionGroupRepository(_context);
 
         }
 

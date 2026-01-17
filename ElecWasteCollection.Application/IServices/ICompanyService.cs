@@ -13,9 +13,8 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> AddNewCompany(Company collectionTeams);
 		Task<bool> UpdateCompany(Company collectionTeams);
 		Task<bool> DeleteCompany(string collectionCompanyId);
-		Task<List<CollectionCompanyResponse>> GetAllCollectionCompaniesAsync();
-
-		Task<ImportResult> CheckAndUpdateCompanyAsync(Company collectionTeams, string adminUsername, string password);
+		Task<PagedResult<CollectionCompanyResponse>> GetCollectionCompaniesPagedAsync(int page, int limit);
+        Task<ImportResult> CheckAndUpdateCompanyAsync(Company collectionTeams, string adminUsername, string password);
 		Task<CollectionCompanyResponse?> GetCompanyById(string collectionCompanyId);
 
 		Task<List<CollectionCompanyResponse>?> GetCompanyByName(string companyName);

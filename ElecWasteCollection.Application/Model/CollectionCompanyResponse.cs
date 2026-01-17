@@ -14,5 +14,5 @@ namespace ElecWasteCollection.Application.Model
 		public string Phone { get; set; } = null!;
 		public string City { get; set; } = null!;
 		public string Status { get; set; } = null!;
-	}
+    }
 }
