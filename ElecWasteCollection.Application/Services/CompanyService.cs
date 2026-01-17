@@ -119,23 +119,37 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		public async Task<List<CollectionCompanyResponse>> GetAllCollectionCompaniesAsync()
-		{
-			var company = await _collectionCompanyRepository.GetAllAsync(filter: c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString());
-			var response = company.Select(team => new CollectionCompanyResponse
-			{
-				Id = team.CompanyId,
-				Name = team.Name,
-				CompanyEmail = team.CompanyEmail,
-				Phone = team.Phone,
-				City = team.Address,
-                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(team.Status)
-            }).ToList();
+        public async Task<PagedResult<CollectionCompanyResponse>> GetCollectionCompaniesPagedAsync(int page, int limit)
+        {
+            if (page <= 0) page = 1;
+            if (limit <= 0) limit = 10;
 
-			return response;
-		}
+            var (companies, totalCount) =
+                await _collectionCompanyRepository.GetPagedCollectionCompaniesAsync(page, limit);
 
-		public async Task<CollectionCompanyResponse>? GetCompanyById(string collectionCompanyId)
+            var collectionCompanies = companies
+                .Select(c => new CollectionCompanyResponse
+                {
+                    Id = c.CompanyId,
+                    Name = c.Name,
+                    CompanyEmail = c.CompanyEmail,
+                    Phone = c.Phone,
+                    City = c.Address,
+                    Status = StatusEnumHelper
+                        .ConvertDbCodeToVietnameseName<CompanyStatus>(c.Status)
+                })
+                .ToList();
+
+            return new PagedResult<CollectionCompanyResponse>
+            {
+                Data = collectionCompanies,
+                Page = page,
+                Limit = limit,
+                TotalItems = totalCount
+            };
+        }
+
+        public async Task<CollectionCompanyResponse>? GetCompanyById(string collectionCompanyId)
 		{
 			var company = await _collectionCompanyRepository.GetAsync(c => c.CompanyId == collectionCompanyId);
 			if (company == null) throw new AppException("Không tìm thấy công ty", 404);

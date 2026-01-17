@@ -121,6 +121,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IReassignDriverService, ReassignDriverService>();
 			builder.Services.AddScoped<IPackageAssignService, PackageAssignService>();
             builder.Services.AddScoped<IRecyclingQueryService, RecyclingQueryService>();
+			builder.Services.AddScoped<ICollectionGroupRepository, CollectionGroupRepository>();
 
 
 

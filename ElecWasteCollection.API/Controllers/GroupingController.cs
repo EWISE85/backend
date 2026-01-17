@@ -23,9 +23,14 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("preview-products")]
-        public async Task<IActionResult> GetPreviewProducts([FromQuery] string vehicleId, [FromQuery] DateOnly workDate)
+        public async Task<IActionResult> GetPreviewProducts( string vehicleId, DateOnly workDate, int page = 1, int pageSize = 10)
         {
-            var result = await _groupingService.GetPreviewProductsAsync(vehicleId, workDate);
+            var result = await _groupingService
+                .GetPreviewProductsAsync(vehicleId, workDate, page, pageSize);
+
+            if (result == null)
+                return NotFound();
+
             return Ok(result);
         }
 
@@ -59,16 +64,32 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("groups/{collectionPointId}")]
-        public async Task<IActionResult> GetGroupsByCollectionPointAsync(string collectionPointId)
+        public async Task<IActionResult> GetByCollectionPoint(
+        string collectionPointId,
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 10)
         {
-            var result = await _groupingService.GetGroupsByPointIdAsync(collectionPointId);
+            if (page <= 0 || limit <= 0)
+                return BadRequest("Page và Limit phải > 0");
+
+            var result = await _groupingService
+                .GetGroupsByCollectionPointAsync(
+                    collectionPointId,
+                    page,
+                    limit);
+
             return Ok(result);
         }
 
         [HttpGet("group/{groupId}")]
-        public async Task<IActionResult> GetGroupDetailAsync(int groupId)
+        public async Task<IActionResult> GetRoutes(
+    int groupId,
+    int page = 1,
+    int limit = 10)
         {
-            var result = await _groupingService.GetRoutesByGroupAsync(groupId);
+            var result = await _groupingService
+                .GetRoutesByGroupAsync(groupId, page, limit);
+
             return Ok(result);
         }
 
@@ -107,17 +128,12 @@ namespace ElecWasteCollection.API.Controllers
             }
         }
         [HttpGet("company/settings/{companyId}")]
-        public async Task<IActionResult> GetCompanySettings(string companyId)
+        public async Task<IActionResult> GetCompanySettingsPaged(string companyId, int page = 1, int limit = 10)
         {
-            try
-            {
-                var result = await _groupingService.GetCompanySettingsAsync(companyId);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = await _groupingService
+                .GetCompanySettingsPagedAsync(companyId, page, limit);
+
+            return Ok(result);
         }
 
         [HttpGet("settings/{pointId}")]

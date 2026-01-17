@@ -174,5 +174,5 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return await query.FirstOrDefaultAsync(r => r.CollectionRouteId == collectionRouteId);
 		}
-	}
+    }
 }

@@ -36,5 +36,24 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return (items, totalCount);
 		}
-	}
+
+        public async Task<(List<Company> Items, int TotalCount)> GetPagedCollectionCompaniesAsync( int page, int limit)
+        {
+            var query = _dbSet
+                .AsNoTracking()
+                .Where(c =>
+                    c.CompanyType ==
+                    CompanyType.CTY_THU_GOM.ToString());
+
+            var totalCount = await query.CountAsync();
+
+            var items = await query
+                .OrderByDescending(c => c.Created_At)
+                .Skip((page - 1) * limit)
+                .Take(limit)
+                .ToListAsync();
+
+            return (items, totalCount);
+        }
+    }
 }

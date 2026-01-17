@@ -1,6 +1,7 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -40,12 +41,14 @@ namespace ElecWasteCollection.API.Controllers
 			}
 		}
 		[HttpGet()]
-		public async Task<IActionResult> GetAllCollectionCompanies()
-		{
-			var result = await _collectionCompanyService.GetAllCollectionCompaniesAsync();
-			return Ok(result);
-		}
-		[HttpGet("{companyId}")]
+        public async Task<IActionResult> GetCollectionCompanies( int page = 1, int limit = 10)
+        {
+            var result = await _collectionCompanyService
+                .GetCollectionCompaniesPagedAsync(page, limit);
+
+            return Ok(result);
+        }
+        [HttpGet("{companyId}")]
 		public  async Task<IActionResult> GetCollectionCompanyById([FromRoute] string companyId)
 		{
 			var result = await _collectionCompanyService.GetCompanyById(companyId);

@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -67,48 +68,65 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		//public async Task<bool> DeleteShiftAsync(string shiftId)
-		//{
-		//	var shift = await _shiftRepository.GetAsync(s => s.ShiftId == shiftId);
-		//	if (shift == null) throw new AppException("Không tìm thấy ca làm", 404);
-		//	shift.Status = ShiftStatus.KHONG_CO.ToString();
-		//	_unitOfWork.Shifts.Update(shift);
-		//	await _unitOfWork.SaveAsync();
-		//	return true;
-		//}
+        //public async Task<bool> DeleteShiftAsync(string shiftId)
+        //{
+        //	var shift = await _shiftRepository.GetAsync(s => s.ShiftId == shiftId);
+        //	if (shift == null) throw new AppException("Không tìm thấy ca làm", 404);
+        //	shift.Status = ShiftStatus.KHONG_CO.ToString();
+        //	_unitOfWork.Shifts.Update(shift);
+        //	await _unitOfWork.SaveAsync();
+        //	return true;
+        //}
 
-		public async Task<PagedResultModel<ShiftModel>> GetPagedShiftAsync(ShiftSearchModel model)
-		{
-			var (shifts, totalItems) = await _shiftRepository.GetPagedShiftsAsync(
-				collectionCompanyId: model.CollectionCompanyId,
-				smallCollectionPointId: model.SmallCollectionPointId,
-				status: model.Status,
-				fromDate: model.FromDate,
-				toDate: model.ToDate,
-				page: model.Page,
-				limit: model.Limit
-			);
-			var resultList = shifts.Select(s => new ShiftModel
-			{
-				ShiftId = s.ShiftId.ToString(),
-				CollectorId = s.CollectorId,
-				CollectorName = s.Collector?.Name ?? "N/A",
-				Vehicle_Id = s.Vehicle_Id?.ToString(),
-				Plate_Number = s.Vehicle?.Plate_Number ?? "Chưa gán xe",
-				WorkDate = s.WorkDate,
-				Shift_Start_Time = s.Shift_Start_Time,
-				Shift_End_Time = s.Shift_End_Time,
-				Status = s.Status
-			}).ToList();
-			return new PagedResultModel<ShiftModel>(
-				resultList,
-				model.Page,
-				model.Limit,
-				totalItems
-			);
-		}
+        public async Task<PagedResultModel<ShiftModel>> GetPagedShiftAsync(ShiftSearchModel model)
+        {
+            string? searchStatusEnum = null;
 
-		public async Task<ShiftModel> GetShiftById(string shiftId)
+            if (!string.IsNullOrEmpty(model.Status))
+            {
+                try
+                {
+                    var statusValue = StatusEnumHelper.GetValueFromDescription<ShiftStatus>(model.Status);
+                    searchStatusEnum = statusValue.ToString();
+                }
+                catch
+                {
+                    searchStatusEnum = null;
+                }
+            }
+
+            var (shifts, totalItems) = await _shiftRepository.GetPagedShiftsAsync(
+                collectionCompanyId: model.CollectionCompanyId,
+                smallCollectionPointId: model.SmallCollectionPointId,
+                status: searchStatusEnum, 
+                fromDate: model.FromDate,
+                toDate: model.ToDate,
+                page: model.Page,
+                limit: model.Limit
+            );
+
+            var resultList = shifts.Select(s => new ShiftModel
+            {
+                ShiftId = s.ShiftId.ToString(),
+                CollectorId = s.CollectorId,
+                CollectorName = s.Collector?.Name ?? "N/A",
+                Vehicle_Id = s.Vehicle_Id?.ToString(),
+                Plate_Number = s.Vehicle?.Plate_Number ?? "Chưa gán xe",
+                WorkDate = s.WorkDate,
+                Shift_Start_Time = s.Shift_Start_Time,
+                Shift_End_Time = s.Shift_End_Time,
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ShiftStatus>(s.Status)
+            }).ToList();
+
+            return new PagedResultModel<ShiftModel>(
+                resultList,
+                model.Page,
+                model.Limit,
+                totalItems
+            );
+        }
+
+        public async Task<ShiftModel> GetShiftById(string shiftId)
 		{
 			var shift = await _shiftRepository.GetShiftWithDetailsAsync(shiftId);
 			if (shift == null) throw new AppException("Không tìm thấy ca làm việc", 404);

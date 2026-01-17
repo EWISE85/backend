@@ -104,5 +104,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
         {
             return _dbSet.AsNoTracking(); 
         }
+        public IQueryable<T> AsQueryable()
+        {
+            return _context.Set<T>().AsQueryable();
+        }
     }
 }
