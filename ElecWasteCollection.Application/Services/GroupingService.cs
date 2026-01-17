@@ -18,6 +18,7 @@ namespace ElecWasteCollection.Application.Services
 
         // Lưu trữ tạm thời trong RAM 
         private static readonly List<StagingAssignDayModel> _inMemoryStaging = new();
+        private static readonly object _lockObj = new object();
 
         private readonly ICollectionGroupRepository _repository;
         private readonly IUnitOfWork _unitOfWork;
@@ -268,11 +269,8 @@ namespace ElecWasteCollection.Application.Services
             return res;
         }
 
-        public Task<PreviewProductPagedResult?> GetPreviewProductsAsync(
-      string vehicleId,
-      DateOnly workDate,
-      int page,
-      int pageSize)
+        public Task<PreviewProductPagedResult?> GetPreviewProductsAsync(string vehicleId,
+            DateOnly workDate, int page, int pageSize)
         {
             if (page <= 0) page = 1;
             if (pageSize <= 0) pageSize = 10;
@@ -342,7 +340,6 @@ namespace ElecWasteCollection.Application.Services
             return Task.FromResult<object>(resultList);
         }
 
-
         public async Task<bool> AssignDayAsync(AssignDayRequest request)
         {
             if (request.Assignments == null || !request.Assignments.Any())
@@ -350,7 +347,7 @@ namespace ElecWasteCollection.Application.Services
 
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId);
             if (point == null)
-                throw new Exception("Trạm thu gom không tồn tại.");
+                throw new Exception($"Trạm thu gom không tồn tại (ID: {request.CollectionPointId})");
 
             foreach (var item in request.Assignments)
             {
@@ -363,335 +360,362 @@ namespace ElecWasteCollection.Application.Services
                 if (vehicle.Small_Collection_Point != request.CollectionPointId)
                     throw new Exception($"Xe {vehicle.Plate_Number} không thuộc trạm này.");
 
-                var busyOtherPoint = _inMemoryStaging.Any(s =>
-                    s.Date == request.WorkDate &&
-                    s.VehicleId == item.VehicleId &&
-                    s.PointId != request.CollectionPointId);
+                lock (_lockObj)
+                {
+                    var busyOtherPoint = _inMemoryStaging.Any(s =>
+                        s.Date == request.WorkDate &&
+                        s.VehicleId == item.VehicleId &&
+                        s.PointId != request.CollectionPointId);
 
-                if (busyOtherPoint)
-                    throw new Exception($"Xe {vehicle.Plate_Number} đã được điều động nơi khác vào ngày này.");
+                    if (busyOtherPoint)
+                        throw new Exception($"Xe {vehicle.Plate_Number} đã được điều động sang trạm khác vào ngày {request.WorkDate}.");
+                }
             }
 
-            foreach (var item in request.Assignments)
+            lock (_lockObj)
             {
-                _inMemoryStaging.RemoveAll(s =>
-                    s.Date == request.WorkDate &&
-                    s.PointId == request.CollectionPointId &&
-                    s.VehicleId == item.VehicleId);
-
-                _inMemoryStaging.Add(new StagingAssignDayModel
+                foreach (var item in request.Assignments)
                 {
-                    StagingId = Guid.NewGuid(),
-                    Date = request.WorkDate,
-                    PointId = request.CollectionPointId,
-                    VehicleId = item.VehicleId,
-                    ProductIds = item.ProductIds
-                });
+                    // Xóa dữ liệu cũ của chính xe này trong ngày này 
+                    _inMemoryStaging.RemoveAll(s =>
+                        s.Date == request.WorkDate &&
+                        s.VehicleId == item.VehicleId);
+
+                    //Thêm dữ liệu mới
+                    _inMemoryStaging.Add(new StagingAssignDayModel
+                    {
+                        StagingId = Guid.NewGuid(),
+                        Date = request.WorkDate,
+                        PointId = request.CollectionPointId,
+                        VehicleId = item.VehicleId,
+                        ProductIds = item.ProductIds
+                    });
+
+                    Console.WriteLine($"[RAM] Đã thêm xe {item.VehicleId} vào bộ nhớ.");
+                }
+
+                var countXe = _inMemoryStaging.Count(s => s.Date == request.WorkDate && s.PointId == request.CollectionPointId);
+                Console.WriteLine($"[RAM CHECK] Hiện tại Staging đang chứa {countXe} xe cho ngày {request.WorkDate}.");
             }
 
             return await Task.FromResult(true);
         }
 
-
         // Hàm Group Không Mapbox
         public async Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request)
         {
-
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
-                ?? throw new Exception($"Không tìm thấy trạm có ID: {request.CollectionPointId}");
-
-            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
-            double serviceTime = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, 15);
-
-            var staging = _inMemoryStaging
-                .Where(s => s.PointId == request.CollectionPointId)
-                .OrderBy(s => s.Date)
-                .ToList();
-
-            if (!staging.Any()) throw new Exception("Chưa có dữ liệu Assign. Hãy chạy AssignDay trước.");
-
             var response = new GroupingByPointResponse
             {
-                CollectionPoint = point.Name,
                 SavedToDatabase = request.SaveResult,
-                CreatedGroups = new List<GroupSummary>()
+                CreatedGroups = new List<GroupSummary>(),
+                Errors = new List<string>(),
+                Logs = new List<string>() 
             };
 
-            int groupCounter = 1;
-            var attMap = await GetAttributeIdMapAsync();
-
-            var distinctDates = staging.Select(s => s.Date).Distinct().ToList();
-
-            var availableShiftQueues = new Dictionary<DateOnly, Queue<Shifts>>();
-
-            foreach (var date in distinctDates)
+            try
             {
-                var rawShifts = await _unitOfWork.Shifts.GetAllAsync(s =>
-                    s.WorkDate == date &&
-                    s.Status == ShiftStatus.CO_SAN.ToString() &&
-                    string.IsNullOrEmpty(s.Vehicle_Id));
+                var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId);
+                if (point == null) throw new Exception($"Không tìm thấy trạm ID: {request.CollectionPointId}");
 
-                var validQueue = new Queue<Shifts>();
-                foreach (var sh in rawShifts)
+                response.CollectionPoint = point.Name;
+                response.Logs.Add($"[START] Bắt đầu xử lý cho trạm: {point.Name} (ID: {request.CollectionPointId})");
+
+                var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
+                double serviceTime = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, 15);
+
+                var staging = _inMemoryStaging
+                    .Where(s => s.PointId == request.CollectionPointId)
+                    .ToList();
+
+                response.Logs.Add($"[CHECK STAGING] Tìm thấy {staging.Count} dòng dữ liệu phân công (assignments) trong RAM.");
+
+                if (!staging.Any())
                 {
-                    var collector = await _unitOfWork.Users.GetByIdAsync(sh.CollectorId);
+                    response.Errors.Add("Bộ nhớ Staging rỗng. Vui lòng chạy lại AssignDay trước khi chạy Group.");
+                    return response;
+                }
 
-                    if (collector != null && collector.SmallCollectionPointId == request.CollectionPointId)
+                var distinctDates = staging.Select(s => s.Date).Distinct().ToList();
+                var availableShiftQueues = new Dictionary<DateOnly, Queue<Shifts>>();
+
+                foreach (var date in distinctDates)
+                {
+                    var rawShifts = await _unitOfWork.Shifts.GetAllAsync(s =>
+                        s.WorkDate == date &&
+                        s.Status == ShiftStatus.CO_SAN.ToString() &&
+                        string.IsNullOrEmpty(s.Vehicle_Id));
+
+                    var validQueue = new Queue<Shifts>();
+                    foreach (var sh in rawShifts)
                     {
-                        validQueue.Enqueue(sh);
-                    }
-                }
-                availableShiftQueues[date] = validQueue;
-            }
-
-
-            foreach (var assignDay in staging)
-            {
-                var workDate = assignDay.Date;
-                var posts = new List<Post>();
-
-                foreach (var pid in assignDay.ProductIds)
-                {
-
-                    var p = await _unitOfWork.Posts.GetAsync(x => x.ProductId == pid);
-                    if (p != null) posts.Add(p);
-                }
-
-                if (!posts.Any()) continue;
-
-                Shifts mainShift = null;
-
-                var assignedShift = await _unitOfWork.Shifts.GetAsync(s => s.WorkDate == workDate && s.Vehicle_Id == assignDay.VehicleId);
-
-                if (assignedShift != null)
-                {
-                    mainShift = assignedShift;
-                }
-                else
-                {
-                    if (availableShiftQueues.ContainsKey(workDate) && availableShiftQueues[workDate].Count > 0)
-                    {
-                        var selectedShift = availableShiftQueues[workDate].Dequeue();
-
-                        selectedShift.Vehicle_Id = assignDay.VehicleId;
-                        selectedShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
-                        selectedShift.WorkDate = workDate;
-
-                        mainShift = selectedShift;
-                        _unitOfWork.Shifts.Update(mainShift);
-                    }
-                    else
-                    {
-                        throw new Exception($"Ngày {workDate}: Xe {assignDay.VehicleId} cần hoạt động nhưng không tìm thấy tài xế (Shift) nào rảnh.");
-                    }
-                }
-
-                if (mainShift.Status == ShiftStatus.CO_SAN.ToString())
-                {
-                    mainShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
-                    _unitOfWork.Shifts.Update(mainShift);
-                }
-
-                var oldGroups = await _unitOfWork.CollectionGroupGeneric.GetAllAsync(g => g.Shift_Id == mainShift.ShiftId);
-                foreach (var g in oldGroups)
-                {
-                    var routes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.CollectionGroupId == g.CollectionGroupId);
-                    foreach (var r in routes) _unitOfWork.CollecctionRoutes.Delete(r);
-                    _unitOfWork.CollectionGroupGeneric.Delete(g);
-                }
-
-                var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(assignDay.VehicleId);
-                if (vehicle == null) throw new Exception($"Không tìm thấy xe có ID: {assignDay.VehicleId}");
-
-                var locations = new List<(double lat, double lng)>();
-                var nodesToOptimize = new List<OptimizationNode>();
-                var mapData = new List<dynamic>();
-
-                locations.Add((point.Latitude, point.Longitude));
-
-                var shiftStart = TimeOnly.FromDateTime(mainShift.Shift_Start_Time.AddHours(7));
-                var shiftEnd = TimeOnly.FromDateTime(mainShift.Shift_End_Time.AddHours(7));
-
-                foreach (var p in posts)
-                {
-                    double lat = point.Latitude, lng = point.Longitude;
-                    string displayAddress = p.Address ?? "Không có địa chỉ";
-
-                    if (!string.IsNullOrEmpty(p.Address))
-                    {
-                        var matchedAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == p.SenderId && a.Address == p.Address);
-                        if (matchedAddress != null && matchedAddress.Iat.HasValue && matchedAddress.Ing.HasValue)
+                        var collector = await _unitOfWork.Users.GetByIdAsync(sh.CollectorId);
+                        if (collector != null && collector.SmallCollectionPointId == request.CollectionPointId)
                         {
-                            if (Math.Abs(matchedAddress.Iat.Value) > 0.0001)
+                            validQueue.Enqueue(sh);
+                        }
+                    }
+                    availableShiftQueues[date] = validQueue;
+                    response.Logs.Add($"[CHECK SHIFT] Ngày {date}: Tìm thấy {validQueue.Count} tài xế (Shift) rảnh.");
+                }
+
+                var vehicleAssignments = staging
+                    .GroupBy(s => new { s.VehicleId, s.Date })
+                    .ToList();
+
+                response.Logs.Add($"[ANALYSIS] Phân tích dữ liệu: Cần chạy lộ trình cho {vehicleAssignments.Count} xe.");
+                foreach (var v in vehicleAssignments)
+                {
+                    response.Logs.Add($"   -> Xe ID: {v.Key.VehicleId} (Ngày: {v.Key.Date}) - SL Sản phẩm: {v.SelectMany(x => x.ProductIds).Distinct().Count()}");
+                }
+
+                int groupCounter = 1;
+                var attMap = await GetAttributeIdMapAsync();
+
+                foreach (var grp in vehicleAssignments)
+                {
+                    var vehicleId = grp.Key.VehicleId;
+                    var workDate = grp.Key.Date;
+
+                    response.Logs.Add($"--- Bắt đầu xử lý Xe {vehicleId} ---");
+
+                    try
+                    {
+                        var allProductIds = grp.SelectMany(x => x.ProductIds).Distinct().ToList();
+
+                        var posts = new List<Post>();
+                        foreach (var pid in allProductIds)
+                        {
+                            var p = await _unitOfWork.Posts.GetAsync(x => x.ProductId == pid);
+                            if (p != null) posts.Add(p);
+                        }
+
+                        if (!posts.Any())
+                        {
+                            var msg = $"[LỖI DỮ LIỆU] Xe {vehicleId}: Có {allProductIds.Count} ID sản phẩm nhưng không tìm thấy Post nào trong DB.";
+                            response.Errors.Add(msg);
+                            response.Logs.Add(msg);
+                            continue;
+                        }
+
+                        response.Logs.Add($"   + Đã lấy được {posts.Count} bài đăng hợp lệ.");
+
+                        Shifts mainShift = null;
+                        var assignedShift = await _unitOfWork.Shifts.GetAsync(s => s.WorkDate == workDate && s.Vehicle_Id == vehicleId);
+
+                        if (assignedShift != null)
+                        {
+                            mainShift = assignedShift;
+                            response.Logs.Add($"   + Dùng lại Shift đã gán trước đó (ID: {mainShift.ShiftId})");
+                        }
+                        else
+                        {
+                            if (availableShiftQueues.ContainsKey(workDate) && availableShiftQueues[workDate].Count > 0)
                             {
-                                lat = matchedAddress.Iat.Value; lng = matchedAddress.Ing.Value;
+                                var selectedShift = availableShiftQueues[workDate].Dequeue();
+                                selectedShift.Vehicle_Id = vehicleId;
+                                selectedShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
+                                selectedShift.WorkDate = workDate;
+                                mainShift = selectedShift;
+                                _unitOfWork.Shifts.Update(mainShift);
+
+                                response.Logs.Add($"   + Gán thành công Shift mới (ID: {mainShift.ShiftId}). Còn lại trong hàng đợi: {availableShiftQueues[workDate].Count}");
                             }
-                            else displayAddress += " (Lỗi tọa độ - Về Trạm)";
-                        }
-                        else displayAddress += " (Không tìm thấy tọa độ - Về Trạm)";
-                    }
-
-                    TimeOnly finalStart = shiftStart;
-                    TimeOnly finalEnd = shiftEnd;
-                    if (TryGetTimeWindowForDate(p.ScheduleJson!, workDate, out var st, out var en))
-                    {
-                        var clampedStart = st < shiftStart ? shiftStart : st;
-                        var clampedEnd = en > shiftEnd ? shiftEnd : en;
-                        if (clampedStart < clampedEnd) { finalStart = clampedStart; finalEnd = clampedEnd; }
-                    }
-
-                    var metrics = await GetProductMetricsInternalAsync(p.ProductId, attMap);
-                    string dimStr = $"{metrics.length} x {metrics.width} x {metrics.height}";
-
-                    locations.Add((lat, lng));
-                    nodesToOptimize.Add(new OptimizationNode
-                    {
-                        OriginalIndex = mapData.Count,
-                        Weight = metrics.weight,
-                        Volume = metrics.volume,
-                        Start = finalStart,
-                        End = finalEnd
-                    });
-
-                    var user = await _unitOfWork.Users.GetByIdAsync(p.SenderId);
-                    var product = await _unitOfWork.Products.GetByIdAsync(p.ProductId);
-                    var cat = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
-                    var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
-
-                    mapData.Add(new
-                    {
-                        Post = p,
-                        User = user,
-                        DisplayAddress = displayAddress,
-                        CategoryName = cat?.Name ?? "N/A",
-                        BrandName = brand?.Name ?? "N/A",
-                        Att = new { Weight = metrics.weight, Volume = metrics.volume, DimensionText = dimStr }
-                    });
-                }
-
-                if (!nodesToOptimize.Any()) continue;
-
-                int locCount = locations.Count;
-                long[,] matrixDist = new long[locCount, locCount];
-                long[,] matrixTime = new long[locCount, locCount];
-                double speedMetersPerSec = 30.0 * 1000 / 3600;
-                double tortuosity = 1.2;
-
-                for (int i = 0; i < locCount; i++)
-                {
-                    for (int j = 0; j < locCount; j++)
-                    {
-                        if (i == j) continue;
-                        double distKm = GeoHelper.DistanceKm(locations[i].lat, locations[i].lng, locations[j].lat, locations[j].lng);
-                        long distMeters = (long)(distKm * 1000 * tortuosity);
-                        matrixDist[i, j] = distMeters;
-                        matrixTime[i, j] = (long)(distMeters / speedMetersPerSec);
-                    }
-                }
-
-                double vehicleVol = vehicle.Length_M * vehicle.Width_M * vehicle.Height_M;
-                var sortedIndices = RouteOptimizer.SolveVRP(matrixDist, matrixTime, nodesToOptimize, vehicle.Capacity_Kg, vehicleVol, shiftStart, shiftEnd);
-                if (!sortedIndices.Any()) sortedIndices = Enumerable.Range(0, nodesToOptimize.Count).ToList();
-
-                var group = new CollectionGroups
-                {
-                    Group_Code = $"GRP-{workDate:MMdd}-{groupCounter++}",
-                    Shift_Id = mainShift.ShiftId,
-                    Name = $"{vehicle.Vehicle_Type} - {vehicle.Plate_Number}",
-                    Created_At = DateTime.UtcNow.AddHours(7)
-                };
-
-                if (request.SaveResult)
-                {
-                    await _unitOfWork.CollectionGroupGeneric.AddAsync(group);
-                    await _unitOfWork.SaveAsync(); 
-                }
-
-                var routeNodes = new List<RouteDetail>();
-                TimeOnly cursorTime = shiftStart;
-                int prevLocIdx = 0;
-                double totalKg = 0, totalM3 = 0;
-
-                for (int i = 0; i < sortedIndices.Count; i++)
-                {
-                    int idx = sortedIndices[i];
-                    int currentLocIdx = idx + 1;
-                    var data = mapData[idx];
-
-                    var prodToUp = await _unitOfWork.Products.GetByIdAsync((Guid)data.Post.ProductId);
-                    if (prodToUp != null)
-                    {
-                        prodToUp.Status = ProductStatus.CHO_THU_GOM.ToString();
-                        _unitOfWork.Products.Update(prodToUp);
-                        if (request.SaveResult)
-                        {
-                            await _unitOfWork.ProductStatusHistory.AddAsync(new ProductStatusHistory
+                            else
                             {
-                                ProductStatusHistoryId = Guid.NewGuid(),
-                                ProductId = prodToUp.ProductId,
-                                ChangedAt = DateTime.UtcNow,
-                                Status = ProductStatus.CHO_THU_GOM.ToString(),
-                                StatusDescription = $"Xe {vehicle.Plate_Number}"
-                            });
+                                var msg = $"[LỖI TÀI XẾ] Xe {vehicleId}: Hết tài xế (Shift) rảnh cho ngày {workDate}.";
+                                response.Errors.Add(msg);
+                                response.Logs.Add(msg);
+                                continue;
+                            }
                         }
-                    }
 
-                    long timeSec = matrixTime[prevLocIdx, currentLocIdx];
-                    var arrival = cursorTime.AddMinutes(timeSec / 60.0);
-                    if (arrival < nodesToOptimize[idx].Start) arrival = nodesToOptimize[idx].Start;
+                        var oldGroups = await _unitOfWork.CollectionGroupGeneric.GetAllAsync(g => g.Shift_Id == mainShift.ShiftId);
+                        if (oldGroups.Any()) response.Logs.Add($"   + Xóa {oldGroups.Count()} group cũ của Shift này.");
 
-                    routeNodes.Add(new RouteDetail
-                    {
-                        PickupOrder = i + 1,
-                        ProductId = data.Post.ProductId,
-                        UserName = data.User.Name,
-                        Address = data.DisplayAddress,
-                        DistanceKm = Math.Round(matrixDist[prevLocIdx, currentLocIdx] / 1000.0, 2),
-                        EstimatedArrival = arrival.ToString("HH:mm"),
-                        Schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>((string)data.Post.ScheduleJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
-                        CategoryName = data.CategoryName,
-                        BrandName = data.BrandName,
-                        DimensionText = data.Att.DimensionText,
-                        WeightKg = data.Att.Weight,
-                        VolumeM3 = data.Att.Volume
-                    });
-
-                    if (request.SaveResult)
-                    {
-                        await _unitOfWork.CollecctionRoutes.AddAsync(new CollectionRoutes
+                        foreach (var g in oldGroups)
                         {
-                            CollectionRouteId = Guid.NewGuid(),
-                            CollectionGroupId = group.CollectionGroupId,
-                            ProductId = data.Post.ProductId,
-                            CollectionDate = workDate,
-                            EstimatedTime = arrival,
-                            DistanceKm = Math.Round(matrixDist[prevLocIdx, currentLocIdx] / 1000.0, 2),
-                            Status = CollectionRouteStatus.CHUA_BAT_DAU.ToString(),
-                            ConfirmImages = new List<string>()
+                            var routes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.CollectionGroupId == g.CollectionGroupId);
+                            foreach (var r in routes) _unitOfWork.CollecctionRoutes.Delete(r);
+                            _unitOfWork.CollectionGroupGeneric.Delete(g);
+                        }
+
+                        var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(vehicleId);
+                        if (vehicle == null)
+                        {
+                            response.Errors.Add($"Không tìm thấy thông tin xe ID: {vehicleId}");
+                            continue;
+                        }
+
+                        var locations = new List<(double lat, double lng)>();
+                        var nodesToOptimize = new List<OptimizationNode>();
+                        var mapData = new List<dynamic>();
+
+                        locations.Add((point.Latitude, point.Longitude));
+
+                        var shiftStart = TimeOnly.FromDateTime(mainShift.Shift_Start_Time.AddHours(7));
+                        var shiftEnd = TimeOnly.FromDateTime(mainShift.Shift_End_Time.AddHours(7));
+
+                        foreach (var p in posts)
+                        {
+                            double lat = point.Latitude, lng = point.Longitude;
+                            string displayAddress = p.Address ?? "N/A";
+                            if (!string.IsNullOrEmpty(p.Address))
+                            {
+                                var matchedAddress = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == p.SenderId && a.Address == p.Address);
+                                if (matchedAddress != null && matchedAddress.Iat.HasValue && matchedAddress.Ing.HasValue && Math.Abs(matchedAddress.Iat.Value) > 0.0001)
+                                {
+                                    lat = matchedAddress.Iat.Value; lng = matchedAddress.Ing.Value;
+                                }
+                            }
+
+                            TimeOnly finalStart = shiftStart, finalEnd = shiftEnd;
+                            if (TryGetTimeWindowForDate(p.ScheduleJson!, workDate, out var st, out var en))
+                            {
+                                var cS = st < shiftStart ? shiftStart : st;
+                                var cE = en > shiftEnd ? shiftEnd : en;
+                                if (cS < cE) { finalStart = cS; finalEnd = cE; }
+                            }
+
+                            var metrics = await GetProductMetricsInternalAsync(p.ProductId, attMap);
+
+                            locations.Add((lat, lng));
+                            nodesToOptimize.Add(new OptimizationNode { OriginalIndex = mapData.Count, Weight = metrics.weight, Volume = metrics.volume, Start = finalStart, End = finalEnd });
+
+                            var user = await _unitOfWork.Users.GetByIdAsync(p.SenderId);
+                            var product = await _unitOfWork.Products.GetByIdAsync(p.ProductId);
+                            var cat = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
+                            var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
+
+                            mapData.Add(new { Post = p, User = user, DisplayAddress = displayAddress, CategoryName = cat?.Name, BrandName = brand?.Name, Att = new { metrics.weight, metrics.volume, DimensionText = $"{metrics.length}x{metrics.width}x{metrics.height}" } });
+                        }
+
+                        if (!nodesToOptimize.Any())
+                        {
+                            response.Errors.Add($"Xe {vehicleId}: Không có dữ liệu tối ưu (Nodes = 0).");
+                            continue;
+                        }
+
+                        response.Logs.Add($"   + Chuẩn bị chạy thuật toán VRP cho {nodesToOptimize.Count} điểm giao hàng.");
+
+                        int locCount = locations.Count;
+                        long[,] matrixDist = new long[locCount, locCount];
+                        long[,] matrixTime = new long[locCount, locCount];
+                        double speed = 30.0 * 1000 / 3600;
+
+                        for (int i = 0; i < locCount; i++)
+                        {
+                            for (int j = 0; j < locCount; j++)
+                            {
+                                if (i == j) continue;
+                                double d = GeoHelper.DistanceKm(locations[i].lat, locations[i].lng, locations[j].lat, locations[j].lng);
+                                long dm = (long)(d * 1000 * 1.25);
+                                matrixDist[i, j] = dm;
+                                matrixTime[i, j] = (long)(dm / speed);
+                            }
+                        }
+
+                        double vehicleVol = vehicle.Length_M * vehicle.Width_M * vehicle.Height_M;
+                        var sortedIndices = RouteOptimizer.SolveVRP(matrixDist, matrixTime, nodesToOptimize, vehicle.Capacity_Kg, vehicleVol, shiftStart, shiftEnd);
+
+                        response.Logs.Add($"   + Thuật toán VRP hoàn tất. Kết quả: {sortedIndices.Count} điểm.");
+
+                        var group = new CollectionGroups
+                        {
+                            Group_Code = $"GRP-{workDate:MMdd}-{groupCounter++}",
+                            Shift_Id = mainShift.ShiftId,
+                            Name = $"{vehicle.Vehicle_Type} - {vehicle.Plate_Number}",
+                            Created_At = DateTime.UtcNow.AddHours(7)
+                        };
+
+                        if (request.SaveResult) { await _unitOfWork.CollectionGroupGeneric.AddAsync(group); await _unitOfWork.SaveAsync(); }
+
+                        var routeNodes = new List<RouteDetail>();
+                        TimeOnly cursorTime = shiftStart;
+                        int prevLocIdx = 0;
+                        double totalKg = 0, totalM3 = 0;
+
+                        for (int i = 0; i < sortedIndices.Count; i++)
+                        {
+                            int idx = sortedIndices[i];
+                            int cIdx = idx + 1;
+                            var data = mapData[idx];
+
+                            if (request.SaveResult)
+                            {
+                                var prodToUp = await _unitOfWork.Products.GetByIdAsync((Guid)data.Post.ProductId);
+                                if (prodToUp != null)
+                                {
+                                    prodToUp.Status = ProductStatus.CHO_THU_GOM.ToString();
+                                    _unitOfWork.Products.Update(prodToUp);
+                                }
+                            }
+
+                            long tSec = matrixTime[prevLocIdx, cIdx];
+                            var arr = cursorTime.AddMinutes(tSec / 60.0);
+                            if (arr < nodesToOptimize[idx].Start) arr = nodesToOptimize[idx].Start;
+                            bool isLate = arr > nodesToOptimize[idx].End;
+
+                            routeNodes.Add(new RouteDetail
+                            {
+                                PickupOrder = i + 1,
+                                ProductId = data.Post.ProductId,
+                                UserName = data.User.Name,
+                                Address = data.DisplayAddress,
+                                DistanceKm = Math.Round(matrixDist[prevLocIdx, cIdx] / 1000.0, 2),
+                                EstimatedArrival = arr.ToString("HH:mm") + (isLate ? " (Trễ)" : ""),
+                                IsLate = isLate,
+                                Schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>((string)data.Post.ScheduleJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
+                                CategoryName = data.CategoryName ?? "N/A",
+                                BrandName = data.BrandName ?? "N/A",
+                                DimensionText = data.Att.DimensionText,
+                                WeightKg = data.Att.weight,
+                                VolumeM3 = data.Att.volume
+                            });
+
+                            if (request.SaveResult)
+                            {
+                                await _unitOfWork.CollecctionRoutes.AddAsync(new CollectionRoutes { CollectionGroupId = group.CollectionGroupId, ProductId = data.Post.ProductId, CollectionDate = workDate, EstimatedTime = arr, DistanceKm = Math.Round(matrixDist[prevLocIdx, cIdx] / 1000.0, 2), Status = "CHUA_BAT_DAU", ConfirmImages = new List<string>() });
+                            }
+
+                            cursorTime = arr.AddMinutes(serviceTime);
+                            prevLocIdx = cIdx;
+                            totalKg += (double)data.Att.weight; totalM3 += (double)data.Att.volume;
+                        }
+
+                        if (request.SaveResult) await _unitOfWork.SaveAsync();
+
+                        var colObj = await _unitOfWork.Users.GetByIdAsync(mainShift.CollectorId);
+                        response.CreatedGroups.Add(new GroupSummary
+                        {
+                            GroupId = group.CollectionGroupId,
+                            GroupCode = group.Group_Code,
+                            Collector = colObj?.Name,
+                            Vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})",
+                            ShiftId = mainShift.ShiftId,
+                            GroupDate = workDate,
+                            TotalPosts = routeNodes.Count,
+                            TotalWeightKg = Math.Round(totalKg, 2),
+                            TotalVolumeM3 = Math.Round(totalM3, 3),
+                            Routes = routeNodes
                         });
+
+                        response.Logs.Add($"[SUCCESS] Đã tạo xong Group cho xe {vehicleId}.");
                     }
-                    cursorTime = arrival.AddMinutes(serviceTime);
-                    prevLocIdx = currentLocIdx;
-                    totalKg += (double)data.Att.Weight; totalM3 += (double)data.Att.Volume;
-                }
+                    catch (Exception ex)
+                    {
+                        response.Errors.Add($"[EXCEPTION] Xe {vehicleId}: {ex.Message}");
+                        response.Logs.Add($"[EXCEPTION] {ex.ToString()}");
+                    }
+                } 
 
-                if (request.SaveResult) await _unitOfWork.SaveAsync();
-
-                var collectorObj = await _unitOfWork.Users.GetByIdAsync(mainShift.CollectorId);
-
-                response.CreatedGroups.Add(new GroupSummary
+                if (response.CreatedGroups.Count == 0 && response.Errors.Count == 0)
                 {
-                    GroupId = group.CollectionGroupId,
-                    GroupCode = group.Group_Code,
-                    Collector = collectorObj?.Name ?? "N/A",
-                    Vehicle = $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})",
-                    ShiftId = mainShift.ShiftId,
-                    GroupDate = workDate,
-                    TotalPosts = routeNodes.Count,
-                    TotalWeightKg = Math.Round(totalKg, 2),
-                    TotalVolumeM3 = Math.Round(totalM3, 3),
-                    Routes = routeNodes
-                });
+                    response.Logs.Add("[WARNING] Kết thúc mà không tạo được group nào và không có lỗi (Vòng lặp không chạy?)");
+                }
+            }
+            catch (Exception ex)
+            {
+                response.Errors.Add($"[SYSTEM ERROR] {ex.Message}");
             }
 
             return response;

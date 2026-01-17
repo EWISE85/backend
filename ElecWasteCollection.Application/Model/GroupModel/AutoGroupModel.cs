@@ -48,5 +48,6 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public string DimensionText { get; set; } = "";
         public double WeightKg { get; set; }
         public double VolumeM3 { get; set; }
+        public bool IsLate { get; set; }
     }
 }
