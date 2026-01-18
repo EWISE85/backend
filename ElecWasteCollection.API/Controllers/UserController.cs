@@ -88,5 +88,42 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "User deleted successfully." });
 		}
+		[HttpGet("email")]
+		public async Task<IActionResult> GetUserByEmail([FromQuery] string email)
+		{
+			var users = await _userService.GetByEmail(email);
+			if (users == null || users.Count == 0)
+			{
+				return NotFound(new { message = "User not found." });
+			}
+			return Ok(users);
+		}
+
+		[HttpDelete("ban/{userId}")]
+		public async Task<IActionResult> BanUser([FromRoute] Guid userId)
+		{
+			var result = await _userService.BanUser(userId);
+			if (!result)
+			{
+				return BadRequest(new { message = "Failed to ban user." });
+			}
+			return Ok(new { message = "User banned successfully." });
+		}
+		[HttpGet("filter")]
+		public async Task<IActionResult> AdminFilterUser([FromQuery] AdminFilterUserRequest request)
+		{
+			var model = new AdminFilterUserModel
+			{
+				Page = request.Page,
+				Limit = request.Limit,
+				FromDate = request.FromDate,
+				ToDate = request.ToDate,
+				Email = request.Email,
+				Status = request.Status
+			};
+			var users = await _userService.AdminFilterUser(model);
+			return Ok(users);
+		}
+
 	}
 }

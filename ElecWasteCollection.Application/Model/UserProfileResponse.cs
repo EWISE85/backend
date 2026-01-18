@@ -24,6 +24,7 @@ namespace ElecWasteCollection.Application.Model
 		public string? SmallCollectionPointId { get; set; }
 
 		public string? CollectionCompanyId { get; set; }
-		public UserSettingsModel Settings { get; set; } = new UserSettingsModel();
+
+		public string Status { get; set; }
 	}
 }
