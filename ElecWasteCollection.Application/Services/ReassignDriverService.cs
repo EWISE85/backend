@@ -125,7 +125,7 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<ReassignDriverResponse> ReassignDriverAsync(ReassignDriverRequest request)
         {
-            var group = await _unitOfWork.CollectionGroups.GetByIdAsync(request.GroupId)
+            var group = await _unitOfWork.CollectionGroupGeneric.GetByIdAsync(request.GroupId)
                 ?? throw new Exception("Không tìm thấy nhóm thu gom.");
 
             var oldShift = await _unitOfWork.Shifts.GetByIdAsync(group.Shift_Id)
@@ -212,7 +212,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 group.Name = $"{vehicleObj.Vehicle_Type} - {vehicleObj.Plate_Number} ({newCollector.Name})";
             }
-            _unitOfWork.CollectionGroups.Update(group);
+            _unitOfWork.CollectionGroupGeneric.Update(group);
 
             await _unitOfWork.SaveAsync();
 

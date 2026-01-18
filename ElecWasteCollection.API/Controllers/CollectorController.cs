@@ -36,13 +36,14 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(collectors);
 		}
 		[HttpGet("company/{companyId}")]
-		public async Task<IActionResult> GetCollectorsByCompany([FromRoute] string companyId)
-		{
-			var collectors = await _collectorService.GetCollectorByCompanyId(companyId);
-			return Ok(collectors);
-		}
+        public async Task<IActionResult> GetCollectorsByCompany( string companyId, int page = 1, int limit = 10)
+        {
+            var result = await _collectorService
+                .GetCollectorsByCompanyIdPagedAsync(companyId, page, limit);
+            return Ok(result);
+        }
 
-		[HttpPost("import-excel")]
+        [HttpPost("import-excel")]
 		public async Task<IActionResult> ImportCollectors(IFormFile file)
 		{
 			if (file == null || file.Length == 0)

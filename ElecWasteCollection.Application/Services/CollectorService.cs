@@ -95,22 +95,39 @@ namespace ElecWasteCollection.Application.Services
 			return response;
 		}
 
-		public async Task<List<CollectorResponse>> GetCollectorByCompanyId(string companyId)
-		{
-			var collectores = await _collectorRepository.GetsAsync(c => c.CollectionCompanyId == companyId && c.Role == UserRole.Collector.ToString());
-			var response = collectores.Select(c => new CollectorResponse
-			{
-				CollectorId = c.UserId,
-				Name = c.Name,
-				Email = c.Email,
-				Phone = c.Phone,
-				Avatar = c.Avatar,
-				SmallCollectionPointId = c.SmallCollectionPointId
-			}).ToList();
-			return response;
-		}
+        public async Task<PagedResult<CollectorResponse>> GetCollectorsByCompanyIdPagedAsync(
+         string companyId,
+         int page,
+         int limit)
+        {
+            var (collectors, totalCount) =
+                await _collectorRepository.GetPagedCollectorsAsync(
+                    status: null,
+                    companyId: companyId,
+                    smallCollectionPointId: null,
+                    page: page,
+                    limit: limit);
 
-		public async Task<List<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId)
+            var resultItems = collectors.Select(c => new CollectorResponse
+            {
+                CollectorId = c.UserId,
+                Name = c.Name,
+                Email = c.Email,
+                Phone = c.Phone,
+                Avatar = c.Avatar,
+                SmallCollectionPointId = c.SmallCollectionPointId
+            }).ToList();
+
+            return new PagedResult<CollectorResponse>
+            {
+                Data = resultItems,
+                TotalItems = totalCount,
+                Page = page,
+                Limit = limit
+            };
+        }
+
+        public async Task<List<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId)
 		{
 			var collectores = await _collectorRepository.GetsAsync(c => c.SmallCollectionPointId == wareHouseId && c.Role == UserRole.Collector.ToString());
 			var response = collectores.Select(c => new CollectorResponse

@@ -14,5 +14,5 @@ namespace ElecWasteCollection.Domain.IRepository
 		Task<List<CollectionRoutes>> GetRoutesByDateAndPointWithDetailsAsync(DateOnly pickUpDate,string collectionPointId);
 		Task<CollectionRoutes?> GetRouteWithDetailsByIdAsync(Guid collectionRouteId);
 		Task<List<CollectionRoutes>> GetRoutesByCollectorAndDateWithDetailsAsync(DateOnly pickUpDate,Guid collectorId);
-	}
+    }
 }

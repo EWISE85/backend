@@ -12,6 +12,8 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public bool SavedToDatabase { get; set; }
 
         public List<GroupSummary> CreatedGroups { get; set; } = new();
+        public List<string> Errors { get; set; } = new List<string>();
+        public List<string> Logs { get; set; } = new List<string>();
     }
 
     public class GroupingByPointRequest
