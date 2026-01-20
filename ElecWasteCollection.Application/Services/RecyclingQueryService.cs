@@ -9,13 +9,15 @@ namespace ElecWasteCollection.Application.Services
     public class RecyclingQueryService : IRecyclingQueryService
     {
         private readonly IUnitOfWork _unitOfWork;
+		private readonly IPackageRepository _packageRepository;
 
-        public RecyclingQueryService(IUnitOfWork unitOfWork)
-        {
-            _unitOfWork = unitOfWork;
-        }
+		public RecyclingQueryService(IUnitOfWork unitOfWork, IPackageRepository packageRepository)
+		{
+			_unitOfWork = unitOfWork;
+			_packageRepository = packageRepository;
+		}
 
-        public async Task<List<RecyclerCollectionTaskDto>> GetPackagesToCollectAsync(string recyclingCompanyId)
+		public async Task<List<RecyclerCollectionTaskDto>> GetPackagesToCollectAsync(string recyclingCompanyId)
         {
             var assignedScps = await _unitOfWork.SmallCollectionPoints.GetAllAsync(
                 filter: s => s.RecyclingCompanyId == recyclingCompanyId,
@@ -51,71 +53,63 @@ namespace ElecWasteCollection.Application.Services
 
             return result.OrderByDescending(x => x.TotalPackage).ToList();
         }
-        public async Task<PagedResult<PackageDetailModel>> GetPackagesByRecyclerFilterAsync(RecyclerPackageFilterModel query)
-        {
-            string includeProps = "SmallCollectionPoints,Products,Products.Brand,Products.Category";
+		public async Task<PagedResultModel<PackageDetailModel>> GetPackagesByRecyclerFilterAsync(RecyclerPackageFilterModel query)
+		{
+			string? searchStatusEnum = null;
+			if (!string.IsNullOrEmpty(query.Status))
+			{
+				
+				try
+				{
+					var statusValue = StatusEnumHelper.GetValueFromDescription<PackageStatus>(query.Status);
+					searchStatusEnum = statusValue.ToString();
+				}
+				catch
+				{
+					searchStatusEnum = null;
+				}
+			}
 
-            string? searchStatusEnum = null;
+			
+			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesWithDetailsByRecyclerAsync(
+				query.RecyclingCompanyId,
+				searchStatusEnum,
+				query.Page,
+				query.Limit
+			);
 
-            if (!string.IsNullOrEmpty(query.Status))
-            {
+			
+			var resultItems = pagedPackages.Select(pkg =>
+			{
+				
+				int totalProds = pkg.Products?.Count ?? 0;
 
-                try
-                {
-                    var statusValue = StatusEnumHelper.GetValueFromDescription<PackageStatus>(query.Status);
-                    searchStatusEnum = statusValue.ToString();
-                }
-                catch
-                {
-                    searchStatusEnum = null;
-                }
-            }
+				
+				var productsSummary = new PagedResultModel<ProductDetailModel>(
+					new List<ProductDetailModel>(),
+					1, 0, totalProds
+				);
 
-            var allPackages = await _unitOfWork.Packages.GetAllAsync(
-                filter: p => p.SmallCollectionPoints.RecyclingCompanyId == query.RecyclingCompanyId &&
-                     (string.IsNullOrEmpty(searchStatusEnum) || p.Status == searchStatusEnum),
-                includeProperties: includeProps
-            );
+				return new PackageDetailModel
+				{
+					PackageId = pkg.PackageId,
+					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 
-            var totalCount = allPackages.Count();
-            var pagedPackages = allPackages
-                .OrderByDescending(p => p.CreateAt)
-                .Skip((query.Page - 1) * query.Limit)
-                .Take(query.Limit)
-                .ToList();
+					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name ?? "Không xác định",
+					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address ?? "Không xác định",
 
-            var resultItems = pagedPackages.Select(pkg => new PackageDetailModel
-            {
-                PackageId = pkg.PackageId,
-                SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+					Products = productsSummary
+				};
 
-                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
+			}).ToList();
 
-                SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name ?? "Không xác định",
-                SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address ?? "Không xác định",
-
-                Products = pkg.Products?.Select(prod => new ProductDetailModel
-                {
-                    ProductId = prod.ProductId,
-                    QrCode = prod.QRCode,
-                    Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(prod.Status),
-                    Description = prod.Description,
-                    BrandId = prod.BrandId,
-                    BrandName = prod.Brand?.Name,
-                    CategoryId = prod.CategoryId,
-                    CategoryName = prod.Category?.Name,
-                    IsChecked = prod.isChecked
-                }).ToList() ?? new List<ProductDetailModel>()
-
-            }).ToList();
-
-            return new PagedResult<PackageDetailModel>
-            {
-                Data = resultItems,
-                TotalItems = totalCount,
-                Page = query.Page,
-                Limit = query.Limit,
-            };
-        }
-    }
+			return new PagedResultModel<PackageDetailModel>(
+				resultItems,
+				query.Page,
+				query.Limit,
+				totalCount
+			);
+		}
+	}
 }

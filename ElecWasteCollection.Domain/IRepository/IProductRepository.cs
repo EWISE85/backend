@@ -26,5 +26,6 @@ namespace ElecWasteCollection.Domain.IRepository
 				string? collectionCompanyId
 			);
 		Task<Dictionary<string, int>> GetProductCountsByCategoryAsync(DateTime from, DateTime to);
+		Task<(List<Products> Items, int TotalCount)> GetPagedProductsByPackageIdAsync(string packageId, int page, int limit);
 	}
 }

@@ -41,9 +41,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Package created successfully.", packageId = result });
 		}
 		[HttpGet("{packageId}")]
-		public async Task<IActionResult> GetPackageById(string packageId)
+		public async Task<IActionResult> GetPackageById([FromRoute]string packageId, [FromQuery] int page = 1, [FromQuery] int limit = 10)
 		{
-			var package = await _packageService.GetPackageById(packageId);
+			var package = await _packageService.GetPackageById(packageId, page, limit);
 			if (package == null)
 			{
 				return NotFound("Package not found.");

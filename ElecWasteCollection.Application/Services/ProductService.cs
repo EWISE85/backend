@@ -559,5 +559,35 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
+
+		public async Task<PagedResultModel<ProductDetailModel>> GetProductsByPackageIdAsync(string packageId, int page, int limit)
+		{
+			var (products, totalCount) = await _productRepository.GetPagedProductsByPackageIdAsync(packageId, page, limit);
+
+			var resultList = new List<ProductDetailModel>();
+
+			if (products != null && products.Any())
+			{
+				foreach (var p in products)
+				{
+					resultList.Add(new ProductDetailModel
+					{
+						ProductId = p.ProductId,
+						Description = p.Description,
+						BrandName = p.Brand?.Name,
+						BrandId = p.BrandId,
+						CategoryId = p.CategoryId,
+						CategoryName = p.Category?.Name,
+						QrCode = p.QRCode,
+						IsChecked = p.isChecked,
+						Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(p.Status),
+
+						Attributes = new List<ProductValueDetailModel>()
+					});
+				}
+			}
+
+			return new PagedResultModel<ProductDetailModel>(resultList, page, limit, totalCount);
+		}
 	}
 }

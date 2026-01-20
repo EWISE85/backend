@@ -21,7 +21,14 @@ namespace ElecWasteCollection.Application.Model
 			Page = page;
 			Limit = limit;
 			TotalItems = totalItems;
-			TotalPages = (int)System.Math.Ceiling(totalItems / (double)limit);
+			if (limit > 0)
+			{
+				TotalPages = (int)Math.Ceiling(totalItems / (double)limit);
+			}
+			else
+			{
+				TotalPages = 0; 
+			}
 		}
 	}
 }
