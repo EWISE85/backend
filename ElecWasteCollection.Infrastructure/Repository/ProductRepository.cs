@@ -227,6 +227,25 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return result;
 		}
+
+		public async Task<(List<Products> Items, int TotalCount)> GetPagedProductsByPackageIdAsync(string packageId, int page, int limit)
+		{
+			var query = _dbSet.AsNoTracking().Where(p => p.PackageId == packageId);
+			var totalCount = await query.CountAsync();
+
+			if (totalCount == 0)
+			{
+				return (new List<Products>(), 0);
+			}
+			var items = await query
+						.Include(p => p.Brand)
+						.Include(p => p.Category)
+						.OrderByDescending(p => p.CreateAt) 
+						.Skip((page - 1) * limit)
+						.Take(limit)
+						.ToListAsync();
+			return (items, totalCount);
+		}
 	}
 }
 

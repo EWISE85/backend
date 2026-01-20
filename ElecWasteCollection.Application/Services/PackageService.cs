@@ -61,26 +61,30 @@ namespace ElecWasteCollection.Application.Services
 			return newPackage.PackageId;
 		}
 
-		public async Task<PackageDetailModel> GetPackageById(string packageId)
+		public async Task<PackageDetailModel> GetPackageById(string packageId, int page = 1, int limit = 10)
 		{
-			var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
+			var package = await _packageRepository.GetAsync(
+				p => p.PackageId == packageId,
+				includeProperties: "SmallCollectionPoints" 
+			);
+
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
-			var productDetails = await _productService.GetProductsByPackageIdAsync(packageId);
+			var pagedProducts = await _productService.GetProductsByPackageIdAsync(packageId, page, limit);
 
-			var packageDetail = new PackageDetailModel
+			return new PackageDetailModel
 			{
 				PackageId = package.PackageId,
 				SmallCollectionPointsId = package.SmallCollectionPointsId,
+				SmallCollectionPointsName = package.SmallCollectionPoints?.Name,
+				SmallCollectionPointsAddress = package.SmallCollectionPoints?.Address,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(package.Status),
-				Products = productDetails
-			};
 
-			return packageDetail;
+				Products = pagedProducts 
+			};
 		}
 
-
-		public async Task<PagedResult<PackageDetailModel>> GetPackagesByQuery(PackageSearchQueryModel query)
+		public async Task<PagedResultModel<PackageDetailModel>> GetPackagesByQuery(PackageSearchQueryModel query)
 		{
 			string? statusEnum = null;
 			if (!string.IsNullOrEmpty(query.Status))
@@ -88,6 +92,8 @@ namespace ElecWasteCollection.Application.Services
 				var statusValue = StatusEnumHelper.GetValueFromDescription<PackageStatus>(query.Status);
 				statusEnum = statusValue.ToString();
 			}
+
+			
 			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesWithDetailsAsync(
 				query.SmallCollectionPointsId,
 				statusEnum,
@@ -97,39 +103,34 @@ namespace ElecWasteCollection.Application.Services
 
 			var resultItems = pagedPackages.Select(pkg =>
 			{
-				var productDetails = pkg.Products?.Select(product => new ProductDetailModel
-				{
-					ProductId = product.ProductId,
-					Description = product.Description,
-					BrandId = product.BrandId,
-					BrandName = product.Brand?.Name, 
-					CategoryId = product.CategoryId,
-					CategoryName = product.Category?.Name, 
-					QrCode = product.QRCode,
-					IsChecked = product.isChecked,
-					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status)
-				}).ToList() ?? new List<ProductDetailModel>();
+				int totalProductsInPkg = pkg.Products?.Count ?? 0;
+
+				var summaryProducts = new PagedResultModel<ProductDetailModel>(
+					new List<ProductDetailModel>(), 
+					1,                             
+					0,                             
+					totalProductsInPkg             
+				);
 
 				return new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					Products = productDetails
+					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
+					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
+
+					// Gán object tóm tắt vào đây
+					Products = summaryProducts
 				};
 			}).ToList();
 
-			return new PagedResult<PackageDetailModel>
-			{
-				Data = resultItems,
-				TotalItems = totalCount,
-				Page = query.Page,
-				Limit = query.Limit,
-			};
+			// 4. Trả về kết quả phân trang cho danh sách Package
+			return new PagedResultModel<PackageDetailModel>(resultItems, query.Page, query.Limit, totalCount);
 		}
 
 
-		public async Task<PagedResult<PackageDetailModel>> GetPackagesByRecylerQuery(PackageRecyclerSearchQueryModel query)
+		public async Task<PagedResultModel<PackageDetailModel>> GetPackagesByRecylerQuery(PackageRecyclerSearchQueryModel query)
 		{
 			string? statusEnum = null;
 			if (!string.IsNullOrEmpty(query.Status))
@@ -137,8 +138,9 @@ namespace ElecWasteCollection.Application.Services
 				var statusValue = StatusEnumHelper.GetValueFromDescription<PackageStatus>(query.Status);
 				statusEnum = statusValue.ToString();
 			}
+
 			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesWithDetailsByRecyclerAsync(
-				query.RecyclerCompanyId, 
+				query.RecyclerCompanyId,
 				statusEnum,
 				query.Page,
 				query.Limit
@@ -146,57 +148,64 @@ namespace ElecWasteCollection.Application.Services
 
 			var resultItems = pagedPackages.Select(pkg =>
 			{
-				var productDetails = pkg.Products?.Select(product => new ProductDetailModel
-				{
-					ProductId = product.ProductId,
-					Description = product.Description,
-					BrandId = product.BrandId,
-					BrandName = product.Brand?.Name,
-					CategoryId = product.CategoryId,
-					CategoryName = product.Category?.Name,
-					QrCode = product.QRCode,
-					IsChecked = product.isChecked,
-					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status)
-				}).ToList() ?? new List<ProductDetailModel>();
+
+
+				int totalProds = pkg.Products?.Count ?? 0;
+
+				var summaryProducts = new PagedResultModel<ProductDetailModel>(
+					new List<ProductDetailModel>(), 
+					1,                             
+					0,                             
+					totalProds                      
+				);
 
 				return new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					Products = productDetails
+					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
+					Products = summaryProducts
 				};
 			}).ToList();
 
-			return new PagedResult<PackageDetailModel>
-			{
-				Data = resultItems,
-				TotalItems = totalCount,
-				Page = query.Page,
-				Limit = query.Limit,
-			};
+			// 4. Trả về danh sách Package phân trang
+			return new PagedResultModel<PackageDetailModel>(resultItems, query.Page, query.Limit, totalCount);
 		}
 
 		public async Task<List<PackageDetailModel>> GetPackagesWhenDelivery()
 		{
-			var deliveringPackages = await _packageRepository.GetsAsync(p => p.Status == PackageStatus.DANG_VAN_CHUYEN.ToString());
-				
+			
+			var deliveringPackages = await _packageRepository.GetsAsync(
+				filter: p => p.Status == PackageStatus.DANG_VAN_CHUYEN.ToString(),
+				includeProperties: "Products,SmallCollectionPoints"
+			);
 
 			var result = new List<PackageDetailModel>();
 
-			foreach (var pkg in deliveringPackages)
+			if (deliveringPackages != null && deliveringPackages.Any())
 			{
-				var productDetails = await _productService.GetProductsByPackageIdAsync(pkg.PackageId);
-
-				var model = new PackageDetailModel
+				result = deliveringPackages.Select(pkg =>
 				{
-					PackageId = pkg.PackageId,
-					Status = pkg.Status,
-					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					Products = productDetails
-				};
+					int totalCount = pkg.Products?.Count ?? 0;
 
-				result.Add(model);
+					var summaryProducts = new PagedResultModel<ProductDetailModel>(
+						new List<ProductDetailModel>(), // Data rỗng
+						1, 0, totalCount
+					);
+
+					return new PackageDetailModel
+					{
+						PackageId = pkg.PackageId,
+						Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
+
+						SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+						SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,     
+						SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
+
+						Products = summaryProducts
+					};
+				}).ToList();
 			}
 
 			return result;
