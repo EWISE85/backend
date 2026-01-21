@@ -10,5 +10,7 @@ namespace ElecWasteCollection.Application.IServices.IAssignPost
         Task<List<SmallPointDto>> GetSmallPointsByCompanyIdAsync(string companyId);
         Task<CompanyConfigDto> GetCompanyConfigByCompanyIdAsync(string companyId);
         Task<object> GetProductIdsAtSmallPointAsync(string smallPointId, DateOnly workDate);
+        Task<List<CompanyDailySummaryDto>> GetCompanySummariesByDateAsync(DateOnly workDate);
+
     }
 }

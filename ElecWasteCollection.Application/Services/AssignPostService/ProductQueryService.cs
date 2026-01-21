@@ -462,6 +462,62 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 List = listIds
             };
         }
+        public async Task<List<CompanyDailySummaryDto>> GetCompanySummariesByDateAsync(DateOnly workDate)
+        {
+            var allPosts = await _unitOfWork.Posts.GetAllAsync();
+
+            var activePosts = allPosts.Where(p =>
+            {
+                if (string.IsNullOrEmpty(p.ScheduleJson) || !TryParseDates(p.ScheduleJson, out var list))
+                    return false;
+                return list.Contains(workDate);
+            }).ToList();
+
+            if (!activePosts.Any()) return new List<CompanyDailySummaryDto>();
+
+            var companyIds = activePosts.Select(p => p.CollectionCompanyId).Distinct().ToList();
+
+            var companies = await _unitOfWork.Companies.GetAllAsync(
+                filter: c => companyIds.Contains(c.CompanyId),
+                includeProperties: "SmallCollectionPoints"
+            );
+
+            var response = new List<CompanyDailySummaryDto>();
+
+            foreach (var company in companies)
+            {
+                var companyPosts = activePosts.Where(p => p.CollectionCompanyId == company.CompanyId).ToList();
+
+                var companyDto = new CompanyDailySummaryDto
+                {
+                    CompanyId = company.CompanyId,
+                    CompanyName = company.Name,
+                    TotalCompanyProducts = companyPosts.Select(p => p.ProductId).Distinct().Count()
+                };
+
+                var pointGroups = companyPosts.GroupBy(p => p.AssignedSmallPointId);
+
+                foreach (var grp in pointGroups)
+                {
+                    var spId = grp.Key;
+                    var spEntity = company.SmallCollectionPoints?
+                        .FirstOrDefault(s => s.SmallCollectionPointsId == spId);
+
+                    var spName = spEntity != null ? spEntity.Name : "Điểm thu gom không xác định";
+
+                    companyDto.Points.Add(new SmallPointSummaryDto
+                    {
+                        SmallCollectionId = spId,
+                        Name = spName,
+                        TotalProduct = grp.Select(p => p.ProductId).Distinct().Count()
+                    });
+                }
+
+                response.Add(companyDto);
+            }
+
+            return response;
+        }
 
 
 
