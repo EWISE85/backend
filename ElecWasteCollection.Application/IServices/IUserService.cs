@@ -14,7 +14,7 @@ namespace ElecWasteCollection.Application.IServices
 		void AddRange(IEnumerable<User> newUsers);
 		Task<List<UserResponse>> GetAll();
 		Task<UserResponse>? GetById(Guid id);
-
+		Task<List<UserResponse>> GetByEmail(string email);
 
 		Task<UserProfileResponse> Profile(Guid userId);
 
@@ -24,6 +24,10 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> UpdateProfile(UserProfileUpdateModel model);
 
 		Task<bool> DeleteUser(Guid accountId);
+
+		Task<bool> BanUser(Guid userId);
+
+		Task<PagedResultModel<UserResponse>> AdminFilterUser(AdminFilterUserModel model);
 
 
 	}

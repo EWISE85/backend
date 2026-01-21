@@ -37,6 +37,6 @@ namespace ElecWasteCollection.Application.IServices
 		Task<PagedResultModel<ProductDetail>> AdminGetProductsAsync(AdminFilterProductModel model);
 
 		Task<bool> CancelProduct(Guid productId, string rejectMessage);
-
+		Task<PagedResultModel<ProductDetailModel>> GetProductsByPackageIdAsync(string packageId, int page, int limit);
 	}
 }

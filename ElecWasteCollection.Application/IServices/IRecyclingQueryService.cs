@@ -10,6 +10,6 @@ namespace ElecWasteCollection.Application.IServices
     public interface IRecyclingQueryService
     {
         Task<List<RecyclerCollectionTaskDto>> GetPackagesToCollectAsync(string recyclingCompanyId);
-        Task<PagedResult<PackageDetailModel>> GetPackagesByRecyclerFilterAsync(RecyclerPackageFilterModel query);
+		Task<PagedResultModel<PackageDetailModel>> GetPackagesByRecyclerFilterAsync(RecyclerPackageFilterModel query);
     }
 }

@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -47,7 +48,9 @@ namespace ElecWasteCollection.Application.Services
 				Phone = u.Phone,
 				Avatar = u.Avatar,
 				Role = u.Role,
-				SmallCollectionPointId = u.SmallCollectionPointId
+				SmallCollectionPointId = u.SmallCollectionPointId,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
+
 			}).ToList();
 			return userResponses;
 		}
@@ -79,7 +82,8 @@ namespace ElecWasteCollection.Application.Services
 				Avatar = user.Avatar,
 				Role = user.Role,
 				SmallCollectionPointId = user.SmallCollectionPointId,
-				CollectionCompanyId = user.CollectionCompanyId
+				CollectionCompanyId = user.CollectionCompanyId,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userResponse;
 		}
@@ -129,7 +133,7 @@ namespace ElecWasteCollection.Application.Services
 				Points = pointsValue,
 				CollectionCompanyId = user.CollectionCompanyId,
 				SmallCollectionPointId = user.SmallCollectionPointId,
-				//Settings = settingsObj
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userProfile;
 		}
@@ -146,7 +150,8 @@ namespace ElecWasteCollection.Application.Services
 				Phone = user.Phone,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				SmallCollectionPointId = user.SmallCollectionPointId
+				SmallCollectionPointId = user.SmallCollectionPointId,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userResponse;
 		}
@@ -190,9 +195,67 @@ namespace ElecWasteCollection.Application.Services
 				Points = point?.Points,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				SmallCollectionPointId = user.SmallCollectionPointId
+				SmallCollectionPointId = user.SmallCollectionPointId,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userResponse;
+
+		}
+
+		public async Task<List<UserResponse>> GetByEmail(string email)
+		{
+			var users = await _userRepository.GetsAsync(u => u.Email != null && u.Email.Contains(email));
+
+			if (users == null || users.Count == 0)
+			{
+				throw new AppException("User không tồn tại", 404);
+			}
+
+			var userResponses = users.Select(u => new UserResponse
+			{
+				UserId = u.UserId,
+				Name = u.Name,
+				Email = u.Email,
+				Phone = u.Phone,
+				Avatar = u.Avatar,
+				Role = u.Role,
+				SmallCollectionPointId = u.SmallCollectionPointId,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
+			}).ToList();
+
+			return userResponses;
+		}
+
+		public async Task<bool> BanUser(Guid userId)
+		{
+			var user = await _userRepository.GetAsync(u => u.UserId == userId);
+			if (user == null) throw new AppException("User không tồn tại", 404);
+			user.Status = UserStatus.KHONG_HOAT_DONG.ToString();
+			_unitOfWork.Users.Update(user);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
+
+		public async Task<PagedResultModel<UserResponse>> AdminFilterUser(AdminFilterUserModel model)
+		{
+			string? statusEnum = null;
+			if (model.Status != null)
+			{
+				statusEnum = StatusEnumHelper.GetValueFromDescription<UserStatus>(model.Status).ToString();
+			}
+			var users = await _userRepository.AdminFilterUser(model.Page,model.Limit,model.FromDate,model.ToDate,model.Email, statusEnum);
+			var userResponses = users.Select(u => new UserResponse
+			{
+				UserId = u.UserId,
+				Name = u.Name,
+				Email = u.Email,
+				Phone = u.Phone,
+				Avatar = u.Avatar,
+				Role = u.Role,
+				SmallCollectionPointId = u.SmallCollectionPointId,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
+			}).ToList();
+			return new PagedResultModel<UserResponse>(userResponses,model.Page,model.Limit,userResponses.Count);
 
 		}
 	}
