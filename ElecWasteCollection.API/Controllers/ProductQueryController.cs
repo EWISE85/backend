@@ -52,6 +52,36 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _productQueryService.GetSmallPointsByCompanyIdAsync(companyId);
             return Ok(result);
         }
+        [HttpGet("daily-summary")]
+        public async Task<IActionResult> GetCompanySummaries([FromQuery] DateOnly workDate)
+        {
+            try
+            {
+                // Nếu workDate chưa được truyền (mặc định 0001-01-01), có thể gán mặc định là hôm nay
+                if (workDate == DateOnly.MinValue)
+                {
+                    workDate = DateOnly.FromDateTime(DateTime.Now);
+                }
+
+                var result = await _productQueryService.GetCompanySummariesByDateAsync(workDate);
+
+                return Ok(new
+                {
+                    Success = true,
+                    Message = "Lấy dữ liệu thành công",
+                    Data = result
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log lỗi tại đây nếu cần
+                return BadRequest(new
+                {
+                    Success = false,
+                    Message = ex.Message
+                });
+            }
+        }
 
         [HttpGet("config/company/{companyId}")]
         public async Task<IActionResult> GetCompanyConfigById(string companyId)
