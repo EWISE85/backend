@@ -1,8 +1,11 @@
-﻿using ElecWasteCollection.Application.Helpers;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Google.Protobuf.WellKnownTypes;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace ElecWasteCollection.Application.Services.AssignPostService
@@ -250,33 +253,46 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             response.TotalWeightKg = totalWeight;
             response.TotalVolumeM3 = Math.Round(totalVolume, 3);
-
             return response;
         }
 
-        public async Task<PagedSmallPointProductGroupDto> GetSmallPointProductsPagedAsync( string smallPointId, DateOnly workDate, int page, int limit)
+        public async Task<PagedSmallPointProductGroupDto> GetSmallPointProductsPagedAsync(string smallPointId, DateOnly workDate, int page, int limit)
         {
             if (page <= 0) page = 1;
             if (limit <= 0) limit = 10;
 
             var attMap = await GetAttributeIdMapAsync();
-            var configs = await _unitOfWork.SystemConfig.GetAllAsync();
 
             var company = (await _unitOfWork.Companies
                     .GetAllAsync(includeProperties: "SmallCollectionPoints"))
                     .FirstOrDefault(c => c.SmallCollectionPoints.Any(sp => sp.SmallCollectionPointsId == smallPointId));
 
-            if (company == null)
-                throw new Exception("Không tìm thấy trạm (SmallCollectionPoint).");
-
+            if (company == null) throw new Exception("Không tìm thấy trạm.");
             var sp = company.SmallCollectionPoints.First(s => s.SmallCollectionPointsId == smallPointId);
 
-            var (products, totalCount) = await _productQueryRepository
-                .GetPagedSmallPointProductsAsync(
-                    smallPointId,
-                    workDate,
-                    page,
-                    limit);
+            var allPosts = await _unitOfWork.Posts.GetAllAsync(
+                filter: p => p.Product != null
+                          && p.Product.SmallCollectionPointId == smallPointId
+
+                          && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
+
+                includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
+            );
+
+            var filteredPosts = new List<Post>();
+            foreach (var post in allPosts)
+            {
+                if (TryParseDates(post.ScheduleJson, out var dates) && dates.Contains(workDate))
+                {
+                    filteredPosts.Add(post);
+                }
+            }
+
+            int totalCount = filteredPosts.Count;
+            var pagedPosts = filteredPosts
+                                .Skip((page - 1) * limit)
+                                .Take(limit)
+                                .ToList();
 
             var result = new PagedSmallPointProductGroupDto
             {
@@ -284,23 +300,23 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 SmallPointName = sp.Name,
                 Page = page,
                 Limit = limit,
-                TotalItems = totalCount
+                TotalItems = totalCount,
+                Products = new List<ProductDetailDto>()
             };
 
-            foreach (var product in products)
+            foreach (var post in pagedPosts)
             {
-                var linkedPost = product.Posts.FirstOrDefault();
-
+                var product = post.Product!;
                 var metrics = await GetProductMetricsAsync(product.ProductId, attMap);
 
                 result.Products.Add(new ProductDetailDto
                 {
                     ProductId = product.ProductId,
                     SenderId = product.UserId,
-                    UserName = product.User?.Name,
-                    Address = linkedPost?.Address ?? "",
-                    CategoryName = product.Category?.Name,
-                    BrandName = product.Brand?.Name,
+                    UserName = product.User?.Name ?? post.Sender?.Name ?? "N/A",
+                    Address = post.Address ?? "N/A",
+                    CategoryName = product.Category?.Name ?? "",
+                    BrandName = product.Brand?.Name ?? "",
                     WeightKg = metrics.weight,
                     VolumeM3 = Math.Round(metrics.volume, 4),
                     Length = metrics.length,
@@ -396,7 +412,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         public async Task<object> GetProductIdsAtSmallPointAsync(string smallPointId, DateOnly workDate)
         {
-            // 1. Lấy tất cả bài đăng đã được gán về trạm này và đang chờ gom
             var posts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.AssignedSmallPointId == smallPointId
                           && p.Product != null
