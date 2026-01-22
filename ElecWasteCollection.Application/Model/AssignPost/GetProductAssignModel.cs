@@ -37,10 +37,6 @@ namespace ElecWasteCollection.Application.Model.AssignPost
     {
         public string SmallPointId { get; set; }
         public string SmallPointName { get; set; }
-
-        public double RadiusMaxConfigKm { get; set; }
-        public double MaxRoadDistanceKm { get; set; }
-
         public int Page { get; set; }
         public int Limit { get; set; }
 
@@ -72,9 +68,6 @@ namespace ElecWasteCollection.Application.Model.AssignPost
         public double Width { get; set; }
         public double Height { get; set; }
         public string Dimensions { get; set; }
-
-        public string RadiusKm { get; set; } = string.Empty;
-        public string RoadKm { get; set; } = string.Empty;
         public string CategoryName { get; set; }
         public string BrandName { get; set; }
     }

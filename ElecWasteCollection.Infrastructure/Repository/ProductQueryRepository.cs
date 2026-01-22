@@ -36,6 +36,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
                 .Include(p => p.Category)
                 .Include(p => p.Brand)
                 .Include(p => p.User)
+                .Include(p => p.Posts)
                 .OrderBy(p => p.CreateAt)
                 .Skip((page - 1) * limit)
                 .Take(limit)

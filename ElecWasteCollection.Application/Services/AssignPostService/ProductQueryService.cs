@@ -100,9 +100,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 return 0;
             }
 
-            double length = GetAttributeValue(NAME_CHIEU_DAI); 
-            double width = GetAttributeValue(NAME_CHIEU_RONG); 
-            double height = GetAttributeValue(NAME_CHIEU_CAO); 
+            double length = GetAttributeValue(NAME_CHIEU_DAI);
+            double width = GetAttributeValue(NAME_CHIEU_RONG);
+            double height = GetAttributeValue(NAME_CHIEU_CAO);
             double volume = 0;
 
             if (length > 0 && width > 0 && height > 0)
@@ -233,10 +233,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         Length = metrics.length,
                         Width = metrics.width,
                         Height = metrics.height,
-                        Dimensions = dimensionStr, 
-
-                        RadiusKm = $"{Math.Round(radiusKm, 2):0.00} km",
-                        RoadKm = $"{Math.Round(roadKm, 2):0.00} km"
+                        Dimensions = dimensionStr,
                     });
 
                     spDto.TotalWeightKg += metrics.weight;
@@ -257,108 +254,70 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             return response;
         }
 
-        public async Task<PagedSmallPointProductGroupDto> GetSmallPointProductsPagedAsync(
-           string smallPointId,
-           DateOnly workDate,
-           int page,
-           int limit)
+        public async Task<PagedSmallPointProductGroupDto> GetSmallPointProductsPagedAsync( string smallPointId, DateOnly workDate, int page, int limit)
         {
             if (page <= 0) page = 1;
             if (limit <= 0) limit = 10;
 
             var attMap = await GetAttributeIdMapAsync();
-            var configs =
-                await _unitOfWork.SystemConfig.GetAllAsync();
+            var configs = await _unitOfWork.SystemConfig.GetAllAsync();
 
-            var company =
-                (await _unitOfWork.Companies
-                        .GetAllAsync(
-                            includeProperties:
-                                "SmallCollectionPoints"))
-                .FirstOrDefault(c =>
-                    c.SmallCollectionPoints.Any(sp =>
-                        sp.SmallCollectionPointsId ==
-                            smallPointId));
+            var company = (await _unitOfWork.Companies
+                    .GetAllAsync(includeProperties: "SmallCollectionPoints"))
+                    .FirstOrDefault(c => c.SmallCollectionPoints.Any(sp => sp.SmallCollectionPointsId == smallPointId));
 
             if (company == null)
-                throw new Exception("Không tìm thấy trạm.");
+                throw new Exception("Không tìm thấy trạm (SmallCollectionPoint).");
 
-            var sp =
-                company.SmallCollectionPoints.First(
-                    s =>
-                        s.SmallCollectionPointsId ==
-                        smallPointId);
+            var sp = company.SmallCollectionPoints.First(s => s.SmallCollectionPointsId == smallPointId);
 
-            var (posts, totalCount) =
-                await _productQueryRepository
-                    .GetPagedSmallPointProductsAsync(
-                        smallPointId,
-                        workDate,
-                        page,
-                        limit);
+            var (products, totalCount) = await _productQueryRepository
+                .GetPagedSmallPointProductsAsync(
+                    smallPointId,
+                    workDate,
+                    page,
+                    limit);
 
             var result = new PagedSmallPointProductGroupDto
             {
                 SmallPointId = smallPointId,
                 SmallPointName = sp.Name,
-                RadiusMaxConfigKm =
-                    GetConfigValue(
-                        configs,
-                        null,
-                        smallPointId,
-                        SystemConfigKey.RADIUS_KM,
-                        0),
-
-                MaxRoadDistanceKm =
-                    GetConfigValue(
-                        configs,
-                        null,
-                        smallPointId,
-                        SystemConfigKey.MAX_ROAD_DISTANCE_KM,
-                        0),
-
                 Page = page,
                 Limit = limit,
                 TotalItems = totalCount
             };
 
-            foreach (var product in posts)
+            foreach (var product in products)
             {
-                var metrics =
-                    await GetProductMetricsAsync(
-                        product.ProductId,
-                        attMap);
+                var linkedPost = product.Posts.FirstOrDefault();
 
-                result.Products.Add(
-                    new ProductDetailDto
-                    {
-                        ProductId = product.ProductId,
-                        SenderId = product.UserId,
-                        UserName = product.User?.Name,
-                        CategoryName = product.Category?.Name,
-                        BrandName = product.Brand?.Name,
-                        WeightKg = metrics.weight,
-                        VolumeM3 = Math.Round(metrics.volume, 4),
-                        Length = metrics.length,
-                        Width = metrics.width,
-                        Height = metrics.height,
-                        Dimensions =
-                            $"{metrics.length} x {metrics.width} x {metrics.height}"
-                    });
+                var metrics = await GetProductMetricsAsync(product.ProductId, attMap);
+
+                result.Products.Add(new ProductDetailDto
+                {
+                    ProductId = product.ProductId,
+                    SenderId = product.UserId,
+                    UserName = product.User?.Name,
+                    Address = linkedPost?.Address ?? "",
+                    CategoryName = product.Category?.Name,
+                    BrandName = product.Brand?.Name,
+                    WeightKg = metrics.weight,
+                    VolumeM3 = Math.Round(metrics.volume, 4),
+                    Length = metrics.length,
+                    Width = metrics.width,
+                    Height = metrics.height,
+                    Dimensions = $"{metrics.length} x {metrics.width} x {metrics.height}"
+                });
 
                 result.TotalWeightKg += metrics.weight;
                 result.TotalVolumeM3 += metrics.volume;
             }
 
-            result.TotalWeightKg =
-                Math.Round(result.TotalWeightKg, 2);
-
-            result.TotalVolumeM3 =
-                Math.Round(result.TotalVolumeM3, 3);
+            result.TotalWeightKg = Math.Round(result.TotalWeightKg, 2);
+            result.TotalVolumeM3 = Math.Round(result.TotalVolumeM3, 3);
 
             return result;
         }
-
 
         public async Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync()
         {
