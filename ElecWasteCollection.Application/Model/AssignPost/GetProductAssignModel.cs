@@ -33,12 +33,34 @@ namespace ElecWasteCollection.Application.Model.AssignPost
 
         public List<ProductDetailDto> Products { get; set; } = new();
     }
+    public class PagedSmallPointProductGroupDto
+    {
+        public string SmallPointId { get; set; }
+        public string SmallPointName { get; set; }
+
+        public double RadiusMaxConfigKm { get; set; }
+        public double MaxRoadDistanceKm { get; set; }
+
+        public int Page { get; set; }
+        public int Limit { get; set; }
+
+        public int TotalItems { get; set; }
+
+        public int TotalPages =>
+            (int)Math.Ceiling((double)TotalItems / Limit);
+
+        public double TotalWeightKg { get; set; }
+        public double TotalVolumeM3 { get; set; }
+
+        public List<ProductDetailDto> Products { get; set; }
+            = new();
+    }
 
     public class ProductDetailDto
     {
         public Guid ProductId { get; set; }
 
-        public Guid PostId { get; set; }
+        //public Guid PostId { get; set; }
         public Guid SenderId { get; set; }
 
         public string UserName { get; set; } = string.Empty;
