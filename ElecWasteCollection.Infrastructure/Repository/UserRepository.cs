@@ -31,13 +31,13 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (fromDate.HasValue)
 			{
-				var from = fromDate.Value.ToDateTime(TimeOnly.MinValue);
+				var from = DateTime.SpecifyKind(fromDate.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc); 
 				query = query.Where(u => u.CreateAt >= from);
 			}
 
 			if (toDate.HasValue)
 			{
-				var to = toDate.Value.ToDateTime(TimeOnly.MaxValue);
+				var to = DateTime.SpecifyKind(toDate.Value.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc); 
 				query = query.Where(u => u.CreateAt <= to);
 			}
 
