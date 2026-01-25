@@ -80,12 +80,15 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<PagedResultModel<VehicleModel>> PagedVehicles(VehicleSearchModel model)
 		{
+			var statusEnum = string.IsNullOrEmpty(model.Status)
+				? null
+				: StatusEnumHelper.GetValueFromDescription<VehicleStatus>(model.Status).ToString();
 
 			var (vehicles, totalItems) = await _vehicleRepository.GetPagedVehiclesAsync(
 				collectionCompanyId: model.CollectionCompanyId,
 				smallCollectionPointId: model.SmallCollectionPointId,
 				plateNumber: model.PlateNumber,
-				status: model.Status,
+				status: statusEnum,
 				page: model.Page,
 				limit: model.Limit
 			);
