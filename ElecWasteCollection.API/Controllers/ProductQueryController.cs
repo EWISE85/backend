@@ -28,14 +28,21 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("small-point/{smallPointId}")]
-        public async Task<IActionResult> GetSmallPointProducts(
+        public async Task<IActionResult>
+        GetProductsPaged(
             string smallPointId,
-            [FromQuery] string workDate)
+            [FromQuery] DateOnly workDate,
+            [FromQuery] int page = 1,
+            [FromQuery] int limit = 10)
         {
-            if (!DateOnly.TryParse(workDate, out var date))
-                return BadRequest("workDate không hợp lệ. Định dạng yyyy-MM-dd");
+            var result =
+                await _productQueryService
+                    .GetSmallPointProductsPagedAsync(
+                        smallPointId,
+                        workDate,
+                        page,
+                        limit);
 
-            var result = await _productQueryService.GetSmallPointProductsAsync(smallPointId, date);
             return Ok(result);
         }
 
@@ -57,7 +64,6 @@ namespace ElecWasteCollection.API.Controllers
         {
             try
             {
-                // Nếu workDate chưa được truyền (mặc định 0001-01-01), có thể gán mặc định là hôm nay
                 if (workDate == DateOnly.MinValue)
                 {
                     workDate = DateOnly.FromDateTime(DateTime.Now);
@@ -74,7 +80,6 @@ namespace ElecWasteCollection.API.Controllers
             }
             catch (Exception ex)
             {
-                // Log lỗi tại đây nếu cần
                 return BadRequest(new
                 {
                     Success = false,

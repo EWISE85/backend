@@ -1,8 +1,11 @@
-﻿using ElecWasteCollection.Application.Helpers;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Google.Protobuf.WellKnownTypes;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace ElecWasteCollection.Application.Services.AssignPostService
@@ -11,6 +14,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapboxDistanceCacheService _distance;
+        private readonly IProductQueryRepository _productQueryRepository;
 
         private const string NAME_TRONG_LUONG = "Trọng lượng";
         private const string NAME_KHOI_LUONG_GIAT = "Khối lượng giặt";
@@ -20,10 +24,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         private const string NAME_DUNG_TICH = "Dung tích";
         private const string NAME_KICH_THUOC_MAN = "Kích thước màn hình";
 
-        public ProductQueryService(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distance)
+        public ProductQueryService(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distance, IProductQueryRepository productQueryRepository)
         {
             _unitOfWork = unitOfWork;
             _distance = distance;
+            _productQueryRepository = productQueryRepository;
         }
 
         private async Task<Dictionary<string, Guid>> GetAttributeIdMapAsync()
@@ -98,9 +103,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 return 0;
             }
 
-            double length = GetAttributeValue(NAME_CHIEU_DAI); 
-            double width = GetAttributeValue(NAME_CHIEU_RONG); 
-            double height = GetAttributeValue(NAME_CHIEU_CAO); 
+            double length = GetAttributeValue(NAME_CHIEU_DAI);
+            double width = GetAttributeValue(NAME_CHIEU_RONG);
+            double height = GetAttributeValue(NAME_CHIEU_CAO);
             double volume = 0;
 
             if (length > 0 && width > 0 && height > 0)
@@ -219,7 +224,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     spDto.Products.Add(new ProductDetailDto
                     {
-                        PostId = post.PostId,
                         ProductId = product.ProductId,
                         SenderId = user.UserId,
                         UserName = user.Name,
@@ -232,10 +236,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         Length = metrics.length,
                         Width = metrics.width,
                         Height = metrics.height,
-                        Dimensions = dimensionStr, 
-
-                        RadiusKm = $"{Math.Round(radiusKm, 2):0.00} km",
-                        RoadKm = $"{Math.Round(roadKm, 2):0.00} km"
+                        Dimensions = dimensionStr,
                     });
 
                     spDto.TotalWeightKg += metrics.weight;
@@ -252,107 +253,86 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             response.TotalWeightKg = totalWeight;
             response.TotalVolumeM3 = Math.Round(totalVolume, 3);
-
             return response;
         }
 
-        public async Task<SmallPointProductGroupDto> GetSmallPointProductsAsync(string smallPointId, DateOnly workDate)
+        public async Task<PagedSmallPointProductGroupDto> GetSmallPointProductsPagedAsync(string smallPointId, DateOnly workDate, int page, int limit)
         {
+            if (page <= 0) page = 1;
+            if (limit <= 0) limit = 10;
+
             var attMap = await GetAttributeIdMapAsync();
-            var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 
-            var company = (await _unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints"))
-                .FirstOrDefault(c => c.SmallCollectionPoints.Any(sp => sp.SmallCollectionPointsId == smallPointId));
+            var company = (await _unitOfWork.Companies
+                    .GetAllAsync(includeProperties: "SmallCollectionPoints"))
+                    .FirstOrDefault(c => c.SmallCollectionPoints.Any(sp => sp.SmallCollectionPointsId == smallPointId));
 
-            if (company == null) throw new Exception("Không tìm thấy trạm thu gom nào.");
-            var spEntity = company.SmallCollectionPoints.First(s => s.SmallCollectionPointsId == smallPointId);
+            if (company == null) throw new Exception("Không tìm thấy trạm.");
+            var sp = company.SmallCollectionPoints.First(s => s.SmallCollectionPointsId == smallPointId);
 
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
-                filter: p => p.AssignedSmallPointId == smallPointId
-                && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
-                includeProperties: "Product,Product.Category,Product.Brand,Sender"
+                filter: p => p.Product != null
+                          && p.Product.SmallCollectionPointId == smallPointId
+
+                          && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
+
+                includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
             );
 
-            var posts = allPosts.Where(p =>
+            var filteredPosts = new List<Post>();
+            foreach (var post in allPosts)
             {
-                if (!TryParseDates(p.ScheduleJson!, out var list)) return false;
-                return list.Contains(workDate);
-            }).ToList();
+                if (TryParseDates(post.ScheduleJson, out var dates) && dates.Contains(workDate))
+                {
+                    filteredPosts.Add(post);
+                }
+            }
 
-            double radiusConfig = GetConfigValue(allConfigs, null, smallPointId, SystemConfigKey.RADIUS_KM, 0);
-            double maxRoadConfig = GetConfigValue(allConfigs, null, smallPointId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0);
+            int totalCount = filteredPosts.Count;
+            var pagedPosts = filteredPosts
+                                .Skip((page - 1) * limit)
+                                .Take(limit)
+                                .ToList();
 
-            var spDto = new SmallPointProductGroupDto
+            var result = new PagedSmallPointProductGroupDto
             {
                 SmallPointId = smallPointId,
-                SmallPointName = spEntity.Name,
-                RadiusMaxConfigKm = radiusConfig,
-                MaxRoadDistanceKm = maxRoadConfig
+                SmallPointName = sp.Name,
+                Page = page,
+                Limit = limit,
+                TotalItems = totalCount,
+                Products = new List<ProductDetailDto>()
             };
 
-            foreach (var post in posts)
+            foreach (var post in pagedPosts)
             {
-                var product = post.Product;
-                var user = post.Sender;
-                if (product == null || user == null) continue;
-
-                string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Không có";
-                double lat = 0, lng = 0;
-                if (!string.IsNullOrEmpty(post.Address))
-                {
-                    var addressEntity = await _unitOfWork.UserAddresses.GetAsync(
-                        a => a.UserId == user.UserId && a.Address == post.Address
-                    );
-                    if (addressEntity != null && addressEntity.Iat.HasValue && addressEntity.Ing.HasValue)
-                    {
-                        lat = addressEntity.Iat.Value;
-                        lng = addressEntity.Ing.Value;
-                    }
-                }
-
+                var product = post.Product!;
                 var metrics = await GetProductMetricsAsync(product.ProductId, attMap);
 
-                double radiusKm = 0;
-                double roadKm = 0;
-                if (lat != 0 && lng != 0)
+                result.Products.Add(new ProductDetailDto
                 {
-                    radiusKm = GeoHelper.DistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
-                    roadKm = await _distance.GetRoadDistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
-                }
-
-                string dimensionStr = (metrics.length > 0 && metrics.width > 0 && metrics.height > 0)
-                        ? $"{metrics.length} x {metrics.width} x {metrics.height}"
-                        : "Chưa cập nhật";
-
-                spDto.Products.Add(new ProductDetailDto
-                {
-                    PostId = post.PostId,
                     ProductId = product.ProductId,
-                    SenderId = user.UserId,
-                    UserName = user.Name,
-                    Address = displayAddress,
-                    CategoryName = product.Category?.Name ?? "Không rõ",
-                    BrandName = product.Brand?.Name ?? "Không rõ",
+                    SenderId = product.UserId,
+                    UserName = product.User?.Name ?? post.Sender?.Name ?? "N/A",
+                    Address = post.Address ?? "N/A",
+                    CategoryName = product.Category?.Name ?? "",
+                    BrandName = product.Brand?.Name ?? "",
                     WeightKg = metrics.weight,
                     VolumeM3 = Math.Round(metrics.volume, 4),
-
                     Length = metrics.length,
                     Width = metrics.width,
                     Height = metrics.height,
-                    Dimensions = dimensionStr, 
-
-                    RadiusKm = $"{Math.Round(radiusKm, 2):0.00} km",
-                    RoadKm = $"{Math.Round(roadKm, 2):0.00} km"
+                    Dimensions = $"{metrics.length} x {metrics.width} x {metrics.height}"
                 });
 
-                spDto.TotalWeightKg += metrics.weight;
-                spDto.TotalVolumeM3 += metrics.volume;
+                result.TotalWeightKg += metrics.weight;
+                result.TotalVolumeM3 += metrics.volume;
             }
 
-            spDto.TotalVolumeM3 = Math.Round(spDto.TotalVolumeM3, 3);
-            spDto.Total = spDto.Products.Count;
+            result.TotalWeightKg = Math.Round(result.TotalWeightKg, 2);
+            result.TotalVolumeM3 = Math.Round(result.TotalVolumeM3, 3);
 
-            return spDto;
+            return result;
         }
 
         public async Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync()
@@ -432,7 +412,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         public async Task<object> GetProductIdsAtSmallPointAsync(string smallPointId, DateOnly workDate)
         {
-            // 1. Lấy tất cả bài đăng đã được gán về trạm này và đang chờ gom
             var posts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.AssignedSmallPointId == smallPointId
                           && p.Product != null
