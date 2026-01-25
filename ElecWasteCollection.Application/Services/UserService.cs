@@ -243,8 +243,21 @@ namespace ElecWasteCollection.Application.Services
 			{
 				statusEnum = StatusEnumHelper.GetValueFromDescription<UserStatus>(model.Status).ToString();
 			}
-			var users = await _userRepository.AdminFilterUser(model.Page,model.Limit,model.FromDate,model.ToDate,model.Email, statusEnum);
-			var userResponses = users.Select(u => new UserResponse
+
+			// Nhận về Tuple (users, totalCount)
+			var result = await _userRepository.AdminFilterUser(
+				model.Page,
+				model.Limit,
+				model.FromDate,
+				model.ToDate,
+				model.Email,
+				statusEnum
+			);
+
+			// result.Users là danh sách user
+			// result.TotalCount là tổng số bản ghi
+
+			var userResponses = result.Users.Select(u => new UserResponse
 			{
 				UserId = u.UserId,
 				Name = u.Name,
@@ -255,8 +268,9 @@ namespace ElecWasteCollection.Application.Services
 				SmallCollectionPointId = u.SmallCollectionPointId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
 			}).ToList();
-			return new PagedResultModel<UserResponse>(userResponses,model.Page,model.Limit,userResponses.Count);
 
+			// Truyền result.TotalCount vào PagedResultModel
+			return new PagedResultModel<UserResponse>(userResponses, model.Page, model.Limit, result.TotalCount);
 		}
 	}
 }
