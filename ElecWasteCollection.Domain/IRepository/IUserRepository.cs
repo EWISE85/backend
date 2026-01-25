@@ -9,6 +9,6 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface IUserRepository : IGenericRepository<User>
 	{
-		Task<List<User>> AdminFilterUser(int page,int limit,DateOnly? fromDate,DateOnly? toDate,string? email,string? status);
-	}
+		Task<(List<User> Users, int TotalCount)> AdminFilterUser(int page, int limit, DateOnly? fromDate, DateOnly? toDate, string? email, string? status);
+			}
 }

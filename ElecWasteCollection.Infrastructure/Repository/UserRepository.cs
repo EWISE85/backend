@@ -15,9 +15,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 		}
 
-		public async Task<List<User>> AdminFilterUser(int page, int limit, DateOnly? fromDate, DateOnly? toDate, string? email, string? status)
+		// Thay đổi kiểu trả về thành Tuple: (List<User> Users, int TotalCount)
+		public async Task<(List<User> Users, int TotalCount)> AdminFilterUser(int page, int limit, DateOnly? fromDate, DateOnly? toDate, string? email, string? status)
 		{
 			var query = _dbSet.AsNoTracking();
+
+			// --- 1. Áp dụng các bộ lọc (Filter) ---
 			if (!string.IsNullOrEmpty(email))
 			{
 				var searchEmail = email.Trim();
@@ -26,31 +29,36 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (!string.IsNullOrEmpty(status))
 			{
-				query = query.Where(u => u.Status == status); 
+				query = query.Where(u => u.Status == status);
 			}
 
 			if (fromDate.HasValue)
 			{
-				var from = DateTime.SpecifyKind(fromDate.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc); 
+
+				var from = DateTime.SpecifyKind(fromDate.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+
 				query = query.Where(u => u.CreateAt >= from);
 			}
 
 			if (toDate.HasValue)
 			{
-				var to = DateTime.SpecifyKind(toDate.Value.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc); 
+
+				var to = DateTime.SpecifyKind(toDate.Value.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
+
 				query = query.Where(u => u.CreateAt <= to);
 			}
 
-		
+
+			var totalCount = await query.CountAsync();
+
 			query = query.OrderByDescending(u => u.CreateAt);
 
-		
-			var result = await query
+			var users = await query
 				.Skip((page - 1) * limit)
 				.Take(limit)
 				.ToListAsync();
 
-			return result;
+			return (users, totalCount);
 		}
 	}
 }
