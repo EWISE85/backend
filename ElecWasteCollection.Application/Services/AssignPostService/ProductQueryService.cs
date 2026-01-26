@@ -194,29 +194,27 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     string displayAddress = !string.IsNullOrEmpty(post.Address) ? post.Address : "Không có";
 
-                    double lat = 0, lng = 0;
+                    double radiusKm = 0;
+                    double roadKm = post.DistanceToPointKm ?? 0;
+
                     if (!string.IsNullOrEmpty(post.Address))
                     {
                         var addressEntity = await _unitOfWork.UserAddresses.GetAsync(
                             a => a.UserId == user.UserId && a.Address == post.Address
                         );
+
                         if (addressEntity != null && addressEntity.Iat.HasValue && addressEntity.Ing.HasValue)
                         {
-                            lat = addressEntity.Iat.Value;
-                            lng = addressEntity.Ing.Value;
+                            radiusKm = GeoHelper.DistanceKm(
+                                spEntity.Latitude,
+                                spEntity.Longitude,
+                                addressEntity.Iat.Value,
+                                addressEntity.Ing.Value
+                            );
                         }
                     }
 
                     var metrics = await GetProductMetricsAsync(product.ProductId, attMap);
-
-                    double radiusKm = 0;
-                    double roadKm = 0;
-                    if (lat != 0 && lng != 0)
-                    {
-                        radiusKm = GeoHelper.DistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
-                        roadKm = await _distance.GetRoadDistanceKm(spEntity.Latitude, spEntity.Longitude, lat, lng);
-                    }
-
                     string dimensionStr = (metrics.length > 0 && metrics.width > 0 && metrics.height > 0)
                         ? $"{metrics.length} x {metrics.width} x {metrics.height}"
                         : "Chưa cập nhật";
@@ -231,11 +229,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         BrandName = product.Brand?.Name ?? "Không rõ",
                         WeightKg = metrics.weight,
                         VolumeM3 = Math.Round(metrics.volume, 4),
-
                         Length = metrics.length,
                         Width = metrics.width,
                         Height = metrics.height,
                         Dimensions = dimensionStr,
+                        RadiusKm = (double)Math.Round(radiusKm, 2),
+                        RoadKm = (double)Math.Round((post.DistanceToPointKm ?? 0), 2)
                     });
 
                     spDto.TotalWeightKg += metrics.weight;
@@ -249,8 +248,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 totalVolume += spDto.TotalVolumeM3;
                 response.Points.Add(spDto);
             }
-
-            response.TotalWeightKg = totalWeight;
+            
+            response.TotalWeightKg = Math.Round(totalWeight, 2);
             response.TotalVolumeM3 = Math.Round(totalVolume, 3);
             return response;
         }

@@ -61,6 +61,8 @@ namespace ElecWasteCollection.Application.Model.AssignPost
 
         public string UserName { get; set; } = string.Empty;
         public string Address { get; set; } = string.Empty;
+        public double RadiusKm { get; set; }
+        public double RoadKm { get; set; }
 
         public double WeightKg { get; set; }
         public double VolumeM3 { get; set; }

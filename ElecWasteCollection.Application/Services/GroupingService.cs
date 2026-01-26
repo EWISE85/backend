@@ -789,9 +789,9 @@ namespace ElecWasteCollection.Application.Services
                 .GetAllAsync(r => r.CollectionGroupId == groupId);
 
             var sortedRoutesQuery = routes.OrderBy(r => r.EstimatedTime);
-            var totalRoutes = sortedRoutesQuery.Count();
+            var totalProduct = sortedRoutesQuery.Count(); 
 
-            if (totalRoutes == 0)
+            if (totalProduct == 0)
                 throw new Exception("Group không có route nào.");
 
             var pagedRoutes = sortedRoutesQuery
@@ -799,7 +799,7 @@ namespace ElecWasteCollection.Application.Services
                 .Take(limit)
                 .ToList();
 
-            var totalPage = (int)Math.Ceiling((double)totalRoutes / limit);
+            var totalPage = (int)Math.Ceiling((double)totalProduct / limit);
 
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(shift.Vehicle_Id);
             var collector = await _unitOfWork.Users.GetByIdAsync(shift.CollectorId);
@@ -810,7 +810,6 @@ namespace ElecWasteCollection.Application.Services
             var attMap = await GetAttributeIdMapAsync();
 
             double totalWeight = 0, totalVolume = 0;
-
             int order = (page - 1) * limit + 1;
             var routeList = new List<object>();
 
@@ -820,14 +819,12 @@ namespace ElecWasteCollection.Application.Services
                 if (post == null) continue;
 
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
-                var product = post.Product; 
-                if (product == null) product = await _unitOfWork.Products.GetByIdAsync(r.ProductId);
+                var product = post.Product ?? await _unitOfWork.Products.GetByIdAsync(r.ProductId);
 
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
 
                 var metrics = await GetProductMetricsInternalAsync(post.ProductId, attMap);
-                string dimStr = $"{metrics.length} x {metrics.width} x {metrics.height}";
 
                 totalWeight += metrics.weight;
                 totalVolume += metrics.volume;
@@ -841,9 +838,9 @@ namespace ElecWasteCollection.Application.Services
                     address = post.Address ?? "Không có",
                     categoryName = category?.Name ?? "Không rõ",
                     brandName = brand?.Name ?? "Không rõ",
-                    dimensionText = dimStr,
+                    dimensionText = $"{metrics.length} x {metrics.width} x {metrics.height}",
                     weightKg = metrics.weight,
-                    volumeM3 = Math.Round(metrics.volume, 4), 
+                    volumeM3 = Math.Round(metrics.volume, 4),
                     distanceKm = r.DistanceKm,
                     schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(
                         post.ScheduleJson!,
@@ -863,14 +860,12 @@ namespace ElecWasteCollection.Application.Services
                 collector = collector?.Name ?? "Không rõ",
                 groupDate = shift.WorkDate.ToString("yyyy-MM-dd"),
                 collectionPoint = point?.Name ?? "Không rõ",
-                totalRoutes,
+                totalProduct, 
                 totalPage,
                 page,
                 limit,
-
-                totalWeightKg = Math.Round(totalWeight, 2), 
-                totalVolumeM3 = Math.Round(totalVolume, 4), 
-
+                totalWeightKg = Math.Round(totalWeight, 2),
+                totalVolumeM3 = Math.Round(totalVolume, 4),
                 routes = routeList
             };
         }
