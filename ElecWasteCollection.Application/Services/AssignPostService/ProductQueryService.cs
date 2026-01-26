@@ -1,11 +1,10 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.IServices.IAssignPost;
+using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.AssignPost;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
-using Google.Protobuf.WellKnownTypes;
-using System.Runtime.InteropServices;
 using System.Text.Json;
 
 namespace ElecWasteCollection.Application.Services.AssignPostService
@@ -496,6 +495,77 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             }
 
             return response;
+        }
+
+        public async Task<List<CompanyMetricsDto>> GetAllCompaniesDailyMetricsAsync(DateOnly workDate)
+        {
+            var companies = await _unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints");
+
+            DateTime localStart = workDate.ToDateTime(TimeOnly.MinValue); 
+            DateTime localEnd = workDate.ToDateTime(TimeOnly.MaxValue);   
+
+            DateTime utcStart = localStart.AddHours(-7);
+            DateTime utcEnd = localEnd.AddHours(-7);
+
+            utcStart = DateTime.SpecifyKind(utcStart, DateTimeKind.Utc);
+            utcEnd = DateTime.SpecifyKind(utcEnd, DateTimeKind.Utc);
+
+            var allHistories = await _unitOfWork.ProductStatusHistory.GetAllAsync(
+                filter: h => h.Status == "CHO_GOM_NHOM" &&
+                             h.ChangedAt >= utcStart &&
+                             h.ChangedAt <= utcEnd,
+                includeProperties: "Product"
+            );
+
+            var attMap = await GetAttributeIdMapAsync();
+            var result = new List<CompanyMetricsDto>();
+
+            foreach (var company in companies)
+            {
+                var pointMetricsList = new List<SmallPointMetricsDto>();
+
+                foreach (var point in company.SmallCollectionPoints)
+                {
+                    // Lọc các history thuộc về kho này
+                    var productIds = allHistories
+                        .Where(h => h.Product != null && h.Product.SmallCollectionPointId == point.SmallCollectionPointsId)
+                        .Select(h => h.ProductId)
+                        .Distinct()
+                        .ToList();
+
+                    double pointWeight = 0;
+                    double pointVolume = 0;
+
+                    foreach (var productId in productIds)
+                    {
+                        var metrics = await GetProductMetricsAsync(productId, attMap);
+                        pointWeight += metrics.weight;
+                        pointVolume += metrics.volume;
+                    }
+
+                    pointMetricsList.Add(new SmallPointMetricsDto
+                    {
+                        PointId = point.SmallCollectionPointsId,
+                        PointName = point.Name,
+                        TotalOrders = productIds.Count,
+                        TotalWeightKg = Math.Round(pointWeight, 2),
+                        TotalVolumeM3 = Math.Round(pointVolume, 4)
+                    });
+                }
+
+                result.Add(new CompanyMetricsDto
+                {
+                    CompanyId = company.CompanyId,
+                    CompanyName = company.Name,
+                    Date = workDate,
+                    TotalOrders = pointMetricsList.Sum(x => x.TotalOrders),
+                    TotalWeightKg = Math.Round(pointMetricsList.Sum(x => x.TotalWeightKg), 2),
+                    TotalVolumeM3 = Math.Round(pointMetricsList.Sum(x => x.TotalVolumeM3), 4),
+                    SmallCollectionPoints = pointMetricsList
+                });
+            }
+
+            return result;
         }
 
 
