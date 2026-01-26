@@ -100,6 +100,13 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _productQueryService.GetProductIdsAtSmallPointAsync(smallPointId, workDate);
             return Ok(result);
         }
+
+        [HttpGet("company-metrics")]
+        public async Task<IActionResult> GetCompanyMetrics([FromQuery] DateOnly workDate)
+        {
+            var result = await _productQueryService.GetAllCompaniesDailyMetricsAsync(workDate);
+            return Ok(result);
+        }
     }
 
 }

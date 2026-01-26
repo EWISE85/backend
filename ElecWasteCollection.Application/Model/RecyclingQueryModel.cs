@@ -31,5 +31,27 @@ namespace ElecWasteCollection.Application.Model
         public string? Status { get; set; }
     }
 
+    public class CompanyMetricsDto
+    {
+        public string CompanyId { get; set; }
+        public string CompanyName { get; set; }
+        public DateOnly Date { get; set; }
+        public int TotalOrders { get; set; }
+        public double TotalWeightKg { get; set; }
+        public double TotalVolumeM3 { get; set; }
+        // Danh sách chi tiết từng kho
+        public List<SmallPointMetricsDto> SmallCollectionPoints { get; set; } = new();
+    }
+
+    public class SmallPointMetricsDto
+    {
+        public string PointId { get; set; }
+        public string PointName { get; set; }
+        public int TotalOrders { get; set; }
+        public double TotalWeightKg { get; set; }
+        public double TotalVolumeM3 { get; set; }
+    }
+
+
 
 }

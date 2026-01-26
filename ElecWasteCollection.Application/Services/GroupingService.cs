@@ -775,10 +775,7 @@ namespace ElecWasteCollection.Application.Services
             };
         }
 
-        public async Task<object> GetRoutesByGroupAsync(
-      int groupId,
-      int page,
-      int limit)
+        public async Task<object> GetRoutesByGroupAsync(int groupId, int page, int limit)
         {
             if (page <= 0) page = 1;
             if (limit <= 0) limit = 10;
@@ -787,6 +784,7 @@ namespace ElecWasteCollection.Application.Services
                 ?? throw new Exception("Không tìm thấy group.");
 
             var shift = await _unitOfWork.Shifts.GetByIdAsync(group.Shift_Id);
+
             var routes = await _unitOfWork.CollecctionRoutes
                 .GetAllAsync(r => r.CollectionGroupId == groupId);
 
@@ -812,6 +810,7 @@ namespace ElecWasteCollection.Application.Services
             var attMap = await GetAttributeIdMapAsync();
 
             double totalWeight = 0, totalVolume = 0;
+
             int order = (page - 1) * limit + 1;
             var routeList = new List<object>();
 
@@ -821,7 +820,9 @@ namespace ElecWasteCollection.Application.Services
                 if (post == null) continue;
 
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
-                var product = await _unitOfWork.Products.GetByIdAsync(r.ProductId);
+                var product = post.Product; 
+                if (product == null) product = await _unitOfWork.Products.GetByIdAsync(r.ProductId);
+
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
 
@@ -836,13 +837,13 @@ namespace ElecWasteCollection.Application.Services
                     pickupOrder = order++,
                     productId = post.ProductId,
                     postId = post.PostId,
-                    userName = user.Name,
+                    userName = user?.Name ?? "N/A",
                     address = post.Address ?? "Không có",
                     categoryName = category?.Name ?? "Không rõ",
                     brandName = brand?.Name ?? "Không rõ",
                     dimensionText = dimStr,
                     weightKg = metrics.weight,
-                    volumeM3 = metrics.volume,
+                    volumeM3 = Math.Round(metrics.volume, 4), 
                     distanceKm = r.DistanceKm,
                     schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(
                         post.ScheduleJson!,
@@ -866,9 +867,14 @@ namespace ElecWasteCollection.Application.Services
                 totalPage,
                 page,
                 limit,
+
+                totalWeightKg = Math.Round(totalWeight, 2), 
+                totalVolumeM3 = Math.Round(totalVolume, 4), 
+
                 routes = routeList
             };
         }
+
         public async Task<List<Vehicles>> GetVehiclesAsync()
         {
             var list = await _unitOfWork.Vehicles.GetAllAsync(v => v.Status == VehicleStatus.DANG_HOAT_DONG.ToString());
