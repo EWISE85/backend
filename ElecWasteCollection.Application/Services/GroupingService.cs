@@ -785,16 +785,26 @@ namespace ElecWasteCollection.Application.Services
 
             var shift = await _unitOfWork.Shifts.GetByIdAsync(group.Shift_Id);
 
-            var routes = await _unitOfWork.CollecctionRoutes
+            var allRoutes = await _unitOfWork.CollecctionRoutes
                 .GetAllAsync(r => r.CollectionGroupId == groupId);
 
-            var sortedRoutesQuery = routes.OrderBy(r => r.EstimatedTime);
-            var totalProduct = sortedRoutesQuery.Count(); 
-
+            var totalProduct = allRoutes.Count();
             if (totalProduct == 0)
                 throw new Exception("Group không có route nào.");
 
-            var pagedRoutes = sortedRoutesQuery
+            double totalWeightAll = 0;
+            double totalVolumeAll = 0;
+            var attMap = await GetAttributeIdMapAsync();
+
+            foreach (var r in allRoutes)
+            {
+                var m = await GetProductMetricsInternalAsync(r.ProductId, attMap);
+                totalWeightAll += m.weight;
+                totalVolumeAll += m.volume;
+            }
+
+            var pagedRoutes = allRoutes
+                .OrderBy(r => r.EstimatedTime)
                 .Skip((page - 1) * limit)
                 .Take(limit)
                 .ToList();
@@ -803,13 +813,9 @@ namespace ElecWasteCollection.Application.Services
 
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(shift.Vehicle_Id);
             var collector = await _unitOfWork.Users.GetByIdAsync(shift.CollectorId);
-
             string pointId = vehicle?.Small_Collection_Point ?? collector?.SmallCollectionPointId;
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId);
 
-            var attMap = await GetAttributeIdMapAsync();
-
-            double totalWeight = 0, totalVolume = 0;
             int order = (page - 1) * limit + 1;
             var routeList = new List<object>();
 
@@ -820,14 +826,10 @@ namespace ElecWasteCollection.Application.Services
 
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
                 var product = post.Product ?? await _unitOfWork.Products.GetByIdAsync(r.ProductId);
-
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
 
                 var metrics = await GetProductMetricsInternalAsync(post.ProductId, attMap);
-
-                totalWeight += metrics.weight;
-                totalVolume += metrics.volume;
 
                 routeList.Add(new
                 {
@@ -854,22 +856,19 @@ namespace ElecWasteCollection.Application.Services
                 groupId = group.CollectionGroupId,
                 groupCode = group.Group_Code,
                 shiftId = group.Shift_Id,
-                vehicle = vehicle != null
-                    ? $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})"
-                    : "Không rõ",
+                vehicle = vehicle != null ? $"{vehicle.Plate_Number} ({vehicle.Vehicle_Type})" : "Không rõ",
                 collector = collector?.Name ?? "Không rõ",
                 groupDate = shift.WorkDate.ToString("yyyy-MM-dd"),
                 collectionPoint = point?.Name ?? "Không rõ",
-                totalProduct, 
+                totalProduct,
                 totalPage,
                 page,
                 limit,
-                totalWeightKg = Math.Round(totalWeight, 2),
-                totalVolumeM3 = Math.Round(totalVolume, 4),
+                totalWeightKg = Math.Round(totalWeightAll, 2),
+                totalVolumeM3 = Math.Round(totalVolumeAll, 4),
                 routes = routeList
             };
         }
-
         public async Task<List<Vehicles>> GetVehiclesAsync()
         {
             var list = await _unitOfWork.Vehicles.GetAllAsync(v => v.Status == VehicleStatus.DANG_HOAT_DONG.ToString());
