@@ -12,9 +12,10 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 {
 	public class FirebaseService : IFirebaseService
 	{
-		public async Task SendMulticastAsync(List<string> tokens, string title, string body, Dictionary<string, string>? data = null)
+		public async Task<List<string>> SendMulticastAsync(List<string> tokens, string title, string body, Dictionary<string, string>? data = null)
 		{
-			if (tokens == null || !tokens.Any()) return;
+			var failedTokens = new List<string>();
+			if (tokens == null || !tokens.Any()) return failedTokens;
 
 			var message = new MulticastMessage()
 			{
@@ -25,23 +26,10 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 					Body = body
 				},
 				Data = data,
-
-				Android = new AndroidConfig()
+				Android = new AndroidConfig { Priority = Priority.High },
+				Apns = new ApnsConfig
 				{
-					Priority = Priority.High
-				},
-
-				Apns = new ApnsConfig()
-				{
-					Headers = new Dictionary<string, string>()
-			{
-				{ "apns-priority", "10" }, 
-            },
-					Aps = new Aps
-					{
-						ContentAvailable = true, 
-						Sound = "default",       
-					}
+					Aps = new Aps { ContentAvailable = true, Sound = "default" }
 				}
 			};
 
@@ -51,11 +39,19 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 
 				if (response.FailureCount > 0)
 				{
-					var failedTokens = new List<string>();
 					for (var i = 0; i < response.Responses.Count; i++)
 					{
 						if (!response.Responses[i].IsSuccess)
-						{							Console.WriteLine($"[FCM Error] Token: {tokens[i]} - Error: {response.Responses[i].Exception.Message}");
+						{
+							var errorCode = response.Responses[i].Exception.MessagingErrorCode;
+
+							if (errorCode == MessagingErrorCode.Unregistered ||
+								errorCode == MessagingErrorCode.InvalidArgument)
+							{
+								failedTokens.Add(tokens[i]);
+							}
+
+							Console.WriteLine($"[FCM Error] Token: {tokens[i]} - Error: {errorCode}");
 						}
 					}
 				}
@@ -64,6 +60,8 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 			{
 				Console.WriteLine($"[FCM FATAL ERROR] {ex.Message}");
 			}
+
+			return failedTokens;
 		}
 
 		public async Task SendNotificationToDeviceAsync(string token, string title, string body, Dictionary<string, string>? data = null)

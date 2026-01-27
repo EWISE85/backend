@@ -14,5 +14,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public UserDeviceTokenRepository(DbContext context) : base(context)
 		{
 		}
+
+		public Task<List<string>> GetTokensByUserIdsAsync(List<Guid> userIds)
+		{
+			var query = _dbSet.AsNoTracking().AsSplitQuery();
+			query = query.Where(udt => userIds.Contains(udt.UserId));
+			return query.Select(udt => udt.FCMToken).ToListAsync();
+		}
 	}
 }

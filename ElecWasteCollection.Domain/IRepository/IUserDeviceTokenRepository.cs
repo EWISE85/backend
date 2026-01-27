@@ -9,5 +9,6 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface IUserDeviceTokenRepository : IGenericRepository<UserDeviceToken>
 	{
+		Task<List<string>> GetTokensByUserIdsAsync(List<Guid> userIds);
 	}
 }

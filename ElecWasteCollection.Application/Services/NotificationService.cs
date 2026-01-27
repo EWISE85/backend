@@ -3,6 +3,7 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +15,13 @@ namespace ElecWasteCollection.Application.Services
 	public class NotificationService : INotificationService
 	{
 		private readonly IFirebaseService _firebaseService;
+		private readonly IServiceScopeFactory _scopeFactory;
 		private readonly IUnitOfWork _unitOfWork;
-		public NotificationService(IFirebaseService firebaseService, IUnitOfWork unitOfWork)
+		public NotificationService(IFirebaseService firebaseService, IUnitOfWork unitOfWork, IServiceScopeFactory serviceScopeFactory)
 		{
 			_firebaseService = firebaseService;
 			_unitOfWork = unitOfWork;
+			_scopeFactory = serviceScopeFactory;
 		}
 
 		public async Task<List<NotificationModel>> GetNotificationByUserIdAsync(Guid userId)
@@ -84,6 +87,75 @@ namespace ElecWasteCollection.Application.Services
 			}
 			await _unitOfWork.SaveAsync();
 			return true;
+		}
+
+		public async Task SendNotificationToUser(SendNotificationToUserModel model)
+		{
+			var userBatchSize = 500;
+			var userIdBatches = model.UserIds.Chunk(userBatchSize);
+			foreach (var batch in userIdBatches)
+			{
+				foreach (var userId in batch)
+				{
+					var notification = new Notifications
+					{
+						NotificationId = Guid.NewGuid(),
+						UserId = userId,
+						Title = model.Title,
+						Body = model.Message,
+						CreatedAt = DateTime.UtcNow,
+						IsRead = false
+					};
+					await _unitOfWork.Notifications.AddAsync(notification);
+				}
+				await _unitOfWork.SaveAsync();
+			}
+			var allTokens = new List<string>();
+			foreach (var batch in model.UserIds.Chunk(1000))
+			{
+				var tokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => batch.Contains(udt.UserId));
+				if (tokens != null)
+				{
+					allTokens.AddRange(tokens.Select(t => t.FCMToken));
+				}
+			}
+			if (allTokens.Any())
+			{
+				_ = Task.Run(async () =>
+				{
+					// Tạo một Scope mới vì đây là luồng độc lập
+					using (var scope = _scopeFactory.CreateScope())
+					{
+						var scopedUnitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+						var scopedFirebase = scope.ServiceProvider.GetRequiredService<IFirebaseService>();
+
+						try
+						{
+							var fcmBatches = allTokens.Distinct().Chunk(500);
+							foreach (var fcmBatch in fcmBatches)
+							{
+								// Lấy danh sách token bị lỗi từ Firebase
+								var failedTokens = await scopedFirebase.SendMulticastAsync(fcmBatch.ToList(), model.Title, model.Message);
+
+								if (failedTokens.Any())
+								{
+									var entitiesToDelete = await scopedUnitOfWork.UserDeviceTokens.GetsAsync(t => failedTokens.Contains(t.FCMToken));
+									foreach (var entity in entitiesToDelete)
+									{
+										scopedUnitOfWork.UserDeviceTokens.Delete(entity);
+									}
+									await scopedUnitOfWork.SaveAsync();
+									Console.WriteLine($"[Cleanup] Đã xóa {failedTokens.Count} token hết hạn.");
+								}
+							}
+						}
+						catch (Exception ex)
+						{
+							Console.WriteLine($"[Background Cleanup Error]: {ex.Message}");
+						}
+					}
+				});
+			}
 		}
 	}
 }
