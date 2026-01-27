@@ -61,5 +61,18 @@ namespace ElecWasteCollection.API.Controllers
 				return BadRequest(new { message = "Failed to mark notification as read." });
 			}
 		}
+
+		[HttpPost("send-to-users")]
+		public async Task<IActionResult> SendNotificationToUser([FromBody] SendNotificationToUserRequest request)
+		{
+			var model = new SendNotificationToUserModel
+			{
+				UserIds = request.UserIds,
+				Title = request.Title,
+				Message = request.Message
+			};
+			await _notificationService.SendNotificationToUser(model);
+			return Ok(new { message = "Notification sent to users." });
+		}
 	}
 }

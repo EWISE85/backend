@@ -13,5 +13,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<List<NotificationModel>> GetNotificationByUserIdAsync(Guid userId);	
 
 		Task<bool> ReadNotificationAsync(List<Guid> notificationIds);
+
+		Task SendNotificationToUser(SendNotificationToUserModel sendNotificationToUserModel);
 	}
 }

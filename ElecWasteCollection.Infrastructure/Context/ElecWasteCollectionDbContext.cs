@@ -44,52 +44,54 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<Notifications> Notifications { get; set; }
 
+		public DbSet<CompanyRecyclingCategory> CompanyRecyclingCategories { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
 			{
-				entity.ToTable("Company"); 
+				entity.ToTable("Company");
 				entity.HasKey(e => e.CompanyId);
 				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
 				entity.HasIndex(e => e.Name).IsUnique();
 				entity.HasIndex(e => e.Created_At);
 			});
 
-            //modelBuilder.Entity<SmallCollectionPoints>(entity =>
-            //{
-            //	entity.ToTable("SmallCollectionPoints");
-            //	entity.HasKey(e => e.SmallCollectionPointsId);
-            //	entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-            //	entity.HasIndex(e => e.Name).IsUnique();
-            //	entity.HasIndex(e => e.Created_At);
+			//modelBuilder.Entity<SmallCollectionPoints>(entity =>
+			//{
+			//	entity.ToTable("SmallCollectionPoints");
+			//	entity.HasKey(e => e.SmallCollectionPointsId);
+			//	entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+			//	entity.HasIndex(e => e.Name).IsUnique();
+			//	entity.HasIndex(e => e.Created_At);
 
-            //	entity.HasOne(e => e.CollectionCompany)
-            //		  .WithMany(c => c.SmallCollectionPoints)
-            //		  .HasForeignKey(e => e.CompanyId)
-            //		  .HasConstraintName("FK_SmallCollectionPoints_CollectionCompany");
-            //});
-            modelBuilder.Entity<SmallCollectionPoints>(entity =>
-            {
-                entity.ToTable("SmallCollectionPoints");
-                entity.HasKey(e => e.SmallCollectionPointsId);
-                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-                entity.HasIndex(e => e.Name).IsUnique();
-                entity.HasIndex(e => e.Created_At);
+			//	entity.HasOne(e => e.CollectionCompany)
+			//		  .WithMany(c => c.SmallCollectionPoints)
+			//		  .HasForeignKey(e => e.CompanyId)
+			//		  .HasConstraintName("FK_SmallCollectionPoints_CollectionCompany");
+			//});
+			modelBuilder.Entity<SmallCollectionPoints>(entity =>
+			{
+				entity.ToTable("SmallCollectionPoints");
+				entity.HasKey(e => e.SmallCollectionPointsId);
+				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+				entity.HasIndex(e => e.Name).IsUnique();
+				entity.HasIndex(e => e.Created_At);
 
-				entity.HasOne(e => e.CollectionCompany)       
-					  .WithMany(c => c.SmallCollectionPoints)    
+				entity.HasOne(e => e.CollectionCompany)
+					  .WithMany(c => c.SmallCollectionPoints)
 					  .HasForeignKey(e => e.CompanyId)
 					  .HasConstraintName("FK_SmallCollectionPoints_CollectionCompany");
 
-                entity.HasOne(e => e.RecyclingCompany)            
-                      .WithMany(c => c.AssignedRecyclingPoints)
-                      .HasForeignKey(e => e.RecyclingCompanyId)  
-                      .IsRequired(false)                          
-                      .OnDelete(DeleteBehavior.SetNull)
-                      .HasConstraintName("FK_SmallCollectionPoints_RecyclingCompany");
-            });
+				entity.HasOne(e => e.RecyclingCompany)
+					  .WithMany(c => c.AssignedRecyclingPoints)
+					  .HasForeignKey(e => e.RecyclingCompanyId)
+					  .IsRequired(false)
+					  .OnDelete(DeleteBehavior.SetNull)
+					  .HasConstraintName("FK_SmallCollectionPoints_RecyclingCompany");
+			});
 
-            modelBuilder.Entity<User>(entity =>
+			modelBuilder.Entity<User>(entity =>
 			{
 				entity.ToTable("User");
 				entity.HasKey(e => e.UserId);
@@ -157,7 +159,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 				entity.HasOne(e => e.ParentCategory)
 					  .WithMany(e => e.SubCategories)
-			          .HasForeignKey(e => e.ParentCategoryId)
+					  .HasForeignKey(e => e.ParentCategoryId)
 					  .HasConstraintName("FK_Category_ParentCategory");
 			});
 
@@ -218,17 +220,17 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.Property(e => e.SmallCollectionPointId).IsRequired(false);
 				entity.Property(e => e.PackageId).IsRequired(false);
 				entity.HasIndex(e => e.CreateAt);
-                entity.Property(e => e.Status).HasColumnName("Status");
-                entity.Property(e => e.CreateAt).HasColumnName("CreateAt");
+				entity.Property(e => e.Status).HasColumnName("Status");
+				entity.Property(e => e.CreateAt).HasColumnName("CreateAt");
 
 
-                entity.HasOne(e => e.User)
+				entity.HasOne(e => e.User)
 					  .WithMany(u => u.Products)
 					  .HasForeignKey(e => e.UserId)
 					  .HasConstraintName("FK_Products_User");
 
 				entity.HasOne(e => e.Category)
-				      .WithMany(c => c.Products)
+					  .WithMany(c => c.Products)
 					  .HasForeignKey(e => e.CategoryId)
 					  .HasConstraintName("FK_Products_Category");
 
@@ -238,8 +240,8 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasConstraintName("FK_Products_Brand");
 
 				entity.HasOne(e => e.SmallCollectionPoint)
-				      .WithMany(c => c.Products)
-				      .HasForeignKey(e => e.SmallCollectionPointId)
+					  .WithMany(c => c.Products)
+					  .HasForeignKey(e => e.SmallCollectionPointId)
 					  .HasConstraintName("FK_Products_SmallCollectionPoints");
 
 				entity.HasOne(e => e.Package)
@@ -462,6 +464,23 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasConstraintName("FK_Notification_User");
 
 			});
+
+			modelBuilder.Entity<CompanyRecyclingCategory>(entity =>
+			{
+			entity.ToTable("CompanyRecyclingCategory");
+			entity.HasKey(e => new { e.CompanyId, e.CategoryId });
+				entity.HasOne(e => e.Company)
+					  .WithMany(c => c.CompanyRecyclingCategories)
+					  .HasForeignKey(e => e.CompanyId)
+					  .HasConstraintName("FK_CompanyRecyclingCategory_Company");
+				entity.HasOne(e => e.Category)
+				.WithMany(c => c.CompanyRecyclingCategories)
+					  .HasForeignKey(e => e.CategoryId)
+					  .HasConstraintName("FK_CompanyRecyclingCategory_Category");
+			});
+
+		
+
 		}
 	}
 }
