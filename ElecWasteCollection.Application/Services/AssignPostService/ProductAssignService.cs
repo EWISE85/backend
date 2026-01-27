@@ -83,7 +83,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         // =========================================================================
         // PHẦN 2: LOGIC XỬ LÝ CHÍNH (SONG SONG - TỐC ĐỘ CAO)
         // =========================================================================
-        private async Task<AssignProductResult> AssignProductsLogicInternal( IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate)
+        private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate)
         {
             var result = new AssignProductResult();
 
@@ -95,14 +95,29 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             var rangeConfigs = new List<CompanyRangeConfig>();
             double currentPivot = 0.0;
+
             foreach (var comp in sortedConfig)
             {
                 double assignRatio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
-                var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = assignRatio, MinRange = currentPivot };
-                currentPivot += (assignRatio / 100.0);
-                cfg.MaxRange = currentPivot;
-                rangeConfigs.Add(cfg);
+
+                if (assignRatio > 0)
+                {
+                    var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = assignRatio, MinRange = currentPivot };
+                    currentPivot += (assignRatio / 100.0);
+                    cfg.MaxRange = currentPivot;
+                    rangeConfigs.Add(cfg);
+                }
             }
+
+            if (!rangeConfigs.Any()) throw new Exception("Lỗi cấu hình: Không có công ty nào có tỉ lệ phân bổ (ASSIGN_RATIO) lớn hơn 0.");
+
+            var validCompanyIds = rangeConfigs.Select(r => r.CompanyEntity.CompanyId).ToList();
+
+            var allSmallPoints = sortedConfig
+                .Where(c => validCompanyIds.Contains(c.CompanyId))
+                .SelectMany(c => c.SmallCollectionPoints ?? Enumerable.Empty<SmallCollectionPoints>())
+                .Where(sp => sp.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString()) 
+                .ToList();
 
             var products = await unitOfWork.Products.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
             var postIds = products.Select(p => p.ProductId).ToList();
@@ -110,27 +125,16 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var senderIds = posts.Select(p => p.SenderId).Distinct().ToList();
             var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => senderIds.Contains(a.UserId));
 
-            // CHUẨN BỊ CHO XỬ LÝ SONG SONG (THREAD-SAFE)
-            // Sử dụng ConcurrentBag thay vì List thường vì nhiều luồng sẽ ghi vào cùng lúc
             var historyListBag = new ConcurrentBag<ProductStatusHistory>();
             var detailsBag = new ConcurrentBag<object>();
 
-            // Biến đếm Thread-safe
             int totalAssigned = 0;
             int totalUnassigned = 0;
 
-            var allSmallPoints = sortedConfig
-                .SelectMany(c => c.SmallCollectionPoints ?? Enumerable.Empty<SmallCollectionPoints>())
-                .ToList();
-
-            // CẤU HÌNH SONG SONG
-            // Cho phép chạy tối đa 8 luồng cùng lúc (An toàn cho Mapbox Free)
-            // Nếu muốn nhanh hơn có thể tăng lên 10-12, nhưng cẩn thận lỗi 429
             var semaphore = new SemaphoreSlim(8);
 
             var tasks = products.Select(async product =>
             {
-                // Chờ đến lượt (nếu đang có 8 luồng chạy thì luồng thứ 9 phải đợi)
                 await semaphore.WaitAsync();
                 try
                 {
@@ -148,7 +152,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         return;
                     }
 
-                    // --- BƯỚC A: MATRIX API ---
                     Dictionary<string, double> matrixDistances = new Dictionary<string, double>();
                     if (allSmallPoints.Any())
                     {
@@ -161,23 +164,24 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     var validCandidates = new List<ProductAssignCandidate>();
 
-                    foreach (var company in sortedConfig)
+                    foreach (var rangeCfg in rangeConfigs)
                     {
+                        var company = rangeCfg.CompanyEntity;
                         if (company.SmallCollectionPoints == null) continue;
+
                         ProductAssignCandidate? bestForComp = null;
                         double minRoadKm = double.MaxValue;
 
-                        foreach (var sp in company.SmallCollectionPoints)
+                        var activePointsInCompany = company.SmallCollectionPoints
+                            .Where(sp => sp.Status == "DANG_HOAT_DONG");
+
+                        foreach (var sp in activePointsInCompany)
                         {
                             double hvDistance = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, matchedAddress.Iat.Value, matchedAddress.Ing.Value);
                             double radiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
                             if (hvDistance > radiusKm) continue;
 
-                            double roadKm;
-                            if (matrixDistances.TryGetValue(sp.SmallCollectionPointsId, out double kmFromMatrix))
-                                roadKm = kmFromMatrix;
-                            else
-                                roadKm = hvDistance;
+                            double roadKm = matrixDistances.TryGetValue(sp.SmallCollectionPointsId, out double kmFromMatrix) ? kmFromMatrix : hvDistance;
 
                             double maxRoadKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
                             if (roadKm > maxRoadKm) continue;
@@ -203,15 +207,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     if (!validCandidates.Any())
                     {
-                        Interlocked.Increment(ref totalUnassigned); 
+                        Interlocked.Increment(ref totalUnassigned);
                         detailsBag.Add(new { productId = product.ProductId, status = "failed", reason = "Out of range" });
                         product.Status = ProductStatus.KHONG_TIM_THAY_DIEM_THU_GOM.ToString();
                     }
                     else
                     {
                         double magicNumber = GetStableHashRatio(product.ProductId);
-                        var targetConfig = rangeConfigs.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange);
-                        if (targetConfig == null) targetConfig = rangeConfigs.Last();
+                        var targetConfig = rangeConfigs.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange)
+                                           ?? rangeConfigs.Last();
 
                         var targetCandidate = validCandidates.FirstOrDefault(c => c.CompanyId == targetConfig.CompanyEntity.CompanyId);
 
@@ -229,6 +233,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     if (chosenCandidate != null)
                     {
+                        // Cập nhật Database
                         post.CollectionCompanyId = chosenCandidate.CompanyId;
                         post.AssignedSmallPointId = chosenCandidate.SmallPointId;
                         post.DistanceToPointKm = chosenCandidate.RoadKm;
@@ -263,30 +268,28 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 }
                 finally
                 {
-                    semaphore.Release(); 
+                    semaphore.Release();
                 }
             });
 
             await Task.WhenAll(tasks);
 
-            // Gán lại kết quả từ Bag vào Result (vì Bag không có thứ tự, nhưng không quan trọng)
-            result.TotalAssigned = totalAssigned;
-            result.TotalUnassigned = totalUnassigned;
-            result.Details = detailsBag.ToList();
-
+            // Lưu History (Tuần tự để an toàn DbContext)
             if (historyListBag.Any())
             {
-                // Vì DbContext không Thread-Safe, nên đoạn Save này phải chạy tuần tự ở cuối cùng (rất nhanh)
                 foreach (var history in historyListBag)
                 {
                     await unitOfWork.ProductStatusHistory.AddAsync(history);
                 }
             }
-            await unitOfWork.SaveAsync();
 
+            result.TotalAssigned = totalAssigned;
+            result.TotalUnassigned = totalUnassigned;
+            result.Details = detailsBag.ToList();
+
+            await unitOfWork.SaveAsync();
             return result;
         }
-
         public async Task<List<ProductByDateModel>> GetProductsByWorkDateAsync(DateOnly workDate)
         {
             var posts = await _unitOfWorkForGet.Posts.GetAllAsync(
