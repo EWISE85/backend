@@ -44,6 +44,35 @@ namespace ElecWasteCollection.Application.Services
 			return result;
 		}
 
+		public async Task<List<NotificationModel>> GetNotificationTypeEvent()
+		{
+			// 1. Lấy tất cả thông báo có Type là Event
+			var notifications = await _unitOfWork.Notifications.GetsAsync(n => n.Type == NotificationType.Event.ToString());
+
+			if (notifications == null || !notifications.Any())
+			{
+				return new List<NotificationModel>();
+			}
+
+			// 2. GOM NHÓM THEO EVENT ID
+			var result = notifications
+				.GroupBy(n => n.EventId)
+				.Select(group => group.First())
+				.Select(n => new NotificationModel
+				{
+					NotificationId = n.NotificationId, 
+					Title = n.Title,
+					Message = n.Body,
+					IsRead = false, 
+					CreatedAt = n.CreatedAt,
+					UserId = n.UserId 
+				})
+				.OrderByDescending(n => n.CreatedAt) 
+				.ToList();
+
+			return result;
+		}
+
 		public async Task NotifyCustomerArrivalAsync(Guid productId)
 		{
 			var product = await _unitOfWork.Products.GetAsync(p => p.ProductId == productId, includeProperties: "Category");
@@ -71,6 +100,7 @@ namespace ElecWasteCollection.Application.Services
 				Body = body,
 				IsRead = false,
 				CreatedAt = DateTime.UtcNow,
+				Type = NotificationType.System.ToString()
 			};
 
 			await _unitOfWork.Notifications.AddAsync(notification);
@@ -100,6 +130,8 @@ namespace ElecWasteCollection.Application.Services
 				Body = body,
 				IsRead = false,
 				CreatedAt = DateTime.UtcNow,
+				Type = NotificationType.System.ToString()
+
 			};
 			await _unitOfWork.Notifications.AddAsync(notification);
 			await _unitOfWork.SaveAsync();
@@ -120,6 +152,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task SendNotificationToUser(SendNotificationToUserModel model)
 		{
+			var eventId = Guid.NewGuid();
 			var userBatchSize = 500;
 			var userIdBatches = model.UserIds.Chunk(userBatchSize);
 			foreach (var batch in userIdBatches)
@@ -133,7 +166,9 @@ namespace ElecWasteCollection.Application.Services
 						Title = model.Title,
 						Body = model.Message,
 						CreatedAt = DateTime.UtcNow,
-						IsRead = false
+						IsRead = false,
+						Type = NotificationType.Event.ToString(),
+						EventId = eventId
 					};
 					await _unitOfWork.Notifications.AddAsync(notification);
 				}
