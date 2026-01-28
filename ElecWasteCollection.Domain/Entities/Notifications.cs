@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
+	public enum NotificationType
+	{
+		Event,
+		System
+	}
 	public class Notifications
 	{
 		public Guid NotificationId { get; set; }
@@ -19,6 +24,10 @@ namespace ElecWasteCollection.Domain.Entities
 		public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 		public bool IsRead { get; set; } = false;
+
+		public Guid EventId { get; set; }
+
+		public string Type { get; set; }
 
 		public User User { get; set; }
 	}

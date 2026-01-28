@@ -80,5 +80,11 @@ namespace ElecWasteCollection.API.Controllers
 			await _notificationService.NotifyCustomerCallAsync(request.RouteId, request.UserId);
 			return Ok(new { message = "Notification sent to customer" });
 		}
+		[HttpGet("event")]
+		public async Task<IActionResult> GetEventNotifications()
+		{
+			var notifications = await _notificationService.GetNotificationTypeEvent();
+			return Ok(notifications);
+		}
 	}
 }
