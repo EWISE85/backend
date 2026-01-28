@@ -266,6 +266,7 @@ namespace ElecWasteCollection.Application.Services
 				Avatar = u.Avatar,
 				Role = u.Role,
 				SmallCollectionPointId = u.SmallCollectionPointId,
+				CreateAt = u.CreateAt,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
 			}).ToList();
 
