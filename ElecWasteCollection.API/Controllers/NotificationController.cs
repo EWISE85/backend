@@ -74,5 +74,11 @@ namespace ElecWasteCollection.API.Controllers
 			await _notificationService.SendNotificationToUser(model);
 			return Ok(new { message = "Notification sent to users." });
 		}
+		[HttpPost("notify-call")]
+		public async Task<IActionResult> NotifyCall([FromBody] NotifyCallRequest request)
+		{
+			await _notificationService.NotifyCustomerCallAsync(request.RouteId, request.UserId);
+			return Ok(new { message = "Notification sent to customer" });
+		}
 	}
 }
