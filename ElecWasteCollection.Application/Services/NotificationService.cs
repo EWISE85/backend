@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.Exceptions;
+﻿using DocumentFormat.OpenXml.Wordprocessing;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -72,6 +73,34 @@ namespace ElecWasteCollection.Application.Services
 				CreatedAt = DateTime.UtcNow,
 			};
 
+			await _unitOfWork.Notifications.AddAsync(notification);
+			await _unitOfWork.SaveAsync();
+		}
+
+		public async Task NotifyCustomerCallAsync(Guid routeId, Guid userId)
+		{
+			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
+			string title = "Cuộc gọi từ tài xế!";
+			string body = "Tài xế đang cố gắng liên lạc với bạn. Vui lòng kiểm tra cuộc gọi.";
+			var dataPayload = new Dictionary<string, string>
+			{
+				{ "type", "COLLECTOR_CALL" },
+				{ "routeId", routeId.ToString() },
+			};
+			if (userTokens != null && userTokens.Any())
+			{
+				var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+				await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+			}
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = userId,
+				Title = title,
+				Body = body,
+				IsRead = false,
+				CreatedAt = DateTime.UtcNow,
+			};
 			await _unitOfWork.Notifications.AddAsync(notification);
 			await _unitOfWork.SaveAsync();
 		}
