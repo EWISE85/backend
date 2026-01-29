@@ -4,7 +4,7 @@ using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using Microsoft.Extensions.DependencyInjection;
-using System.Collections.Concurrent; // Cần thêm cái này cho Thread-Safe
+using System.Collections.Concurrent;
 using System.Text.Json;
 using ElecWasteCollection.Application.IServices;
 
@@ -80,201 +80,153 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             });
         }
 
-        // =========================================================================
-        // PHẦN 2: LOGIC XỬ LÝ CHÍNH (SONG SONG - TỐC ĐỘ CAO)
-        // =========================================================================
         private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate)
         {
             var result = new AssignProductResult();
 
-            var companies = await unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints");
-            if (!companies.Any()) throw new Exception("Lỗi cấu hình: Chưa có đơn vị thu gom nào.");
+            // GD1: 
+            var allCategories = await unitOfWork.Categories.GetAllAsync();
+            var categoryMap = allCategories.ToDictionary(c => c.CategoryId, c => c.ParentCategoryId ?? c.CategoryId);
 
+            var allCompanies = await unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints,CompanyRecyclingCategories");
             var allConfigs = await unitOfWork.SystemConfig.GetAllAsync();
-            var sortedConfig = companies.OrderBy(c => c.CompanyId).ToList();
+
+            var recyclingCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()).ToList();
 
             var rangeConfigs = new List<CompanyRangeConfig>();
             double currentPivot = 0.0;
+            var collectionCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString()).OrderBy(c => c.CompanyId).ToList();
 
-            foreach (var comp in sortedConfig)
+            foreach (var comp in collectionCompanies)
             {
-                double assignRatio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
-
-                if (assignRatio > 0)
+                double ratio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
+                if (ratio > 0)
                 {
-                    var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = assignRatio, MinRange = currentPivot };
-                    currentPivot += (assignRatio / 100.0);
+                    var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = ratio, MinRange = currentPivot };
+                    currentPivot += (ratio / 100.0);
                     cfg.MaxRange = currentPivot;
                     rangeConfigs.Add(cfg);
                 }
             }
 
-            if (!rangeConfigs.Any()) throw new Exception("Lỗi cấu hình: Không có công ty nào có tỉ lệ phân bổ (ASSIGN_RATIO) lớn hơn 0.");
+            if (!rangeConfigs.Any()) throw new Exception("Lỗi: Không có đơn vị thu gom nào có tỉ lệ > 0.");
 
-            var validCompanyIds = rangeConfigs.Select(r => r.CompanyEntity.CompanyId).ToList();
+            var companySlotQueues = new Dictionary<string, ConcurrentQueue<string>>();
+            foreach (var rc in rangeConfigs)
+            {
+                var activePoints = rc.CompanyEntity.SmallCollectionPoints
+                    .Where(sp => sp.Status == CompanyStatus.DANG_HOAT_DONG.ToString()).ToList();
 
-            var allSmallPoints = sortedConfig
-                .Where(c => validCompanyIds.Contains(c.CompanyId))
-                .SelectMany(c => c.SmallCollectionPoints ?? Enumerable.Empty<SmallCollectionPoints>())
-                .Where(sp => sp.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString()) 
-                .ToList();
+                if (!activePoints.Any()) continue;
+
+                int quota = (int)Math.Round((rc.AssignRatio / 100.0) * productIds.Count);
+                var slots = new List<string>();
+                int basePerPoint = quota / activePoints.Count;
+                int remainder = quota % activePoints.Count;
+
+                foreach (var p in activePoints)
+                    for (int i = 0; i < basePerPoint; i++) slots.Add(p.SmallCollectionPointsId);
+
+                var rnd = new Random();
+                for (int i = 0; i < remainder; i++) slots.Add(activePoints[rnd.Next(activePoints.Count)].SmallCollectionPointsId);
+
+                var queue = new ConcurrentQueue<string>();
+                foreach (var sId in slots.OrderBy(x => Guid.NewGuid())) queue.Enqueue(sId);
+                companySlotQueues[rc.CompanyEntity.CompanyId] = queue;
+            }
 
             var products = await unitOfWork.Products.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
-            var postIds = products.Select(p => p.ProductId).ToList();
-            var posts = await unitOfWork.Posts.GetAllAsync(p => postIds.Contains(p.ProductId));
-            var senderIds = posts.Select(p => p.SenderId).Distinct().ToList();
-            var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => senderIds.Contains(a.UserId));
+            var posts = await unitOfWork.Posts.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
+            var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => posts.Select(x => x.SenderId).Contains(a.UserId));
 
             var historyListBag = new ConcurrentBag<ProductStatusHistory>();
             var detailsBag = new ConcurrentBag<object>();
-
             int totalAssigned = 0;
             int totalUnassigned = 0;
-
             var semaphore = new SemaphoreSlim(8);
 
+            // XỬ LÝ SONG SONG (GD2, GD3, GD4)
             var tasks = products.Select(async product =>
             {
                 await semaphore.WaitAsync();
                 try
                 {
                     var post = posts.FirstOrDefault(p => p.ProductId == product.ProductId);
-                    if (post == null || string.IsNullOrEmpty(post.Address))
-                    {
-                        detailsBag.Add(new { productId = product.ProductId, status = "failed", reason = "Info Invalid" });
-                        return;
-                    }
+                    if (post == null || string.IsNullOrEmpty(post.Address)) return;
 
-                    var matchedAddress = addresses.FirstOrDefault(a => a.UserId == post.SenderId && a.Address == post.Address);
-                    if (matchedAddress == null || matchedAddress.Iat == null || matchedAddress.Ing == null)
-                    {
-                        detailsBag.Add(new { productId = product.ProductId, status = "failed", reason = "No Coords" });
-                        return;
-                    }
+                    if (!categoryMap.TryGetValue(product.CategoryId, out Guid rootCateId)) return;
 
-                    Dictionary<string, double> matrixDistances = new Dictionary<string, double>();
-                    if (allSmallPoints.Any())
-                    {
-                        matrixDistances = await distanceCache.GetMatrixDistancesAsync(
-                           matchedAddress.Iat.Value,
-                           matchedAddress.Ing.Value,
-                           allSmallPoints
-                       );
-                    }
+                    var matchedAddr = addresses.FirstOrDefault(a => a.UserId == post.SenderId && a.Address == post.Address);
+                    if (matchedAddr?.Iat == null || matchedAddr?.Ing == null) return;
 
+                    // GD2 & GD3: Lọc kho dựa trên năng lực của Công ty Tái chế liên kết
                     var validCandidates = new List<ProductAssignCandidate>();
+                    var candidatePoints = new List<SmallCollectionPoints>();
 
-                    foreach (var rangeCfg in rangeConfigs)
+                    foreach (var rc in rangeConfigs)
                     {
-                        var company = rangeCfg.CompanyEntity;
-                        if (company.SmallCollectionPoints == null) continue;
-
-                        ProductAssignCandidate? bestForComp = null;
-                        double minRoadKm = double.MaxValue;
-
-                        var activePointsInCompany = company.SmallCollectionPoints
-                            .Where(sp => sp.Status == "DANG_HOAT_DONG");
-
-                        foreach (var sp in activePointsInCompany)
+                        foreach (var sp in rc.CompanyEntity.SmallCollectionPoints.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
                         {
-                            double hvDistance = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, matchedAddress.Iat.Value, matchedAddress.Ing.Value);
-                            double radiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
-                            if (hvDistance > radiusKm) continue;
+                            var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
 
-                            double roadKm = matrixDistances.TryGetValue(sp.SmallCollectionPointsId, out double kmFromMatrix) ? kmFromMatrix : hvDistance;
+                            bool canHandle = rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootCateId) ?? false;
 
-                            double maxRoadKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
-                            if (roadKm > maxRoadKm) continue;
+                            if (!canHandle) continue;
 
-                            if (roadKm < minRoadKm)
+                            double hvDist = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, matchedAddr.Iat.Value, matchedAddr.Ing.Value);
+                            double radius = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
+
+                            if (hvDist <= radius)
                             {
-                                minRoadKm = roadKm;
-                                bestForComp = new ProductAssignCandidate
+                                validCandidates.Add(new ProductAssignCandidate
                                 {
                                     ProductId = product.ProductId,
-                                    CompanyId = company.CompanyId,
                                     SmallPointId = sp.SmallCollectionPointsId,
-                                    RoadKm = roadKm,
-                                    HaversineKm = hvDistance
-                                };
+                                    CompanyId = rc.CompanyEntity.CompanyId,
+                                    HaversineKm = hvDist
+                                });
+                                candidatePoints.Add(sp);
                             }
                         }
-                        if (bestForComp != null) validCandidates.Add(bestForComp);
                     }
-
-                    ProductAssignCandidate? chosenCandidate = null;
-                    string assignNote = "";
 
                     if (!validCandidates.Any())
                     {
-                        Interlocked.Increment(ref totalUnassigned);
-                        detailsBag.Add(new { productId = product.ProductId, status = "failed", reason = "Out of range" });
-                        product.Status = ProductStatus.KHONG_TIM_THAY_DIEM_THU_GOM.ToString();
+                        MarkAsUnassigned(product, detailsBag, ref totalUnassigned, "Không tìm thấy kho tái chế đủ năng lực trong bán kính");
+                        return;
                     }
-                    else
+
+                    var roadDistances = await distanceCache.GetMatrixDistancesAsync(matchedAddr.Iat.Value, matchedAddr.Ing.Value, candidatePoints);
+                    validCandidates = validCandidates.Where(v => {
+                        v.RoadKm = roadDistances.ContainsKey(v.SmallPointId) ? roadDistances[v.SmallPointId] : v.HaversineKm;
+                        return v.RoadKm <= GetConfigValue(allConfigs, null, v.SmallPointId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
+                    }).ToList();
+
+                    if (!validCandidates.Any())
                     {
-                        double magicNumber = GetStableHashRatio(product.ProductId);
-                        var targetConfig = rangeConfigs.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange)
-                                           ?? rangeConfigs.Last();
-
-                        var targetCandidate = validCandidates.FirstOrDefault(c => c.CompanyId == targetConfig.CompanyEntity.CompanyId);
-
-                        if (targetCandidate != null)
-                        {
-                            chosenCandidate = targetCandidate;
-                            assignNote = $"Đúng tuyến - {targetConfig.AssignRatio}%";
-                        }
-                        else
-                        {
-                            chosenCandidate = validCandidates.OrderBy(c => c.RoadKm).First();
-                            assignNote = "Trái tuyến - Gần nhất";
-                        }
+                        MarkAsUnassigned(product, detailsBag, ref totalUnassigned, "Ngoài phạm vi đường bộ tối đa");
+                        return;
                     }
 
-                    if (chosenCandidate != null)
+                    // GD4: Điều phối
+                    ProductAssignCandidate chosen = null;
+                    double magic = GetStableHashRatio(product.ProductId);
+                    var targetRC = rangeConfigs.FirstOrDefault(r => magic >= r.MinRange && magic < r.MaxRange) ?? rangeConfigs.Last();
+
+                    if (companySlotQueues.TryGetValue(targetRC.CompanyEntity.CompanyId, out var q) && q.TryDequeue(out string sId))
                     {
-                        // Cập nhật Database
-                        post.CollectionCompanyId = chosenCandidate.CompanyId;
-                        post.AssignedSmallPointId = chosenCandidate.SmallPointId;
-                        post.DistanceToPointKm = chosenCandidate.RoadKm;
-
-                        product.SmallCollectionPointId = chosenCandidate.SmallPointId;
-                        product.Status = ProductStatus.CHO_GOM_NHOM.ToString();
-
-                        historyListBag.Add(new ProductStatusHistory
-                        {
-                            ProductStatusHistoryId = Guid.NewGuid(),
-                            ProductId = product.ProductId,
-                            ChangedAt = DateTime.UtcNow,
-                            Status = ProductStatus.CHO_GOM_NHOM.ToString(),
-                            StatusDescription = $"Kho: {chosenCandidate.SmallPointId} - {assignNote}"
-                        });
-
-                        Interlocked.Increment(ref totalAssigned);
-                        detailsBag.Add(new
-                        {
-                            productId = product.ProductId,
-                            companyId = chosenCandidate.CompanyId,
-                            smallPointId = chosenCandidate.SmallPointId,
-                            roadKm = $"{Math.Round(chosenCandidate.RoadKm, 2):0.00} km",
-                            status = "assigned",
-                            note = assignNote
-                        });
+                        chosen = validCandidates.FirstOrDefault(v => v.SmallPointId == sId);
                     }
+
+                    chosen ??= validCandidates.OrderBy(v => v.RoadKm).First();
+
+                    AssignSuccess(product, post, chosen, "Tự động phân bổ", historyListBag, detailsBag, ref totalAssigned);
                 }
-                catch (Exception ex)
-                {
-                    detailsBag.Add(new { productId = product.ProductId, status = "error", message = ex.Message });
-                }
-                finally
-                {
-                    semaphore.Release();
-                }
+                finally { semaphore.Release(); }
             });
 
             await Task.WhenAll(tasks);
 
-            // Lưu History (Tuần tự để an toàn DbContext)
             if (historyListBag.Any())
             {
                 foreach (var history in historyListBag)
@@ -286,10 +238,257 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             result.TotalAssigned = totalAssigned;
             result.TotalUnassigned = totalUnassigned;
             result.Details = detailsBag.ToList();
-
             await unitOfWork.SaveAsync();
             return result;
         }
+
+        // HELPER METHODS ĐỂ CODE SẠCH HƠN
+        private void MarkAsUnassigned(Products product, ConcurrentBag<object> details, ref int unassignedCount, string reason)
+        {
+            Interlocked.Increment(ref unassignedCount);
+            product.Status = ProductStatus.KHONG_TIM_THAY_DIEM_THU_GOM.ToString();
+            details.Add(new { productId = product.ProductId, status = "failed", reason = reason });
+        }
+
+        private void AssignSuccess(Products product, Post post, ProductAssignCandidate chosen, string note, ConcurrentBag<ProductStatusHistory> historyBag, ConcurrentBag<object> details, ref int assignedCount)
+        {
+            product.SmallCollectionPointId = chosen.SmallPointId;
+            product.Status = ProductStatus.CHO_GOM_NHOM.ToString();
+
+            post.AssignedSmallPointId = chosen.SmallPointId;
+            post.CollectionCompanyId = chosen.CompanyId;
+            post.DistanceToPointKm = chosen.RoadKm;
+
+            historyBag.Add(new ProductStatusHistory
+            {
+                ProductStatusHistoryId = Guid.NewGuid(),
+                ProductId = product.ProductId,
+                ChangedAt = DateTime.UtcNow,
+                Status = ProductStatus.CHO_GOM_NHOM.ToString(),
+                StatusDescription = $"Kho: {chosen.SmallPointId} - {note}"
+            });
+
+            Interlocked.Increment(ref assignedCount);
+            details.Add(new
+            {
+                productId = product.ProductId,
+                status = "assigned",
+                point = chosen.SmallPointId,
+                distance = $"{Math.Round(chosen.RoadKm, 2)}km",
+                note = note
+            });
+        }
+
+        //// =========================================================================
+        //// PHẦN 2: LOGIC XỬ LÝ CHÍNH (SONG SONG - TỐC ĐỘ CAO)
+        //// =========================================================================
+        //private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate)
+        //{
+        //    var result = new AssignProductResult();
+
+        //    var companies = await unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints");
+        //    if (!companies.Any()) throw new Exception("Lỗi cấu hình: Chưa có đơn vị thu gom nào.");
+
+        //    var allConfigs = await unitOfWork.SystemConfig.GetAllAsync();
+        //    var sortedConfig = companies.OrderBy(c => c.CompanyId).ToList();
+
+        //    var rangeConfigs = new List<CompanyRangeConfig>();
+        //    double currentPivot = 0.0;
+
+        //    foreach (var comp in sortedConfig)
+        //    {
+        //        double assignRatio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
+
+        //        if (assignRatio > 0)
+        //        {
+        //            var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = assignRatio, MinRange = currentPivot };
+        //            currentPivot += (assignRatio / 100.0);
+        //            cfg.MaxRange = currentPivot;
+        //            rangeConfigs.Add(cfg);
+        //        }
+        //    }
+
+        //    if (!rangeConfigs.Any()) throw new Exception("Lỗi cấu hình: Không có công ty nào có tỉ lệ phân bổ (ASSIGN_RATIO) lớn hơn 0.");
+
+        //    var validCompanyIds = rangeConfigs.Select(r => r.CompanyEntity.CompanyId).ToList();
+
+        //    var allSmallPoints = sortedConfig
+        //        .Where(c => validCompanyIds.Contains(c.CompanyId))
+        //        .SelectMany(c => c.SmallCollectionPoints ?? Enumerable.Empty<SmallCollectionPoints>())
+        //        .Where(sp => sp.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString()) 
+        //        .ToList();
+
+        //    var products = await unitOfWork.Products.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
+        //    var postIds = products.Select(p => p.ProductId).ToList();
+        //    var posts = await unitOfWork.Posts.GetAllAsync(p => postIds.Contains(p.ProductId));
+        //    var senderIds = posts.Select(p => p.SenderId).Distinct().ToList();
+        //    var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => senderIds.Contains(a.UserId));
+
+        //    var historyListBag = new ConcurrentBag<ProductStatusHistory>();
+        //    var detailsBag = new ConcurrentBag<object>();
+
+        //    int totalAssigned = 0;
+        //    int totalUnassigned = 0;
+
+        //    var semaphore = new SemaphoreSlim(8);
+
+        //    var tasks = products.Select(async product =>
+        //    {
+        //        await semaphore.WaitAsync();
+        //        try
+        //        {
+        //            var post = posts.FirstOrDefault(p => p.ProductId == product.ProductId);
+        //            if (post == null || string.IsNullOrEmpty(post.Address))
+        //            {
+        //                detailsBag.Add(new { productId = product.ProductId, status = "failed", reason = "Info Invalid" });
+        //                return;
+        //            }
+
+        //            var matchedAddress = addresses.FirstOrDefault(a => a.UserId == post.SenderId && a.Address == post.Address);
+        //            if (matchedAddress == null || matchedAddress.Iat == null || matchedAddress.Ing == null)
+        //            {
+        //                detailsBag.Add(new { productId = product.ProductId, status = "failed", reason = "No Coords" });
+        //                return;
+        //            }
+
+        //            Dictionary<string, double> matrixDistances = new Dictionary<string, double>();
+        //            if (allSmallPoints.Any())
+        //            {
+        //                matrixDistances = await distanceCache.GetMatrixDistancesAsync(
+        //                   matchedAddress.Iat.Value,
+        //                   matchedAddress.Ing.Value,
+        //                   allSmallPoints
+        //               );
+        //            }
+
+        //            var validCandidates = new List<ProductAssignCandidate>();
+
+        //            foreach (var rangeCfg in rangeConfigs)
+        //            {
+        //                var company = rangeCfg.CompanyEntity;
+        //                if (company.SmallCollectionPoints == null) continue;
+
+        //                ProductAssignCandidate? bestForComp = null;
+        //                double minRoadKm = double.MaxValue;
+
+        //                var activePointsInCompany = company.SmallCollectionPoints
+        //                    .Where(sp => sp.Status == "DANG_HOAT_DONG");
+
+        //                foreach (var sp in activePointsInCompany)
+        //                {
+        //                    double hvDistance = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, matchedAddress.Iat.Value, matchedAddress.Ing.Value);
+        //                    double radiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
+        //                    if (hvDistance > radiusKm) continue;
+
+        //                    double roadKm = matrixDistances.TryGetValue(sp.SmallCollectionPointsId, out double kmFromMatrix) ? kmFromMatrix : hvDistance;
+
+        //                    double maxRoadKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
+        //                    if (roadKm > maxRoadKm) continue;
+
+        //                    if (roadKm < minRoadKm)
+        //                    {
+        //                        minRoadKm = roadKm;
+        //                        bestForComp = new ProductAssignCandidate
+        //                        {
+        //                            ProductId = product.ProductId,
+        //                            CompanyId = company.CompanyId,
+        //                            SmallPointId = sp.SmallCollectionPointsId,
+        //                            RoadKm = roadKm,
+        //                            HaversineKm = hvDistance
+        //                        };
+        //                    }
+        //                }
+        //                if (bestForComp != null) validCandidates.Add(bestForComp);
+        //            }
+
+        //            ProductAssignCandidate? chosenCandidate = null;
+        //            string assignNote = "";
+
+        //            if (!validCandidates.Any())
+        //            {
+        //                Interlocked.Increment(ref totalUnassigned);
+        //                detailsBag.Add(new { productId = product.ProductId, status = "failed", reason = "Out of range" });
+        //                product.Status = ProductStatus.KHONG_TIM_THAY_DIEM_THU_GOM.ToString();
+        //            }
+        //            else
+        //            {
+        //                double magicNumber = GetStableHashRatio(product.ProductId);
+        //                var targetConfig = rangeConfigs.FirstOrDefault(t => magicNumber >= t.MinRange && magicNumber < t.MaxRange)
+        //                                   ?? rangeConfigs.Last();
+
+        //                var targetCandidate = validCandidates.FirstOrDefault(c => c.CompanyId == targetConfig.CompanyEntity.CompanyId);
+
+        //                if (targetCandidate != null)
+        //                {
+        //                    chosenCandidate = targetCandidate;
+        //                    assignNote = $"Đúng tuyến - {targetConfig.AssignRatio}%";
+        //                }
+        //                else
+        //                {
+        //                    chosenCandidate = validCandidates.OrderBy(c => c.RoadKm).First();
+        //                    assignNote = "Trái tuyến - Gần nhất";
+        //                }
+        //            }
+
+        //            if (chosenCandidate != null)
+        //            {
+        //                // Cập nhật Database
+        //                post.CollectionCompanyId = chosenCandidate.CompanyId;
+        //                post.AssignedSmallPointId = chosenCandidate.SmallPointId;
+        //                post.DistanceToPointKm = chosenCandidate.RoadKm;
+
+        //                product.SmallCollectionPointId = chosenCandidate.SmallPointId;
+        //                product.Status = ProductStatus.CHO_GOM_NHOM.ToString();
+
+        //                historyListBag.Add(new ProductStatusHistory
+        //                {
+        //                    ProductStatusHistoryId = Guid.NewGuid(),
+        //                    ProductId = product.ProductId,
+        //                    ChangedAt = DateTime.UtcNow,
+        //                    Status = ProductStatus.CHO_GOM_NHOM.ToString(),
+        //                    StatusDescription = $"Kho: {chosenCandidate.SmallPointId} - {assignNote}"
+        //                });
+
+        //                Interlocked.Increment(ref totalAssigned);
+        //                detailsBag.Add(new
+        //                {
+        //                    productId = product.ProductId,
+        //                    companyId = chosenCandidate.CompanyId,
+        //                    smallPointId = chosenCandidate.SmallPointId,
+        //                    roadKm = $"{Math.Round(chosenCandidate.RoadKm, 2):0.00} km",
+        //                    status = "assigned",
+        //                    note = assignNote
+        //                });
+        //            }
+        //        }
+        //        catch (Exception ex)
+        //        {
+        //            detailsBag.Add(new { productId = product.ProductId, status = "error", message = ex.Message });
+        //        }
+        //        finally
+        //        {
+        //            semaphore.Release();
+        //        }
+        //    });
+
+        //    await Task.WhenAll(tasks);
+
+        //    // Lưu History (Tuần tự để an toàn DbContext)
+        //    if (historyListBag.Any())
+        //    {
+        //        foreach (var history in historyListBag)
+        //        {
+        //            await unitOfWork.ProductStatusHistory.AddAsync(history);
+        //        }
+        //    }
+
+        //    result.TotalAssigned = totalAssigned;
+        //    result.TotalUnassigned = totalUnassigned;
+        //    result.Details = detailsBag.ToList();
+
+        //    await unitOfWork.SaveAsync();
+        //    return result;
+        //}
         public async Task<List<ProductByDateModel>> GetProductsByWorkDateAsync(DateOnly workDate)
         {
             var posts = await _unitOfWorkForGet.Posts.GetAllAsync(
@@ -364,7 +563,17 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             catch { return false; }
         }
 
-        private class CompanyRangeConfig { public Company CompanyEntity { get; set; } = null!; public double AssignRatio { get; set; } public double MinRange { get; set; } public double MaxRange { get; set; } }
-        private class ScheduleDayDto { public string? PickUpDate { get; set; } public object? Slots { get; set; } }
+        private class CompanyRangeConfig
+        {
+            public Company CompanyEntity { get; set; } = null!;
+            public double AssignRatio { get; set; }
+            public double MinRange { get; set; }
+            public double MaxRange { get; set; }
+        }
+        private class ScheduleDayDto
+        {
+            public string? PickUpDate { get; set; }
+            public object? Slots { get; set; }
+        }
     }
 }
