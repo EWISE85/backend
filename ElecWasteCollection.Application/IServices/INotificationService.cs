@@ -10,10 +10,14 @@ namespace ElecWasteCollection.Application.IServices
 	public interface INotificationService
 	{
 		Task NotifyCustomerArrivalAsync(Guid productId);
+		Task NotifyCustomerCallAsync(Guid routeId, Guid userId);
+
 		Task<List<NotificationModel>> GetNotificationByUserIdAsync(Guid userId);	
 
 		Task<bool> ReadNotificationAsync(List<Guid> notificationIds);
 
 		Task SendNotificationToUser(SendNotificationToUserModel sendNotificationToUserModel);
+
+		Task<List<NotificationModel>> GetNotificationTypeEvent();
 	}
 }
