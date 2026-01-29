@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ElecWasteCollection.Domain.Entities;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -16,9 +17,9 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
     public class PreAssignResponse
     {
-        public string CollectionPoint { get; set; } = "";
+        public string CollectionPoint { get; set; }
         public double LoadThresholdPercent { get; set; }
-        public List<PreAssignDay> Days { get; set; } = new();
+        public List<PreAssignDay> Days { get; set; } = new List<PreAssignDay>();
     }
 
     public class PreAssignDay
@@ -27,33 +28,38 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public int OriginalPostCount { get; set; }
         public double TotalWeight { get; set; }
         public double TotalVolume { get; set; }
-
-        public SuggestedVehicle? SuggestedVehicle { get; set; }
-        public List<PreAssignProduct> Products { get; set; } = new();
+        public SuggestedVehicle SuggestedVehicle { get; set; }
+        public List<PreAssignProduct> Products { get; set; } = new List<PreAssignProduct>();
     }
 
     public class PreAssignProduct
     {
-        public Guid PostId { get; set; }
-        public Guid ProductId { get; set; }
-
-        public string UserName { get; set; } = "";
-        public string Address { get; set; } = "";
+        public string PostId { get; set; }
+        public string ProductId { get; set; }
+        public string UserName { get; set; }
+        public string Address { get; set; }
         public double Weight { get; set; }
-        public double Volume { get; set; } 
-        public double Length { get; set; }
-        public double Width { get; set; }
-        public double Height { get; set; }
-        public string DimensionText { get; set; } = "";  
-        //public string EstimatedArrival { get; set; }
-
+        public double Volume { get; set; }
+        public string DimensionText { get; set; }
+        public string EstimatedArrival { get; set; } // Định dạng HH:mm
     }
-
+    public class VehicleBucket
+    {
+        public Vehicles Vehicle { get; set; }
+        public double CurrentTimeMin { get; set; } // Phút thứ bao nhiêu trong ca làm việc
+        public double CurrentKg { get; set; }
+        public double CurrentM3 { get; set; }
+        public double MaxKg { get; set; }
+        public double MaxM3 { get; set; }
+        public double MaxShiftMinutes { get; set; } // Tổng thời gian ca làm việc (phút)
+        public TimeOnly ShiftStartBase { get; set; } // Giờ bắt đầu ca (VD: 07:00)
+        public List<PreAssignProduct> Products { get; set; } = new List<PreAssignProduct>();
+    }
     public class SuggestedVehicle
     {
         public string Id { get; set; }
-        public string Plate_Number { get; set; } = "";
-        public string Vehicle_Type { get; set; } = "";
+        public string Plate_Number { get; set; }
+        public string Vehicle_Type { get; set; }
         public double Capacity_Kg { get; set; }
         public double AllowedCapacityKg { get; set; }
         public double Capacity_M3 { get; set; }

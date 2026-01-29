@@ -6,6 +6,7 @@ using ElecWasteCollection.Application.Model.GroupModel;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using Microsoft.EntityFrameworkCore;
+using Newtonsoft.Json;
 using System.Text.Json;
 
 namespace ElecWasteCollection.Application.Services
@@ -43,7 +44,7 @@ namespace ElecWasteCollection.Application.Services
                 v.Small_Collection_Point == request.CollectionPointId &&
                 v.Status == VehicleStatus.DANG_HOAT_DONG.ToString());
 
-            var availableVehicles = vehicles.OrderByDescending(v => v.Capacity_Kg).ToList();
+            var availableVehicles = vehicles.OrderBy(v => v.Capacity_Kg).ToList();
             if (!availableVehicles.Any())
                 throw new Exception($"Trạm '{point.Name}' hiện không có xe nào đang hoạt động.");
 
@@ -66,13 +67,12 @@ namespace ElecWasteCollection.Application.Services
             if (!statusPosts.Any())
                 throw new Exception("Không có đơn hàng nào hợp lệ.");
 
-            var pool = new List<dynamic>();
             var attIdMap = await GetAttributeIdMapAsync();
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
-
             double serviceTimeMin = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, 5);
             double avgTravelTimeMin = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, 10);
 
+            var pool = new List<dynamic>();
             foreach (var p in statusPosts)
             {
                 if (TryParseScheduleInfo(p.ScheduleJson!, out var sch))
@@ -81,264 +81,147 @@ namespace ElecWasteCollection.Application.Services
                     var cat = p.Product.Category ?? await _unitOfWork.Categories.GetByIdAsync(p.Product.CategoryId);
                     var metrics = await GetProductMetricsInternalAsync(p.ProductId, attIdMap);
 
+                    // Xác định danh sách ngày user hẹn và ngày cuối cùng (Deadline)
+                    var dates = ((List<DateOnly>)sch.SpecificDates).OrderBy(d => d).ToList();
+
                     pool.Add(new
                     {
                         Post = p,
                         Schedule = sch,
+                        SpecificDates = dates,
+                        Deadline = dates.Last(), // Ngày cuối cùng trong JSON hẹn
                         Weight = metrics.weight,
                         Volume = metrics.volume,
-                        Length = metrics.length,
-                        Width = metrics.width,
-                        Height = metrics.height,
-                        DimensionText = $"{metrics.length} x {metrics.width} x {metrics.height}",
                         UserName = user?.Name ?? "Khách",
                         Address = p.Address,
-                        CategoryName = cat?.Name
+                        DimensionText = $"{metrics.length} x {metrics.width} x {metrics.height}"
                     });
                 }
             }
 
-            var distinctDates = pool.SelectMany(x => (List<DateOnly>)x.Schedule.SpecificDates)
-                .Distinct().OrderBy(x => x).ToList();
+            // ƯU TIÊN: Đơn nào có Deadline gần nhất thì xếp trước để đảm bảo không bị quá hạn
+            pool = pool.OrderBy(x => x.Deadline).ThenByDescending(x => x.Weight).ToList();
 
+            var distinctDates = pool.SelectMany(x => (List<DateOnly>)x.SpecificDates).Distinct().OrderBy(x => x).ToList();
             var shifts = await _unitOfWork.Shifts.GetAllAsync(
                 filter: s =>
                     distinctDates.Contains(s.WorkDate) &&
                     s.Status == ShiftStatus.CO_SAN.ToString() &&
-                    s.Collector.SmallCollectionPointId == request.CollectionPointId, 
-                includeProperties: "Collector" 
+                    s.Collector.SmallCollectionPointId == request.CollectionPointId,
+                includeProperties: "Collector"
             );
 
-            var res = new PreAssignResponse
+            var dailyBuckets = new Dictionary<DateOnly, List<VehicleBucket>>();
+            foreach (var date in distinctDates)
+            {
+                var dailyShift = shifts.FirstOrDefault(s => s.WorkDate == date);
+                if (dailyShift == null) continue; 
+
+                TimeOnly shiftStart = TimeOnly.FromDateTime(dailyShift.Shift_Start_Time.ToLocalTime());
+                double totalShiftMin = (dailyShift.Shift_End_Time.ToLocalTime() - dailyShift.Shift_Start_Time.ToLocalTime()).TotalMinutes;
+
+                dailyBuckets[date] = availableVehicles.Select(v => new VehicleBucket
+                {
+                    Vehicle = v,
+                    CurrentTimeMin = 0,
+                    CurrentKg = 0,
+                    CurrentM3 = 0,
+                    MaxKg = v.Capacity_Kg * (request.LoadThresholdPercent / 100.0),
+                    MaxM3 = (v.Length_M * v.Width_M * v.Height_M) * (request.LoadThresholdPercent / 100.0),
+                    MaxShiftMinutes = totalShiftMin,
+                    ShiftStartBase = shiftStart
+                }).ToList();
+            }
+
+            foreach (var item in pool)
+            {
+                bool isAssigned = false;
+                var postDates = (List<DateOnly>)item.SpecificDates;
+
+                foreach (var date in postDates)
+                {
+                    if (!dailyBuckets.ContainsKey(date)) continue;
+
+                    // Tìm xe NHỎ NHẤT còn trống cả Tải trọng và Thời gian trong ngày này
+                    var bestBucket = dailyBuckets[date]
+                        .Where(b => (b.CurrentKg + item.Weight <= b.MaxKg) &&
+                                    (b.CurrentM3 + item.Volume <= b.MaxM3) &&
+                                    (b.CurrentTimeMin + avgTravelTimeMin + serviceTimeMin <= b.MaxShiftMinutes))
+                        .OrderBy(b => b.Vehicle.Capacity_Kg)
+                        .FirstOrDefault();
+
+                    // Nếu là NGÀY CUỐI CÙNG (Deadline) mà không xe nào trống đúng chuẩn
+                    if (bestBucket == null && date == item.Deadline)
+                    {
+                        bestBucket = dailyBuckets[date].OrderBy(b => b.CurrentTimeMin).First();
+                    }
+
+                    if (bestBucket != null)
+                    {
+                        TryGetTimeWindowForDate((string)item.Post.ScheduleJson, date, out var windowStart, out var windowEnd);
+                        double openTimeMin = (windowStart - bestBucket.ShiftStartBase).TotalMinutes;
+                        double arrival = Math.Max(bestBucket.CurrentTimeMin + avgTravelTimeMin, openTimeMin);
+
+                        bestBucket.CurrentTimeMin = arrival + serviceTimeMin;
+                        bestBucket.CurrentKg += (double)item.Weight;
+                        bestBucket.CurrentM3 += (double)item.Volume;
+
+                        bestBucket.Products.Add(new PreAssignProduct
+                        {
+                            PostId = item.Post.PostId.ToString(),
+                            ProductId = item.Post.ProductId.ToString(),
+                            UserName = item.UserName,
+                            Address = item.Address,
+                            Weight = item.Weight,
+                            Volume = Math.Round(item.Volume, 5),
+                            DimensionText = item.DimensionText,
+                            EstimatedArrival = bestBucket.ShiftStartBase.AddMinutes(arrival).ToString("HH:mm")
+                        });
+
+                        isAssigned = true;
+                        break; 
+                    }
+                }
+            }
+
+            var result = new PreAssignResponse
             {
                 CollectionPoint = point.Name,
                 LoadThresholdPercent = request.LoadThresholdPercent,
                 Days = new List<PreAssignDay>()
             };
 
-            foreach (var date in distinctDates)
+            foreach (var entry in dailyBuckets.OrderBy(x => x.Key))
             {
-
-                var dailyShift = shifts.FirstOrDefault(s => s.WorkDate == date);
-
-                if (dailyShift == null)
+                foreach (var bucket in entry.Value.Where(b => b.Products.Any()))
                 {
-                    continue;
-                }
-
-                DateTime startDt = dailyShift.Shift_Start_Time.ToLocalTime(); 
-                DateTime endDt = dailyShift.Shift_End_Time.ToLocalTime();  
-                TimeOnly shiftStartBase = TimeOnly.FromDateTime(startDt);
-
-                double maxShiftMinutes = (endDt - startDt).TotalMinutes;
-
-                var candidatesRaw = pool
-                    .Where(x => ((List<DateOnly>)x.Schedule.SpecificDates).Contains(date))
-                    .ToList();
-
-                var queue = new List<dynamic>();
-                double totalDemandWeight = 0;
-                double totalDemandVolume = 0;
-                double totalDemandTime = 0;
-
-                foreach (var item in candidatesRaw)
-                {
-                    TryGetTimeWindowForDate((string)item.Post.ScheduleJson, date, out var s, out var e);
-
-                    if (s < shiftStartBase) s = shiftStartBase;
-
-                    queue.Add(new { Data = item, WindowStart = s, WindowEnd = e });
-
-                    totalDemandWeight += (double)item.Weight;
-                    totalDemandVolume += (double)item.Volume;
-                    totalDemandTime += (serviceTimeMin + avgTravelTimeMin);
-                }
-
-                queue = queue.OrderBy(x => x.WindowEnd).ThenByDescending(x => x.Data.Weight).ToList();
-
-                if (!queue.Any()) continue;
-
-                var vehiclesToUse = new List<Vehicles>();
-                double currentCapKg = 0;
-                double currentCapM3 = 0;
-
-                foreach (var v in availableVehicles)
-                {
-                    vehiclesToUse.Add(v); 
-
-                    currentCapKg += v.Capacity_Kg * (request.LoadThresholdPercent / 100.0);
-                    currentCapM3 += (v.Length_M * v.Width_M * v.Height_M) * (request.LoadThresholdPercent / 100.0);
-
-                    double estimatedTimePerVehicle = totalDemandTime / vehiclesToUse.Count;
-
-                    bool enoughWeight = currentCapKg >= totalDemandWeight;
-                    bool enoughVolume = currentCapM3 >= totalDemandVolume;
-
-                    bool enoughTime = estimatedTimePerVehicle <= maxShiftMinutes;
-
-                    if (enoughWeight && enoughVolume && enoughTime)
+                    result.Days.Add(new PreAssignDay
                     {
-                        break; 
-                    }
-                }
-
-                var buckets = vehiclesToUse.Select(v => new VehicleBucket
-                {
-                    Vehicle = v,
-                    CurrentTimeMin = 0, 
-                    CurrentKg = 0,
-                    CurrentM3 = 0,
-                    Products = new List<PreAssignProduct>(),
-                    MaxKg = v.Capacity_Kg * (request.LoadThresholdPercent / 100.0),
-                    MaxM3 = (v.Length_M * v.Width_M * v.Height_M) * (request.LoadThresholdPercent / 100.0)
-                }).ToList();
-
-                foreach (var itemWrapper in queue)
-                {
-                    var item = itemWrapper.Data;
-                    double w = (double)item.Weight;
-                    double v = (double)item.Volume;
-
-                    var bestBucket = buckets
-                        .Where(b => (b.CurrentKg + w <= b.MaxKg) && (b.CurrentM3 + v <= b.MaxM3))
-                        .OrderBy(b => b.CurrentTimeMin) 
-                        .FirstOrDefault();
-
-                    if (bestBucket == null)
-                    {
-                        bestBucket = buckets.OrderBy(b => b.CurrentTimeMin).First();
-                    }
-
-                    double arrival = bestBucket.CurrentTimeMin + avgTravelTimeMin;
-
-                    double openTime = (itemWrapper.WindowStart - shiftStartBase).TotalMinutes;
-
-                    if (arrival < openTime) arrival = openTime;
-
-                    bestBucket.CurrentTimeMin = arrival + serviceTimeMin;
-                    bestBucket.CurrentKg += w;
-                    bestBucket.CurrentM3 += v;
-
-                    TimeOnly estArrival = shiftStartBase.AddMinutes(arrival);
-
-                    bestBucket.Products.Add(new PreAssignProduct
-                    {
-                        PostId = item.Post.PostId,
-                        ProductId = item.Post.ProductId,
-                        UserName = item.UserName,
-                        Address = item.Address,
-                        Weight = w,
-                        Volume = Math.Round(v, 5),
-                        Length = item.Length,
-                        Width = item.Width,
-                        Height = item.Height,
-                        DimensionText = item.DimensionText,
-                        //EstimatedArrival = estArrival.ToString("HH:mm") // Giờ đến dự kiến chuẩn theo ca làm việc
-                    });
-                }
-
-                foreach (var bucket in buckets)
-                {
-                    if (bucket.Products.Any())
-                    {
-                        res.Days.Add(new PreAssignDay
+                        WorkDate = entry.Key,
+                        OriginalPostCount = bucket.Products.Count,
+                        TotalWeight = Math.Round(bucket.CurrentKg, 2),
+                        TotalVolume = Math.Round(bucket.CurrentM3, 5),
+                        SuggestedVehicle = new SuggestedVehicle
                         {
-                            WorkDate = date,
-                            OriginalPostCount = bucket.Products.Count,
-                            TotalWeight = Math.Round(bucket.CurrentKg, 2),
-                            TotalVolume = Math.Round(bucket.CurrentM3, 5),
-                            SuggestedVehicle = new SuggestedVehicle
-                            {
-                                Id = bucket.Vehicle.VehicleId.ToString(),
-                                Plate_Number = bucket.Vehicle.Plate_Number,
-                                Vehicle_Type = bucket.Vehicle.Vehicle_Type,
-                                Capacity_Kg = bucket.Vehicle.Capacity_Kg,
-                                AllowedCapacityKg = Math.Round(bucket.MaxKg, 2),
-                                Capacity_M3 = Math.Round(bucket.Vehicle.Length_M * bucket.Vehicle.Width_M * bucket.Vehicle.Height_M, 4),
-                                AllowedCapacityM3 = Math.Round(bucket.MaxM3, 4)
-                            },
-                            Products = bucket.Products
-                        });
-                    }
+                            Id = bucket.Vehicle.VehicleId.ToString(),
+                            Plate_Number = bucket.Vehicle.Plate_Number,
+                            Vehicle_Type = bucket.Vehicle.Vehicle_Type,
+                            Capacity_Kg = bucket.Vehicle.Capacity_Kg,
+                            AllowedCapacityKg = Math.Round(bucket.MaxKg, 2),
+                            Capacity_M3 = Math.Round(bucket.Vehicle.Length_M * bucket.Vehicle.Width_M * bucket.Vehicle.Height_M, 4),
+                            AllowedCapacityM3 = Math.Round(bucket.MaxM3, 4)
+                        },
+                        Products = bucket.Products
+                    });
                 }
             }
 
             _previewCache.RemoveAll(x => x.CollectionPoint == point.Name);
-            _previewCache.Add(res);
+            _previewCache.Add(result);
 
-            return res;
+            return result;
         }
 
-        public Task<PreviewProductPagedResult?> GetPreviewProductsAsync(string vehicleId,
-            DateOnly workDate, int page, int pageSize)
-        {
-            if (page <= 0) page = 1;
-            if (pageSize <= 0) pageSize = 10;
-
-            foreach (var preview in _previewCache)
-            {
-                var dayGroup = preview.Days.FirstOrDefault(d =>
-                    d.WorkDate == workDate &&
-                    d.SuggestedVehicle.Id.Equals(
-                        vehicleId,
-                        StringComparison.OrdinalIgnoreCase));
-
-                if (dayGroup == null)
-                    continue;
-
-                var total = dayGroup.Products.Count;
-
-                var pagedProducts = dayGroup.Products
-                    .Skip((page - 1) * pageSize)
-                    .Take(pageSize)
-                    .Cast<object>() 
-                    .ToList();
-
-                var result = new PreviewProductPagedResult
-                {
-                    VehicleId = dayGroup.SuggestedVehicle.Id,
-                    PlateNumber = dayGroup.SuggestedVehicle.Plate_Number,
-                    VehicleType = dayGroup.SuggestedVehicle.Vehicle_Type,
-
-                    TotalProduct = total,
-                    Page = page,
-                    PageSize = pageSize,
-                    TotalPages = (int)Math.Ceiling(total / (double)pageSize),
-
-                    Products = pagedProducts
-                };
-
-                return Task.FromResult<PreviewProductPagedResult?>(result);
-            }
-
-            return Task.FromResult<PreviewProductPagedResult?>(null);
-        }
-        public Task<object> GetPreviewVehiclesAsync(DateOnly workDate)
-        {
-            var resultList = new List<object>();
-
-            foreach (var preview in _previewCache)
-            {
-                var vehiclesOnDay = preview.Days
-                    .Where(d => d.WorkDate == workDate)
-                    .ToList();
-
-                foreach (var group in vehiclesOnDay)
-                {
-                    resultList.Add(new
-                    {
-                        VehicleId = group.SuggestedVehicle.Id,
-                        PlateNumber = group.SuggestedVehicle.Plate_Number,
-                        VehicleType = group.SuggestedVehicle.Vehicle_Type,
-                        TotalProduct = group.OriginalPostCount, 
-                        TotalWeight = group.TotalWeight,
-                        TotalVolume = group.TotalVolume
-                    });
-                }
-            }
-
-            return Task.FromResult<object>(resultList);
-        }
 
         public async Task<bool> AssignDayAsync(AssignDayRequest request)
         {
@@ -664,7 +547,7 @@ namespace ElecWasteCollection.Application.Services
                                 DistanceKm = Math.Round(matrixDist[prevLocIdx, cIdx] / 1000.0, 2),
                                 EstimatedArrival = arr.ToString("HH:mm") + (isLate ? " (Trễ)" : ""),
                                 IsLate = isLate,
-                                Schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>((string)data.Post.ScheduleJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
+                                Schedule = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>((string)data.Post.ScheduleJson, new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
                                 CategoryName = data.CategoryName ?? "N/A",
                                 BrandName = data.BrandName ?? "N/A",
                                 DimensionText = data.Att.DimensionText,
@@ -719,6 +602,78 @@ namespace ElecWasteCollection.Application.Services
             }
 
             return response;
+        }
+
+
+        public Task<PreviewProductPagedResult?> GetPreviewProductsAsync(string vehicleId,
+            DateOnly workDate, int page, int pageSize)
+        {
+            if (page <= 0) page = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            foreach (var preview in _previewCache)
+            {
+                var dayGroup = preview.Days.FirstOrDefault(d =>
+                    d.WorkDate == workDate &&
+                    d.SuggestedVehicle.Id.Equals(
+                        vehicleId,
+                        StringComparison.OrdinalIgnoreCase));
+
+                if (dayGroup == null)
+                    continue;
+
+                var total = dayGroup.Products.Count;
+
+                var pagedProducts = dayGroup.Products
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .Cast<object>()
+                    .ToList();
+
+                var result = new PreviewProductPagedResult
+                {
+                    VehicleId = dayGroup.SuggestedVehicle.Id,
+                    PlateNumber = dayGroup.SuggestedVehicle.Plate_Number,
+                    VehicleType = dayGroup.SuggestedVehicle.Vehicle_Type,
+
+                    TotalProduct = total,
+                    Page = page,
+                    PageSize = pageSize,
+                    TotalPages = (int)Math.Ceiling(total / (double)pageSize),
+
+                    Products = pagedProducts
+                };
+
+                return Task.FromResult<PreviewProductPagedResult?>(result);
+            }
+
+            return Task.FromResult<PreviewProductPagedResult?>(null);
+        }
+        public Task<object> GetPreviewVehiclesAsync(DateOnly workDate)
+        {
+            var resultList = new List<object>();
+
+            foreach (var preview in _previewCache)
+            {
+                var vehiclesOnDay = preview.Days
+                    .Where(d => d.WorkDate == workDate)
+                    .ToList();
+
+                foreach (var group in vehiclesOnDay)
+                {
+                    resultList.Add(new
+                    {
+                        VehicleId = group.SuggestedVehicle.Id,
+                        PlateNumber = group.SuggestedVehicle.Plate_Number,
+                        VehicleType = group.SuggestedVehicle.Vehicle_Type,
+                        TotalProduct = group.OriginalPostCount,
+                        TotalWeight = group.TotalWeight,
+                        TotalVolume = group.TotalVolume
+                    });
+                }
+            }
+
+            return Task.FromResult<object>(resultList);
         }
 
         public async Task<PagedResult<CollectionGroupModel>> GetGroupsByCollectionPointAsync( string collectionPointId, int page, int limit)
@@ -844,7 +799,7 @@ namespace ElecWasteCollection.Application.Services
                     weightKg = metrics.weight,
                     volumeM3 = Math.Round(metrics.volume, 4),
                     distanceKm = r.DistanceKm,
-                    schedule = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(
+                    schedule = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(
                         post.ScheduleJson!,
                         new JsonSerializerOptions { PropertyNameCaseInsensitive = true }),
                     estimatedArrival = r.EstimatedTime.ToString("HH:mm")
@@ -1088,6 +1043,24 @@ namespace ElecWasteCollection.Application.Services
 
             return (weight, volume / 1_000_000.0, length, width, height);
         }
+
+        
+        private class PostOptimizationItem
+        {
+            public Post Post { get; set; }
+            public PostScheduleInfo Schedule { get; set; } 
+            public double Weight { get; set; }
+            public double Volume { get; set; }
+            public double Length { get; set; }
+            public double Width { get; set; }
+            public double Height { get; set; }
+            public string DimensionText { get; set; }
+            public string CategoryName { get; set; }
+            public string UserName { get; set; }
+            public string Address { get; set; }
+            public List<DateOnly> Deadlines { get; set; }
+            public bool IsAssigned { get; set; } // Bây giờ bạn có thể set giá trị này
+        }
         private bool IsUprightRequired(string categoryName)
         {
             if (string.IsNullOrEmpty(categoryName)) return false;
@@ -1127,16 +1100,18 @@ namespace ElecWasteCollection.Application.Services
             }
         }
 
-        private class VehicleBucket
-        {
-            public Vehicles Vehicle { get; set; }
-            public double CurrentTimeMin { get; set; }
-            public double CurrentKg { get; set; }
-            public double CurrentM3 { get; set; }
-            public double MaxKg { get; set; }
-            public double MaxM3 { get; set; }
-            public List<PreAssignProduct> Products { get; set; }
-        }
+        //public class VehicleBucket
+        //{
+        //    public Vehicles Vehicle { get; set; }
+        //    public double CurrentTimeMin { get; set; } // Phút thứ bao nhiêu trong ca làm việc
+        //    public double CurrentKg { get; set; }
+        //    public double CurrentM3 { get; set; }
+        //    public double MaxKg { get; set; }
+        //    public double MaxM3 { get; set; }
+        //    public double MaxShiftMinutes { get; set; } // Tổng thời gian ca làm việc (phút)
+        //    public TimeOnly ShiftStartBase { get; set; } // Giờ bắt đầu ca (VD: 07:00)
+        //    public List<PreAssignProduct> Products { get; set; } = new List<PreAssignProduct>();
+        //}
 
         private async Task<(double length, double width, double height, double weight, double volume, string dimensionText)> GetProductAttributesAsync(Guid productId)
         {
@@ -1215,7 +1190,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 // Cấu hình Case Insensitive để đọc được cả "startTime" lẫn "StartTime"
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
+                var days = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
 
                 if (days == null) return false;
 
@@ -1248,7 +1223,7 @@ namespace ElecWasteCollection.Application.Services
             try
             {
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var days = JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
+                var days = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
 
                 if (days == null || !days.Any()) return false;
 
@@ -1330,8 +1305,6 @@ namespace ElecWasteCollection.Application.Services
                 await _unitOfWork.SystemConfig.AddAsync(newConfig);
             }
         }
-
-
         private sealed class TimeSlotDetailDto
         {
             public string? StartTime { get; set; }
@@ -1357,7 +1330,16 @@ namespace ElecWasteCollection.Application.Services
             public string VehicleId { get; set; } = null!;
             public List<Guid> ProductIds { get; set; } = new();
         }
-
+        public class ScheduleItem
+        {
+            public string pickUpDate { get; set; }
+            public ScheduleSlot slots { get; set; }
+        }
+        public class ScheduleSlot
+        {
+            public string startTime { get; set; }
+            public string endTime { get; set; }
+        }
     }
 }
 //Sử dụng mapbox 
