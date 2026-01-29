@@ -644,7 +644,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 var pVal = pValues.FirstOrDefault(v => v.AttributeId == attrId);
                 if (pVal != null)
                 {
-                    // Ưu tiên 1: Lấy EstimateWeight từ Option rảnh (nếu có)
                     if (pVal.AttributeOptionId.HasValue)
                     {
                         var opt = allOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
@@ -654,7 +653,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             break;
                         }
                     }
-                    // Ưu tiên 2: Lấy giá trị số thực tế nhập vào
                     if (pVal.Value.HasValue && pVal.Value.Value > 0)
                     {
                         weight = pVal.Value.Value;
@@ -662,9 +660,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     }
                 }
             }
-            if (weight <= 0) weight = 3; // Mặc định 3kg nếu không tìm thấy dữ liệu
+            if (weight <= 0) weight = 3; 
 
-            // 2. Lấy thông số Kích thước (Dài, Rộng, Cao)
             double GetVal(string k)
             {
                 if (!attMap.TryGetValue(k, out var id)) return 0;
@@ -675,16 +672,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             double width = GetVal("Chiều rộng");
             double height = GetVal("Chiều cao");
 
-            // 3. Tính toán Thể tích (Volume)
             double volume = 0;
             if (length > 0 && width > 0 && height > 0)
             {
-                // Tính từ kích thước thực tế (cm3)
                 volume = length * width * height;
             }
             else
             {
-                // Nếu thiếu kích thước, tìm EstimateVolume từ các thuộc tính đặc thù
                 var volKeys = new[] { "Kích thước màn hình", "Dung tích", "Khối lượng giặt", "Trọng lượng" };
                 foreach (var key in volKeys)
                 {
@@ -696,16 +690,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         var opt = allOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
                         if (opt != null && opt.EstimateVolume.HasValue && opt.EstimateVolume > 0)
                         {
-                            // opt.EstimateVolume thường lưu đơn vị m3, đổi sang cm3 để thống nhất logic bên dưới
                             volume = opt.EstimateVolume.Value * 1_000_000;
                             break;
                         }
                     }
                 }
             }
-            if (volume <= 0) volume = 1000; // Mặc định 1000 cm3 nếu không có dữ liệu
+            if (volume <= 0) volume = 1000; 
 
-            // Trả về kết quả: Volume được chia cho 1,000,000 để đổi từ cm3 sang m3
             return (weight, volume / 1_000_000.0, length, width, height);
         }
 
