@@ -151,7 +151,6 @@ namespace ElecWasteCollection.Application.Services
                         .FirstOrDefault();
 
                     // Nếu là NGÀY CUỐI CÙNG (Deadline) mà không xe nào trống đúng chuẩn
-                    // Ép vào xe rảnh nhất của ngày đó (Fallback logic)
                     if (bestBucket == null && date == item.Deadline)
                     {
                         bestBucket = dailyBuckets[date].OrderBy(b => b.CurrentTimeMin).First();
