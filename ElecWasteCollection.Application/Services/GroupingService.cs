@@ -50,7 +50,7 @@ namespace ElecWasteCollection.Application.Services
 
             var rawPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.AssignedSmallPointId == request.CollectionPointId,
-                includeProperties: "Product"
+                includeProperties: "Product,Product.Category,Product.Brand"
             );
 
             string targetStatus = ProductStatus.CHO_GOM_NHOM.ToString();
@@ -79,6 +79,7 @@ namespace ElecWasteCollection.Application.Services
                 {
                     var user = await _unitOfWork.Users.GetByIdAsync(p.SenderId);
                     var cat = p.Product.Category ?? await _unitOfWork.Categories.GetByIdAsync(p.Product.CategoryId);
+                    var brand = p.Product.Brand ?? await _unitOfWork.Brands.GetByIdAsync(p.Product.BrandId);
                     var metrics = await GetProductMetricsInternalAsync(p.ProductId, attIdMap);
 
                     // Xác định danh sách ngày user hẹn và ngày cuối cùng (Deadline)
@@ -94,6 +95,8 @@ namespace ElecWasteCollection.Application.Services
                         Volume = metrics.volume,
                         UserName = user?.Name ?? "Khách",
                         Address = p.Address,
+                        CategoryName = cat?.Name ?? "N/A",
+                        BrandName = brand?.Name ?? "N/A",
                         DimensionText = $"{metrics.length} x {metrics.width} x {metrics.height}"
                     });
                 }
@@ -115,7 +118,7 @@ namespace ElecWasteCollection.Application.Services
             foreach (var date in distinctDates)
             {
                 var dailyShift = shifts.FirstOrDefault(s => s.WorkDate == date);
-                if (dailyShift == null) continue; 
+                if (dailyShift == null) continue;
 
                 TimeOnly shiftStart = TimeOnly.FromDateTime(dailyShift.Shift_Start_Time.ToLocalTime());
                 double totalShiftMin = (dailyShift.Shift_End_Time.ToLocalTime() - dailyShift.Shift_Start_Time.ToLocalTime()).TotalMinutes;
@@ -170,6 +173,8 @@ namespace ElecWasteCollection.Application.Services
                         {
                             PostId = item.Post.PostId.ToString(),
                             ProductId = item.Post.ProductId.ToString(),
+                            CategoryName = item.CategoryName,
+                            BrandName = item.BrandName,
                             UserName = item.UserName,
                             Address = item.Address,
                             Weight = item.Weight,
@@ -179,13 +184,14 @@ namespace ElecWasteCollection.Application.Services
                         });
 
                         isAssigned = true;
-                        break; 
+                        break;
                     }
                 }
             }
 
             var result = new PreAssignResponse
             {
+                SmallCollectionPointId = request.CollectionPointId,
                 CollectionPoint = point.Name,
                 LoadThresholdPercent = request.LoadThresholdPercent,
                 Days = new List<PreAssignDay>()
@@ -292,7 +298,7 @@ namespace ElecWasteCollection.Application.Services
                 SavedToDatabase = request.SaveResult,
                 CreatedGroups = new List<GroupSummary>(),
                 Errors = new List<string>(),
-                Logs = new List<string>() 
+                Logs = new List<string>()
             };
 
             try
@@ -589,7 +595,7 @@ namespace ElecWasteCollection.Application.Services
                         response.Errors.Add($"[EXCEPTION] Xe {vehicleId}: {ex.Message}");
                         response.Logs.Add($"[EXCEPTION] {ex.ToString()}");
                     }
-                } 
+                }
 
                 if (response.CreatedGroups.Count == 0 && response.Errors.Count == 0)
                 {
@@ -603,8 +609,6 @@ namespace ElecWasteCollection.Application.Services
 
             return response;
         }
-
-
         public Task<PreviewProductPagedResult?> GetPreviewProductsAsync(string vehicleId,
             DateOnly workDate, int page, int pageSize)
         {
@@ -627,6 +631,19 @@ namespace ElecWasteCollection.Application.Services
                 var pagedProducts = dayGroup.Products
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
+                    .Select(p => new
+                    {
+                        p.PostId,
+                        p.ProductId,
+                        p.UserName,
+                        p.Address,
+                        p.Weight,
+                        p.Volume,
+                        p.DimensionText,
+                        p.EstimatedArrival, 
+                        CategoryName = p.CategoryName, 
+                        BrandName = p.BrandName       
+                    })
                     .Cast<object>()
                     .ToList();
 
@@ -649,13 +666,15 @@ namespace ElecWasteCollection.Application.Services
 
             return Task.FromResult<PreviewProductPagedResult?>(null);
         }
-        public Task<object> GetPreviewVehiclesAsync(DateOnly workDate)
+
+        public Task<object> GetPreviewVehiclesAsync(string collectionPointId, DateOnly workDate)
         {
             var resultList = new List<object>();
+            var previewForPoint = _previewCache.FirstOrDefault(x => x.SmallCollectionPointId == collectionPointId);
 
-            foreach (var preview in _previewCache)
+            if (previewForPoint != null)
             {
-                var vehiclesOnDay = preview.Days
+                var vehiclesOnDay = previewForPoint.Days
                     .Where(d => d.WorkDate == workDate)
                     .ToList();
 
@@ -668,15 +687,15 @@ namespace ElecWasteCollection.Application.Services
                         VehicleType = group.SuggestedVehicle.Vehicle_Type,
                         TotalProduct = group.OriginalPostCount,
                         TotalWeight = group.TotalWeight,
-                        TotalVolume = group.TotalVolume
+                        TotalVolume = group.TotalVolume,
+                        CollectionPoint = previewForPoint.CollectionPoint
                     });
                 }
             }
 
             return Task.FromResult<object>(resultList);
         }
-
-        public async Task<PagedResult<CollectionGroupModel>> GetGroupsByCollectionPointAsync( string collectionPointId, int page, int limit)
+        public async Task<PagedResult<CollectionGroupModel>> GetGroupsByCollectionPointAsync(string collectionPointId, int page, int limit)
         {
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(collectionPointId);
             if (point == null)
@@ -685,7 +704,7 @@ namespace ElecWasteCollection.Application.Services
             var attMap = await GetAttributeIdMapAsync();
 
             var (groups, totalCount) =
-                await _unitOfWork.CollectionGroups.GetPagedGroupsByCollectionPointAsync( collectionPointId, page, limit);
+                await _unitOfWork.CollectionGroups.GetPagedGroupsByCollectionPointAsync(collectionPointId, page, limit);
 
             var resultItems = new List<CollectionGroupModel>();
 
@@ -891,7 +910,7 @@ namespace ElecWasteCollection.Application.Services
             return true;
         }
 
-        public async Task<PagedCompanySettingsResponse> GetCompanySettingsPagedAsync( string companyId, int page, int limit)
+        public async Task<PagedCompanySettingsResponse> GetCompanySettingsPagedAsync(string companyId, int page, int limit)
         {
             if (page <= 0) page = 1;
             if (limit <= 0) limit = 10;
@@ -1044,11 +1063,11 @@ namespace ElecWasteCollection.Application.Services
             return (weight, volume / 1_000_000.0, length, width, height);
         }
 
-        
+
         private class PostOptimizationItem
         {
             public Post Post { get; set; }
-            public PostScheduleInfo Schedule { get; set; } 
+            public PostScheduleInfo Schedule { get; set; }
             public double Weight { get; set; }
             public double Volume { get; set; }
             public double Length { get; set; }
