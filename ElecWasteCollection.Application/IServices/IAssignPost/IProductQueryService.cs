@@ -18,5 +18,6 @@ namespace ElecWasteCollection.Application.IServices.IAssignPost
         Task<object> GetProductIdsAtSmallPointAsync(string smallPointId, DateOnly workDate);
         Task<List<CompanyDailySummaryDto>> GetCompanySummariesByDateAsync(DateOnly workDate);
         Task<List<CompanyMetricsDto>> GetAllCompaniesDailyMetricsAsync(DateOnly workDate);
+        Task<SmallPointCollectionMetricsDto> GetSmallPointProductsPagedStatusAsync(string smallPointId, DateOnly workDate, int page, int limit);
     }
 }

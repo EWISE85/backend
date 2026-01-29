@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
-using ElecWasteCollection.Application.Helpers;
+﻿using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.AssignPost;
@@ -499,24 +498,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<CompanyMetricsDto>> GetAllCompaniesDailyMetricsAsync(DateOnly workDate)
         {
             var companies = await _unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints");
+            var attMap = await GetAttributeIdMapAsync();
+            var allOptions = await _unitOfWork.AttributeOptions.GetAllAsync();
 
-            DateTime localStart = workDate.ToDateTime(TimeOnly.MinValue); 
-            DateTime localEnd = workDate.ToDateTime(TimeOnly.MaxValue);   
-
-            DateTime utcStart = localStart.AddHours(-7);
-            DateTime utcEnd = localEnd.AddHours(-7);
-
-            utcStart = DateTime.SpecifyKind(utcStart, DateTimeKind.Utc);
-            utcEnd = DateTime.SpecifyKind(utcEnd, DateTimeKind.Utc);
-
-            var allHistories = await _unitOfWork.ProductStatusHistory.GetAllAsync(
-                filter: h => h.Status == "CHO_GOM_NHOM" &&
-                             h.ChangedAt >= utcStart &&
-                             h.ChangedAt <= utcEnd,
-                includeProperties: "Product"
+            var allAssignedProducts = await _unitOfWork.Products.GetAllAsync(
+                filter: p => p.AssignedAt == workDate && p.SmallCollectionPointId != null,
+                includeProperties: "ProductValues"
             );
 
-            var attMap = await GetAttributeIdMapAsync();
             var result = new List<CompanyMetricsDto>();
 
             foreach (var company in companies)
@@ -525,28 +514,25 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 foreach (var point in company.SmallCollectionPoints)
                 {
-                    // Lọc các history thuộc về kho này
-                    var productIds = allHistories
-                        .Where(h => h.Product != null && h.Product.SmallCollectionPointId == point.SmallCollectionPointsId)
-                        .Select(h => h.ProductId)
-                        .Distinct()
+                    var productsInPoint = allAssignedProducts
+                        .Where(p => p.SmallCollectionPointId == point.SmallCollectionPointsId)
                         .ToList();
 
                     double pointWeight = 0;
                     double pointVolume = 0;
 
-                    foreach (var productId in productIds)
+                    foreach (var product in productsInPoint)
                     {
-                        var metrics = await GetProductMetricsAsync(productId, attMap);
-                        pointWeight += metrics.weight;
-                        pointVolume += metrics.volume;
+                        var m = CalculateMetricsInProcess(product.ProductValues.ToList(), attMap, allOptions.ToList());
+                        pointWeight += m.weight;
+                        pointVolume += m.volume;
                     }
 
                     pointMetricsList.Add(new SmallPointMetricsDto
                     {
                         PointId = point.SmallCollectionPointsId,
                         PointName = point.Name,
-                        TotalOrders = productIds.Count,
+                        TotalOrders = productsInPoint.Count,
                         TotalWeightKg = Math.Round(pointWeight, 2),
                         TotalVolumeM3 = Math.Round(pointVolume, 4)
                     });
@@ -565,6 +551,162 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             }
 
             return result;
+        }
+
+        public async Task<SmallPointCollectionMetricsDto> GetSmallPointProductsPagedStatusAsync(string smallPointId, DateOnly workDate, int page, int limit)
+        {
+            if (page <= 0) page = 1;
+            if (limit <= 0) limit = 10;
+
+            var sp = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(smallPointId)
+                      ?? throw new Exception("Không tìm thấy trạm thu gom.");
+
+            var allPosts = await _unitOfWork.Posts.GetAllAsync(
+                filter: p => p.Product != null &&
+                             p.Product.AssignedAt == workDate &&
+                             p.Product.SmallCollectionPointId == smallPointId,
+                includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
+            );
+
+            int totalCount = allPosts.Count();
+            var allProductIds = allPosts.Select(p => p.ProductId).ToList();
+            var allProductValues = await _unitOfWork.ProductValues.GetAllAsync(pv => allProductIds.Contains(pv.ProductId));
+            var allOptions = await _unitOfWork.AttributeOptions.GetAllAsync();
+            var attMap = await GetAttributeIdMapAsync();
+
+            var result = new SmallPointCollectionMetricsDto
+            {
+                SmallPointId = smallPointId,
+                SmallPointName = sp.Name,
+                Page = page,
+                Limit = limit,
+                TotalItems = totalCount,
+                Products = new List<PointProductMetricDetailDto>()
+            };
+
+            foreach (var post in allPosts)
+            {
+                var product = post.Product!;
+                var currentPValues = allProductValues.Where(pv => pv.ProductId == product.ProductId).ToList();
+                var m = CalculateMetricsInProcess(currentPValues, attMap, allOptions.ToList());
+
+                result.TotalWeightKg += m.weight;
+                result.TotalVolumeM3 += m.volume;
+            }
+
+            var pagedPosts = allPosts
+                            .Skip((page - 1) * limit)
+                            .Take(limit)
+                            .ToList();
+
+            foreach (var post in pagedPosts)
+            {
+                var product = post.Product!;
+                var currentPValues = allProductValues.Where(pv => pv.ProductId == product.ProductId).ToList();
+                var m = CalculateMetricsInProcess(currentPValues, attMap, allOptions.ToList());
+
+                result.Products.Add(new PointProductMetricDetailDto
+                {
+                    ProductId = product.ProductId,
+                    SenderId = product.UserId,
+                    UserName = product.User?.Name ?? post.Sender?.Name ?? "N/A",
+                    Address = post.Address ?? "N/A",
+                    CategoryName = product.Category?.Name ?? "N/A",
+                    BrandName = product.Brand?.Name ?? "N/A",
+                    WeightKg = Math.Round(m.weight, 2),
+                    VolumeM3 = Math.Round(m.volume, 5),
+                    Length = m.length,
+                    Width = m.width,
+                    Height = m.height,
+                    Dimensions = $"{m.length} x {m.width} x {m.height}"
+                });
+            }
+
+            result.TotalWeightKg = Math.Round(result.TotalWeightKg, 2);
+            result.TotalVolumeM3 = Math.Round(result.TotalVolumeM3, 3);
+
+            return result;
+        }
+
+        private (double weight, double volume, double length, double width, double height) CalculateMetricsInProcess(
+    List<ProductValues> pValues,
+    Dictionary<string, Guid> attMap,
+    List<AttributeOptions> allOptions)
+        {
+            // 1. Tính toán Trọng lượng
+            double weight = 0;
+            var weightKeys = new[] { "Trọng lượng", "Khối lượng giặt", "Dung tích" };
+
+            foreach (var key in weightKeys)
+            {
+                if (!attMap.TryGetValue(key, out var attrId)) continue;
+
+                var pVal = pValues.FirstOrDefault(v => v.AttributeId == attrId);
+                if (pVal != null)
+                {
+                    // Ưu tiên 1: Lấy EstimateWeight từ Option rảnh (nếu có)
+                    if (pVal.AttributeOptionId.HasValue)
+                    {
+                        var opt = allOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
+                        if (opt != null && opt.EstimateWeight.HasValue && opt.EstimateWeight > 0)
+                        {
+                            weight = opt.EstimateWeight.Value;
+                            break;
+                        }
+                    }
+                    // Ưu tiên 2: Lấy giá trị số thực tế nhập vào
+                    if (pVal.Value.HasValue && pVal.Value.Value > 0)
+                    {
+                        weight = pVal.Value.Value;
+                        break;
+                    }
+                }
+            }
+            if (weight <= 0) weight = 3; // Mặc định 3kg nếu không tìm thấy dữ liệu
+
+            // 2. Lấy thông số Kích thước (Dài, Rộng, Cao)
+            double GetVal(string k)
+            {
+                if (!attMap.TryGetValue(k, out var id)) return 0;
+                return pValues.FirstOrDefault(v => v.AttributeId == id)?.Value ?? 0;
+            }
+
+            double length = GetVal("Chiều dài");
+            double width = GetVal("Chiều rộng");
+            double height = GetVal("Chiều cao");
+
+            // 3. Tính toán Thể tích (Volume)
+            double volume = 0;
+            if (length > 0 && width > 0 && height > 0)
+            {
+                // Tính từ kích thước thực tế (cm3)
+                volume = length * width * height;
+            }
+            else
+            {
+                // Nếu thiếu kích thước, tìm EstimateVolume từ các thuộc tính đặc thù
+                var volKeys = new[] { "Kích thước màn hình", "Dung tích", "Khối lượng giặt", "Trọng lượng" };
+                foreach (var key in volKeys)
+                {
+                    if (!attMap.TryGetValue(key, out var id)) continue;
+
+                    var pVal = pValues.FirstOrDefault(v => v.AttributeId == id);
+                    if (pVal != null && pVal.AttributeOptionId.HasValue)
+                    {
+                        var opt = allOptions.FirstOrDefault(o => o.OptionId == pVal.AttributeOptionId);
+                        if (opt != null && opt.EstimateVolume.HasValue && opt.EstimateVolume > 0)
+                        {
+                            // opt.EstimateVolume thường lưu đơn vị m3, đổi sang cm3 để thống nhất logic bên dưới
+                            volume = opt.EstimateVolume.Value * 1_000_000;
+                            break;
+                        }
+                    }
+                }
+            }
+            if (volume <= 0) volume = 1000; // Mặc định 1000 cm3 nếu không có dữ liệu
+
+            // Trả về kết quả: Volume được chia cho 1,000,000 để đổi từ cm3 sang m3
+            return (weight, volume / 1_000_000.0, length, width, height);
         }
 
 

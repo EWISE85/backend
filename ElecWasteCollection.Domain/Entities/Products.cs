@@ -58,7 +58,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public bool isChecked { get; set; } = false;
 
 		public string? SmallCollectionPointId { get; set; }
-		public Category Category { get; set; }
+        public DateOnly? AssignedAt { get; set; }
+        public Category Category { get; set; }
 
 		public Brand Brand { get; set; }
 

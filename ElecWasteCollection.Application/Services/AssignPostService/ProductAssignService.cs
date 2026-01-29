@@ -220,7 +220,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     chosen ??= validCandidates.OrderBy(v => v.RoadKm).First();
 
-                    AssignSuccess(product, post, chosen, "Tự động phân bổ", historyListBag, detailsBag, ref totalAssigned);
+                    AssignSuccess(product, post, chosen, "Tự động phân bổ", historyListBag, detailsBag, ref totalAssigned, workDate);
                 }
                 finally { semaphore.Release(); }
             });
@@ -250,11 +250,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             details.Add(new { productId = product.ProductId, status = "failed", reason = reason });
         }
 
-        private void AssignSuccess(Products product, Post post, ProductAssignCandidate chosen, string note, ConcurrentBag<ProductStatusHistory> historyBag, ConcurrentBag<object> details, ref int assignedCount)
+        private void AssignSuccess(Products product, Post post, ProductAssignCandidate chosen, string note, ConcurrentBag<ProductStatusHistory> historyBag, ConcurrentBag<object> details, ref int assignedCount, DateOnly workDate)
         {
             product.SmallCollectionPointId = chosen.SmallPointId;
             product.Status = ProductStatus.CHO_GOM_NHOM.ToString();
-
+            product.AssignedAt = workDate;
             post.AssignedSmallPointId = chosen.SmallPointId;
             post.CollectionCompanyId = chosen.CompanyId;
             post.DistanceToPointKm = chosen.RoadKm;
