@@ -54,7 +54,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             CreatedAt = DateTime.UtcNow,
                             IsRead = false,
                             UserId = Guid.Parse(userId),
-                        };
+                            Type = NotificationType.System.ToString(),
+							EventId = Guid.Empty
+						};
                         await unitOfWork.Notifications.AddAsync(notification);
                         await unitOfWork.SaveAsync();
 
