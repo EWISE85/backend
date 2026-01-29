@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.IServices.IAssignPost;
+using ElecWasteCollection.Application.Model.AssignPost;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
@@ -105,6 +106,16 @@ namespace ElecWasteCollection.API.Controllers
         public async Task<IActionResult> GetCompanyMetrics([FromQuery] DateOnly workDate)
         {
             var result = await _productQueryService.GetAllCompaniesDailyMetricsAsync(workDate);
+            return Ok(result);
+        }
+        [HttpGet("scp-products-status")]
+        public async Task<IActionResult> GetSmallPointProducts(
+        [FromQuery] string smallPointId,
+        [FromQuery] DateOnly workDate,
+        [FromQuery] int page = 1,
+        [FromQuery] int limit = 10)
+        {
+            var result = await _productQueryService.GetSmallPointProductsPagedAsync(smallPointId, workDate, page, limit);
             return Ok(result);
         }
     }
