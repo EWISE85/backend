@@ -17,6 +17,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
     public class PreAssignResponse
     {
+        public string SmallCollectionPointId { get; set; }
         public string CollectionPoint { get; set; }
         public double LoadThresholdPercent { get; set; }
         public List<PreAssignDay> Days { get; set; } = new List<PreAssignDay>();
@@ -41,7 +42,9 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public double Weight { get; set; }
         public double Volume { get; set; }
         public string DimensionText { get; set; }
-        public string EstimatedArrival { get; set; } // Định dạng HH:mm
+        public string EstimatedArrival { get; set; }
+        public string CategoryName { get; set; }
+        public string BrandName { get; set; }
     }
     public class VehicleBucket
     {

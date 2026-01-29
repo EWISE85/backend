@@ -35,17 +35,10 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("preview-vehicles")]
-        public async Task<IActionResult> GetPreviewVehicles([FromQuery] DateOnly workDate)
+        public async Task<IActionResult> GetPreviewVehicles([FromQuery] string pointId, [FromQuery] DateOnly date)
         {
-            try
-            {
-                var result = await _groupingService.GetPreviewVehiclesAsync(workDate);
-                return Ok(result);
-            }
-            catch (Exception ex)
-            {
-                return BadRequest(new { message = ex.Message });
-            }
+            var result = await _groupingService.GetPreviewVehiclesAsync(pointId, date);
+            return Ok(result);
         }
 
         [HttpPost("assign-day")]

@@ -497,7 +497,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         public async Task<List<CompanyMetricsDto>> GetAllCompaniesDailyMetricsAsync(DateOnly workDate)
         {
-            var companies = await _unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints");
+            var targetType = CompanyType.CTY_THU_GOM.ToString();
+            var companies = await _unitOfWork.Companies.GetAllAsync(
+                filter: c => c.CompanyType == targetType,
+                includeProperties: "SmallCollectionPoints"
+            );
+
             var attMap = await GetAttributeIdMapAsync();
             var allOptions = await _unitOfWork.AttributeOptions.GetAllAsync();
 
