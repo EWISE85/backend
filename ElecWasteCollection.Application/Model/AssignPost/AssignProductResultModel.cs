@@ -11,5 +11,14 @@ namespace ElecWasteCollection.Application.Model.AssignPost
         public int TotalAssigned { get; set; }
         public int TotalUnassigned { get; set; }
         public List<object> Details { get; set; } = new();
-    }
+
+		public List<WarehouseAllocationStats> WarehouseAllocations { get; set; } = new();
+	}
+	public class WarehouseAllocationStats
+	{
+		public string WarehouseId { get; set; }
+		public string WarehouseName { get; set; }
+		public string AdminWarehouseId { get; set; } 
+		public int AssignedCount { get; set; }
+	}
 }

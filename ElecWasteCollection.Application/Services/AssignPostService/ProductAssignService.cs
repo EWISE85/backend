@@ -68,7 +68,34 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             type: "success",
                             data: summaryData
                         );
-                    }
+						if (result.WarehouseAllocations != null && result.WarehouseAllocations.Any())
+						{
+							foreach (var stat in result.WarehouseAllocations)
+							{
+								// Tạo thông báo
+								string msg = $"Kho {stat.WarehouseName} vừa nhận được {stat.AssignedCount} sản phẩm.";
+
+								// Gửi SignalR (await trực tiếp -> tuần tự)
+								await notifService.SendNotificationAsync(
+									userId: stat.AdminWarehouseId,
+									title: "Hàng về kho",
+									message: msg,
+									type: "info",
+									data: new
+									{
+										Action = "WAREHOUSE_RECEIVED",
+										WarehouseId = stat.WarehouseId,
+										Count = stat.AssignedCount
+									}
+								);
+
+								// Nếu muốn lưu vào DB Notification cho từng Admin kho thì insert ở đây
+								// var userNotif = new Notifications { ... };
+								// await unitOfWork.Notifications.AddAsync(userNotif);
+							}
+							// await unitOfWork.SaveAsync(); // Save nếu có insert DB
+						}
+					}
                     catch (Exception ex)
                     {
                         await notifService.SendNotificationAsync(
@@ -86,9 +113,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate, List<string>? targetCompanyIds)
         {
             var result = new AssignProductResult();
-
-            // GD1: Lấy dữ liệu cơ bản
-            var allCategories = await unitOfWork.Categories.GetAllAsync();
+			
+			// GD1: Lấy dữ liệu cơ bản
+			var allCategories = await unitOfWork.Categories.GetAllAsync();
             var categoryMap = allCategories.ToDictionary(c => c.CategoryId, c => c.ParentCategoryId ?? c.CategoryId);
 
             var allCompanies = await unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints,CompanyRecyclingCategories");
@@ -163,13 +190,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var posts = await unitOfWork.Posts.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
             var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => posts.Select(x => x.SenderId).Contains(a.UserId));
 
-            var historyListBag = new ConcurrentBag<ProductStatusHistory>();
-            var detailsBag = new ConcurrentBag<object>();
-            int totalAssigned = 0;
+			var historyListBag = new ConcurrentBag<ProductStatusHistory>();
+			var detailsBag = new ConcurrentBag<object>();
+			var trackingBag = new ConcurrentBag<AssignmentTracker>();
+			int totalAssigned = 0;
             int totalUnassigned = 0;
             var semaphore = new SemaphoreSlim(8);
 
-            // XỬ LÝ SONG SONG (GD2, GD3, GD4)
             var tasks = products.Select(async product =>
             {
                 await semaphore.WaitAsync();
@@ -241,7 +268,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     chosen ??= validCandidates.OrderBy(v => v.RoadKm).First();
                     AssignSuccess(product, post, chosen, "Tự động phân bổ", historyListBag, detailsBag, ref totalAssigned, workDate);
-                }
+					if (chosen != null)
+					{
+						trackingBag.Add(new AssignmentTracker
+						{
+							ProductId = product.ProductId,
+							SmallCollectionPointId = chosen.SmallPointId
+						});
+					}
+				}
                 finally { semaphore.Release(); }
             });
 
@@ -258,7 +293,52 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             result.TotalAssigned = totalAssigned;
             result.TotalUnassigned = totalUnassigned;
             result.Details = detailsBag.ToList();
-            await unitOfWork.SaveAsync();
+			if (!trackingBag.IsEmpty)
+			{
+				// 1. Lấy danh sách ID các kho đã nhận hàng (Distinct)
+				var assignedWarehouseIds = trackingBag
+					.Select(t => t.SmallCollectionPointId)
+					.Distinct()
+					.ToList();
+
+				// 2. Lấy thông tin tên kho
+				var warehouses = await unitOfWork.SmallCollectionPoints
+					.GetAllAsync(p => assignedWarehouseIds.Contains(p.SmallCollectionPointsId));
+				var warehouseMap = warehouses.ToDictionary(w => w.SmallCollectionPointsId, w => w.Name);
+
+				// 3. Tìm Admin Warehouse
+				// Điều kiện: Role = AdminWarehouse VÀ thuộc các kho trong danh sách
+				var targetRole = UserRole.AdminWarehouse.ToString();
+				var adminUsers = await unitOfWork.Users.GetAllAsync(
+					u => u.Role == targetRole &&
+						 assignedWarehouseIds.Contains(u.SmallCollectionPointId) &&
+						 u.Status == UserStatus.DANG_HOAT_DONG.ToString()
+				);
+
+				// 4. Tạo Dictionary map: Key=PointId -> Value=UserId
+				// Vì 1 kho chỉ có 1 admin nên dùng ToDictionary là an toàn và nhanh nhất
+				// (Sử dụng FirstOrDefault đề phòng data rác có 2 admin thì lấy người đầu tiên)
+				var adminDict = adminUsers
+					.GroupBy(u => u.SmallCollectionPointId)
+					.ToDictionary(g => g.Key, g => g.First().UserId.ToString());
+
+				// 5. Tổng hợp kết quả
+				result.WarehouseAllocations = trackingBag
+					.GroupBy(t => t.SmallCollectionPointId)
+					.Select(g => new WarehouseAllocationStats
+					{
+						WarehouseId = g.Key,
+						WarehouseName = warehouseMap.ContainsKey(g.Key) ? warehouseMap[g.Key] : "Kho ???",
+						AssignedCount = g.Count(),
+						// Lookup Admin ID từ dictionary
+						AdminWarehouseId = adminDict.ContainsKey(g.Key) ? adminDict[g.Key] : null
+					})
+					.Where(x => !string.IsNullOrEmpty(x.AdminWarehouseId)) // Chỉ lấy kho nào ĐÃ CÓ Admin
+					.ToList();
+			}
+
+
+			await unitOfWork.SaveAsync();
             return result;
         }
 
