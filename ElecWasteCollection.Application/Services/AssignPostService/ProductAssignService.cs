@@ -59,7 +59,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             EventId = Guid.Empty
                         };
                         await unitOfWork.Notifications.AddAsync(notification);
-                        await unitOfWork.SaveAsync();
 
                         await notifService.SendNotificationAsync(
                             userId: userId,
@@ -88,15 +87,27 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 										Count = stat.AssignedCount
 									}
 								);
+								var adminWarehouseNotification = new Notifications
+								{
+									NotificationId = Guid.NewGuid(),
+									Body = $"Kho {stat.WarehouseName} vừa nhận được {stat.AssignedCount} sản phẩm.",
+									Title = "Hàng về kho",
+									CreatedAt = DateTime.UtcNow,
+									IsRead = false,
+									UserId = Guid.Parse(stat.AdminWarehouseId),
+									Type = NotificationType.System.ToString(),
+									EventId = Guid.Empty
+								};
+								await unitOfWork.Notifications.AddAsync(adminWarehouseNotification);
 
-								// Nếu muốn lưu vào DB Notification cho từng Admin kho thì insert ở đây
-								// var userNotif = new Notifications { ... };
-								// await unitOfWork.Notifications.AddAsync(userNotif);
+								
 							}
 							// await unitOfWork.SaveAsync(); // Save nếu có insert DB
 						}
+						await unitOfWork.SaveAsync();
+
 					}
-                    catch (Exception ex)
+					catch (Exception ex)
                     {
                         await notifService.SendNotificationAsync(
                             userId: userId,
