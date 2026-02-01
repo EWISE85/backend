@@ -23,7 +23,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             _unitOfWorkForGet = unitOfWorkForGet;
         }
 
-        public void AssignProductsInBackground(List<Guid> productIds, DateOnly workDate, string userId)
+        public void AssignProductsInBackground(List<Guid> productIds, DateOnly workDate, string userId, List<string>? targetCompanyIds = null)
         {
             Task.Run(async () =>
             {
@@ -35,7 +35,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     try
                     {
-                        var result = await AssignProductsLogicInternal(unitOfWork, distanceCache, productIds, workDate);
+                        // Truyền thêm targetCompanyIds vào logic xử lý nội bộ
+                        var result = await AssignProductsLogicInternal(unitOfWork, distanceCache, productIds, workDate, targetCompanyIds);
 
                         var summaryData = new
                         {
@@ -55,8 +56,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             IsRead = false,
                             UserId = Guid.Parse(userId),
                             Type = NotificationType.System.ToString(),
-							EventId = Guid.Empty
-						};
+                            EventId = Guid.Empty
+                        };
                         await unitOfWork.Notifications.AddAsync(notification);
                         await unitOfWork.SaveAsync();
 
@@ -82,11 +83,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             });
         }
 
-        private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate)
+        private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate, List<string>? targetCompanyIds)
         {
             var result = new AssignProductResult();
 
-            // GD1: 
+            // GD1: Lấy dữ liệu cơ bản
             var allCategories = await unitOfWork.Categories.GetAllAsync();
             var categoryMap = allCategories.ToDictionary(c => c.CategoryId, c => c.ParentCategoryId ?? c.CategoryId);
 
@@ -95,23 +96,41 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             var recyclingCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()).ToList();
 
+            // --- LOGIC MỚI: LỌC VÀ CHUẨN HÓA TỈ LỆ ---
+            var collectionCompanies = allCompanies
+                .Where(c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString())
+                .OrderBy(c => c.CompanyId).ToList();
+
+            // Bước 1: Chỉ lấy các công ty nằm trong danh sách target (nếu có)
+            var activeCompanies = targetCompanyIds != null && targetCompanyIds.Any()
+                ? collectionCompanies.Where(c => targetCompanyIds.Contains(c.CompanyId)).ToList()
+                : collectionCompanies;
+
+            // Bước 2: Tính tổng tỉ lệ của nhóm công ty tham gia
+            double sumOfRatios = activeCompanies.Sum(comp => GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0));
+            if (sumOfRatios <= 0) throw new Exception("Lỗi: Không có đơn vị thu gom khả dụng hoặc tổng tỉ lệ bằng 0.");
+
             var rangeConfigs = new List<CompanyRangeConfig>();
             double currentPivot = 0.0;
-            var collectionCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString()).OrderBy(c => c.CompanyId).ToList();
 
-            foreach (var comp in collectionCompanies)
+            foreach (var comp in activeCompanies)
             {
-                double ratio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
-                if (ratio > 0)
+                double originalRatio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
+                if (originalRatio > 0)
                 {
-                    var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = ratio, MinRange = currentPivot };
-                    currentPivot += (ratio / 100.0);
-                    cfg.MaxRange = currentPivot;
+                    // Chuẩn hóa: Tỉ lệ thực tế = Tỉ lệ cũ / Tổng tỉ lệ các ông tham gia
+                    double normalizedRatio = originalRatio / sumOfRatios;
+
+                    var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = originalRatio, MinRange = currentPivot };
+                    currentPivot += normalizedRatio;
+
+                    // Đảm bảo mốc cuối cùng luôn là 1.0 để bao phủ toàn bộ dải hash
+                    cfg.MaxRange = (comp == activeCompanies.Last()) ? 1.0 : currentPivot;
                     rangeConfigs.Add(cfg);
                 }
             }
 
-            if (!rangeConfigs.Any()) throw new Exception("Lỗi: Không có đơn vị thu gom nào có tỉ lệ > 0.");
+            if (!rangeConfigs.Any()) throw new Exception("Lỗi: Không tìm thấy cấu hình dải tỉ lệ hợp lệ.");
 
             var companySlotQueues = new Dictionary<string, ConcurrentQueue<string>>();
             foreach (var rc in rangeConfigs)
@@ -121,7 +140,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 if (!activePoints.Any()) continue;
 
-                int quota = (int)Math.Round((rc.AssignRatio / 100.0) * productIds.Count);
+                // Tính Quota dựa trên tỉ lệ đã chuẩn hóa
+                double normalizedRatio = rc.AssignRatio / sumOfRatios;
+                int quota = (int)Math.Round(normalizedRatio * productIds.Count);
+
                 var slots = new List<string>();
                 int basePerPoint = quota / activePoints.Count;
                 int remainder = quota % activePoints.Count;
@@ -161,7 +183,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     var matchedAddr = addresses.FirstOrDefault(a => a.UserId == post.SenderId && a.Address == post.Address);
                     if (matchedAddr?.Iat == null || matchedAddr?.Ing == null) return;
 
-                    // GD2 & GD3: Lọc kho dựa trên năng lực của Công ty Tái chế liên kết
                     var validCandidates = new List<ProductAssignCandidate>();
                     var candidatePoints = new List<SmallCollectionPoints>();
 
@@ -170,9 +191,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         foreach (var sp in rc.CompanyEntity.SmallCollectionPoints.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
                         {
                             var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
-
                             bool canHandle = rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootCateId) ?? false;
-
                             if (!canHandle) continue;
 
                             double hvDist = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, matchedAddr.Iat.Value, matchedAddr.Ing.Value);
@@ -221,7 +240,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     }
 
                     chosen ??= validCandidates.OrderBy(v => v.RoadKm).First();
-
                     AssignSuccess(product, post, chosen, "Tự động phân bổ", historyListBag, detailsBag, ref totalAssigned, workDate);
                 }
                 finally { semaphore.Release(); }
@@ -243,6 +261,227 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             await unitOfWork.SaveAsync();
             return result;
         }
+
+        //  public void AssignProductsInBackground(List<Guid> productIds, DateOnly workDate, string userId)
+        //  {
+        //      Task.Run(async () =>
+        //      {
+        //          using (var scope = _scopeFactory.CreateScope())
+        //          {
+        //              var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+        //              var distanceCache = scope.ServiceProvider.GetRequiredService<IMapboxDistanceCacheService>();
+        //              var notifService = scope.ServiceProvider.GetRequiredService<IWebNotificationService>();
+
+        //              try
+        //              {
+        //                  var result = await AssignProductsLogicInternal(unitOfWork, distanceCache, productIds, workDate);
+
+        //                  var summaryData = new
+        //                  {
+        //                      Action = "ASSIGN_COMPLETED",
+        //                      TotalRequested = productIds.Count,
+        //                      Success = result.TotalAssigned,
+        //                      Failed = result.Details.Count(x => (string)x.GetType().GetProperty("status")?.GetValue(x, null)! == "failed"),
+        //                      Unassigned = result.TotalUnassigned
+        //                  };
+
+        //                  var notification = new Notifications
+        //                  {
+        //                      NotificationId = Guid.NewGuid(),
+        //                      Body = $"Đã xử lý xong {productIds.Count} sản phẩm. Thành công: {result.TotalAssigned}.",
+        //                      Title = "Phân bổ hoàn tất",
+        //                      CreatedAt = DateTime.UtcNow,
+        //                      IsRead = false,
+        //                      UserId = Guid.Parse(userId),
+        //                      Type = NotificationType.System.ToString(),
+        //	EventId = Guid.Empty
+        //};
+        //                  await unitOfWork.Notifications.AddAsync(notification);
+        //                  await unitOfWork.SaveAsync();
+
+        //                  await notifService.SendNotificationAsync(
+        //                      userId: userId,
+        //                      title: "Phân bổ hoàn tất",
+        //                      message: $"Đã xử lý xong {productIds.Count} sản phẩm. Thành công: {result.TotalAssigned}.",
+        //                      type: "success",
+        //                      data: summaryData
+        //                  );
+        //              }
+        //              catch (Exception ex)
+        //              {
+        //                  await notifService.SendNotificationAsync(
+        //                      userId: userId,
+        //                      title: "Phân bổ thất bại",
+        //                      message: "Có lỗi xảy ra trong quá trình xử lý ngầm.",
+        //                      type: "error",
+        //                      data: new { Error = ex.Message }
+        //                  );
+        //              }
+        //          }
+        //      });
+        //  }
+
+        //  private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate)
+        //  {
+        //      var result = new AssignProductResult();
+
+        //      // GD1: 
+        //      var allCategories = await unitOfWork.Categories.GetAllAsync();
+        //      var categoryMap = allCategories.ToDictionary(c => c.CategoryId, c => c.ParentCategoryId ?? c.CategoryId);
+
+        //      var allCompanies = await unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints,CompanyRecyclingCategories");
+        //      var allConfigs = await unitOfWork.SystemConfig.GetAllAsync();
+
+        //      var recyclingCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()).ToList();
+
+        //      var rangeConfigs = new List<CompanyRangeConfig>();
+        //      double currentPivot = 0.0;
+        //      var collectionCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString()).OrderBy(c => c.CompanyId).ToList();
+
+        //      foreach (var comp in collectionCompanies)
+        //      {
+        //          double ratio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
+        //          if (ratio > 0)
+        //          {
+        //              var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = ratio, MinRange = currentPivot };
+        //              currentPivot += (ratio / 100.0);
+        //              cfg.MaxRange = currentPivot;
+        //              rangeConfigs.Add(cfg);
+        //          }
+        //      }
+
+        //      if (!rangeConfigs.Any()) throw new Exception("Lỗi: Không có đơn vị thu gom nào có tỉ lệ > 0.");
+
+        //      var companySlotQueues = new Dictionary<string, ConcurrentQueue<string>>();
+        //      foreach (var rc in rangeConfigs)
+        //      {
+        //          var activePoints = rc.CompanyEntity.SmallCollectionPoints
+        //              .Where(sp => sp.Status == CompanyStatus.DANG_HOAT_DONG.ToString()).ToList();
+
+        //          if (!activePoints.Any()) continue;
+
+        //          int quota = (int)Math.Round((rc.AssignRatio / 100.0) * productIds.Count);
+        //          var slots = new List<string>();
+        //          int basePerPoint = quota / activePoints.Count;
+        //          int remainder = quota % activePoints.Count;
+
+        //          foreach (var p in activePoints)
+        //              for (int i = 0; i < basePerPoint; i++) slots.Add(p.SmallCollectionPointsId);
+
+        //          var rnd = new Random();
+        //          for (int i = 0; i < remainder; i++) slots.Add(activePoints[rnd.Next(activePoints.Count)].SmallCollectionPointsId);
+
+        //        var queue = new ConcurrentQueue<string>();
+        //        foreach (var sId in slots.OrderBy(x => Guid.NewGuid())) queue.Enqueue(sId);
+        //        companySlotQueues[rc.CompanyEntity.CompanyId] = queue;
+        //    }
+
+        //    var products = await unitOfWork.Products.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
+        //    var posts = await unitOfWork.Posts.GetAllAsync(filter: p => productIds.Contains(p.ProductId));
+        //    var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => posts.Select(x => x.SenderId).Contains(a.UserId));
+
+        //    var historyListBag = new ConcurrentBag<ProductStatusHistory>();
+        //    var detailsBag = new ConcurrentBag<object>();
+        //    int totalAssigned = 0;
+        //    int totalUnassigned = 0;
+        //    var semaphore = new SemaphoreSlim(8);
+
+        //    // XỬ LÝ SONG SONG (GD2, GD3, GD4)
+        //    var tasks = products.Select(async product =>
+        //    {
+        //        await semaphore.WaitAsync();
+        //        try
+        //        {
+        //            var post = posts.FirstOrDefault(p => p.ProductId == product.ProductId);
+        //            if (post == null || string.IsNullOrEmpty(post.Address)) return;
+
+        //            if (!categoryMap.TryGetValue(product.CategoryId, out Guid rootCateId)) return;
+
+        //            var matchedAddr = addresses.FirstOrDefault(a => a.UserId == post.SenderId && a.Address == post.Address);
+        //            if (matchedAddr?.Iat == null || matchedAddr?.Ing == null) return;
+
+        //            // GD2 & GD3: Lọc kho dựa trên năng lực của Công ty Tái chế liên kết
+        //            var validCandidates = new List<ProductAssignCandidate>();
+        //            var candidatePoints = new List<SmallCollectionPoints>();
+
+        //            foreach (var rc in rangeConfigs)
+        //            {
+        //                foreach (var sp in rc.CompanyEntity.SmallCollectionPoints.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
+        //                {
+        //                    var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
+
+        //                    bool canHandle = rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootCateId) ?? false;
+
+        //                    if (!canHandle) continue;
+
+        //                    double hvDist = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, matchedAddr.Iat.Value, matchedAddr.Ing.Value);
+        //                    double radius = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
+
+        //                    if (hvDist <= radius)
+        //                    {
+        //                        validCandidates.Add(new ProductAssignCandidate
+        //                        {
+        //                            ProductId = product.ProductId,
+        //                            SmallPointId = sp.SmallCollectionPointsId,
+        //                            CompanyId = rc.CompanyEntity.CompanyId,
+        //                            HaversineKm = hvDist
+        //                        });
+        //                        candidatePoints.Add(sp);
+        //                    }
+        //                }
+        //            }
+
+        //            if (!validCandidates.Any())
+        //            {
+        //                MarkAsUnassigned(product, detailsBag, ref totalUnassigned, "Không tìm thấy kho tái chế đủ năng lực trong bán kính");
+        //                return;
+        //            }
+
+        //            var roadDistances = await distanceCache.GetMatrixDistancesAsync(matchedAddr.Iat.Value, matchedAddr.Ing.Value, candidatePoints);
+        //            validCandidates = validCandidates.Where(v => {
+        //                v.RoadKm = roadDistances.ContainsKey(v.SmallPointId) ? roadDistances[v.SmallPointId] : v.HaversineKm;
+        //                return v.RoadKm <= GetConfigValue(allConfigs, null, v.SmallPointId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
+        //            }).ToList();
+
+        //            if (!validCandidates.Any())
+        //            {
+        //                MarkAsUnassigned(product, detailsBag, ref totalUnassigned, "Ngoài phạm vi đường bộ tối đa");
+        //                return;
+        //            }
+
+        //            // GD4: Điều phối
+        //            ProductAssignCandidate chosen = null;
+        //            double magic = GetStableHashRatio(product.ProductId);
+        //            var targetRC = rangeConfigs.FirstOrDefault(r => magic >= r.MinRange && magic < r.MaxRange) ?? rangeConfigs.Last();
+
+        //            if (companySlotQueues.TryGetValue(targetRC.CompanyEntity.CompanyId, out var q) && q.TryDequeue(out string sId))
+        //            {
+        //                chosen = validCandidates.FirstOrDefault(v => v.SmallPointId == sId);
+        //            }
+
+        //            chosen ??= validCandidates.OrderBy(v => v.RoadKm).First();
+
+        //            AssignSuccess(product, post, chosen, "Tự động phân bổ", historyListBag, detailsBag, ref totalAssigned, workDate);
+        //        }
+        //        finally { semaphore.Release(); }
+        //    });
+
+        //    await Task.WhenAll(tasks);
+
+        //    if (historyListBag.Any())
+        //    {
+        //        foreach (var history in historyListBag)
+        //        {
+        //            await unitOfWork.ProductStatusHistory.AddAsync(history);
+        //        }
+        //    }
+
+        //    result.TotalAssigned = totalAssigned;
+        //    result.TotalUnassigned = totalUnassigned;
+        //    result.Details = detailsBag.ToList();
+        //    await unitOfWork.SaveAsync();
+        //    return result;
+        //}
 
         // HELPER METHODS ĐỂ CODE SẠCH HƠN
         private void MarkAsUnassigned(Products product, ConcurrentBag<object> details, ref int unassignedCount, string reason)

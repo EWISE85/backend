@@ -45,29 +45,62 @@ namespace ElecWasteCollection.API.Controllers
         //[RequestTimeout(600000)]
         public  IActionResult AssignProducts([FromBody] AssignProductRequest request)
         {
-            if (request == null) return BadRequest("Request cannot be null.");
-            if (request.ProductIds == null || !request.ProductIds.Any()) return BadRequest("ProductIds cannot be empty.");
-            if (!DateOnly.TryParse(request.WorkDate, out var workDate)) return BadRequest("WorkDate không hợp lệ. Hãy nhập yyyy-MM-dd.");
-			var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-			if (string.IsNullOrEmpty(userId))
-			{
-				return Unauthorized("Không xác định được danh tính người dùng.");
-			}
+            if (request == null) return BadRequest("Request không được để trống.");
+            if (request.ProductIds == null || !request.ProductIds.Any())
+                return BadRequest("Danh sách ProductIds không được để trống.");
+            if (!DateOnly.TryParse(request.WorkDate, out var workDate))
+                return BadRequest("WorkDate không hợp lệ. Định dạng yêu cầu là yyyy-MM-dd.");
 
-			try
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
             {
-				_productAssignService.AssignProductsInBackground(request.ProductIds, workDate, userId);
-				return Accepted(new
-				{
-					Success = true,
-					Message = "Hệ thống đang xử lý phân bổ ngầm. Vui lòng đợi thông báo kết quả...",
-					IsProcessingInBackground = true
-				});
-			}
+                return Unauthorized("Không xác định được danh tính người dùng.");
+            }
+
+            try
+            {
+                _productAssignService.AssignProductsInBackground(
+                    request.ProductIds,
+                    workDate,
+                    userId,
+                    request.TargetCompanyIds
+                );
+
+                return Accepted(new
+                {
+                    Success = true,
+                    Message = "Hệ thống đang xử lý phân bổ ngầm cho các đơn vị được chọn. Vui lòng đợi thông báo kết quả...",
+                    IsProcessingInBackground = true
+                });
+            }
             catch (Exception ex)
             {
                 return BadRequest(new { Message = ex.Message });
             }
+
+            //         if (request == null) return BadRequest("Request cannot be null.");
+            //         if (request.ProductIds == null || !request.ProductIds.Any()) return BadRequest("ProductIds cannot be empty.");
+            //         if (!DateOnly.TryParse(request.WorkDate, out var workDate)) return BadRequest("WorkDate không hợp lệ. Hãy nhập yyyy-MM-dd.");
+            //var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            //if (string.IsNullOrEmpty(userId))
+            //{
+            //	return Unauthorized("Không xác định được danh tính người dùng.");
+            //}
+
+            //try
+            //         {
+            //	_productAssignService.AssignProductsInBackground(request.ProductIds, workDate, userId);
+            //	return Accepted(new
+            //	{
+            //		Success = true,
+            //		Message = "Hệ thống đang xử lý phân bổ ngầm. Vui lòng đợi thông báo kết quả...",
+            //		IsProcessingInBackground = true
+            //	});
+            //}
+            //         catch (Exception ex)
+            //         {
+            //             return BadRequest(new { Message = ex.Message });
+            //         }
         }
 
         [HttpGet("products-by-date")]
