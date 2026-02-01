@@ -14,8 +14,6 @@ namespace ElecWasteCollection.API.Hubs
 
 		public async Task SendNotificationAsync(string userId, string title, string message, string type = "info", object? data = null)
 		{
-			// SỬA: Đổi Clients.User thành Clients.Group
-			// Lúc này hệ thống sẽ tìm Group có tên trùng với userId để gửi
 			await _hubContext.Clients.Group(userId).SendAsync("ReceiveNotification", new
 			{
 				Title = title,
