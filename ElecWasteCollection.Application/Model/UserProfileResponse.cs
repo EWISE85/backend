@@ -25,6 +25,10 @@ namespace ElecWasteCollection.Application.Model
 
 		public string? CollectionCompanyId { get; set; }
 
+		public string? SmallCollectionName { get; set; }
+
+		public string? CompanyName { get; set; }
+
 		public string Status { get; set; }
 	}
 }
