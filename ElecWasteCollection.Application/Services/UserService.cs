@@ -106,6 +106,8 @@ namespace ElecWasteCollection.Application.Services
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var points = await _userPointRepository.GetAsync(p => p.UserId == user.UserId);
 			var pointsValue = points == null ? 0 : points.Points;
+			var smallCollectionPointName = await _unitOfWork.SmallCollectionPoints.GetAsync(s => s.SmallCollectionPointsId == user.SmallCollectionPointId);
+			var collectionCompanyName = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == user.CollectionCompanyId);
 			//UserSettingsModel settingsObj;
 			//if (string.IsNullOrEmpty(user.Preferences))
 			//{
@@ -133,6 +135,8 @@ namespace ElecWasteCollection.Application.Services
 				Points = pointsValue,
 				CollectionCompanyId = user.CollectionCompanyId,
 				SmallCollectionPointId = user.SmallCollectionPointId,
+				SmallCollectionName = smallCollectionPointName?.Name,
+				CompanyName = collectionCompanyName?.Name,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userProfile;

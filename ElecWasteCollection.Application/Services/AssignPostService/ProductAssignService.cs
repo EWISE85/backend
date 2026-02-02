@@ -102,7 +102,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
 								
 							}
-							// await unitOfWork.SaveAsync(); // Save nếu có insert DB
 						}
 						await unitOfWork.SaveAsync();
 
