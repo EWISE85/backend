@@ -16,8 +16,15 @@ namespace ElecWasteCollection.Application.Interfaces
         Task<bool> UpdatePointSettingAsync(UpdatePointSettingRequest request);
         Task<object> GetPreviewVehiclesAsync(string collectionPointId, DateOnly workDate);
         Task<PreviewProductPagedResult?> GetPreviewProductsAsync(string vehicleId, DateOnly workDate, int page, int pageSize);
-        Task<PagedResult<CollectionGroupModel>> GetGroupsByCollectionPointAsync( string collectionPointId, int page, int limit);
-        Task<object> GetRoutesByGroupAsync( int groupId, int page, int limit);
-        Task<PagedCompanySettingsResponse> GetCompanySettingsPagedAsync( string companyId, int page, int limit);
+        Task<PagedResult<CollectionGroupModel>> GetGroupsByCollectionPointAsync(string collectionPointId, int page, int limit);
+        Task<object> GetRoutesByGroupAsync(int groupId, int page, int limit);
+        Task<PagedCompanySettingsResponse> GetCompanySettingsPagedAsync(string companyId, int page, int limit);
+
+        public Task<object> GetUnassignedProductsAsync(
+    string collectionPointId,
+    DateOnly workDate,
+    int page,
+    int pageSize);
     }
+
 }
