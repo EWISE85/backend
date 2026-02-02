@@ -37,7 +37,6 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request)
         {
-
             lock (_previewLock)
             {
                 _preAssignPreviewCache.RemoveAll(x =>
@@ -156,57 +155,70 @@ namespace ElecWasteCollection.Application.Services
 
             var unAssigned = new List<UnAssignProductPreview>();
 
-            foreach (var item in pool)
-            {
-                var candidate = buckets.Values
-                    .Where(b =>
-                        b.CurrentKg + item.Weight <= b.MaxKg &&
-                        b.CurrentM3 + item.Volume <= b.MaxM3 &&
-                        b.CurrentTimeMin + avgTravelTimeMin + serviceTimeMin
-                            <= b.MaxShiftMinutes)
-                    .OrderBy(b => b.Vehicle.Capacity_Kg)
-                    .FirstOrDefault();
+            var criticalPool = pool.Where(x => x.Deadline <= request.WorkDate).ToList();
+            var flexiblePool = pool.Where(x => x.Deadline > request.WorkDate).ToList();
 
-                if (candidate == null)
+            void ProcessAssignment(List<dynamic> items, bool isCritical)
+            {
+                foreach (var item in items)
                 {
-                    unAssigned.Add(new UnAssignProductPreview
+                    var candidate = buckets.Values
+                        .Where(b =>
+                        {
+                            double limitKg = isCritical ? (b.Vehicle.Capacity_Kg * 0.98) : b.MaxKg;
+                            double limitM3 = isCritical ? (b.Vehicle.Length_M * b.Vehicle.Width_M * b.Vehicle.Height_M * 0.98) : b.MaxM3;
+
+                            return b.CurrentKg + item.Weight <= limitKg &&
+                                   b.CurrentM3 + item.Volume <= limitM3 &&
+                                   b.CurrentTimeMin + avgTravelTimeMin + serviceTimeMin <= b.MaxShiftMinutes;
+                        })
+                        .OrderBy(b => b.Vehicle.Capacity_Kg)
+                        .FirstOrDefault();
+
+                    if (candidate == null)
                     {
-                        ProductId = item.Post.ProductId.ToString(),
+                        unAssigned.Add(new UnAssignProductPreview
+                        {
+                            ProductId = item.Post.ProductId.ToString(),
+                            PostId = item.Post.PostId.ToString(),
+                            Name = item.Post.Product?.User?.Name,
+                            Address = item.Post.Address,
+                            CategoryName = item.Post.Product?.Category?.Name,
+                            BrandName = item.Post.Product?.Brand?.Name,
+                            Weight = item.Weight,
+                            Volume = item.Volume,
+                            DimensionText = item.DimensionText,
+                            Reason = isCritical ? "HẠN CHÓT: Xe đã hoàn toàn hết tải trọng thực tế" : "Không xe nào đủ tải trọng hoặc thời gian"
+                        });
+                        continue;
+                    }
+
+                    double arrival = candidate.CurrentTimeMin + avgTravelTimeMin;
+                    candidate.CurrentTimeMin = arrival + serviceTimeMin;
+                    candidate.CurrentKg += item.Weight;
+                    candidate.CurrentM3 += item.Volume;
+
+                    candidate.Products.Add(new PreAssignProduct
+                    {
                         PostId = item.Post.PostId.ToString(),
-                        Name = item.Post.Product?.User?.Name,
+                        ProductId = item.Post.ProductId.ToString(),
+                        UserName = item.Post.Product?.User?.Name,
                         Address = item.Post.Address,
                         CategoryName = item.Post.Product?.Category?.Name,
                         BrandName = item.Post.Product?.Brand?.Name,
                         Weight = item.Weight,
                         Volume = item.Volume,
                         DimensionText = item.DimensionText,
-                        Reason = "Không xe nào đủ tải trọng hoặc thời gian"
+                        EstimatedArrival = candidate.ShiftStartBase
+                            .AddMinutes(arrival)
+                            .ToString("HH:mm")
                     });
-                    continue;
                 }
-
-                double arrival = candidate.CurrentTimeMin + avgTravelTimeMin;
-
-                candidate.CurrentTimeMin = arrival + serviceTimeMin;
-                candidate.CurrentKg += item.Weight;
-                candidate.CurrentM3 += item.Volume;
-
-                candidate.Products.Add(new PreAssignProduct
-                {
-                    PostId = item.Post.PostId.ToString(),
-                    ProductId = item.Post.ProductId.ToString(),
-                    UserName = item.Post.Product?.User?.Name,
-                    Address = item.Post.Address,
-                    CategoryName = item.Post.Product?.Category?.Name,
-                    BrandName = item.Post.Product?.Brand?.Name,
-                    Weight = item.Weight,
-                    Volume = item.Volume,
-                    DimensionText = item.DimensionText,
-                    EstimatedArrival = candidate.ShiftStartBase
-                        .AddMinutes(arrival)
-                        .ToString("HH:mm")
-                });
             }
+
+            ProcessAssignment(criticalPool, true);
+
+            ProcessAssignment(flexiblePool, false);
 
             var result = new PreAssignResponse
             {
@@ -258,11 +270,7 @@ namespace ElecWasteCollection.Application.Services
 
 
 
-        public Task<object> GetUnassignedProductsAsync(
-    string collectionPointId,
-    DateOnly workDate,
-    int page,
-    int pageSize)
+        public Task<object> GetUnassignedProductsAsync( string collectionPointId, DateOnly workDate, int page, int pageSize)
         {
             lock (_previewLock)
             {
