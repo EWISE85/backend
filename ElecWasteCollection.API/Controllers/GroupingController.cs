@@ -34,6 +34,27 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("unassigned-products/{collectionPointId}")]
+        public async Task<IActionResult> GetUnassignedProducts(
+            string collectionPointId,
+            [FromQuery] DateOnly workDate,
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var result = await _groupingService
+                    .GetUnassignedProductsAsync(collectionPointId, workDate, page, pageSize);
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+        }
+
+
         [HttpGet("preview-vehicles")]
         public async Task<IActionResult> GetPreviewVehicles([FromQuery] string pointId, [FromQuery] DateOnly date)
         {

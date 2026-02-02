@@ -10,17 +10,23 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 {
     public class PreAssignRequest
     {
+        public DateOnly WorkDate { get; set; }
+        public List<string>? VehicleIds { get; set; }
         public string CollectionPointId { get; set; }
         public double LoadThresholdPercent { get; set; } = 80;
         public List<Guid>? ProductIds { get; set; }
+
     }
 
     public class PreAssignResponse
     {
         public string SmallCollectionPointId { get; set; }
         public string CollectionPoint { get; set; }
+        public DateOnly WorkDate { get; set; }
         public double LoadThresholdPercent { get; set; }
         public List<PreAssignDay> Days { get; set; } = new List<PreAssignDay>();
+
+        public List<UnAssignProductPreview> UnassignedProducts { get; set; }
     }
 
     public class PreAssignDay
@@ -48,15 +54,23 @@ namespace ElecWasteCollection.Application.Model.GroupModel
     }
     public class VehicleBucket
     {
-        public Vehicles Vehicle { get; set; }
-        public double CurrentTimeMin { get; set; } // Phút thứ bao nhiêu trong ca làm việc
+        public Vehicles Vehicle { get; set; } = null!;
+
         public double CurrentKg { get; set; }
+
         public double CurrentM3 { get; set; }
+
+        public double CurrentTimeMin { get; set; }
+
         public double MaxKg { get; set; }
+
         public double MaxM3 { get; set; }
-        public double MaxShiftMinutes { get; set; } // Tổng thời gian ca làm việc (phút)
-        public TimeOnly ShiftStartBase { get; set; } // Giờ bắt đầu ca (VD: 07:00)
-        public List<PreAssignProduct> Products { get; set; } = new List<PreAssignProduct>();
+
+        public double MaxShiftMinutes { get; set; }
+
+        public TimeOnly ShiftStartBase { get; set; }
+
+        public List<PreAssignProduct> Products { get; set; } = new();
     }
     public class SuggestedVehicle
     {
@@ -67,5 +81,39 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public double AllowedCapacityKg { get; set; }
         public double Capacity_M3 { get; set; }
         public double AllowedCapacityM3 { get; set; }
+    }
+
+    public class UnAssignProductPreview
+    {
+        public string PostId { get; set; } = string.Empty;
+
+        public string ProductId { get; set; } = string.Empty;
+
+        public string Name { get; set; } = string.Empty;
+
+        public string Address { get; set; } = string.Empty;
+
+        public double Weight { get; set; }
+
+        public double Volume { get; set; }
+
+        public string DimensionText { get; set; } = string.Empty;
+
+        public string CategoryName { get; set; } = string.Empty;
+
+        public string BrandName { get; set; } = string.Empty;
+
+        public string Reason { get; set; } = string.Empty;
+    }
+
+    public class PreAssignResponseCache
+    {
+        public string SmallCollectionPointId { get; set; }
+
+        public DateOnly WorkDate { get; set; }
+
+        public DateTime CachedAt { get; set; }
+
+        public PreAssignResponse Response { get; set; } = null!;
     }
 }

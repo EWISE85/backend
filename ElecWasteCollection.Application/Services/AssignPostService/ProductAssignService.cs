@@ -317,7 +317,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 				var warehouseMap = warehouses.ToDictionary(w => w.SmallCollectionPointsId, w => w.Name);
 
 				// 3. Tìm Admin Warehouse
-				// Điều kiện: Role = AdminWarehouse VÀ thuộc các kho trong danh sách
 				var targetRole = UserRole.AdminWarehouse.ToString();
 				var adminUsers = await unitOfWork.Users.GetAllAsync(
 					u => u.Role == targetRole &&
@@ -326,8 +325,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 				);
 
 				// 4. Tạo Dictionary map: Key=PointId -> Value=UserId
-				// Vì 1 kho chỉ có 1 admin nên dùng ToDictionary là an toàn và nhanh nhất
-				// (Sử dụng FirstOrDefault đề phòng data rác có 2 admin thì lấy người đầu tiên)
 				var adminDict = adminUsers
 					.GroupBy(u => u.SmallCollectionPointId)
 					.ToDictionary(g => g.Key, g => g.First().UserId.ToString());
