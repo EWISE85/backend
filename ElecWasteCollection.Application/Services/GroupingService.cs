@@ -597,38 +597,12 @@ namespace ElecWasteCollection.Application.Services
                     return response;
                 }
 
-                var distinctDates = staging.Select(s => s.Date).Distinct().ToList();
-                var availableShiftQueues = new Dictionary<DateOnly, Queue<Shifts>>();
-
-                foreach (var date in distinctDates)
-                {
-                    var rawShifts = await _unitOfWork.Shifts.GetAllAsync(s =>
-                        s.WorkDate == date &&
-                        s.Status == ShiftStatus.CO_SAN.ToString() &&
-                        string.IsNullOrEmpty(s.Vehicle_Id));
-
-                    var validQueue = new Queue<Shifts>();
-                    foreach (var sh in rawShifts)
-                    {
-                        var collector = await _unitOfWork.Users.GetByIdAsync(sh.CollectorId);
-                        if (collector != null && collector.SmallCollectionPointId == request.CollectionPointId)
-                        {
-                            validQueue.Enqueue(sh);
-                        }
-                    }
-                    availableShiftQueues[date] = validQueue;
-                    response.Logs.Add($"[CHECK SHIFT] Ngày {date}: Tìm thấy {validQueue.Count} tài xế (Shift) rảnh.");
-                }
-
+                // --- PHẦN SỬA: TÌM TÀI XẾ TUẦN TỰ ---
                 var vehicleAssignments = staging
                     .GroupBy(s => new { s.VehicleId, s.Date })
                     .ToList();
 
                 response.Logs.Add($"[ANALYSIS] Phân tích dữ liệu: Cần chạy lộ trình cho {vehicleAssignments.Count} xe.");
-                foreach (var v in vehicleAssignments)
-                {
-                    response.Logs.Add($"   -> Xe ID: {v.Key.VehicleId} (Ngày: {v.Key.Date}) - SL Sản phẩm: {v.SelectMany(x => x.ProductIds).Distinct().Count()}");
-                }
 
                 int groupCounter = 1;
                 var attMap = await GetAttributeIdMapAsync();
@@ -661,39 +635,19 @@ namespace ElecWasteCollection.Application.Services
 
                         response.Logs.Add($"   + Đã lấy được {posts.Count} bài đăng hợp lệ.");
 
-                        Shifts mainShift = null;
-                        var assignedShift = await _unitOfWork.Shifts.GetAsync(s => s.WorkDate == workDate && s.Vehicle_Id == vehicleId);
+                        // --- LOGIC TÀI XẾ MỚI: Gọi hàm tìm tài xế duy nhất cho từng vòng lặp xe ---
+                        Shifts mainShift = await FindAndAssignUniqueShiftAsync(vehicleId, workDate, request.CollectionPointId);
 
-                        if (assignedShift != null)
+                        if (mainShift == null)
                         {
-                            mainShift = assignedShift;
-                            response.Logs.Add($"   + Dùng lại Shift đã gán trước đó (ID: {mainShift.ShiftId})");
-                        }
-                        else
-                        {
-                            if (availableShiftQueues.ContainsKey(workDate) && availableShiftQueues[workDate].Count > 0)
-                            {
-                                var selectedShift = availableShiftQueues[workDate].Dequeue();
-                                selectedShift.Vehicle_Id = vehicleId;
-                                selectedShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
-                                selectedShift.WorkDate = workDate;
-                                mainShift = selectedShift;
-                                _unitOfWork.Shifts.Update(mainShift);
-
-                                response.Logs.Add($"   + Gán thành công Shift mới (ID: {mainShift.ShiftId}). Còn lại trong hàng đợi: {availableShiftQueues[workDate].Count}");
-                            }
-                            else
-                            {
-                                var msg = $"[LỖI TÀI XẾ] Xe {vehicleId}: Hết tài xế (Shift) rảnh cho ngày {workDate}.";
-                                response.Errors.Add(msg);
-                                response.Logs.Add(msg);
-                                continue;
-                            }
+                            var msg = $"[LỖI TÀI XẾ] Xe {vehicleId}: Hết tài xế rảnh thực sự cho ngày {workDate}.";
+                            response.Errors.Add(msg);
+                            response.Logs.Add(msg);
+                            continue;
                         }
 
+                        // Xóa group cũ của đúng Shift này
                         var oldGroups = await _unitOfWork.CollectionGroupGeneric.GetAllAsync(g => g.Shift_Id == mainShift.ShiftId);
-                        if (oldGroups.Any()) response.Logs.Add($"   + Xóa {oldGroups.Count()} group cũ của Shift này.");
-
                         foreach (var g in oldGroups)
                         {
                             var routes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.CollectionGroupId == g.CollectionGroupId);
@@ -757,10 +711,11 @@ namespace ElecWasteCollection.Application.Services
                             continue;
                         }
 
-                        response.Logs.Add($"   + Chuẩn bị chạy thuật toán VRP cho {nodesToOptimize.Count} điểm giao hàng.");
+                        response.Logs.Add($"   + Chuẩn bị chạy thuật toán VRP cho {nodesToOptimize.Count} điểm.");
 
+                        // Sử dụng hàm ma trận đã tối ưu
+                        long[,] matrixDist = CalculateDistMatrix(locations);
                         int locCount = locations.Count;
-                        long[,] matrixDist = new long[locCount, locCount];
                         long[,] matrixTime = new long[locCount, locCount];
                         double speed = 30.0 * 1000 / 3600;
 
@@ -769,17 +724,12 @@ namespace ElecWasteCollection.Application.Services
                             for (int j = 0; j < locCount; j++)
                             {
                                 if (i == j) continue;
-                                double d = GeoHelper.DistanceKm(locations[i].lat, locations[i].lng, locations[j].lat, locations[j].lng);
-                                long dm = (long)(d * 1000 * 1.25);
-                                matrixDist[i, j] = dm;
-                                matrixTime[i, j] = (long)(dm / speed);
+                                matrixTime[i, j] = (long)(matrixDist[i, j] / speed);
                             }
                         }
 
                         double vehicleVol = vehicle.Length_M * vehicle.Width_M * vehicle.Height_M;
                         var sortedIndices = RouteOptimizer.SolveVRP(matrixDist, matrixTime, nodesToOptimize, vehicle.Capacity_Kg, vehicleVol, shiftStart, shiftEnd);
-
-                        response.Logs.Add($"   + Thuật toán VRP hoàn tất. Kết quả: {sortedIndices.Count} điểm.");
 
                         var group = new CollectionGroups
                         {
@@ -789,7 +739,11 @@ namespace ElecWasteCollection.Application.Services
                             Created_At = DateTime.UtcNow.AddHours(7)
                         };
 
-                        if (request.SaveResult) { await _unitOfWork.CollectionGroupGeneric.AddAsync(group); await _unitOfWork.SaveAsync(); }
+                        if (request.SaveResult)
+                        {
+                            await _unitOfWork.CollectionGroupGeneric.AddAsync(group);
+                            await _unitOfWork.SaveAsync();
+                        }
 
                         var routeNodes = new List<RouteDetail>();
                         TimeOnly cursorTime = shiftStart;
@@ -872,7 +826,7 @@ namespace ElecWasteCollection.Application.Services
 
                 if (response.CreatedGroups.Count == 0 && response.Errors.Count == 0)
                 {
-                    response.Logs.Add("[WARNING] Kết thúc mà không tạo được group nào và không có lỗi (Vòng lặp không chạy?)");
+                    response.Logs.Add("[WARNING] Không tạo được group nào.");
                 }
             }
             catch (Exception ex)
@@ -882,6 +836,76 @@ namespace ElecWasteCollection.Application.Services
 
             return response;
         }
+
+        private async Task<Shifts> FindAndAssignUniqueShiftAsync(string vehicleId, DateOnly date, string pointId)
+        {
+            var vehicleIdStr = vehicleId.ToString();
+            // Chuyển pointId sang string để so sánh
+            var pointIdStr = pointId.ToString();
+
+            var existing = await _unitOfWork.Shifts.GetAsync(s =>
+                s.WorkDate == date &&
+                s.Vehicle_Id == vehicleIdStr);
+
+            if (existing != null) return existing;
+
+            var allShiftsToday = await _unitOfWork.Shifts.GetAllAsync(
+                s => s.WorkDate == date,
+                includeProperties: "Collector"
+            );
+
+            var busyCollectorIds = allShiftsToday
+                .Where(s => !string.IsNullOrEmpty(s.Vehicle_Id))
+                .Select(s => s.CollectorId)
+                .Distinct()
+                .ToList();
+
+            var availableShift = allShiftsToday
+                .Where(s => s.Status == ShiftStatus.CO_SAN.ToString() &&
+                            string.IsNullOrEmpty(s.Vehicle_Id) &&
+                            !busyCollectorIds.Contains(s.CollectorId) &&
+                            s.Collector != null &&
+                            string.Equals(s.Collector.SmallCollectionPointId, pointIdStr, StringComparison.OrdinalIgnoreCase))
+                .FirstOrDefault();
+
+            if (availableShift != null)
+            {
+                availableShift.Vehicle_Id = vehicleIdStr;
+                availableShift.Status = ShiftStatus.DA_LEN_LICH.ToString();
+
+                _unitOfWork.Shifts.Update(availableShift);
+                await _unitOfWork.SaveAsync();
+
+                return availableShift;
+            }
+
+            return null;
+        }
+
+        private long[,] CalculateDistMatrix(List<(double lat, double lng)> locs)
+        {
+            int n = locs.Count;
+            var matrix = new long[n, n];
+
+            if (n == 0) return matrix;
+
+            for (int i = 0; i < n; i++)
+            {
+                for (int j = 0; j < n; j++)
+                {
+                    if (i == j)
+                    {
+                        matrix[i, j] = 0;
+                        continue;
+                    }
+                    double distKm = GeoHelper.DistanceKm(locs[i].lat, locs[i].lng, locs[j].lat, locs[j].lng);
+                    matrix[i, j] = (long)(distKm * 1000 * 1.25);
+                }
+            }
+            return matrix;
+        }
+
+
         public Task<PreviewProductPagedResult?> GetPreviewProductsAsync(
         string vehicleId, DateOnly workDate, int page, int pageSize)
         {
