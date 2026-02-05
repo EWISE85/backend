@@ -17,5 +17,7 @@ namespace ElecWasteCollection.Application.Model
 		public string? Avatar { get; set; }
 
 		public string SmallCollectionPointId { get; set; }
+
+		public string? SmallCollectionPointName { get; set; }
 	}
 }
