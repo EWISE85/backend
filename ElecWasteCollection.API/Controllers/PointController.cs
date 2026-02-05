@@ -41,6 +41,11 @@ namespace ElecWasteCollection.API.Controllers
             var pointTransactions = await _pointTransactionService.GetAllPointHistoryByUserId(userId);
             return Ok(pointTransactions);
         }
-
-    }
+        [HttpPut("points-transaction/{productId}")]
+		public async Task<IActionResult> UpdatePointByProductId([FromRoute] Guid productId, [FromBody] UpdatePointTransactionRequest request)
+		{
+			var result = await _pointTransactionService.UpdatePointByProductId(productId, request.NewPointValue, request.ReasonForUpdate);
+			return Ok(result);
+		}
+	}
 }
