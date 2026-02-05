@@ -81,10 +81,10 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Product added to warehouse successfully.", item = result });
 		}
 
-		[HttpGet("user/{userId}")]
-		public async Task<IActionResult> GetAllProductsByUserId(Guid userId)
+		[HttpGet("user/filter")]
+		public async Task<IActionResult> GetAllProductsByUserId([FromQuery] FilterProductByUserRequest request)
 		{
-			var products = await _productService.GetAllProductsByUserId(userId);
+			var products = await _productService.GetAllProductsByUserId(request.UserId,request.Page,request.Limit);
 			return Ok(products);
 		}
 		[HttpPost("notify-arrival/{productId}")]
@@ -149,6 +149,12 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Product cancelled successfully." });
 
+		}
+		[HttpGet("user/my-pickups")]
+		public async Task<IActionResult> GetMyPickupProducts([FromQuery] Guid userId, [FromQuery] DateOnly pickUpDate)
+		{
+			var result = await _productService.GetProductNeedToPickUp(userId, pickUpDate);
+			return Ok(result);
 		}
 	}
 }

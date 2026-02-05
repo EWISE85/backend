@@ -28,7 +28,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<List<ProductComeWarehouseDetailModel>> ProductsComeWarehouseByDateAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 
 
-		Task<List<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId);
+		Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId, int page, int limit);
 
 		Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId);
 
@@ -38,5 +38,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<bool> CancelProduct(Guid productId, string rejectMessage);
 		Task<PagedResultModel<ProductDetailModel>> GetProductsByPackageIdAsync(string packageId, int page, int limit);
+
+		Task<List<ProductComeWarehouseDetailModel>> GetProductNeedToPickUp(Guid userId, DateOnly pickUpDate);
 	}
 }
