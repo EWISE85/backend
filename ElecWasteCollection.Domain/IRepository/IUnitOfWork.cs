@@ -38,6 +38,8 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<UserDeviceToken> UserDeviceTokens { get; }
         IGenericRepository<Notifications> Notifications { get; }
 
-        Task<int> SaveAsync();
+		IGenericRepository<PackageStatusHistory> PackageStatusHistory { get; }
+
+		Task<int> SaveAsync();
     }
 }
