@@ -116,10 +116,10 @@ namespace ElecWasteCollection.API.Controllers
 			var packages = await _packageService.GetPackagesWhenDelivery();
 			return Ok(packages);
 		}
-		[HttpPut("{packageId}/delivery")]
-		public async Task<IActionResult> UpdatePackageStatusToDelivering([FromRoute] string packageId)
+		[HttpPut("delivery")]
+		public async Task<IActionResult> UpdatePackageStatusToDelivering([FromBody] UpdatePackageDeliveryRequest packageIds)
 		{
-			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, DANG_VAN_CHUYEN);
+			var result = await _packageService.UpdatePackageStatusDelivery(packageIds.PackageIds, DANG_VAN_CHUYEN);
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");
@@ -129,12 +129,29 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPut("{packageId}/recycler")]
 		public async Task<IActionResult> UpdatePackageStatusToRecycled([FromRoute] string packageId)
 		{
-			var result = await _packageService.UpdatePackageStatusDeliveryAndRecycler(packageId, TAI_CHE);
+			var result = await _packageService.UpdatePackageStatusRecycler(packageId, TAI_CHE);
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");
 			}
 			return Ok(new { message = "Package status updated successfully." });
 		}
-    }
+
+		[HttpGet("company/filter")]
+		public async Task<IActionResult> GetPackagesByCompanyQuery([FromQuery] PackageSearchCompanyQueryRequest query)
+		{
+			var model = new PackageSearchCompanyQueryModel
+			{
+				Limit = query.Limit,
+				Page = query.Page,
+				CompanyId = query.CompanyId,
+				ToDate = query.ToDate,
+				FromDate = query.FromDate,
+				Status = query.Status
+			};
+			var packages = await _packageService.GetPackagesByCompanyQuery(model);
+			return Ok(packages);
+		}
+
+	}
 }

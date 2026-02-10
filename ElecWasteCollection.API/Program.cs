@@ -167,6 +167,10 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IDashboardRepository, DashboardRepository>();
 			builder.Services.AddScoped<IWebNotificationService, WebNotification>();
 			builder.Services.AddScoped<IProductQueryRepository, ProductQueryRepository>();
+			builder.Services.AddScoped<ICompanyQrService, CompanyQrService>();
+			builder.Services.AddScoped<IPackageStatusHistoryRepository, PackageStatusHistoryRepository>();
+			builder.Services.AddScoped<IPackageStatusHistoryService, PackageStatusHistoryService>();
+			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>

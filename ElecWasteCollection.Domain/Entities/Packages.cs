@@ -27,5 +27,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public string Status { get; set; }
         public SmallCollectionPoints SmallCollectionPoints { get; set; }
 		public ICollection<Products> Products { get; set; }
+
+		public ICollection<PackageStatusHistory> PackageStatusHistories { get; set; }
 	}
 }

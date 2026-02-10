@@ -55,5 +55,13 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
             return (items, totalCount);
         }
-    }
+
+		public Task<List<string>> GetAllCompanyIdsAsync()
+		{
+			return _dbSet
+				.AsNoTracking()
+				.Select(c => c.CompanyId)
+				.ToListAsync();
+		}
+	}
 }

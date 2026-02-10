@@ -17,6 +17,8 @@ namespace ElecWasteCollection.Application.Model
         public string SmallCollectionPointsAddress { get; set; }
 
 		public PagedResultModel<ProductDetailModel> Products { get; set; }
+
+		public List<PackageStatusHistoryModel> StatusHistories { get; set; }
 	}
 	
 }

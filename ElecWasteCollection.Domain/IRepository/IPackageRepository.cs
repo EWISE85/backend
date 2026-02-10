@@ -21,5 +21,14 @@ namespace ElecWasteCollection.Domain.IRepository
 			int page,
 			int limit
 		);
+
+		Task<(List<Packages> Items, int TotalCount)> GetPagedPackagesWithDetailsByCompanyAsync(
+			string? companyId,
+			DateTime? startDate,
+			DateTime? endDate,
+			string? status,
+			int page,
+			int limit
+		);
 	}
 }
