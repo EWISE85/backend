@@ -4,6 +4,7 @@ using ElecWasteCollection.Application.Model.AssignPost;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.Timeouts;
 using System.Security.Claims;
+using ElecWasteCollection.Application.Model;
 
 namespace ElecWasteCollection.API.Controllers
 {
@@ -42,7 +43,6 @@ namespace ElecWasteCollection.API.Controllers
 
 
         [HttpPost("products")]
-        //[RequestTimeout(600000)]
         public  IActionResult AssignProducts([FromBody] AssignProductRequest request)
         {
             if (request == null) return BadRequest("Request không được để trống.");
@@ -77,30 +77,24 @@ namespace ElecWasteCollection.API.Controllers
             {
                 return BadRequest(new { Message = ex.Message });
             }
+        }
 
-            //         if (request == null) return BadRequest("Request cannot be null.");
-            //         if (request.ProductIds == null || !request.ProductIds.Any()) return BadRequest("ProductIds cannot be empty.");
-            //         if (!DateOnly.TryParse(request.WorkDate, out var workDate)) return BadRequest("WorkDate không hợp lệ. Hãy nhập yyyy-MM-dd.");
-            //var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            //if (string.IsNullOrEmpty(userId))
-            //{
-            //	return Unauthorized("Không xác định được danh tính người dùng.");
-            //}
+        [HttpPost("reject-assignment")]
+        public async Task<IActionResult> RejectProducts([FromBody] RejectProductRequest request)
+        {
+            if (request.ProductIds == null || !request.ProductIds.Any())
+            {
+                return BadRequest("Danh sách sản phẩm không được để trống.");
+            }
 
-            //try
-            //         {
-            //	_productAssignService.AssignProductsInBackground(request.ProductIds, workDate, userId);
-            //	return Accepted(new
-            //	{
-            //		Success = true,
-            //		Message = "Hệ thống đang xử lý phân bổ ngầm. Vui lòng đợi thông báo kết quả...",
-            //		IsProcessingInBackground = true
-            //	});
-            //}
-            //         catch (Exception ex)
-            //         {
-            //             return BadRequest(new { Message = ex.Message });
-            //         }
+            var result = await _productAssignService.RejectProductsAsync(request);
+
+            if (result.Success)
+            {
+                return Ok(result); 
+            }
+
+            return StatusCode(500, result); 
         }
 
         [HttpGet("products-by-date")]

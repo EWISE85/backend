@@ -20,7 +20,6 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<AttributeOptions> AttributeOptions { get; }
         IGenericRepository<Attributes> Attributes { get; }
         IGenericRepository<Account> Accounts { get; }
-
         IGenericRepository<CollectionGroups> CollectionGroupGeneric { get; }
         ICollectionGroupRepository CollectionGroups { get; }
         IGenericRepository<CategoryAttributes> CategoryAttributes { get; }
@@ -37,9 +36,9 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<SystemConfig> SystemConfig { get; }
         IGenericRepository<UserDeviceToken> UserDeviceTokens { get; }
         IGenericRepository<Notifications> Notifications { get; }
-
 		IGenericRepository<PackageStatusHistory> PackageStatusHistory { get; }
+        IGenericRepository<CompanyRecyclingCategory> CompanyRecyclingCategories { get; }
 
-		Task<int> SaveAsync();
+        Task<int> SaveAsync();
     }
 }
