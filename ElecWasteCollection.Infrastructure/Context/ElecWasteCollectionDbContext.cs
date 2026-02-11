@@ -46,6 +46,8 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<CompanyRecyclingCategory> CompanyRecyclingCategories { get; set; }
 
+		public DbSet<PackageStatusHistory> PackageStatusHistories { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
@@ -479,7 +481,17 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasConstraintName("FK_CompanyRecyclingCategory_Category");
 			});
 
-		
+			modelBuilder.Entity<PackageStatusHistory>(entity =>
+			{
+				entity.ToTable("PackageStatusHistory");
+				entity.HasKey(e => e.PackageStatusHistoryId);
+				entity.Property(e => e.PackageStatusHistoryId).ValueGeneratedOnAdd();
+				entity.Property(e => e.PackageId).IsRequired();
+				entity.HasOne(e => e.Packages)
+					  .WithMany(p => p.PackageStatusHistories)
+					  .HasForeignKey(e => e.PackageId)
+					  .HasConstraintName("FK_PackageStatusHistory_Packages");
+			});
 
 		}
 	}

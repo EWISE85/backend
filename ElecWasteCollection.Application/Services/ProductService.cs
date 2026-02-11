@@ -325,24 +325,28 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		public async Task<List<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId)
+		public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId, int page, int limit)
 		{
-			var products = await _productRepository.GetProductsBySenderIdWithDetailsAsync(userId);
+			// Gọi Repo lấy dữ liệu đã phân trang và tổng số item
+			var (products, totalItems) = await _productRepository.GetProductsBySenderIdWithDetailsAsync(userId, page, limit);
 
 			if (products == null || !products.Any())
 			{
-				return new List<ProductComeWarehouseDetailModel>();
+				return new PagedResultModel<ProductComeWarehouseDetailModel>(new List<ProductComeWarehouseDetailModel>(), page, limit, 0);
 			}
 
+			// Mapping sang DetailModel
 			var productDetails = products.Select(product =>
 			{
-				var post = product.Posts?
-					.FirstOrDefault(p => p.SenderId == userId);
+				// Lấy post liên quan đến user này (nếu có logic đặc thù)
+				var post = product.Posts?.FirstOrDefault(p => p.SenderId == userId);
 				return MapToDetailModel(product, post);
 			})
 			.Where(x => x != null)
 			.ToList();
-			return productDetails;
+
+			// Trả về kết quả bọc trong PagedResultModel
+			return new PagedResultModel<ProductComeWarehouseDetailModel>(productDetails, page, limit, totalItems);
 		}
 
 		public async Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId)
@@ -588,6 +592,17 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 			return new PagedResultModel<ProductDetailModel>(resultList, page, limit, totalCount);
+		}
+
+		public async Task<List<ProductComeWarehouseDetailModel>> GetProductNeedToPickUp(Guid userId, DateOnly pickUpDate)
+		{
+			var products = await _productRepository.GetProductsNeedToPickUpAsync(userId, pickUpDate);
+			var productDetails = products.Select(product =>
+			{
+				var post = product.Posts?.FirstOrDefault();
+				return MapToDetailModel(product, post);
+			});
+			return productDetails.ToList();
 		}
 	}
 }

@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
@@ -86,6 +87,46 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 			return points.PointTransactionId;
+		}
+
+		public async Task<bool> UpdatePointByProductId(Guid productId, double newPointValue, string reason = "Cập nhật lại loại sản phẩm/Brand")
+		{
+			var originalTrans = await _unitOfWork.PointTransactions.GetAsync(t => t.ProductId == productId && t.TransactionType == PointTransactionType.TICH_DIEM.ToString());
+
+			if (originalTrans == null) throw new AppException("Không tìm thấy giao dịch",404);
+
+			double delta = newPointValue - originalTrans.Point;
+			if (delta == 0) return true;
+
+			var adjustmentTrans = new PointTransactions
+			{
+				PointTransactionId = Guid.NewGuid(),
+				ProductId = productId,
+				UserId = originalTrans.UserId,
+				Desciption = $"[Điều chỉnh] {reason} cho sản phẩm. (Số điểm cũ: {originalTrans.Point} -> Mới: {newPointValue})",
+				Point = delta,
+				CreatedAt = DateTime.UtcNow,
+				TransactionType = PointTransactionType.DIEU_CHINH.ToString()
+			};
+			await _unitOfWork.PointTransactions.AddAsync(adjustmentTrans);
+
+			await _userPointService.UpdatePointForUser(originalTrans.UserId, delta);
+
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = originalTrans.UserId,
+				Title = "Thông báo điều chỉnh điểm",
+				Body = $"Số điểm cho sản phẩm của bạn đã được thay đổi. Lý do: {reason}. Chênh lệch: {(delta > 0 ? "+" : "")}{delta} điểm.",
+				Type = NotificationType.System.ToString(),
+				CreatedAt = DateTime.UtcNow,
+				IsRead = false,
+				EventId = Guid.Empty
+			};
+			await _unitOfWork.Notifications.AddAsync(notification);
+
+			 await _unitOfWork.SaveAsync() ;
+			return true;
 		}
 	}
 }

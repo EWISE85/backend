@@ -13,8 +13,10 @@ namespace ElecWasteCollection.Domain.Entities
         TICH_DIEM, // Thay cho Earned
 
         [Description("Đổi điểm")]
-        DOI_DIEM   // Thay cho Redeemed
-    }
+        DOI_DIEM,   // Thay cho Redeemed
+		[Description("Điều chỉnh điểm")]
+		DIEU_CHINH // Thêm loại này để xử lý sai sót
+	}
     public class PointTransactions
 	{
 		public Guid PointTransactionId { get; set; }

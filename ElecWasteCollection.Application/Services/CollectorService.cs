@@ -79,7 +79,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<CollectorResponse> GetById(Guid id)
 		{
-			var collector = await _collectorRepository.GetAsync(c => c.UserId == id);
+			var collector = await _collectorRepository.GetAsync(c => c.UserId == id, "SmallCollectionPoint");
 			if (collector == null) throw new AppException("Không tìm thấy người thu gom", 404);
 
 			var response = new CollectorResponse
@@ -89,7 +89,8 @@ namespace ElecWasteCollection.Application.Services
 				Email = collector.Email,
 				Phone = collector.Phone,
 				Avatar = collector.Avatar,
-				SmallCollectionPointId = collector.SmallCollectionPointId
+				SmallCollectionPointId = collector.SmallCollectionPointId,
+				SmallCollectionPointName = collector.SmallCollectionPoint != null ? collector.SmallCollectionPoint.Name : null
 			};
 
 			return response;
@@ -115,8 +116,9 @@ namespace ElecWasteCollection.Application.Services
                 Email = c.Email,
                 Phone = c.Phone,
                 Avatar = c.Avatar,
-                SmallCollectionPointId = c.SmallCollectionPointId
-            }).ToList();
+                SmallCollectionPointId = c.SmallCollectionPointId,
+				SmallCollectionPointName = c.SmallCollectionPointId != null ? c.SmallCollectionPoint.Name : null
+			}).ToList();
 
             return new PagedResult<CollectorResponse>
             {
@@ -129,7 +131,7 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<List<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId)
 		{
-			var collectores = await _collectorRepository.GetsAsync(c => c.SmallCollectionPointId == wareHouseId && c.Role == UserRole.Collector.ToString());
+			var collectores = await _collectorRepository.GetsAsync(c => c.SmallCollectionPointId == wareHouseId && c.Role == UserRole.Collector.ToString(), "SmallCollectionPoint");
 			var response = collectores.Select(c => new CollectorResponse
 			{
 				CollectorId = c.UserId,
@@ -137,7 +139,8 @@ namespace ElecWasteCollection.Application.Services
 				Email = c.Email,
 				Phone = c.Phone,
 				Avatar = c.Avatar,
-				SmallCollectionPointId = c.SmallCollectionPointId
+				SmallCollectionPointId = c.SmallCollectionPointId,
+				SmallCollectionPointName = c.SmallCollectionPointId != null ? c.SmallCollectionPoint.Name : null
 			}).ToList();
 			return response;
 		}
@@ -178,7 +181,8 @@ namespace ElecWasteCollection.Application.Services
 				Phone = c.Phone,
 				Avatar = c.Avatar,
 				SmallCollectionPointId = c.SmallCollectionPointId,
-            }).ToList();
+				SmallCollectionPointName = c.SmallCollectionPoint != null ? c.SmallCollectionPoint.Name : null
+			}).ToList();
 
 			return new PagedResultModel<CollectorResponse>(
 				resultList,

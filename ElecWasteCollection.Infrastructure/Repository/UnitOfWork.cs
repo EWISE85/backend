@@ -41,7 +41,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public IGenericRepository<Notifications> Notifications { get; }
         public IGenericRepository<CollectionGroups> CollectionGroupGeneric { get; }
         public ICollectionGroupRepository CollectionGroups { get; }
-        public UnitOfWork(ElecWasteCollectionDbContext context)
+
+		public IGenericRepository<PackageStatusHistory> PackageStatusHistory { get; }
+		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
 
@@ -74,8 +76,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			Notifications = new GenericRepository<Notifications>(_context);
             CollectionGroupGeneric = new GenericRepository<CollectionGroups>(_context);
             CollectionGroups = new CollectionGroupRepository(_context);
+			PackageStatusHistory = new GenericRepository<PackageStatusHistory>(_context);
 
-        }
+		}
 
 		public async Task<int> SaveAsync()
         {

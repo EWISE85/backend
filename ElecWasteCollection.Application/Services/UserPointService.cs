@@ -39,8 +39,6 @@ namespace ElecWasteCollection.Application.Services
 
 			if (userPoint == null)
 			{
-				// KHÔNG THROW EXCEPTION Ở ĐÂY
-				// Nếu chưa tìm thấy -> Tự động Tạo Mới (Insert)
 				var newUserPoint = new UserPoints
 				{
 					UserPointId = Guid.NewGuid(),
@@ -51,7 +49,10 @@ namespace ElecWasteCollection.Application.Services
 			}
 			else
 			{
-				// Nếu đã có -> Cộng dồn (Update)
+				if (userPoint.Points + pointToAdd < 0)
+				{
+					throw new AppException("User không đủ điểm để thực hiện điều chỉnh này", 400);
+				}
 				userPoint.Points += pointToAdd;
 				_unitOfWork.UserPoints.Update(userPoint);
 			}

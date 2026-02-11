@@ -20,6 +20,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			var query = _dbSet.AsNoTracking();
 			string collectorRole = UserRole.Collector.ToString();
 			query = query.Where(u => u.Role == collectorRole);
+			query = query.Include(u => u.SmallCollectionPoint);
 
 			if (!string.IsNullOrEmpty(status))
 			{

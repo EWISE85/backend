@@ -105,23 +105,26 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return await query.FirstOrDefaultAsync();
 		}
-		public async Task<List<Products>> GetProductsBySenderIdWithDetailsAsync(Guid senderId)
+		public async Task<(List<Products> Items, int TotalCount)> GetProductsBySenderIdWithDetailsAsync(Guid senderId, int page, int limit)
 		{
 			var query = _dbSet.AsNoTracking()
-				.AsSplitQuery();
-
-			query = query
+				.AsSplitQuery()
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Posts);
+				.Include(p => p.Posts)
+				.Where(p => p.UserId == senderId);
 
-			query = query.Where(p => p.UserId == senderId);
+			int totalCount = await query.CountAsync();
 
-			return await query
-				.OrderByDescending(p => p.CreateAt) 
+			var items = await query
+				.OrderByDescending(p => p.CreateAt)
+				.Skip((page - 1) * limit) 
+				.Take(limit)             
 				.ToListAsync();
+
+			return (items, totalCount);
 		}
 		public async Task<Products?> GetProductDetailWithAllRelationsAsync(Guid productId)
 		{
@@ -245,6 +248,21 @@ namespace ElecWasteCollection.Infrastructure.Repository
 						.Take(limit)
 						.ToListAsync();
 			return (items, totalCount);
+		}
+
+		public Task<List<Products>> GetProductsNeedToPickUpAsync(Guid userId, DateOnly pickUpDate)
+		{
+			var query = _dbSet.AsNoTracking()
+				.AsSplitQuery()
+				.Include(p => p.Category)
+				.Include(p => p.Brand)
+				.Include(p => p.ProductImages)
+				.Include(p => p.CollectionRoutes)
+					.ThenInclude(r => r.CollectionGroup)
+						.ThenInclude(g => g.Shifts)
+				.Where(p => p.UserId == userId && p.CollectionRoutes.Any(r => r.CollectionDate == pickUpDate)); 
+
+			return query.ToListAsync();
 		}
 	}
 }
