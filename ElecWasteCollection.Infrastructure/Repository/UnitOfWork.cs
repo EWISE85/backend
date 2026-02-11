@@ -40,8 +40,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public IGenericRepository<UserDeviceToken> UserDeviceTokens { get; }
 		public IGenericRepository<Notifications> Notifications { get; }
         public IGenericRepository<CollectionGroups> CollectionGroupGeneric { get; }
+        public IGenericRepository<CompanyRecyclingCategory> CompanyRecyclingCategories { get; }
         public ICollectionGroupRepository CollectionGroups { get; }
-
 		public IGenericRepository<PackageStatusHistory> PackageStatusHistory { get; }
 		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
@@ -76,7 +76,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			Notifications = new GenericRepository<Notifications>(_context);
             CollectionGroupGeneric = new GenericRepository<CollectionGroups>(_context);
             CollectionGroups = new CollectionGroupRepository(_context);
-			PackageStatusHistory = new GenericRepository<PackageStatusHistory>(_context);
+            PackageStatusHistory = new GenericRepository<PackageStatusHistory>(_context);
+            CompanyRecyclingCategories = new GenericRepository<CompanyRecyclingCategory>(_context);
 
 		}
 
