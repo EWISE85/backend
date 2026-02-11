@@ -597,7 +597,6 @@ namespace ElecWasteCollection.Application.Services
                     return response;
                 }
 
-                // --- PHẦN SỬA: TÌM TÀI XẾ TUẦN TỰ ---
                 var vehicleAssignments = staging
                     .GroupBy(s => new { s.VehicleId, s.Date })
                     .ToList();
@@ -635,7 +634,6 @@ namespace ElecWasteCollection.Application.Services
 
                         response.Logs.Add($"   + Đã lấy được {posts.Count} bài đăng hợp lệ.");
 
-                        // --- LOGIC TÀI XẾ MỚI: Gọi hàm tìm tài xế duy nhất cho từng vòng lặp xe ---
                         Shifts mainShift = await FindAndAssignUniqueShiftAsync(vehicleId, workDate, request.CollectionPointId);
 
                         if (mainShift == null)
@@ -646,7 +644,6 @@ namespace ElecWasteCollection.Application.Services
                             continue;
                         }
 
-                        // Xóa group cũ của đúng Shift này
                         var oldGroups = await _unitOfWork.CollectionGroupGeneric.GetAllAsync(g => g.Shift_Id == mainShift.ShiftId);
                         foreach (var g in oldGroups)
                         {
@@ -840,7 +837,6 @@ namespace ElecWasteCollection.Application.Services
         private async Task<Shifts> FindAndAssignUniqueShiftAsync(string vehicleId, DateOnly date, string pointId)
         {
             var vehicleIdStr = vehicleId.ToString();
-            // Chuyển pointId sang string để so sánh
             var pointIdStr = pointId.ToString();
 
             var existing = await _unitOfWork.Shifts.GetAsync(s =>
