@@ -68,10 +68,23 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					.ThenInclude(pr => pr.Category)
 				.Include(p => p.SmallCollectionPoints);
 
+			if (startDate.HasValue && startDate.Value.Kind == DateTimeKind.Unspecified)
+			{
+				startDate = DateTime.SpecifyKind(startDate.Value, DateTimeKind.Utc);
+			}
+
+			if (endDate.HasValue && endDate.Value.Kind == DateTimeKind.Unspecified)
+			{
+				endDate = DateTime.SpecifyKind(endDate.Value, DateTimeKind.Utc);
+			}
+
+			
+
 			if (!string.IsNullOrEmpty(companyId))
 			{
 				query = query.Where(p => p.SmallCollectionPoints.CompanyId == companyId);
 			}
+
 			if (startDate.HasValue)
 			{
 				query = query.Where(p => p.CreateAt >= startDate.Value);
@@ -81,14 +94,17 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			{
 				query = query.Where(p => p.CreateAt <= endDate.Value);
 			}
+
 			if (!string.IsNullOrEmpty(status))
 			{
 				var trimmedStatus = status.Trim().ToLower();
 				query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
 			}
+
 			var totalCount = await query.CountAsync();
+
 			var pagedPackages = await query
-				.OrderByDescending(p => p.CreateAt) 
+				.OrderByDescending(p => p.CreateAt)
 				.Skip((page - 1) * limit)
 				.Take(limit)
 				.ToListAsync();
