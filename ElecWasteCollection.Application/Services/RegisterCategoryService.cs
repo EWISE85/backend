@@ -61,6 +61,80 @@ namespace ElecWasteCollection.Application.Services
             }
         }
 
+        public async Task<RegisterCategoryResponse> UpdateRecyclingCategoriesAsync(RegisterCategoryRequest request)
+        {
+            if (request == null || string.IsNullOrWhiteSpace(request.CompanyId))
+                return new RegisterCategoryResponse { Success = false, Message = "Thông tin yêu cầu không hợp lệ." };
+
+            try
+            {
+                var company = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == request.CompanyId);
+                if (company == null)
+                    return new RegisterCategoryResponse { Success = false, Message = "Công ty không tồn tại." };
+
+                if (company.CompanyType != CompanyType.CTY_TAI_CHE.ToString())
+                    return new RegisterCategoryResponse { Success = false, Message = "Chỉ công ty tái chế mới có quyền cập nhật danh mục." };
+
+                var currentLinks = await _unitOfWork.CompanyRecyclingCategories.GetAllAsync(x => x.CompanyId == request.CompanyId);
+                if (currentLinks != null && currentLinks.Any())
+                {
+                    foreach (var link in currentLinks)
+                    {
+                        _unitOfWork.CompanyRecyclingCategories.Delete(link);
+                    }
+                }
+
+                if (request.CategoryIds != null && request.CategoryIds.Any())
+                {
+                    var uniqueCategoryIds = request.CategoryIds.Distinct().ToList();
+                    foreach (var catId in uniqueCategoryIds)
+                    {
+                        var categoryExists = await _unitOfWork.Categories.GetAsync(c => c.CategoryId == catId);
+                        if (categoryExists != null)
+                        {
+                            await _unitOfWork.CompanyRecyclingCategories.AddAsync(new CompanyRecyclingCategory
+                            {
+                                CompanyId = request.CompanyId,
+                                CategoryId = catId
+                            });
+                        }
+                    }
+                }
+
+                await _unitOfWork.SaveAsync();
+                return new RegisterCategoryResponse { Success = true, Message = "Cập nhật danh mục thành công.", TotalRegistered = request.CategoryIds?.Count ?? 0 };
+            }
+            catch (Exception ex)
+            {
+                return new RegisterCategoryResponse { Success = false, Message = $"Lỗi xử lý: {ex.Message}" };
+            }
+        }
+        public async Task<RegisterCategoryResponse> RemoveCategoryFromCompanyAsync(string companyId, Guid categoryId)
+        {
+            if (string.IsNullOrWhiteSpace(companyId) || categoryId == Guid.Empty)
+                return new RegisterCategoryResponse { Success = false, Message = "Dữ liệu không hợp lệ." };
+
+            try
+            {
+                var link = await _unitOfWork.CompanyRecyclingCategories.GetAsync(
+                    x => x.CompanyId == companyId && x.CategoryId == categoryId
+                );
+
+                if (link == null)
+                    return new RegisterCategoryResponse { Success = false, Message = "Liên kết không tồn tại hoặc đã bị xóa trước đó." };
+
+                _unitOfWork.CompanyRecyclingCategories.Delete(link);
+
+                await _unitOfWork.SaveAsync();
+
+                return new RegisterCategoryResponse { Success = true, Message = "Gỡ bỏ danh mục thành công." };
+            }
+            catch (Exception ex)
+            {
+                return new RegisterCategoryResponse { Success = false, Message = $"Lỗi khi xóa: {ex.Message}" };
+            }
+        }
+
         public async Task<CompanyRegisteredCategoryResponse> GetRegisteredCategoryIdsAsync(string companyId)
         {
             if (string.IsNullOrWhiteSpace(companyId))

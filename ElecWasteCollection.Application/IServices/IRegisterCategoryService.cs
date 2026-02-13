@@ -11,6 +11,8 @@ namespace ElecWasteCollection.Application.IServices
     {
         Task<RegisterCategoryResponse> RegisterRecyclingCategoriesAsync(RegisterCategoryRequest request);
         Task<CompanyRegisteredCategoryResponse> GetRegisteredCategoryIdsAsync(string companyId);
+        Task<RegisterCategoryResponse> UpdateRecyclingCategoriesAsync(RegisterCategoryRequest request);
+        Task<RegisterCategoryResponse> RemoveCategoryFromCompanyAsync(string companyId, Guid categoryId);
         Task<PagedResult<CompanyListResponse>> GetAllRecyclingCompaniesAsync(int pageNumber, int pageSize);
     }
 }
