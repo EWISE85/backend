@@ -156,5 +156,15 @@ namespace ElecWasteCollection.API.Controllers
 			var result = await _productService.GetProductNeedToPickUp(userId, pickUpDate);
 			return Ok(result);
 		}
+		[HttpPost("seeder-qrcode")]
+		public async Task<IActionResult> SeederQrCodeInProduct([FromBody] SeederQrCodeInProductRequest request)
+		{
+			var result = await _productService.SeederQrCodeInProduct(request.ProductIds, request.QrCodes);
+			if (!result)
+			{
+				return BadRequest("Failed to seeder QR codes in products.");
+			}
+			return Ok(new { message = "Seeder QR codes in products successfully." });
+		}
 	}
 }

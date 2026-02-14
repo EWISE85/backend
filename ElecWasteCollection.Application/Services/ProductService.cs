@@ -5,6 +5,7 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -603,6 +604,34 @@ namespace ElecWasteCollection.Application.Services
 				return MapToDetailModel(product, post);
 			});
 			return productDetails.ToList();
+		}
+
+		public async Task<bool> SeederQrCodeInProduct(List<Guid> productIds, List<string> QrCode)
+		{
+			int limit = Math.Min(productIds.Count, QrCode.Count);
+			for (int i = 0; i < limit; i++)
+			{
+				var currentId = productIds[i];
+				var currentQr = QrCode[i];
+
+				var product = await _productRepository.GetAsync(p => p.ProductId == currentId);
+
+				if (product != null)
+				{
+					product.QRCode = currentQr;
+					product.Status = ProductStatus.DA_THU_GOM.ToString();
+					_unitOfWork.Products.Update(product);
+					var route = await _unitOfWork.CollecctionRoutes.GetAsync(r => r.ProductId == currentId);
+					if (route == null) throw new AppException("Không tìm thấy tuyến thu gom liên quan đến sản phẩm", 404);
+					route.Status = CollectionRouteStatus.HOAN_THANH.ToString();
+					route.Actual_Time = TimeOnly.FromDateTime(DateTime.UtcNow);
+					_unitOfWork.CollecctionRoutes.Update(route);
+				}
+			}
+
+			await _unitOfWork.SaveAsync();
+
+			return true;
 		}
 	}
 }

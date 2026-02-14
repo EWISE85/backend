@@ -40,5 +40,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<PagedResultModel<ProductDetailModel>> GetProductsByPackageIdAsync(string packageId, int page, int limit);
 
 		Task<List<ProductComeWarehouseDetailModel>> GetProductNeedToPickUp(Guid userId, DateOnly pickUpDate);
+
+		Task<bool> SeederQrCodeInProduct(List<Guid> productIds, List<string> QrCode);
 	}
 }
