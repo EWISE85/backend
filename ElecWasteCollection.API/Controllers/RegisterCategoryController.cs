@@ -27,6 +27,20 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
+        [HttpPut("update-categories")]
+        public async Task<IActionResult> UpdateCategories([FromBody] RegisterCategoryRequest request)
+        {
+            var result = await _registerCategoryService.UpdateRecyclingCategoriesAsync(request);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpDelete("remove-category")]
+        public async Task<IActionResult> RemoveCategory([FromQuery] string companyId, [FromQuery] Guid categoryId)
+        {
+            var result = await _registerCategoryService.RemoveCategoryFromCompanyAsync(companyId, categoryId);
+            return result.Success ? Ok(result) : BadRequest(result);
+        }
+
         [HttpGet("{companyId}")]
         public async Task<IActionResult> GetRegistered(string companyId)
         {

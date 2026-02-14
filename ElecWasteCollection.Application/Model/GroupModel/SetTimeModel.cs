@@ -6,12 +6,6 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Model.GroupModel
 {
-    public class CollectionPointSetting
-    {
-        public string PointId { get; set; }
-        public double ServiceTimeMinutes { get; set; } 
-        public double AvgTravelTimeMinutes { get; set; } 
-    }
 
     public class UpdatePointSettingRequest
     {
@@ -27,12 +21,6 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public double ServiceTimeMinutes { get; set; }
         public double AvgTravelTimeMinutes { get; set; }
         public bool IsDefault { get; set; }
-    }
-    public class CompanySettingsResponse
-    {
-        public string CompanyId { get; set; }
-        public string CompanyName { get; set; }
-        public List<PointSettingDetailDto> Points { get; set; } = new List<PointSettingDetailDto>();
     }
 
     public class SinglePointSettingResponse : PointSettingDetailDto

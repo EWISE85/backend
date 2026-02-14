@@ -15,11 +15,6 @@ namespace ElecWasteCollection.Application.Model.GroupModel
     public class VehicleAssignmentDetail
     {
         public string VehicleId { get; set; }
-        public List<Guid> ProductIds { get; set; } = new List<Guid>();
-    }
-
-    public class AssignDayResponse
-    {
-        public bool Success { get; set; }
+        public List<string> ProductIds { get; set; }
     }
 }
