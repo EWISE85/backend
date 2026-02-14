@@ -10,6 +10,8 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.21.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
+    <PackageReference Include="QuestPDF" Version="2026.2.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
 	  <PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />

@@ -171,6 +171,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IPackageStatusHistoryRepository, PackageStatusHistoryRepository>();
 			builder.Services.AddScoped<IPackageStatusHistoryService, PackageStatusHistoryService>();
             builder.Services.AddScoped<IRegisterCategoryService, RegisterCategoryService>();
+            builder.Services.AddScoped<IPrintService, PrintService>();
 
             builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
