@@ -6,19 +6,6 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Model.GroupModel
 {
-    public class AutoGroupRequest
-    {
-        public int CollectionPointId { get; set; }
-        public bool SaveResult { get; set; } = true; 
-    }
-
-    public class AutoGroupResponse
-    {
-        public string CollectionPoint { get; set; } = "";
-        public bool SavedToDatabase { get; set; }
-        public List<GroupSummary> CreatedGroups { get; set; } = new();
-    }
-
     public class GroupSummary
     {
         public int GroupId { get; set; }
@@ -33,7 +20,6 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
         public List<RouteDetail> Routes { get; set; } = new();
     }
-
     public class RouteDetail
     {
         public int PickupOrder { get; set; }
