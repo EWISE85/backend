@@ -47,6 +47,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public string Address { get; set; }
         public double Weight { get; set; }
         public double Volume { get; set; }
+        public double DistanceKm { get; set; }
         public string DimensionText { get; set; }
         public string EstimatedArrival { get; set; }
         public string CategoryName { get; set; }
@@ -55,6 +56,8 @@ namespace ElecWasteCollection.Application.Model.GroupModel
     public class VehicleBucket
     {
         public Vehicles Vehicle { get; set; } = null!;
+        public double LastLat { get; set; }
+        public double LastLng { get; set; }
 
         public double CurrentKg { get; set; }
 
