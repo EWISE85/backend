@@ -16,5 +16,9 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> UpdateSystemConfig(UpdateSystemConfigModel model);
 		Task<bool> CreateNewConfigWithFileAsync(IFormFile file);
 		Task<(byte[] fileBytes, string fileName)> DownloadFileByConfigIdAsync(Guid id);
-	}
+		Task<PagedResult<WarehouseSpeedResponse>> GetWarehouseSpeedsPagedAsync(int page, int limit, string? searchTerm);
+		Task<bool> UpsertWarehouseSpeedAsync(WarehouseSpeedRequest model);
+		Task<bool> DeleteWarehouseSpeedAsync(string smallCollectionPointId);
+		Task<bool> UpdateWarehouseSpeedAsync(WarehouseSpeedRequest model);
+    }
 }

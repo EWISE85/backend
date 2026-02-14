@@ -46,7 +46,7 @@ namespace ElecWasteCollection.Application.Services
                 throw new Exception("Trạm thu gom chưa cấu hình tọa độ GPS. Không thể tính toán lộ trình VRP.");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync(c => c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
-            double avgSpeedKmH = GetConfigValue(allConfigs, point.CompanyId, point.SmallCollectionPointsId.ToString(), SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, 25);
+            double avgSpeedKmH = GetConfigValue(allConfigs, point.CompanyId, point.SmallCollectionPointsId.ToString(), SystemConfigKey.TRANSPORT_SPEED, 25);
             double serviceTimeMin = GetConfigValue(allConfigs, point.CompanyId, point.SmallCollectionPointsId.ToString(), SystemConfigKey.SERVICE_TIME_MINUTES, 10);
 
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync(v =>
@@ -283,6 +283,7 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request)
         {
+            // 1. Lấy thông tin trạm thu gom và công ty quản lý
             var point = await _unitOfWork.SmallCollectionPoints.GetAsync(
                 p => p.SmallCollectionPointsId == request.CollectionPointId,
                 includeProperties: "CollectionCompany")
@@ -295,6 +296,7 @@ namespace ElecWasteCollection.Application.Services
                 CreatedGroups = new List<GroupSummary>()
             };
 
+            // 2. Lấy dữ liệu đã điều phối từ bộ nhớ tạm (Staging)
             var stagingData = _inMemoryStaging.Where(s => s.PointId == request.CollectionPointId).ToList();
             if (!stagingData.Any())
                 throw new Exception("Không có dữ liệu điều phối trong bộ nhớ tạm.");
@@ -308,6 +310,7 @@ namespace ElecWasteCollection.Application.Services
                 var shift = await FindAndAssignUniqueShiftAsync(stage.VehicleId.ToString(), stage.Date, request.CollectionPointId);
                 if (shift == null) continue;
 
+                // 3. Khởi tạo thực thể Group
                 string cleanPlate = vehicle.Plate_Number.Replace("-", "").Replace(".", "").ToUpper();
                 var group = new CollectionGroups
                 {
@@ -331,12 +334,14 @@ namespace ElecWasteCollection.Application.Services
                 double totalWeight = 0;
                 double totalVolume = 0;
 
+                // Lưu Group trước để lấy ID cho các Route chi tiết
                 if (request.SaveResult)
                 {
                     await _unitOfWork.CollectionGroupGeneric.AddAsync(group);
                     await _unitOfWork.SaveAsync();
                 }
 
+                // 4. Xử lý từng điểm thu gom trong lộ trình
                 for (int i = 0; i < stage.ProductDetails.Count; i++)
                 {
                     var detail = stage.ProductDetails[i];
@@ -350,23 +355,25 @@ namespace ElecWasteCollection.Application.Services
                     totalWeight += metrics.weight;
                     totalVolume += metrics.volume;
 
+                    // Mapping dữ liệu cho kết quả trả về (Preview/Response)
                     groupSummary.Routes.Add(new RouteDetail
                     {
                         PickupOrder = i + 1,
                         ProductId = detail.ProductId,
                         UserName = prod?.User?.Name ?? "N/A",
                         Address = post?.Address ?? "N/A",
-                        BrandName = prod?.Brand?.Name ?? "N/A", 
-                        CategoryName = prod?.Category?.Name ?? "N/A", 
+                        BrandName = prod?.Brand?.Name ?? "N/A",
+                        CategoryName = prod?.Category?.Name ?? "N/A",
                         WeightKg = Math.Round(metrics.weight, 2),
                         VolumeM3 = Math.Round(metrics.volume, 4),
                         DimensionText = $"{Math.Round(metrics.length * 100)}x{Math.Round(metrics.width * 100)}x{Math.Round(metrics.height * 100)} cm",
-                        DistanceKm = detail.DistanceKm, 
-                        EstimatedArrival = detail.EstimatedArrival, 
+                        DistanceKm = detail.DistanceKm,
+                        EstimatedArrival = detail.EstimatedArrival,
                         Schedule = post?.ScheduleJson ?? "",
                         IsLate = false
                     });
 
+                    // 5. Lưu chi tiết lộ trình xuống Database
                     if (request.SaveResult)
                     {
                         if (prod != null)
@@ -375,11 +382,20 @@ namespace ElecWasteCollection.Application.Services
                             _unitOfWork.Products.Update(prod);
                         }
 
+                        // Parse EstimatedArrival (string "HH:mm") sang TimeOnly
+                        TimeOnly estimatedTimeValue = TimeOnly.MinValue;
+                        if (TimeOnly.TryParseExact(detail.EstimatedArrival, "HH:mm", out var parsedTime))
+                        {
+                            estimatedTimeValue = parsedTime;
+                        }
+
                         await _unitOfWork.CollecctionRoutes.AddAsync(new CollectionRoutes
                         {
                             CollectionGroupId = group.CollectionGroupId,
                             ProductId = detail.ProductId,
                             CollectionDate = stage.Date,
+                            DistanceKm = (double)detail.DistanceKm,
+                            EstimatedTime = estimatedTimeValue, 
                             Status = CollectionRouteStatus.CHUA_BAT_DAU.ToString()
                         });
                     }
@@ -393,6 +409,7 @@ namespace ElecWasteCollection.Application.Services
                 response.CreatedGroups.Add(groupSummary);
             }
 
+            // 6. Dọn dẹp bộ nhớ tạm sau khi đã lưu thành công
             if (request.SaveResult)
             {
                 lock (_lockObj)
