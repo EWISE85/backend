@@ -92,5 +92,54 @@ namespace ElecWasteCollection.API.Controllers
 				serverDate = DateOnly.FromDateTime(DateTime.Now)
 			});
 		}
-	}
+
+        [HttpGet("/Speed")]
+        public async Task<IActionResult> GetSpeeds([FromQuery] int page = 1, [FromQuery] int limit = 10, [FromQuery] string? search = null)
+        {
+            var result = await _systemConfigService.GetWarehouseSpeedsPagedAsync(page, limit, search);
+            return Ok(result);
+        }
+
+
+        [HttpPost("/Speed")]
+        public async Task<IActionResult> SetSpeed([FromBody] WarehouseSpeedRequest request)
+        {
+            if (request.SpeedKmh <= 0)
+            {
+                return BadRequest(new { Message = "Tốc độ phải lớn hơn 0" });
+            }
+
+            var result = await _systemConfigService.UpsertWarehouseSpeedAsync(request);
+            return Ok(new { Success = result, Message = "Cập nhật thành công" });
+        }
+        [HttpPut("/Speed")]
+        public async Task<IActionResult> UpdateSpeed([FromBody] WarehouseSpeedRequest request)
+        {
+            // Validation cơ bản
+            if (request.SpeedKmh <= 0)
+            {
+                return BadRequest(new { Message = "Tốc độ phải lớn hơn 0" });
+            }
+
+            var result = await _systemConfigService.UpdateWarehouseSpeedAsync(request);
+
+            if (result)
+            {
+                return Ok(new { Success = true, Message = "Cập nhật tốc độ thành công" });
+            }
+
+            return BadRequest(new { Success = false, Message = "Cập nhật thất bại" });
+        }
+
+
+        [HttpDelete("/Speed/{smallPointId}")]
+        public async Task<IActionResult> DeleteSpeed(string smallPointId)
+        {
+            var result = await _systemConfigService.DeleteWarehouseSpeedAsync(smallPointId);
+
+            if (!result) return NotFound(new { Message = "Không tìm thấy cấu hình" });
+
+            return Ok(new { Message = "Đã xóa cấu hình tốc độ thành công" });
+        }
+    }
 }
