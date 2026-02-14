@@ -125,37 +125,41 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<PagedResult<WarehouseSpeedResponse>> GetWarehouseSpeedsPagedAsync(int page, int limit, string? searchTerm)
         {
-            // 1. Chỉ lấy các config ĐANG_HOAT_DONG, đúng Key và dành cho Kho
-            var configs = await _systemConfigRepository.GetsAsync(c =>
-                c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString() &&
-                c.SmallCollectionPointId != null &&
-                c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
+            var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync();
 
-            // 2. Lọc dữ liệu theo từ khóa
+            var speedConfigs = await _systemConfigRepository.GetsAsync(c =>
+                c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString());
+
+            var query = allPoints.Select(point =>
+            {
+                var config = speedConfigs.FirstOrDefault(c => c.SmallCollectionPointId == point.SmallCollectionPointsId);
+                return new WarehouseSpeedResponse
+                {
+                    SystemConfigId = config?.SystemConfigId ?? Guid.Empty,
+                    Key = SystemConfigKey.TRANSPORT_SPEED.ToString(),
+                    Value = config?.Value ?? "0", 
+                    DisplayName = point.Name, 
+                    GroupName = config?.GroupName ?? "Transport",
+                    Status = config?.Status ?? "Active",
+                    SmallCollectionPointId = point.SmallCollectionPointsId
+                };
+            }).AsQueryable();
+
             if (!string.IsNullOrEmpty(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();
-                configs = configs.Where(c =>
+                query = query.Where(c =>
                     (c.DisplayName != null && c.DisplayName.ToLower().Contains(searchTerm)) ||
                     c.SmallCollectionPointId.ToLower().Contains(searchTerm)
-                ).ToList();
+                );
             }
 
-            // 3. Phân trang
-            var totalItems = configs.Count();
-            var pagedData = configs
+            var totalItems = query.Count();
+
+            var pagedData = query
                 .Skip((page - 1) * limit)
                 .Take(limit)
-                .Select(c => new WarehouseSpeedResponse
-                {
-                    SystemConfigId = c.SystemConfigId,
-                    Key = c.Key,
-                    Value = c.Value,
-                    DisplayName = c.DisplayName,
-                    GroupName = c.GroupName,
-                    Status = c.Status,
-                    SmallCollectionPointId = c.SmallCollectionPointId
-                }).ToList();
+                .ToList();
 
             return new PagedResult<WarehouseSpeedResponse>
             {
@@ -168,14 +172,12 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<bool> UpsertWarehouseSpeedAsync(WarehouseSpeedRequest model)
         {
-            // Tìm cấu hình hiện tại (bao gồm cả những cái đã bị ẩn để có thể Re-active nếu cần)
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString() &&
                 c.SmallCollectionPointId == model.SmallCollectionPointId);
 
             if (config != null)
             {
-                // Cập nhật giá trị và kích hoạt lại nếu đang ở trạng thái KHONG_HOAT_DONG
                 config.Value = model.SpeedKmh.ToString();
                 config.Status = SystemConfigStatus.DANG_HOAT_DONG.ToString();
                 config.DisplayName = SystemConfigKey.TRANSPORT_SPEED.ToString();
@@ -185,7 +187,6 @@ namespace ElecWasteCollection.Application.Services
             }
             else
             {
-                // Tạo mới hoàn toàn theo format dữ liệu mẫu
                 var newConfig = new SystemConfig
                 {
                     SystemConfigId = Guid.NewGuid(),

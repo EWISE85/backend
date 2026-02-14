@@ -20,11 +20,7 @@ namespace ElecWasteCollection.Application.Interfaces
         Task<object> GetRoutesByGroupAsync(int groupId, int page, int limit);
         Task<PagedCompanySettingsResponse> GetCompanySettingsPagedAsync(string companyId, int page, int limit);
 
-        public Task<object> GetUnassignedProductsAsync(
-    string collectionPointId,
-    DateOnly workDate,
-    int page,
-    int pageSize);
+        public Task<object> GetUnassignedProductsAsync( string collectionPointId, DateOnly workDate, int page, int pageSize);
     }
 
 }
