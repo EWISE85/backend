@@ -126,22 +126,24 @@ namespace ElecWasteCollection.Application.Services
         public async Task<PagedResult<WarehouseSpeedResponse>> GetWarehouseSpeedsPagedAsync(int page, int limit, string? searchTerm)
         {
             var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync();
-
             var speedConfigs = await _systemConfigRepository.GetsAsync(c =>
                 c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString());
 
             var query = allPoints.Select(point =>
             {
                 var config = speedConfigs.FirstOrDefault(c => c.SmallCollectionPointId == point.SmallCollectionPointsId);
+
                 return new WarehouseSpeedResponse
                 {
                     SystemConfigId = config?.SystemConfigId ?? Guid.Empty,
-                    Key = SystemConfigKey.TRANSPORT_SPEED.ToString(),
+                    SmallCollectionPointId = point.SmallCollectionPointsId,
+                    DisplayName = point.Name,
                     Value = config?.Value ?? "0", 
-                    DisplayName = point.Name, 
-                    GroupName = config?.GroupName ?? "Transport",
-                    Status = config?.Status ?? "Active",
-                    SmallCollectionPointId = point.SmallCollectionPointsId
+
+                    Status = config != null ? (config.Status ?? "Chưa cấu hình") : "Chưa cấu hình",
+
+                    Key = config?.Key ?? SystemConfigKey.TRANSPORT_SPEED.ToString(),
+                    GroupName = config?.GroupName ?? "PointConfig"
                 };
             }).AsQueryable();
 
@@ -150,16 +152,12 @@ namespace ElecWasteCollection.Application.Services
                 searchTerm = searchTerm.ToLower();
                 query = query.Where(c =>
                     (c.DisplayName != null && c.DisplayName.ToLower().Contains(searchTerm)) ||
-                    c.SmallCollectionPointId.ToLower().Contains(searchTerm)
+                    (c.SmallCollectionPointId != null && c.SmallCollectionPointId.ToLower().Contains(searchTerm))
                 );
             }
 
             var totalItems = query.Count();
-
-            var pagedData = query
-                .Skip((page - 1) * limit)
-                .Take(limit)
-                .ToList();
+            var pagedData = query.Skip((page - 1) * limit).Take(limit).ToList();
 
             return new PagedResult<WarehouseSpeedResponse>
             {
@@ -239,6 +237,33 @@ namespace ElecWasteCollection.Application.Services
 
             _unitOfWork.SystemConfig.Update(config);
             return await _unitOfWork.SaveAsync() > 0;
+        }
+
+        public async Task<WarehouseSpeedResponse> GetWarehouseSpeedByPointIdAsync(string smallPointId)
+        {
+            if (string.IsNullOrWhiteSpace(smallPointId))
+                throw new ArgumentException("ID điểm thu gom không được để trống.");
+
+            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(smallPointId);
+            if (point == null)
+                throw new KeyNotFoundException($"Không tìm thấy điểm thu gom với ID: {smallPointId}");
+
+            var config = await _systemConfigRepository.GetAsync(c =>
+                c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString() &&
+                c.SmallCollectionPointId == smallPointId);
+
+            return new WarehouseSpeedResponse
+            {
+                SystemConfigId = config?.SystemConfigId ?? Guid.Empty,
+                SmallCollectionPointId = point.SmallCollectionPointsId,
+                DisplayName = point.Name,
+                Value = config?.Value ?? "0",
+
+                Status = config != null ? (config.Status ?? "Chưa cấu hình") : "Chưa cấu hình",
+
+                Key = config?.Key ?? SystemConfigKey.TRANSPORT_SPEED.ToString(),
+                GroupName = config?.GroupName ?? "PointConfig"
+            };
         }
 
 
