@@ -100,6 +100,28 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("speed/{smallPointId}")]
+        public async Task<IActionResult> GetSpeedByPointId(string smallPointId)
+        {
+            try
+            {
+                var result = await _systemConfigService.GetWarehouseSpeedByPointIdAsync(smallPointId);
+                return Ok(result);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Lỗi hệ thống: " + ex.Message });
+            }
+        }
+
         [HttpPost("speed")]
         public async Task<IActionResult> SetSpeed([FromBody] WarehouseSpeedRequest request)
         {
@@ -111,6 +133,8 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _systemConfigService.UpsertWarehouseSpeedAsync(request);
             return Ok(new { Success = result, Message = "Cập nhật thành công" });
         }
+
+
 
         [HttpPut("speed")]
         public async Task<IActionResult> UpdateSpeed([FromBody] WarehouseSpeedRequest request)
@@ -129,6 +153,7 @@ namespace ElecWasteCollection.API.Controllers
 
             return BadRequest(new { Success = false, Message = "Cập nhật thất bại" });
         }
+
 
         [HttpDelete("speed/{smallPointId}")]
         public async Task<IActionResult> DeleteSpeed(string smallPointId)
