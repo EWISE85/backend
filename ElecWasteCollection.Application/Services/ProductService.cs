@@ -439,7 +439,7 @@ namespace ElecWasteCollection.Application.Services
 				RejectMessage = post?.RejectMessage ?? "Không có lý do",
 				QRCode = product.QRCode,
 				IsChecked = product.isChecked,
-				RealPoints = realPoint,
+				RealPoints = realPoints,
 				Collector = collector != null ? new CollectorResponse
 				{
 					CollectorId = collector.UserId,
