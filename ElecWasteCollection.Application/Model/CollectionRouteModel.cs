@@ -42,5 +42,7 @@ namespace ElecWasteCollection.Application.Model
 		public double DistanceKm { get; set; }
 
 		public string Status { get; set; }
+
+		public string? RejectMessage { get; set; }
 	}
 }

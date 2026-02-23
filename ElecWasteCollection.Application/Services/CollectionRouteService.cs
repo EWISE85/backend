@@ -308,7 +308,8 @@ namespace ElecWasteCollection.Application.Services
 				DistanceKm = route.DistanceKm,
 				LicensePlate = vehicle?.Plate_Number ?? "Chưa gán xe",
 
-				ConfirmImages = route.ConfirmImages ?? new List<string>()
+				ConfirmImages = route.ConfirmImages ?? new List<string>(),
+				RejectMessage = route.RejectMessage
 			};
 		}
 		public async Task<PagedResultModel<CollectionRouteModel>> GetPagedRoutes(RouteSearchQueryModel parameters)
