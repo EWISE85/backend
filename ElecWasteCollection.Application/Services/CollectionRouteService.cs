@@ -48,7 +48,7 @@ namespace ElecWasteCollection.Application.Services
 					StatusDescription = $"Hủy thu gom: {rejectMessage}"
 				};
 
-				await _productStatusHistoryRepository.AddAsync(history);
+				await _unitOfWork.ProductStatusHistory.AddAsync(history);
 				_unitOfWork.Products.Update(route.Product);
 			}
 			_unitOfWork.CollecctionRoutes.Update(route);
