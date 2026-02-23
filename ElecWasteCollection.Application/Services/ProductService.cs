@@ -355,9 +355,7 @@ namespace ElecWasteCollection.Application.Services
 			var product = await _productRepository.GetProductDetailWithAllRelationsAsync(productId);
 			if (product == null) return null;
 
-
 			var post = product.Posts?.FirstOrDefault();
-			//if (post == null) return null;
 
 			List<ProductValueDetailModel> productAttributes = new List<ProductValueDetailModel>();
 			if (product.ProductValues != null)
@@ -376,10 +374,9 @@ namespace ElecWasteCollection.Application.Services
 					productAttributes.Add(detail);
 				}
 			}
-
 			var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 			List<DailyTimeSlots> schedule = new List<DailyTimeSlots>();
-			if(post != null)
+			if (post != null)
 			{
 				if (!string.IsNullOrEmpty(post.ScheduleJson))
 				{
@@ -407,13 +404,30 @@ namespace ElecWasteCollection.Application.Services
 				SmallCollectionPointId = sender?.SmallCollectionPointId
 			};
 
+			double? realPoints = null;
+			string? changedPointMessage = null;
+
+			if (product.PointTransactions != null && product.PointTransactions.Any())
+			{
+				realPoints = product.PointTransactions.Sum(pt => pt.Point);
+
+				var latestTransaction = product.PointTransactions
+					.OrderByDescending(pt => pt.CreatedAt)
+					.FirstOrDefault();
+
+				if (latestTransaction != null && latestTransaction.TransactionType == PointTransactionType.DIEU_CHINH.ToString())
+				{
+					changedPointMessage = latestTransaction.Desciption;
+				}
+			}
+
 			return new ProductDetail
 			{
 				ProductId = product.ProductId,
 				CategoryId = product.CategoryId,
 				CategoryName = product.Category?.Name ?? "Không rõ",
 				BrandId = product.BrandId,
-				BrandName = product.Brand?.Name ?? "Không rõ", 
+				BrandName = product.Brand?.Name ?? "Không rõ",
 				Description = product.Description,
 				ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
@@ -426,14 +440,17 @@ namespace ElecWasteCollection.Application.Services
 				QRCode = product.QRCode,
 				IsChecked = product.isChecked,
 				RealPoints = realPoint,
-
-				Collector = collector != null ? new CollectorResponse { 
+				Collector = collector != null ? new CollectorResponse
+				{
 					CollectorId = collector.UserId,
-					Name = collector.Name 
+					Name = collector.Name
 				} : null,
 				PickUpDate = route?.CollectionDate,
 				EstimatedTime = route?.EstimatedTime,
-				CollectionRouterId = route?.CollectionRouteId
+				CollectionRouterId = route?.CollectionRouteId,
+				ChangedPointMessage = changedPointMessage,
+
+				
 			};
 		}
 

@@ -26,6 +26,8 @@ namespace ElecWasteCollection.Application.Model
 
 		public double? RealPoints { get; set; } // Điểm thực tế sau khi kiểm tra sản phẩm
 
+		public string? ChangedPointMessage { get; set; } // Lý do thay đổi điểm (nếu có)	
+
 		public string? RejectMessage { get; set; } // Lý do hủy sản phẩm (nếu có)
 		public UserResponse Sender { get; set; }
 

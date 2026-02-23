@@ -103,7 +103,7 @@ namespace ElecWasteCollection.Application.Services
 				PointTransactionId = Guid.NewGuid(),
 				ProductId = productId,
 				UserId = originalTrans.UserId,
-				Desciption = $"[Điều chỉnh] {reason} cho sản phẩm. (Số điểm cũ: {originalTrans.Point} -> Mới: {newPointValue})",
+				Desciption = $"Do {reason} của sản phẩm. (Số điểm cũ: {originalTrans.Point} -> Mới: {newPointValue})",
 				Point = delta,
 				CreatedAt = DateTime.UtcNow,
 				TransactionType = PointTransactionType.DIEU_CHINH.ToString()
