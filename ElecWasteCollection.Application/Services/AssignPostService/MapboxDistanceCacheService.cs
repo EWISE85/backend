@@ -61,70 +61,100 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var result = new Dictionary<string, double>();
             if (destinations == null || !destinations.Any()) return result;
 
-            var chunks = destinations.Chunk(24); // Mapbox giới hạn tối đa 25 điểm trên 1 request
+            // Mapbox Matrix API giới hạn tối đa 25 điểm tọa độ trong 1 request
+            var chunks = destinations.Chunk(24);
 
             foreach (var chunk in chunks)
             {
-                // 1. CHUẨN HÓA DỮ LIỆU TỌA ĐỘ (Fix 422)
-                string originStr = $"{originLng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)},{originLat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)}";
-                var destCoords = chunk.Select(d =>
-                    $"{d.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)},{d.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)}");
-
-                var coordinateString = $"{originStr};{string.Join(";", destCoords)}";
-                var destIndices = string.Join(";", Enumerable.Range(1, chunk.Length));
-
-                var url = $"https://api.mapbox.com/directions-matrix/v1/mapbox/driving/{coordinateString}" +
-                          $"?sources=0&destinations={destIndices}&annotations=distance&access_token={_accessToken.Trim()}";
-
-                // 2. CƠ CHẾ RETRY & BACKOFF (Fix 429)
-                int maxRetries = 3;
-                int delayMs = 1000;
-
-                for (int retry = 0; retry <= maxRetries; retry++)
+                try
                 {
-                    try
-                    {
-                        var response = await _httpClient.GetAsync(url);
+                    // 1. CHUẨN HÓA TỌA ĐỘ (Lng,Lat + F6 + InvariantCulture)
+                    // Phải dùng .ToString("F6") và InvariantCulture để tránh lỗi dấu phẩy ở máy chủ VN
+                    string originStr = $"{originLng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)},{originLat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)}";
 
-                        if (response.IsSuccessStatusCode)
+                    var destCoords = chunk.Select(d =>
+                        $"{d.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)},{d.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)}");
+
+                    // Nối chuỗi tọa độ: Origin đứng đầu (index 0), sau đó là các Destination
+                    var coordinateString = $"{originStr};{string.Join(";", destCoords)}";
+
+                    // sources=0 trỏ vào originStr
+                    // destinations=1;2;3... trỏ vào danh sách destCoords
+                    var destIndices = string.Join(";", Enumerable.Range(1, chunk.Length));
+
+                    // 2. CẤU HÌNH RADIUSES (Rất quan trọng để fix 422)
+                    // "unlimited" ép Mapbox tìm con đường gần nhất bất kể tọa độ User nằm sâu trong nhà/hẻm
+                    // Số lượng phần tử trong radiuses phải bằng tổng số tọa độ (Nguồn + Các Đích)
+                    var radiusList = string.Join(";", Enumerable.Repeat("unlimited", chunk.Length + 1));
+
+                    // 3. XÂY DỰNG URL CHUẨN (Profile Walking cho xe máy/hẻm nhỏ)
+                    var url = $"https://api.mapbox.com/directions-matrix/v1/mapbox/walking/{coordinateString}" +
+                              $"?sources=0" +
+                              $"&destinations={destIndices}" +
+                              $"&radiuses={radiusList}" +
+                              $"&annotations=distance" +
+                              $"&access_token={_accessToken.Trim()}";
+
+                    // --- CƠ CHẾ RETRY THÔNG MINH ---
+                    int maxRetries = 3;
+                    int delayMs = 1000;
+
+                    for (int retry = 0; retry <= maxRetries; retry++)
+                    {
+                        try
                         {
-                            var data = await response.Content.ReadFromJsonAsync<MapboxMatrixResponse>();
-                            if (data?.Distances != null && data.Distances.Length > 0)
+                            var response = await _httpClient.GetAsync(url);
+
+                            if (response.IsSuccessStatusCode)
                             {
-                                var distancesFromOrigin = data.Distances[0];
-                                for (int i = 0; i < chunk.Length; i++)
+                                var data = await response.Content.ReadFromJsonAsync<MapboxMatrixResponse>();
+                                if (data?.Distances != null && data.Distances.Length > 0)
                                 {
-                                    if (distancesFromOrigin[i].HasValue)
-                                        result[chunk[i].SmallCollectionPointsId] = distancesFromOrigin[i].Value / 1000.0;
+                                    // Mapbox trả về mảng 2 chiều [nguồn][đích], ta lấy hàng đầu tiên (index 0)
+                                    var distancesFromOrigin = data.Distances[0];
+                                    for (int i = 0; i < chunk.Length; i++)
+                                    {
+                                        if (distancesFromOrigin[i].HasValue)
+                                        {
+                                            // Mapbox trả về mét -> Đổi sang Km
+                                            result[chunk[i].SmallCollectionPointsId] = distancesFromOrigin[i].Value / 1000.0;
+                                        }
+                                    }
+                                }
+                                break; // Thoát vòng lặp retry nếu thành công
+                            }
+
+                            // Xử lý lỗi 429 (Rate Limit)
+                            if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+                            {
+                                if (retry < maxRetries)
+                                {
+                                    Console.WriteLine($"[Mapbox 429] Quá tải. Đang đợi {delayMs}ms để thử lại lần {retry + 1}...");
+                                    await Task.Delay(delayMs);
+                                    delayMs *= 2;
+                                    continue;
                                 }
                             }
-                            break; // Thành công -> Thoát vòng lặp retry cho chunk này
-                        }
 
-                        if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests) // Lỗi 429
-                        {
-                            if (retry < maxRetries)
+                            // Xử lý lỗi 422 (Tọa độ lỗi Snap - dù đã dùng unlimited)
+                            if (response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity)
                             {
-                                Console.WriteLine($"[Mapbox 429] Quá tải. Đang đợi {delayMs}ms để thử lại lần {retry + 1}...");
-                                await Task.Delay(delayMs);
-                                delayMs *= 2; // Tăng gấp đôi thời gian chờ
-                                continue;
+                                Console.WriteLine($"[Mapbox 422] Bỏ qua chunk này do không thể tìm đường đi bộ.");
+                                break;
                             }
-                        }
 
-                        if (response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity) // Lỗi 422
+                            break; // Các lỗi khác không cần retry
+                        }
+                        catch (Exception ex)
                         {
-                            Console.WriteLine($"[Mapbox 422] Tọa độ không hợp lệ. Bỏ qua chunk này.");
-                            break; // 422 là lỗi dữ liệu, retry không giải quyết được
+                            if (retry == maxRetries) Console.WriteLine($"[Mapbox Exception] Post {chunk[0].SmallCollectionPointsId}: {ex.Message}");
+                            else await Task.Delay(delayMs);
                         }
-
-                        break; // Các lỗi khác không xử lý retry
                     }
-                    catch (Exception ex)
-                    {
-                        if (retry == maxRetries) Console.WriteLine($"[Mapbox Error]: {ex.Message}");
-                        else await Task.Delay(delayMs);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[Critical Mapbox Error] Chunk processing failed: {ex.Message}");
                 }
             }
             return result;
