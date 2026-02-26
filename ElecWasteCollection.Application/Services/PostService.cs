@@ -204,7 +204,7 @@ namespace ElecWasteCollection.Application.Services
                     var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
                     bool canHandle = rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootCateId) ?? false;
 
-                    if (!canHandle) continue; 
+                    if (!canHandle) continue;
 
                     double hvDist = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, userLat, userLng);
                     double radius = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
@@ -218,15 +218,25 @@ namespace ElecWasteCollection.Application.Services
 
             if (!validCandidates.Any()) return false;
 
-           
             var roadDistances = await _distanceCache.GetMatrixDistancesAsync(userLat, userLng, validCandidates);
 
             foreach (var point in validCandidates)
             {
+                double maxRoad = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
+                double hvDist = GeoHelper.DistanceKm(point.Latitude, point.Longitude, userLat, userLng);
+
                 if (roadDistances.TryGetValue(point.SmallCollectionPointsId, out double roadKm))
                 {
-                    double maxRoad = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
-                    if (roadKm <= maxRoad) return true; 
+                    if (roadKm <= maxRoad) return true;
+                }
+                else
+                {
+
+                    if (hvDist <= maxRoad)
+                    {
+                        Console.WriteLine($"[AddPost Fallback] Mapbox Error. Approved by Haversine: {hvDist}km for Point: {point.SmallCollectionPointsId}");
+                        return true;
+                    }
                 }
             }
 
