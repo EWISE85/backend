@@ -68,26 +68,17 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             {
                 try
                 {
-                    // 1. CHUẨN HÓA TỌA ĐỘ (Lng,Lat + F6 + InvariantCulture)
-                    // Phải dùng .ToString("F6") và InvariantCulture để tránh lỗi dấu phẩy ở máy chủ VN
                     string originStr = $"{originLng.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)},{originLat.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)}";
 
                     var destCoords = chunk.Select(d =>
                         $"{d.Longitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)},{d.Latitude.ToString("F6", System.Globalization.CultureInfo.InvariantCulture)}");
 
-                    // Nối chuỗi tọa độ: Origin đứng đầu (index 0), sau đó là các Destination
                     var coordinateString = $"{originStr};{string.Join(";", destCoords)}";
 
-                    // sources=0 trỏ vào originStr
-                    // destinations=1;2;3... trỏ vào danh sách destCoords
                     var destIndices = string.Join(";", Enumerable.Range(1, chunk.Length));
 
-                    // 2. CẤU HÌNH RADIUSES (Rất quan trọng để fix 422)
-                    // "unlimited" ép Mapbox tìm con đường gần nhất bất kể tọa độ User nằm sâu trong nhà/hẻm
-                    // Số lượng phần tử trong radiuses phải bằng tổng số tọa độ (Nguồn + Các Đích)
                     var radiusList = string.Join(";", Enumerable.Repeat("unlimited", chunk.Length + 1));
 
-                    // 3. XÂY DỰNG URL CHUẨN (Profile Walking cho xe máy/hẻm nhỏ)
                     var url = $"https://api.mapbox.com/directions-matrix/v1/mapbox/walking/{coordinateString}" +
                               $"?sources=0" +
                               $"&destinations={destIndices}" +
@@ -110,21 +101,18 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                                 var data = await response.Content.ReadFromJsonAsync<MapboxMatrixResponse>();
                                 if (data?.Distances != null && data.Distances.Length > 0)
                                 {
-                                    // Mapbox trả về mảng 2 chiều [nguồn][đích], ta lấy hàng đầu tiên (index 0)
                                     var distancesFromOrigin = data.Distances[0];
                                     for (int i = 0; i < chunk.Length; i++)
                                     {
                                         if (distancesFromOrigin[i].HasValue)
                                         {
-                                            // Mapbox trả về mét -> Đổi sang Km
                                             result[chunk[i].SmallCollectionPointsId] = distancesFromOrigin[i].Value / 1000.0;
                                         }
                                     }
                                 }
-                                break; // Thoát vòng lặp retry nếu thành công
+                                break; 
                             }
 
-                            // Xử lý lỗi 429 (Rate Limit)
                             if (response.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
                             {
                                 if (retry < maxRetries)
@@ -139,11 +127,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             // Xử lý lỗi 422 (Tọa độ lỗi Snap - dù đã dùng unlimited)
                             if (response.StatusCode == System.Net.HttpStatusCode.UnprocessableEntity)
                             {
-                                Console.WriteLine($"[Mapbox 422] Bỏ qua chunk này do không thể tìm đường đi bộ.");
-                                break;
+                                Console.WriteLine($"[Mapbox 422] Bỏ qua chunk này do không thể tìm đường đi.");
+                                continue;
                             }
 
-                            break; // Các lỗi khác không cần retry
+                            break; 
                         }
                         catch (Exception ex)
                         {
