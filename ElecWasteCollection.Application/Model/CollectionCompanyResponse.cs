@@ -13,6 +13,7 @@ namespace ElecWasteCollection.Application.Model
 		public string CompanyEmail { get; set; } = null!;
 		public string Phone { get; set; } = null!;
 		public string City { get; set; } = null!;
+		public List<SmallCollectionPointsResponse> Warehouses { get; set; } = new List<SmallCollectionPointsResponse>();
 		public string Status { get; set; } = null!;
     }
 }

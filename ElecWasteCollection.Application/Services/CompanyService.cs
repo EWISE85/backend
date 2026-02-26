@@ -153,6 +153,8 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var company = await _collectionCompanyRepository.GetAsync(c => c.CompanyId == collectionCompanyId);
 			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
+			var warehousesEntity = await _unitOfWork.SmallCollectionPoints.GetAllAsync(s => s.CompanyId == company.CompanyId && s.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString());
+			if (warehousesEntity == null) warehousesEntity = new List<SmallCollectionPoints>();
 			var response = new CollectionCompanyResponse
 			{
 				Id = company.CompanyId,
@@ -160,8 +162,19 @@ namespace ElecWasteCollection.Application.Services
 				CompanyEmail = company.CompanyEmail,
 				Phone = company.Phone,
 				City = company.Address,
-                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(company.Status)
-            };
+				Warehouses = warehousesEntity.Select(w => new SmallCollectionPointsResponse
+				{
+					Address = w.Address,
+					Id = w.SmallCollectionPointsId,
+					Name = w.Name,
+					Latitude = w.Latitude,
+					Longitude = w.Longitude,
+					OpenTime = w.OpenTime,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<SmallCollectionPointStatus>(w.Status)
+				}).ToList(),
+
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(company.Status)
+			};
 			return response;
 		}
 
