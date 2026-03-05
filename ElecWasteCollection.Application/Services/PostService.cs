@@ -32,8 +32,10 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IAttributeRepository _attributeRepository;
 		private readonly IAttributeOptionRepository _attributeOptionRepository;
         private readonly IMapboxDistanceCacheService _distanceCache;
+		private readonly IUserAddressRepository _userAddressRepository;
+		private readonly ICategoryAttributeRepsitory _categoryAttributeRepsitory;
 
-        public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache)
+		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache, IUserAddressRepository userAddressRepository, ICategoryAttributeRepsitory categoryAttributeRepsitory)
 		{
 			_profanityChecker = profanityChecker;
 			_productService = productService;
@@ -48,13 +50,15 @@ namespace ElecWasteCollection.Application.Services
 			_attributeRepository = attributeRepository;
 			_attributeOptionRepository = attributeOptionRepository;
             _distanceCache = distanceCache;
-        }
+			_userAddressRepository = userAddressRepository;
+			_categoryAttributeRepsitory = categoryAttributeRepsitory;
+		}
 
         public async Task<bool> AddPost(CreatePostModel createPostRequest)
         {
             if (createPostRequest.Product == null) throw new AppException("Product đang trống", 400);
 
-            var userLocation = await _unitOfWork.UserAddresses.GetAsync(
+            var userLocation = await _userAddressRepository.GetAsync(
                 a => a.UserId == createPostRequest.SenderId && a.Address == createPostRequest.Address);
 
             if (userLocation == null || !userLocation.Iat.HasValue || !userLocation.Ing.HasValue)
@@ -75,7 +79,7 @@ namespace ElecWasteCollection.Application.Services
             DateTime transactionTimeUtc = DateTime.UtcNow;
             try
             {
-                var validationRules = await _unitOfWork.CategoryAttributes.GetsAsync(
+                var validationRules = await _categoryAttributeRepsitory.GetsAsync(
                                         x => x.CategoryId == createPostRequest.Product.SubCategoryId,
                                         includeProperties: "Attribute");
 
