@@ -54,7 +54,6 @@ namespace ElecWasteCollection.Application.Services
 				if (product != null)
 				{
 					await _productService.AddPackageIdToProductByQrCode(product.QrCode, newPackage.PackageId);
-					await _productService.UpdateProductStatusByQrCode(product.QrCode, ProductStatus.DA_DONG_THUNG.ToString());
 					var newHistory = new ProductStatusHistory
 					{
 						ProductStatusHistoryId = Guid.NewGuid(),
@@ -292,9 +291,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				if (!newQrCodesSet.Contains(existingProduct.QrCode))
 				{
-					await _productService.AddPackageIdToProductByQrCode(existingProduct.QrCode, null);
-
-					await _productService.UpdateProductStatusByQrCode(existingProduct.QrCode, ProductStatus.NHAP_KHO.ToString());
+					await _productService.RemovePackageIdFromProductByQrCode(existingProduct.QrCode);
 
 					var oldHistory = await _productStatusHistoryRepository.GetAsync(h => h.ProductId == existingProduct.ProductId && h.Status == ProductStatus.DA_DONG_THUNG.ToString());
 					if (oldHistory != null)
@@ -311,8 +308,6 @@ namespace ElecWasteCollection.Application.Services
 				if (product != null)
 				{
 					await _productService.AddPackageIdToProductByQrCode(product.QrCode, package.PackageId);
-
-					await _productService.UpdateProductStatusByQrCode(product.QrCode, ProductStatus.DA_DONG_THUNG.ToString());
 				}
 			}
 			_unitOfWork.Packages.Update(package);
