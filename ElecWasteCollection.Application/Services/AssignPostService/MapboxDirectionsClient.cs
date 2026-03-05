@@ -60,7 +60,7 @@ public class MapboxDirectionsClient
     public class MapboxRoute
     {
         [JsonPropertyName("distance")]
-        public double Distance { get; set; } // Mapbox trả về mét
+        public double Distance { get; set; } 
 
         [JsonPropertyName("duration")]
         public double Duration { get; set; }
