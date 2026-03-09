@@ -2,6 +2,7 @@
 using ElecWasteCollection.API.Helper;
 using ElecWasteCollection.API.Hubs;
 using ElecWasteCollection.API.MiddlewareCustom;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.Interfaces;
 
 //using ElecWasteCollection.Application.Interfaces;
@@ -173,6 +174,8 @@ namespace ElecWasteCollection.API
             builder.Services.AddScoped<IRegisterCategoryService, RegisterCategoryService>();
             builder.Services.AddScoped<IPrintService, PrintService>();
 			builder.Services.AddScoped<IVehiAndSCPManagementService, VehiAndSCPManagementService>();
+            builder.Services.AddScoped<ICapacityService, CapacityService>();
+            builder.Services.AddScoped<CapacityHelper>();
 
             builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
