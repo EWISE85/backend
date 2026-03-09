@@ -18,12 +18,14 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<bool> AddPackageIdToProductByQrCode(string qrCode, string? packageId);
 
+		Task<bool> RemovePackageIdFromProductByQrCode(string qrCode);
+
 		Task<List<ProductDetailModel>> GetProductsByPackageIdAsync(string packageId);
 
 		Task<bool> UpdateProductStatusByQrCode(string productQrCode, string status);
 		Task<bool> UpdateProductStatusByProductId(Guid productId, string status);
 
-		Task<bool> UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status, UserReceivePointFromCollectionPointModel model);
+		Task<bool> UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status);
 
 		Task<List<ProductComeWarehouseDetailModel>> ProductsComeWarehouseByDateAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 

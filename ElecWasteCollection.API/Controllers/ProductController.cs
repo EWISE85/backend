@@ -38,7 +38,7 @@ namespace ElecWasteCollection.API.Controllers
 				Point = request.Point
 			};
 
-			var result = await _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode, NHAP_KHO, model);
+			var result = await _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode, NHAP_KHO);
 
 			if (!result)
 			{
