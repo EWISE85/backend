@@ -1,4 +1,5 @@
 ﻿using System.ComponentModel;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ElecWasteCollection.Domain.Entities
 {
@@ -22,8 +23,13 @@ namespace ElecWasteCollection.Domain.Entities
         public string CompanyId { get; set; }
 
         public string OpenTime { get; set; } = null!;
-
-		public DateTime Created_At { get; set; }
+        public double MaxCapacity { get; set; }
+        public double CurrentCapacity { get; set; }
+        [NotMapped]
+        public double AvailableCapacity => MaxCapacity - CurrentCapacity;
+        [NotMapped]
+        public double FillPercentage => MaxCapacity > 0 ? (CurrentCapacity / MaxCapacity) * 100 : 0;
+        public DateTime Created_At { get; set; }
         public DateTime Updated_At { get; set; }
 
         public Company CollectionCompany { get; set; } = null!;
