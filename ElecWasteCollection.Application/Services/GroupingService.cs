@@ -307,7 +307,7 @@ namespace ElecWasteCollection.Application.Services
 
                 if (!TryAssignToBucket(item, buckets, point, avgSpeedKmH, serviceTimeMin))
                 {
-                    foreach (var p in item.GroupedPosts)
+                    foreach (var p in item.GroupedDetails)
                     {
                         unAssigned.Add(new UnAssignProductPreview
                         {
