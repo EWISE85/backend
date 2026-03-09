@@ -12,7 +12,7 @@ namespace ElecWasteCollection.Application.Model.AssignPost
         public string CompanyId { get; set; }
         public string SmallPointId { get; set; }
         public double HaversineKm { get; set; }
-
+        public double ProductVolume { get; set; }
         public double RoadKm { get; set; }
     }
 }

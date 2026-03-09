@@ -1,4 +1,5 @@
-﻿using Google.OrTools.ConstraintSolver;
+﻿using ElecWasteCollection.Application.Model.GroupModel;
+using Google.OrTools.ConstraintSolver;
 using System;
 using System.Collections.Generic;
 
@@ -163,5 +164,6 @@ namespace ElecWasteCollection.Application.Helpers
         public TimeOnly End { get; set; }
         public double Lat { get; set; }
         public double Lng { get; set; }
+        public List<PreAssignProduct> Tag { get; set; } = new List<PreAssignProduct>();
     }
 }
