@@ -117,9 +117,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(packages);
 		}
 		[HttpPut("delivery")]
-		public async Task<IActionResult> UpdatePackageStatusToDelivering([FromBody] UpdatePackageDeliveryRequest packageIds)
+		public async Task<IActionResult> UpdatePackageStatusToDelivering([FromBody] UpdatePackageDeliveryRequest request)
 		{
-			var result = await _packageService.UpdatePackageStatusDelivery(packageIds.PackageIds, DANG_VAN_CHUYEN);
+			var result = await _packageService.UpdatePackageStatusDelivery(request.DeliveryQrCode, request.PackageIds, DANG_VAN_CHUYEN);
 			if (!result)
 			{
 				return BadRequest("Failed to update package status.");
@@ -152,6 +152,20 @@ namespace ElecWasteCollection.API.Controllers
 			var packages = await _packageService.GetPackagesByCompanyQuery(model);
 			return Ok(packages);
 		}
+		[HttpGet("delivery-tracking/{qrCode}")]
+		public async Task<IActionResult> GetPackagesByDeliveryQrCode(
+	[FromRoute] string qrCode,
+	[FromQuery] int page = 1,
+	[FromQuery] int limit = 10)
+		{
+			if (string.IsNullOrWhiteSpace(qrCode))
+			{
+				return BadRequest("Delivery QR Code is required.");
+			}
 
+			var result = await _packageService.GetPackagesByDeliveryQrCodeAsync(qrCode, page, limit);
+
+			return Ok(result);
+		}
 	}
 }

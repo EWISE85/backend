@@ -39,6 +39,10 @@ namespace ElecWasteCollection.Application.Services
 
 			if (userPoint == null)
 			{
+				if (pointToAdd < 0)
+				{
+					throw new AppException("Không thể trừ điểm vì người dùng chưa có ví điểm", 400);
+				}
 				var newUserPoint = new UserPoints
 				{
 					UserPointId = Guid.NewGuid(),

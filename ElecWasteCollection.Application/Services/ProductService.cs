@@ -656,5 +656,34 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
+		public async Task<bool> RevertProductStatusByQrCodeAndMinusUserPoint(string productQrCode)
+		{
+			var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == productQrCode);
+			if (product == null) throw new AppException("Không tìm thấy sản phẩm với mã QR đã cho", 404);
+
+			var histories = await _unitOfWork.ProductStatusHistory
+				.GetsAsync(h => h.ProductId == product.ProductId); 
+
+			var orderedHistories = histories.OrderByDescending(h => h.ChangedAt).ToList();
+
+			if (orderedHistories.Any())
+			{
+				var currentHistory = orderedHistories.First();
+				_unitOfWork.ProductStatusHistory.Delete(currentHistory);
+			}
+
+			
+
+			product.Status = ProductStatus.DA_THU_GOM.ToString();
+			_unitOfWork.Products.Update(product);
+
+			// 3. Gọi service để thu hồi điểm của User
+			await _pointTransactionService.RevertPointFromCollectionPoint(product.ProductId, product.UserId, false);
+
+			// 4. Lưu tất cả thay đổi
+			await _unitOfWork.SaveAsync();
+
+			return true;
+		}
 	}
 }

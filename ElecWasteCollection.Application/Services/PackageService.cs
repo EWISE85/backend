@@ -4,6 +4,7 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -339,7 +340,7 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		public async Task<bool> UpdatePackageStatusDelivery(List<string> packageIds, string status)
+		public async Task<bool> UpdatePackageStatusDelivery(string deliveryQrCode, List<string> packageIds, string status)
 		{
 			if (packageIds == null)
 			{
@@ -352,8 +353,8 @@ namespace ElecWasteCollection.Application.Services
 			string statusString = statusEnum.ToString();
 			string productStatusString = productStatusEnum.ToString();
 
-			bool hasAnySuccess = false; 
-
+			bool hasAnySuccess = false;
+			var handoverTime = DateTime.UtcNow;
 			foreach (var pkgId in packageIds)
 			{
 				var package = await _packageRepository.GetAsync(p => p.PackageId == pkgId);
@@ -361,6 +362,8 @@ namespace ElecWasteCollection.Application.Services
 				if (package == null) continue;
 
 				package.Status = statusString;
+				package.DeliveryQrCode = deliveryQrCode;   
+				package.DeliveryHandoverAt = handoverTime;
 				var newPackageStatusHistory = new PackageStatusHistory
 				{
 					PackageStatusHistoryId = Guid.NewGuid(),
@@ -453,6 +456,49 @@ namespace ElecWasteCollection.Application.Services
 
 			return true;
 
+		}
+
+		public async Task<PagedResultModel<PackageDetailModel>> GetPackagesByDeliveryQrCodeAsync(string deliveryQrCode, int page, int limit)
+		{
+			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesByDeliveryQrCodeAsync(
+				deliveryQrCode,
+				page,
+				limit
+			);
+
+			var resultItems = pagedPackages.Select(pkg =>
+			{
+				int totalProductsInPkg = pkg.Products?.Count ?? 0;
+
+				var summaryProducts = new PagedResultModel<ProductDetailModel>(
+					new List<ProductDetailModel>(),
+					1,
+					0,
+					totalProductsInPkg
+				);
+
+				var histories = pkg.PackageStatusHistories?.Select(h => new PackageStatusHistoryModel
+				{
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(h.Status),
+					Description = h.StatusDescription,
+					CreateAt = h.ChangedAt
+				}).OrderByDescending(h => h.CreateAt).ToList() ?? new List<PackageStatusHistoryModel>();
+
+				return new PackageDetailModel
+				{
+					PackageId = pkg.PackageId,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
+					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
+					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
+					RecyclerName = pkg.SmallCollectionPoints?.RecyclingCompany?.Name,
+					RecyclerAddress = pkg.SmallCollectionPoints?.RecyclingCompany?.Address,
+					StatusHistories = histories,
+					Products = summaryProducts
+				};
+			}).ToList();
+
+			return new PagedResultModel<PackageDetailModel>(resultItems, page, limit, totalCount);
 		}
 	}
 }

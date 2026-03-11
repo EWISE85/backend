@@ -108,5 +108,10 @@ namespace ElecWasteCollection.Infrastructure.Repository
         {
             return _context.Set<T>().AsQueryable();
         }
-    }
+
+		public void DeleteRange(List<T> entities)
+		{
+			_dbSet.RemoveRange(entities);
+		}
+	}
 }
