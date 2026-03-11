@@ -148,6 +148,35 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return (pagedPackages, totalCount);
 		}
+
+		public async Task<(List<Packages> Items, int TotalCount)> GetPagedPackagesByDeliveryQrCodeAsync(
+	string deliveryQrCode,
+	int page,
+	int limit)
+		{
+			var query = _dbSet.AsNoTracking().AsSplitQuery();
+
+			query = query
+				.Include(p => p.Products)
+				.Include(p => p.PackageStatusHistories)
+				.Include(p => p.SmallCollectionPoints)
+					.ThenInclude(scp => scp.RecyclingCompany); 
+
+			if (!string.IsNullOrEmpty(deliveryQrCode))
+			{
+				query = query.Where(p => p.DeliveryQrCode == deliveryQrCode);
+			}
+
+			var totalCount = await query.CountAsync();
+
+			var pagedPackages = await query
+				.OrderByDescending(p => p.CreateAt) 
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToListAsync();
+
+			return (pagedPackages, totalCount);
+		}
 	}
 
 }

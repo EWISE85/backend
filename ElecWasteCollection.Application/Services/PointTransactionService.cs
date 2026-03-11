@@ -128,5 +128,27 @@ namespace ElecWasteCollection.Application.Services
 			 await _unitOfWork.SaveAsync() ;
 			return true;
 		}
+		public async Task<bool> RevertPointFromCollectionPoint(Guid productId, Guid userId, bool saveChanges = true)
+		{
+			var productTransactions = await _unitOfWork.PointTransactions.GetsAsync(pt => pt.ProductId == productId);
+			
+			if (productTransactions == null || !productTransactions.Any())
+			{
+				return true;
+			}
+			double netPointsToRevert = productTransactions.Sum(pt => pt.Point);
+			if (netPointsToRevert <= 0)
+			{
+				return true;
+			}
+			await _userPointService.UpdatePointForUser(userId, -netPointsToRevert);
+			_unitOfWork.PointTransactions.DeleteRange(productTransactions);
+			if (saveChanges)
+			{
+				await _unitOfWork.SaveAsync();
+			}
+
+			return true;
+		}
 	}
 }

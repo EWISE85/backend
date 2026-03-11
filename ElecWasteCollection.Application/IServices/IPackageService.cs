@@ -16,11 +16,12 @@ namespace ElecWasteCollection.Application.IServices
 		Task<PagedResultModel<PackageDetailModel>> GetPackagesByCompanyQuery(PackageSearchCompanyQueryModel query);
 
 		Task<bool> UpdatePackageStatus(string packageId, string status);
-		Task<bool> UpdatePackageStatusDelivery(List<string> packageIds, string status);
+		Task<bool> UpdatePackageStatusDelivery(string deliveryQrCode, List<string> packageIds, string status);
 		Task<bool> UpdatePackageStatusRecycler(string packageId, string status);
 
 		Task<bool> UpdatePackageAsync(UpdatePackageModel model);
 		Task<List<PackageDetailModel>> GetPackagesWhenDelivery();
+		Task<PagedResultModel<PackageDetailModel>> GetPackagesByDeliveryQrCodeAsync(string deliveryQrCode, int page, int limit);
 
 	}
 }

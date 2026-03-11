@@ -14,7 +14,8 @@ namespace ElecWasteCollection.Domain.IRepository
 		Task<List<T>> GetsAsync(Expression<Func<T, bool>> filter, string? includeProperties = null);
 		Task<T?> GetByIdAsync(object id);
         Task AddAsync(T entity);
-        void Update(T entity);
+        void DeleteRange(List<T> entities);
+		void Update(T entity);
         void Delete(T entity);
 		void Add(T entity);
         IQueryable<T> GetQueryable();

@@ -30,5 +30,9 @@ namespace ElecWasteCollection.Domain.IRepository
 			int page,
 			int limit
 		);
+		Task<(List<Packages> Items, int TotalCount)> GetPagedPackagesByDeliveryQrCodeAsync(
+	string deliveryQrCode,
+	int page,
+	int limit);
 	}
 }

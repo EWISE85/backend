@@ -10,9 +10,7 @@ namespace ElecWasteCollection.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "MaxCapacity",
-                table: "Company");
+            
 
             migrationBuilder.AddColumn<double>(
                 name: "CurrentCapacity",
@@ -40,12 +38,7 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                 name: "MaxCapacity",
                 table: "SmallCollectionPoints");
 
-            migrationBuilder.AddColumn<double>(
-                name: "MaxCapacity",
-                table: "Company",
-                type: "double precision",
-                nullable: false,
-                defaultValue: 0.0);
+            
         }
     }
 }

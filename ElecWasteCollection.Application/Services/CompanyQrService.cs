@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.Helper;
+﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.IRepository;
@@ -16,11 +17,13 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IMemoryCache _cache;
 		private readonly ICompanyService _companyService;
 		private readonly ICompanyRepository _companyRepository;
-		public CompanyQrService(IMemoryCache cache, ICompanyService companyService, ICompanyRepository companyRepository)
+		private readonly IPackageRepository _packageRepository;
+		public CompanyQrService(IMemoryCache cache, ICompanyService companyService, ICompanyRepository companyRepository, IPackageRepository packageRepository)
 		{
 			_cache = cache;
 			_companyService = companyService;
 			_companyRepository = companyRepository;
+			_packageRepository = packageRepository;
 		}
 		public string GenerateQrCode(string companyId)
 		{
@@ -31,9 +34,10 @@ namespace ElecWasteCollection.Application.Services
 		public async Task<CollectionCompanyResponse?> VerifyQrCodeAsync(string qrCode)
 		{
 			var result = QrMathHelper.Decrypt(qrCode);
-			if (!result.IsTimeValid) return null;
+			if (!result.IsTimeValid) throw new AppException("Qr code giao hàng đã hết hạn sử dụng", 400);
+			var isQrCodeUsed = await _packageRepository.GetAsync(p => p.DeliveryQrCode == qrCode);
+			if (isQrCodeUsed != null) throw new AppException("Qr code giao hàng đã được sử dụng",400);
 
-			// Lấy Map từ Cache (ShortId -> CompanyId String)
 			var mapping = await GetCompanyMappingAsync();
 			if (mapping.TryGetValue(result.ShortId, out string? realCompanyId))
 			{

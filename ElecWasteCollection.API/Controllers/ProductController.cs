@@ -166,5 +166,17 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Seeder QR codes in products successfully." });
 		}
+		[HttpPut("undo-receive-at-warehouse/{qrCode}")]
+		public async Task<IActionResult> UndoReceiveProductAtWarehouse([FromRoute] string qrCode)
+		{
+			var result = await _productService.RevertProductStatusByQrCodeAndMinusUserPoint(qrCode);
+
+			if (!result)
+			{
+				return BadRequest("Hoàn tác thất bại");
+			}
+
+			return Ok(new { message = "Hoàn tác thành công" });
+		}
 	}
 }

@@ -25,7 +25,10 @@ namespace ElecWasteCollection.Domain.Entities
 		public DateTime CreateAt { get; set; }
 		public string SmallCollectionPointsId { get; set; }
 		public string Status { get; set; }
-        public SmallCollectionPoints SmallCollectionPoints { get; set; }
+		public string? DeliveryQrCode { get; set; } 
+		public DateTime? DeliveryHandoverAt { get; set; }
+
+		public SmallCollectionPoints SmallCollectionPoints { get; set; }
 		public ICollection<Products> Products { get; set; }
 
 		public ICollection<PackageStatusHistory> PackageStatusHistories { get; set; }

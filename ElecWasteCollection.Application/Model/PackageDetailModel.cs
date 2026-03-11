@@ -16,6 +16,10 @@ namespace ElecWasteCollection.Application.Model
         public string SmallCollectionPointsName { get; set; }
         public string SmallCollectionPointsAddress { get; set; }
 
+		public string? RecyclerName { get; set; }
+
+		public string? RecyclerAddress { get; set; }
+
 		public PagedResultModel<ProductDetailModel> Products { get; set; }
 
 		public List<PackageStatusHistoryModel> StatusHistories { get; set; }
