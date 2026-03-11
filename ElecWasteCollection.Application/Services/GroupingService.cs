@@ -254,7 +254,7 @@ namespace ElecWasteCollection.Application.Services
 
                 double groupWeight = 0;
                 double groupVolume = 0;
-                var detailList = new List<dynamic>(); 
+                var detailList = new List<dynamic>();
                 foreach (var p in group)
                 {
                     var m = await GetProductMetricsInternalAsync(p.ProductId, attIdMap);
@@ -271,7 +271,7 @@ namespace ElecWasteCollection.Application.Services
 
                 pool.Add(new
                 {
-                    GroupedDetails = detailList,
+                    GroupedDetails = detailList, // Tên đồng nhất: GroupedDetails
                     Lat = addr.Iat.Value,
                     Lng = addr.Ing.Value,
                     Weight = groupWeight,
@@ -304,19 +304,20 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var item in sortedPool)
             {
-
                 if (!TryAssignToBucket(item, buckets, point, avgSpeedKmH, serviceTimeMin))
                 {
-                    foreach (var p in item.GroupedPosts)
+                    // FIX 1: Dùng đúng tên GroupedDetails
+                    foreach (var detail in item.GroupedDetails)
                     {
                         unAssigned.Add(new UnAssignProductPreview
                         {
-                            ProductId = p.ProductId.ToString(),
-                            PostId = p.PostId.ToString(),
+                            // FIX 2: Truy cập vào thuộc tính Post của object ẩn danh
+                            ProductId = detail.Post.ProductId.ToString(),
+                            PostId = detail.Post.PostId.ToString(),
                             Name = item.UserName,
                             Address = item.FullAddress,
-                            Weight = Math.Round(item.Weight, 2),
-                            Volume = Math.Round(item.Volume, 4),
+                            Weight = Math.Round((double)detail.Weight, 2),
+                            Volume = Math.Round((double)detail.Volume, 4),
                             Reason = "Xe đã đầy hoặc hết ca làm việc."
                         });
                     }
@@ -325,22 +326,21 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var b in buckets.Values.Where(v => v.Products.Any()))
             {
-
                 var nodesForVRP = b.Products
-                    .GroupBy(p => p.Address) // Nhóm lại để VRP tính điểm dừng
+                    .GroupBy(p => p.Address)
                     .Select((g, idx) => {
                         var firstProd = g.First();
                         var originalItem = pool.First(x => x.FullAddress == g.Key && x.UserName == firstProd.UserName);
                         return new OptimizationNode
                         {
-                            OriginalIndex = idx, // Tạm thời dùng idx để Solve VRP
+                            OriginalIndex = idx,
                             Weight = originalItem.Weight,
                             Volume = originalItem.Volume,
                             Start = originalItem.CustStart,
                             End = originalItem.CustEnd,
                             Lat = originalItem.Lat,
                             Lng = originalItem.Lng,
-                            Tag = g.ToList() // Đính kèm danh sách sản phẩm tại điểm này
+                            Tag = g.ToList()
                         };
                     }).ToList();
 
@@ -364,7 +364,6 @@ namespace ElecWasteCollection.Application.Services
                         p.DistanceKm = Math.Round(dist, 2);
                         p.EstimatedArrival = arr.ToString("HH:mm");
                         newOrderedProducts.Add(p);
-                        // Giả định: Các món tại cùng 1 điểm lấy cùng lúc, dist cho món thứ 2+ = 0
                         dist = 0;
                     }
                     timeAcc += (travel + serviceTimeMin);

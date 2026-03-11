@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using Microsoft.AspNetCore.Http;
@@ -11,7 +12,8 @@ namespace ElecWasteCollection.API.Controllers
 	public class PackageController : ControllerBase
 	{
 		private readonly IPackageService _packageService;
-		private const string DANG_VAN_CHUYEN = "Đang vận chuyển";
+        private readonly CapacityHelper _capacityHelper;
+        private const string DANG_VAN_CHUYEN = "Đang vận chuyển";
 		private const string TAI_CHE = "Tái chế";
 		private const string DA_DONG_THUNG = "Đã đóng thùng";
 		public PackageController(IPackageService packageService)
