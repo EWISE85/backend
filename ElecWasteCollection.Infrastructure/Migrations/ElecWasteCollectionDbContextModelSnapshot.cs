@@ -839,9 +839,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
                     b.HasIndex("CreateAt");
 
-                    b.HasIndex("Email")
-                        .IsUnique();
-
                     b.HasIndex("SmallCollectionPointId");
 
                     b.ToTable("User", (string)null);
