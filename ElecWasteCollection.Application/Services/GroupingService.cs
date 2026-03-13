@@ -865,7 +865,7 @@ namespace ElecWasteCollection.Application.Services
 
             return Task.FromResult<object>(result);
         }
-        public Task<object> GetUnassignedProductsAsync(string collectionPointId, DateOnly workDate, int page, int pageSize)
+        public Task<object> GetUnassignedProductsAsync(string collectionPointId, DateOnly workDate, int page, int pageSize, string? reason = null)
         {
             lock (_previewLock)
             {
@@ -884,9 +884,18 @@ namespace ElecWasteCollection.Application.Services
                     });
                 }
 
-                var total = cache.Response.UnassignedProducts.Count;
+                var query = cache.Response.UnassignedProducts.AsEnumerable();
 
-                var items = cache.Response.UnassignedProducts
+                if (!string.IsNullOrEmpty(reason))
+                {
+                    query = query.Where(x => x.Reason != null &&
+                                             x.Reason.Contains(reason, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var filteredList = query.ToList();
+                var total = filteredList.Count;
+
+                var items = filteredList
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();
