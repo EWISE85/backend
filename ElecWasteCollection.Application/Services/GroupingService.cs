@@ -319,7 +319,7 @@ namespace ElecWasteCollection.Application.Services
                             CategoryName = detail.Post.Product?.Category?.Name ?? "N/A",
                             BrandName = detail.Post.Product?.Brand?.Name ?? "N/A",
                             DimensionText = detail.DimText,
-                            Reason = item.IsCritical ? "HẠN CHÓT - Không tìm được xe kịp giờ hoặc tải trọng." : "Xe đã đầy hoặc hết ca làm việc."
+                            Reason = item.IsCritical ? "HẠN CHÓT - Cần thu gom gấp nhưng chưa có xe phù hợp." : "Xe đã đầy, sẽ thu gom vào ngày sau."
                         });
                     }
                 }
