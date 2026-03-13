@@ -220,7 +220,7 @@ namespace ElecWasteCollection.Application.Services
 			int rowCount = worksheet.RowsUsed().Count();
 			for (int row = 2; row <= rowCount; row++) // Bỏ qua dòng tiêu đề
 			{
-				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim(); 
+				var code = worksheet.Cell(row, 2).Value.ToString()?.Trim(); 
 				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
 				var email = worksheet.Cell(row, 4).Value.ToString()?.Trim(); 
 				var phone = worksheet.Cell(row, 5).Value.ToString()?.Trim(); 
@@ -262,11 +262,11 @@ namespace ElecWasteCollection.Application.Services
 				var collectorPassword = GenerateRandomPassword(6);
 				var collector = new User
 				{
-					UserId = Guid.Parse(id), 
 					Name = name,
 					Email = email,
 					Phone = phone,
 					Avatar = avatar,
+					CollectorCode = code,
 					SmallCollectionPointId = smallCollectionPointId,
 					CollectionCompanyId = companyId,
 					Role = UserRole.Collector.ToString(),

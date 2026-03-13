@@ -37,6 +37,7 @@ namespace ElecWasteCollection.Application.Services
 			}
 			else
 			{
+				collector.UserId = Guid.NewGuid();
 				await AddNewCollector(collector);
 				var account = new Account
 				{
@@ -150,7 +151,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UpdateCollector(User collector)
 		{
-			var collectorToUpdate = await _collectorRepository.GetAsync(c => c.UserId == collector.UserId);
+			var collectorToUpdate = await _collectorRepository.GetAsync(c => c.CollectorCode == collector.CollectorCode);
 			if (collectorToUpdate == null) throw new AppException("Không tìm thấy người thu gom", 404);
 			
 				collectorToUpdate.Name = collector.Name;
