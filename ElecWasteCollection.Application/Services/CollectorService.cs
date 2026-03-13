@@ -32,6 +32,8 @@ namespace ElecWasteCollection.Application.Services
 			if (existingCollector != null)
 			{
 				await UpdateCollector(collector);
+				result.Messages.Add($"Đã cập nhật thông tin thu gom viên '{collector.Name}'.");
+				result.IsNew = false;
 			}
 			else
 			{
@@ -45,6 +47,7 @@ namespace ElecWasteCollection.Application.Services
 				};
 				await _unitOfWork.Accounts.AddAsync(account);
 				result.Messages.Add($"Thêm thu gom viên '{collector.Name}' thành công.");
+				result.IsNew = true;
 				await _unitOfWork.SaveAsync();
 			}
 			return result;
