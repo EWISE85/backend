@@ -15,7 +15,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 		}
 
-		public async Task<(List<Company> Items, int TotalCount)> GetPagedCompaniesAsync(string? status,int page,int limit)
+		public async Task<(List<Company> Items, int TotalCount)> GetPagedCompaniesAsync(string? type,string? status,int page,int limit)
 		{
 			var query = _dbSet.AsNoTracking();
 
@@ -23,6 +23,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			{
 				var trimmedStatus = status.Trim().ToLower();
 				query = query.Where(c => !string.IsNullOrEmpty(c.Status) && c.Status.ToLower() == trimmedStatus);
+			}
+
+			if (!string.IsNullOrEmpty(type))
+			{
+				var trimmedType = type.Trim().ToLower();
+				query = query.Where(c => !string.IsNullOrEmpty(c.CompanyType) && c.CompanyType.ToLower() == trimmedType);
 			}
 
 			var totalCount = await query.CountAsync();

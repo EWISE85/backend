@@ -55,6 +55,7 @@ namespace ElecWasteCollection.Application.Services
 					existingCompany.Updated_At = DateTime.UtcNow;
 					_unitOfWork.Companies.Update(existingCompany);
 					result.Messages.Add($"Đã cập nhật thông tin công ty '{importData.Name}'.");
+					result.IsNew = false;
 				}
 				else
 				{
@@ -62,10 +63,6 @@ namespace ElecWasteCollection.Application.Services
 					importData.Updated_At = DateTime.UtcNow;
 					await _unitOfWork.Companies.AddAsync(importData);
 					var newAdminId = Guid.NewGuid();
-					var defaultSettings = new UserSettingsModel
-					{
-						ShowMap = false 
-					};
 					var newAdminUser = new User
 					{
 						UserId = newAdminId,
@@ -74,7 +71,6 @@ namespace ElecWasteCollection.Application.Services
 						Phone = importData.Phone,
 						Avatar = null,
 						Role = UserRole.AdminCompany.ToString(),
-						//Preferences = JsonSerializer.Serialize(defaultSettings),
 						Status = UserStatus.DANG_HOAT_DONG.ToString(),
 						CollectionCompanyId = importData.CompanyId
 					};
@@ -91,11 +87,13 @@ namespace ElecWasteCollection.Application.Services
 
 					await _unitOfWork.Accounts.AddAsync(newAccount);
 					result.Messages.Add($"Thêm mới công ty '{importData.Name}' và tài khoản Admin thành công.");
+					result.IsNew = true;
 				}
 
 				await _unitOfWork.SaveAsync();
 
 				result.Success = true;
+				return result;
 			}
 			catch (Exception ex)
 			{
@@ -196,8 +194,19 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<PagedResultModel<CollectionCompanyResponse>> GetPagedCompanyAsync(CompanySearchModel model)
 		{
+			string? statusEnum = null;
+			if(model.Status != null)
+			{
+				 statusEnum = StatusEnumHelper.GetValueFromDescription<CompanyStatus>(model.Status).ToString();
+			}
+			string? typeEnum = null;
+			if (model.Type != null)
+			{
+				typeEnum = StatusEnumHelper.GetValueFromDescription<CompanyType>(model.Type).ToString();
+			}
 			var (entities, totalItems) = await _collectionCompanyRepository.GetPagedCompaniesAsync(
-				status: model.Status,
+				type: typeEnum,
+				status: statusEnum,
 				page: model.Page,
 				limit: model.Limit
 			);

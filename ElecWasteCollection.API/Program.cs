@@ -19,6 +19,7 @@ using ElecWasteCollection.Infrastructure.ExternalService.Apple;
 using ElecWasteCollection.Infrastructure.ExternalService.Cloudinary;
 using ElecWasteCollection.Infrastructure.ExternalService.Email;
 using ElecWasteCollection.Infrastructure.ExternalService.Imagga;
+using ElecWasteCollection.Infrastructure.ExternalService.Mapbox;
 using ElecWasteCollection.Infrastructure.Implementations;
 using ElecWasteCollection.Infrastructure.Repository;
 using FirebaseAdmin;
@@ -176,8 +177,10 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IVehiAndSCPManagementService, VehiAndSCPManagementService>();
             builder.Services.AddScoped<ICapacityService, CapacityService>();
             builder.Services.AddScoped<CapacityHelper>();
+			builder.Services.Configure<MapboxSettings>(builder.Configuration.GetSection("Mapbox"));
+			builder.Services.AddHttpClient<IMapboxService, MapboxService>();
 
-            builder.Services.AddMemoryCache();
+			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>

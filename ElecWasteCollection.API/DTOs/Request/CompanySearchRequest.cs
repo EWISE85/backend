@@ -7,6 +7,8 @@
 
 		public int Limit { get; set; } = 10;
 
+		public string? Type { get; set; }
+
 		public string? Status { get; set; }
 	}
 }

@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface ICompanyRepository : IGenericRepository<Company>
 	{
-		Task<(List<Company> Items, int TotalCount)> GetPagedCompaniesAsync(string? status,int page,int limit);
+		Task<(List<Company> Items, int TotalCount)> GetPagedCompaniesAsync(string? type,string? status,int page,int limit);
         Task<(List<Company> Items, int TotalCount)>GetPagedCollectionCompaniesAsync( int page, int limit);
 		Task<List<string>> GetAllCompanyIdsAsync();
 

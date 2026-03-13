@@ -14,24 +14,28 @@ namespace ElecWasteCollection.Application.Services
 {
 	public class ExcelImportService : IExcelImportService
 	{
-		private readonly ICompanyService _collectionCompanyService;
+		private readonly ICompanyService _companyService;
 		private readonly IAccountService _accountService;
 		private readonly IUserService _userService;
 		private readonly ISmallCollectionService _smallCollectionPointService;
 		private readonly ICollectorService _collectorService;
 		private readonly IShiftService _shiftService;
 		private readonly IVehicleService _vehicleService;
+		private readonly IEmailService _emailService;
+		private readonly IMapboxService _mapboxService;
 
 
-		public ExcelImportService(ICompanyService collectionCompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService)
+		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService)
 		{
-			_collectionCompanyService = collectionCompanyService;
+			_companyService = CompanyService;
 			_accountService = accountService;
 			_userService = userService;
 			_smallCollectionPointService = smallCollectionPointService;
 			_collectorService = collectorService;
 			_shiftService = shiftService;
 			_vehicleService = vehicleService;
+			_emailService = emailService;
+			_mapboxService = mapboxService;
 		}
 
 		public async Task<ImportResult> ImportAsync(Stream excelStream, string importType)
@@ -278,26 +282,23 @@ namespace ElecWasteCollection.Application.Services
 			int rowCount = worksheet.RowsUsed().Count();
 			for (int row = 2; row <= rowCount; row++)
 			{
-				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim();
-				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
-				var address = worksheet.Cell(row, 4).Value.ToString()?.Trim();
-				var latitudeVal = worksheet.Cell(row, 5).Value.ToString();
-				var latitude = double.TryParse(latitudeVal, out var lat) ? lat : 0;
-				var longitudeVal = worksheet.Cell(row, 6).Value.ToString();
-				var longitude = double.TryParse(longitudeVal, out var lon) ? lon : 0;
-				var openTime = worksheet.Cell(row, 7).Value.ToString()?.Trim();
-				var companyId = worksheet.Cell(row, 8).Value.ToString()?.Trim();
-				var rawStatus = worksheet.Cell(row, 9).Value.ToString();
-				var adminUsername = worksheet.Cell(row, 10).Value.ToString()?.Trim();
-				var adminPassword = worksheet.Cell(row, 11).Value.ToString()?.Trim();
+				var id = worksheet.Cell(row, 2).Value.ToString().Trim();
+				var name = worksheet.Cell(row, 3).Value.ToString().Trim();
+				var address = worksheet.Cell(row, 4).Value.ToString().Trim();
+				var email = worksheet.Cell(row, 5).Value.ToString().Trim();
+				var phone = worksheet.Cell(row, 6).Value.ToString().Trim();
+				var openTime = worksheet.Cell(row, 7).Value.ToString().Trim();
+				var maxCapacity = worksheet.Cell(row, 8).Value.ToString().Trim();
+				var companyId = worksheet.Cell(row, 9).Value.ToString().Trim();
+				var rawStatus = worksheet.Cell(row, 10).Value.ToString();
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 				string statusToSave;
 
-				if (statusNormalized == "còn hoạt động")
+				if (statusNormalized.Equals("còn hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = SmallCollectionPointStatus.DANG_HOAT_DONG.ToString(); 
 				}
-				else if (statusNormalized == "không hoạt động")
+				else if (statusNormalized.Equals("không hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
 				}
@@ -312,7 +313,24 @@ namespace ElecWasteCollection.Application.Services
 					result.Messages.Add($"Dữ liệu thiếu hoặc không hợp lệ ở dòng {row}.");
 					continue;
 				}
+				var adminUsername = string.IsNullOrEmpty(email) ? $"admin_{id}" : email;
+				var adminPassword = GenerateRandomPassword(6);
+				double latitude = 0;
+				double longitude = 0;
 
+				if (!string.IsNullOrEmpty(address))
+				{
+					var coordinates = await _mapboxService.GetCoordinatesFromAddressAsync(address);
+					if (coordinates.HasValue)
+					{
+						latitude = coordinates.Value.Latitude;
+						longitude = coordinates.Value.Longitude;
+					}
+					else
+					{
+						result.Messages.Add($"Cảnh báo dòng {row}: Không thể tìm thấy tọa độ cho địa chỉ '{address}'. Đã đặt tọa độ về 0.");
+					}
+				}
 				var smallCollectionPoint = new SmallCollectionPoints
 				{
 					SmallCollectionPointsId = id,
@@ -323,11 +341,36 @@ namespace ElecWasteCollection.Application.Services
 					Status = statusToSave, 
 					CompanyId = companyId,
 					OpenTime = openTime,
+					MaxCapacity = Double.Parse(maxCapacity),
 					Created_At = DateTime.UtcNow,
 					Updated_At = DateTime.UtcNow
 				};
 				var importResult = await _smallCollectionPointService.CheckAndUpdateSmallCollectionPointAsync(smallCollectionPoint, adminUsername, adminPassword);
 				result.Messages.AddRange(importResult.Messages);
+				if (importResult.IsNew)
+				{
+					string emailSubject = "Thông tin tài khoản quản trị hệ thống";
+					string emailBody = $@"Kính gửi {name},
+
+Hệ thống đã tạo thành công tài khoản quản trị cho kho của bạn. Dưới đây là thông tin đăng nhập:
+
+- Tên đăng nhập: {adminUsername}
+- Mật khẩu: {adminPassword}
+
+Vui lòng đăng nhập vào hệ thống và đổi lại mật khẩu trong lần đầu tiên sử dụng để đảm bảo tính bảo mật.
+
+Trân trọng,
+Ban Quản Trị Hệ Thống";
+					try
+					{
+						await _emailService.SendEmailAsync(email, emailSubject, emailBody);
+						result.Messages.Add($"Đã gửi email cấp tài khoản cho {email}");
+					}
+					catch (Exception ex)
+					{
+						result.Messages.Add($"Lỗi gửi email cho {email}: {ex.Message}");
+					}
+				}
 			}
 		}
 
@@ -337,25 +380,25 @@ namespace ElecWasteCollection.Application.Services
 
 			for (int row = 2; row <= rowCount; row++)
 			{
-				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim();
-				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
-				var companyEmail = worksheet.Cell(row, 4).Value.ToString()?.Trim();
-				var phone = worksheet.Cell(row, 5).Value.ToString()?.Trim();
-				var address = worksheet.Cell(row, 6).Value.ToString()?.Trim();
-				var companyType = worksheet.Cell(row, 7).Value.ToString()?.Trim();
-				var rawStatus = worksheet.Cell(row, 8).Value.ToString()?.Trim();
-				var adminUsername = worksheet.Cell(row, 9).Value.ToString()?.Trim();
-				var adminPassword = worksheet.Cell(row, 10).Value.ToString()?.Trim();
+				var id = worksheet.Cell(row, 2).Value.ToString().Trim();
+				var name = worksheet.Cell(row, 3).Value.ToString().Trim();
+				var companyEmail = worksheet.Cell(row, 4).Value.ToString().Trim();
+				var phone = worksheet.Cell(row, 5).Value.ToString().Trim();
+				var address = worksheet.Cell(row, 6).Value.ToString().Trim();
+				var companyType = worksheet.Cell(row, 7).Value.ToString().Trim();
+				var rawStatus = worksheet.Cell(row, 8).Value.ToString().Trim();
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 
+				var adminUsername = string.IsNullOrEmpty(companyEmail) ? $"admin_{id}" : companyEmail;
+				var adminPassword = GenerateRandomPassword(6);
 				string statusToSave;
 				string companyTypeToSave;
 
-				if (statusNormalized == "Còn hoạt động")
+				if (statusNormalized.Equals("Còn hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = CompanyStatus.DANG_HOAT_DONG.ToString();
 				}
-				else if (statusNormalized == "Ngưng hoạt động")
+				else if (statusNormalized.Equals("Ngưng hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = CompanyStatus.KHONG_HOAT_DONG.ToString();
 				}
@@ -390,8 +433,33 @@ namespace ElecWasteCollection.Application.Services
 				};
 
 				// Gọi phương thức CheckAndUpdateCompanyAsync
-				var importResult = await _collectionCompanyService.CheckAndUpdateCompanyAsync(company, adminUsername, adminPassword);
+				var importResult = await _companyService.CheckAndUpdateCompanyAsync(company, adminUsername, adminPassword);
 				result.Messages.AddRange(importResult.Messages);
+				if (importResult.IsNew)
+				{
+					string emailSubject = "Thông tin tài khoản quản trị hệ thống";
+					string emailBody = $@"Kính gửi {name},
+
+Hệ thống đã tạo thành công tài khoản quản trị cho công ty của bạn. Dưới đây là thông tin đăng nhập:
+
+- Tên đăng nhập: {adminUsername}
+- Mật khẩu: {adminPassword}
+
+Vui lòng đăng nhập vào hệ thống và đổi lại mật khẩu trong lần đầu tiên sử dụng để đảm bảo tính bảo mật.
+
+Trân trọng,
+Ban Quản Trị Hệ Thống";
+					try
+					{
+						await _emailService.SendEmailAsync(companyEmail, emailSubject, emailBody);
+						result.Messages.Add($"Đã gửi email cấp tài khoản cho {companyEmail}");
+					}
+					catch (Exception ex)
+					{
+						result.Messages.Add($"Lỗi gửi email cho {companyEmail}: {ex.Message}");
+					}
+				}
+				
 			}
 		}
 
@@ -399,6 +467,15 @@ namespace ElecWasteCollection.Application.Services
 		{
 			result.Messages.Add("Chức năng import user chưa được implement.");
 			return Task.CompletedTask;
+		}
+
+		private string GenerateRandomPassword(int length = 10)
+		{
+			// Đảm bảo mật khẩu có đủ chữ hoa, chữ thường, số và ký tự đặc biệt
+			const string validChars = "ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*?_-";
+			var random = new Random();
+			return new string(Enumerable.Repeat(validChars, length)
+				.Select(s => s[random.Next(s.Length)]).ToArray());
 		}
 	}
 }

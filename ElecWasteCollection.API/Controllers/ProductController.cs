@@ -28,17 +28,17 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(product);
 		}
-		[HttpPut("receive-at-warehouse/{qrCode}")]
-		public async Task<IActionResult> ReceiveProductAtWarehouse([FromRoute] string qrCode, [FromBody] UserReceivePointFromCollectionPointRequest request)
+		[HttpPut("receive-at-warehouse")]
+		public async Task<IActionResult> ReceiveProductAtWarehouse([FromBody] List<UserReceivePointFromCollectionPointRequest> request)
 		{
-			var model = new UserReceivePointFromCollectionPointModel
+			var models = request.Select(r => new UserReceivePointFromCollectionPointModel
 			{
-				ProductId = request.ProductId,
-				Description = request.Description,
-				Point = request.Point
-			};
+				QRCode = r.QRCode,
+				Description = r.Description,
+				Point = r.Point
+			}).ToList();
 
-			var result = await _productService.UpdateProductStatusByQrCodeAndPlusUserPoint(qrCode, NHAP_KHO);
+			var result = await _productService.ReceiveProductAtWarehouse(models);
 
 			if (!result)
 			{
