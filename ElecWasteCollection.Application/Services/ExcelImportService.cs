@@ -220,7 +220,7 @@ namespace ElecWasteCollection.Application.Services
 			int rowCount = worksheet.RowsUsed().Count();
 			for (int row = 2; row <= rowCount; row++) // Bỏ qua dòng tiêu đề
 			{
-				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim(); 
+				var code = worksheet.Cell(row, 2).Value.ToString()?.Trim(); 
 				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
 				var email = worksheet.Cell(row, 4).Value.ToString()?.Trim(); 
 				var phone = worksheet.Cell(row, 5).Value.ToString()?.Trim(); 
@@ -228,8 +228,7 @@ namespace ElecWasteCollection.Application.Services
 				var smallCollectionPointId = worksheet.Cell(row, 7).Value.ToString()?.Trim(); 
 				var companyId = worksheet.Cell(row, 8).Value.ToString()?.Trim(); 
 				var rawStatus = worksheet.Cell(row, 9).Value.ToString(); 
-				var collectorUsername = worksheet.Cell(row, 10).Value.ToString()?.Trim(); 
-				var collectorPassword = worksheet.Cell(row, 11).Value.ToString()?.Trim();
+				
 
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 				string statusToSave;
@@ -259,21 +258,46 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ShowMap = false 
 				};
+				var collectorUsername = string.IsNullOrEmpty(email) ? $"collector_{id}" : email;
+				var collectorPassword = GenerateRandomPassword(6);
 				var collector = new User
 				{
-					UserId = Guid.Parse(id), 
 					Name = name,
 					Email = email,
 					Phone = phone,
 					Avatar = avatar,
+					CollectorCode = code,
 					SmallCollectionPointId = smallCollectionPointId,
 					CollectionCompanyId = companyId,
 					Role = UserRole.Collector.ToString(),
-					//Preferences = JsonSerializer.Serialize(defaultSettings),
 					Status = statusToSave, 
 				};
 				var importResult = await _collectorService.CheckAndUpdateCollectorAsync(collector, collectorUsername, collectorPassword);
 				result.Messages.AddRange(importResult.Messages);
+				if (importResult.IsNew)
+				{
+					string emailSubject = "Thông tin tài khoản quản trị hệ thống";
+					string emailBody = $@"Kính gửi {name},
+
+Hệ thống đã tạo thành công tài khoản quản trị cho bạn. Dưới đây là thông tin đăng nhập:
+
+- Tên đăng nhập: {collectorUsername}
+- Mật khẩu: {collectorPassword}
+
+Vui lòng đăng nhập vào hệ thống và đổi lại mật khẩu trong lần đầu tiên sử dụng để đảm bảo tính bảo mật.
+
+Trân trọng,
+Ban Quản Trị Hệ Thống";
+					try
+					{
+						await _emailService.SendEmailAsync(email, emailSubject, emailBody);
+						result.Messages.Add($"Đã gửi email cấp tài khoản cho {email}");
+					}
+					catch (Exception ex)
+					{
+						result.Messages.Add($"Lỗi gửi email cho {email}: {ex.Message}");
+					}
+				}
 			}
 		}
 

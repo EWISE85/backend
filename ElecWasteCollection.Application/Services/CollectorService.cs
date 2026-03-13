@@ -32,9 +32,12 @@ namespace ElecWasteCollection.Application.Services
 			if (existingCollector != null)
 			{
 				await UpdateCollector(collector);
+				result.Messages.Add($"Đã cập nhật thông tin thu gom viên '{collector.Name}'.");
+				result.IsNew = false;
 			}
 			else
 			{
+				collector.UserId = Guid.NewGuid();
 				await AddNewCollector(collector);
 				var account = new Account
 				{
@@ -45,6 +48,7 @@ namespace ElecWasteCollection.Application.Services
 				};
 				await _unitOfWork.Accounts.AddAsync(account);
 				result.Messages.Add($"Thêm thu gom viên '{collector.Name}' thành công.");
+				result.IsNew = true;
 				await _unitOfWork.SaveAsync();
 			}
 			return result;
@@ -147,7 +151,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UpdateCollector(User collector)
 		{
-			var collectorToUpdate = await _collectorRepository.GetAsync(c => c.UserId == collector.UserId);
+			var collectorToUpdate = await _collectorRepository.GetAsync(c => c.CollectorCode == collector.CollectorCode);
 			if (collectorToUpdate == null) throw new AppException("Không tìm thấy người thu gom", 404);
 			
 				collectorToUpdate.Name = collector.Name;

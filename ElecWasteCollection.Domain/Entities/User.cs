@@ -47,6 +47,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string? CollectionCompanyId { get; set; }
 
+		public string? CollectorCode { get; set; }
+
 		public DateTime CreateAt { get; set; }
 
 		//public string? Preferences { get; set; } 
