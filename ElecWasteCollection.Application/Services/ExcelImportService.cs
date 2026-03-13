@@ -258,7 +258,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ShowMap = false 
 				};
-				var collectorUsername = string.IsNullOrEmpty(email) ? $"collector_{id}" : email;
+				var collectorUsername = string.IsNullOrEmpty(email) ? $"collector_{code}" : email;
 				var collectorPassword = GenerateRandomPassword(6);
 				var collector = new User
 				{
