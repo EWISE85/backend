@@ -100,6 +100,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.Property(e => e.UserId).ValueGeneratedOnAdd();
 				entity.Property(e => e.CollectionCompanyId).IsRequired(false);
 				entity.Property(e => e.SmallCollectionPointId).IsRequired(false);
+				entity.HasIndex(e => e.Email).IsUnique();
 				entity.HasIndex(e => e.CreateAt);
 
 				entity.HasOne(e => e.CollectionCompany)
