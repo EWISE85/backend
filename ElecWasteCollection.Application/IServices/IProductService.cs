@@ -25,7 +25,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> UpdateProductStatusByQrCode(string productQrCode, string status);
 		Task<bool> UpdateProductStatusByProductId(Guid productId, string status);
 
-		Task<bool> UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status);
+		Task<bool> ReceiveProductAtWarehouse(List<UserReceivePointFromCollectionPointModel> models);
 
 		Task<List<ProductComeWarehouseDetailModel>> ProductsComeWarehouseByDateAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 

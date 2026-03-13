@@ -2,9 +2,9 @@
 {
 	public class UserReceivePointFromCollectionPointRequest
 	{
-		public Guid ProductId { get; set; }
+		public string QRCode { get; set; } = null!;
 		public string? Description { get; set; }
 
-		public double Point { get; set; }
+		public double? Point { get; set; }
 	}
 }

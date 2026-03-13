@@ -10,5 +10,6 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public bool Success { get; set; }
 		public List<string> Messages { get; set; } = new();
+		public bool IsNew { get; set; } = false;
 	}
 }

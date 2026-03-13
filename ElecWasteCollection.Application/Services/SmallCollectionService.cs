@@ -41,22 +41,19 @@ namespace ElecWasteCollection.Application.Services
 			if (existingCompany != null)
 			{
 				await UpdateSmallCollectionPoint(smallCollectionPoints);
+				result.Messages.Add($"Đã cập nhật thông tin kho '{smallCollectionPoints.Name}'.");
+				result.IsNew = false;
 			}
 			else
 			{
 				await AddNewSmallCollectionPoint(smallCollectionPoints);
 				result.Messages.Add($"Thêm kho '{smallCollectionPoints.Name}' thành công.");
-				var defaultSettings = new UserSettingsModel
-				{
-					ShowMap = false
-				};
 				var newAdminWarehouse = new User
 				{
 					UserId = Guid.NewGuid(),
-					Avatar = "https://example.com/default-avatar.png",
+					Avatar = null,
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
-					//Preferences = JsonSerializer.Serialize(defaultSettings),
 					Status = UserStatus.DANG_HOAT_DONG.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
 					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,
@@ -72,6 +69,7 @@ namespace ElecWasteCollection.Application.Services
 				};
 				await _unitOfWork.Accounts.AddAsync(adminAccount);
 				result.Messages.Add($"Tạo tài khoản quản trị kho với tên đăng nhập '{adminUsername}'.");
+				result.IsNew = true;
 				await _unitOfWork.SaveAsync();
 			}
 

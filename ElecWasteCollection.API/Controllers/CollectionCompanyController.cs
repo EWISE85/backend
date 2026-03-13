@@ -65,6 +65,7 @@ namespace ElecWasteCollection.API.Controllers
 			{
 				Limit = request.Limit,
 				Page = request.Page,
+				Type = request.Type,
 				Status = request.Status
 			};
 			var result = await _collectionCompanyService.GetPagedCompanyAsync(model);
