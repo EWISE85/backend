@@ -237,7 +237,7 @@ namespace ElecWasteCollection.Application.Services
                 p.AssignedSmallPointId == request.CollectionPointId && request.ProductIds.Contains(p.ProductId),
                 includeProperties: "Product,Product.User,Product.Category,Product.Brand");
 
-            // --- LOGIC MỚI: GOM NHÓM THEO USER + ĐỊA CHỈ TRƯỚC KHI ĐƯA VÀO POOL ---
+            // --- LOGIC GOM NHÓM THEO USER + ĐỊA CHỈ ---
             var groupedPosts = rawPosts
                 .Where(x => x.Product?.Status == ProductStatus.CHO_GOM_NHOM.ToString())
                 .GroupBy(p => new { p.SenderId, p.Address });
@@ -271,7 +271,7 @@ namespace ElecWasteCollection.Application.Services
 
                 pool.Add(new
                 {
-                    GroupedDetails = detailList, // Tên đồng nhất: GroupedDetails
+                    GroupedDetails = detailList,
                     Lat = addr.Iat.Value,
                     Lng = addr.Ing.Value,
                     Weight = groupWeight,
@@ -283,7 +283,7 @@ namespace ElecWasteCollection.Application.Services
                     FullAddress = group.Key.Address ?? "N/A",
                     CategoryName = group.Count() > 1 ? $"{representative.Product?.Category?.Name} (+{group.Count() - 1})" : representative.Product?.Category?.Name,
                     BrandName = representative.Product?.Brand?.Name ?? "N/A",
-                    DimText = group.Count() > 1 ? "Nhiều sản phẩm" : "1 sản phẩm"
+                    DimText = group.Count() > 1 ? "Nhiều sản phẩm" : detailList[0].DimText
                 });
             }
 
@@ -306,19 +306,20 @@ namespace ElecWasteCollection.Application.Services
             {
                 if (!TryAssignToBucket(item, buckets, point, avgSpeedKmH, serviceTimeMin))
                 {
-                    // FIX 1: Dùng đúng tên GroupedDetails
                     foreach (var detail in item.GroupedDetails)
                     {
                         unAssigned.Add(new UnAssignProductPreview
                         {
-                            // FIX 2: Truy cập vào thuộc tính Post của object ẩn danh
                             ProductId = detail.Post.ProductId.ToString(),
                             PostId = detail.Post.PostId.ToString(),
                             Name = item.UserName,
                             Address = item.FullAddress,
                             Weight = Math.Round((double)detail.Weight, 2),
                             Volume = Math.Round((double)detail.Volume, 4),
-                            Reason = "Xe đã đầy hoặc hết ca làm việc."
+                            CategoryName = detail.Post.Product?.Category?.Name ?? "N/A",
+                            BrandName = detail.Post.Product?.Brand?.Name ?? "N/A",
+                            DimensionText = detail.DimText,
+                            Reason = item.IsCritical ? "HẠN CHÓT - Cần thu gom gấp nhưng chưa có xe phù hợp." : "Xe đã đầy, sẽ thu gom vào ngày sau."
                         });
                     }
                 }
@@ -364,7 +365,7 @@ namespace ElecWasteCollection.Application.Services
                         p.DistanceKm = Math.Round(dist, 2);
                         p.EstimatedArrival = arr.ToString("HH:mm");
                         newOrderedProducts.Add(p);
-                        dist = 0;
+                        dist = 0; 
                     }
                     timeAcc += (travel + serviceTimeMin);
                     curLat = node.Lat; curLng = node.Lng;
@@ -391,8 +392,11 @@ namespace ElecWasteCollection.Application.Services
                     {
                         Id = b.Vehicle.VehicleId.ToString(),
                         Plate_Number = b.Vehicle.Plate_Number,
+                        Vehicle_Type = b.Vehicle.Vehicle_Type, 
                         Capacity_Kg = b.Vehicle.Capacity_Kg,
-                        Capacity_M3 = Math.Round(b.Vehicle.Length_M * b.Vehicle.Width_M * b.Vehicle.Height_M, 4)
+                        Capacity_M3 = Math.Round(b.Vehicle.Length_M * b.Vehicle.Width_M * b.Vehicle.Height_M, 4),
+                        AllowedCapacityKg = Math.Round(b.MaxKg, 2),
+                        AllowedCapacityM3 = Math.Round(b.MaxM3, 4)
                     },
                     Products = b.Products
                 }).ToList()
@@ -861,7 +865,7 @@ namespace ElecWasteCollection.Application.Services
 
             return Task.FromResult<object>(result);
         }
-        public Task<object> GetUnassignedProductsAsync(string collectionPointId, DateOnly workDate, int page, int pageSize)
+        public Task<object> GetUnassignedProductsAsync(string collectionPointId, DateOnly workDate, int page, int pageSize, string? reason = null)
         {
             lock (_previewLock)
             {
@@ -880,9 +884,18 @@ namespace ElecWasteCollection.Application.Services
                     });
                 }
 
-                var total = cache.Response.UnassignedProducts.Count;
+                var query = cache.Response.UnassignedProducts.AsEnumerable();
 
-                var items = cache.Response.UnassignedProducts
+                if (!string.IsNullOrEmpty(reason))
+                {
+                    query = query.Where(x => x.Reason != null &&
+                                             x.Reason.Contains(reason, StringComparison.OrdinalIgnoreCase));
+                }
+
+                var filteredList = query.ToList();
+                var total = filteredList.Count;
+
+                var items = filteredList
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
                     .ToList();

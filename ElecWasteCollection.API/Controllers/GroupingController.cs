@@ -35,16 +35,12 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("unassigned-products/{collectionPointId}")]
-        public async Task<IActionResult> GetUnassignedProducts(
-            string collectionPointId,
-            [FromQuery] DateOnly workDate,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 10)
+        public async Task<IActionResult> GetUnassignedProducts( string collectionPointId, [FromQuery] DateOnly workDate, [FromQuery] string? reason = null, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
             {
                 var result = await _groupingService
-                    .GetUnassignedProductsAsync(collectionPointId, workDate, page, pageSize);
+                    .GetUnassignedProductsAsync(collectionPointId, workDate, page, pageSize, reason);
 
                 return Ok(result);
             }
@@ -96,10 +92,7 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("group/{groupId}")]
-        public async Task<IActionResult> GetRoutes(
-    int groupId,
-    int page = 1,
-    int limit = 10)
+        public async Task<IActionResult> GetRoutes( int groupId, int page = 1, int limit = 10)
         {
             var result = await _groupingService
                 .GetRoutesByGroupAsync(groupId, page, limit);
