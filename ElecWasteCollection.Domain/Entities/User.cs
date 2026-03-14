@@ -49,6 +49,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string? CollectorCode { get; set; }
 
+		public double Points { get; set; }
+
 		public DateTime CreateAt { get; set; }
 
 		//public string? Preferences { get; set; } 
@@ -63,7 +65,6 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public virtual ICollection<Account> Accounts { get; set; } = new List<Account>();
 
-		public virtual ICollection<UserPoints> UserPoints { get; set; } = new List<UserPoints>();
 
 		public virtual ICollection<Products> Products { get; set; } = new List<Products>();
 

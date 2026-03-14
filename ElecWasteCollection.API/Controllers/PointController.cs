@@ -10,17 +10,17 @@ namespace ElecWasteCollection.API.Controllers
     [ApiController]
     public class PointController : ControllerBase
     {
-        private readonly IUserPointService _userPointService;
+        private readonly IUserService _userService;
         private readonly IPointTransactionService _pointTransactionService;
-        public PointController(IUserPointService userPointService, IPointTransactionService pointTransactionService)
+        public PointController(IPointTransactionService pointTransactionService, IUserService userService)
         {
-            _userPointService = userPointService;
             _pointTransactionService = pointTransactionService;
-        }
+			_userService = userService;
+		}
         [HttpGet("points/{userId}")]
         public async Task<IActionResult> GetUserPoints([FromRoute] Guid userId)
         {
-            var points = await _userPointService.GetPointByUserId(userId);
+            var points = await _userService.GetPointByUserId(userId);
             return Ok(points);
         }
         [HttpPost("points-transaction")]

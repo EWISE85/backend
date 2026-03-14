@@ -60,17 +60,12 @@ namespace ElecWasteCollection.Application.Services
 					Avatar = picture,
 					Role = UserRole.User.ToString(),
 					CreateAt = DateTime.UtcNow,
+					Points = 0,
 					Status = UserStatus.DANG_HOAT_DONG.ToString()
 				};
-				var point = new UserPoints
-				{
-					UserPointId = Guid.NewGuid(),
-					UserId = user.UserId,
-					Points = 0
-				};
+				
 				var repo = _unitOfWork.Users;
 				await repo.AddAsync(user);
-				await _unitOfWork.UserPoints.AddAsync(point);
 				await _unitOfWork.SaveAsync();
 			}
 			var accessToken = await _tokenService.GenerateToken(user);
@@ -174,19 +169,13 @@ namespace ElecWasteCollection.Application.Services
 						Avatar = null,
 						CreateAt = DateTime.UtcNow,
 						Role = UserRole.User.ToString(),
-						//Preferences = JsonSerializer.Serialize(defaultSettings),
+						Points = 0,
 						Status = UserStatus.DANG_HOAT_DONG.ToString()
 					};
 
-					var point = new UserPoints
-					{
-						UserPointId = Guid.NewGuid(),
-						UserId = user.UserId,
-						Points = 0
-					};
+					
 
 					await _unitOfWork.Users.AddAsync(user);
-					await _unitOfWork.UserPoints.AddAsync(point);
 					await _unitOfWork.SaveAsync();
 				}
 			}
