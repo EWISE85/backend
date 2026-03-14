@@ -34,8 +34,9 @@ namespace ElecWasteCollection.Application.Services
         private readonly IMapboxDistanceCacheService _distanceCache;
 		private readonly IUserAddressRepository _userAddressRepository;
 		private readonly ICategoryAttributeRepsitory _categoryAttributeRepsitory;
+		private readonly IBrandCategoryRepository _brandCategoryRepository;
 
-		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache, IUserAddressRepository userAddressRepository, ICategoryAttributeRepsitory categoryAttributeRepsitory)
+		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache, IUserAddressRepository userAddressRepository, ICategoryAttributeRepsitory categoryAttributeRepsitory, IBrandCategoryRepository brandCategoryRepository)
 		{
 			_profanityChecker = profanityChecker;
 			_productService = productService;
@@ -52,6 +53,7 @@ namespace ElecWasteCollection.Application.Services
             _distanceCache = distanceCache;
 			_userAddressRepository = userAddressRepository;
 			_categoryAttributeRepsitory = categoryAttributeRepsitory;
+			_brandCategoryRepository = brandCategoryRepository;
 		}
 
         public async Task<bool> AddPost(CreatePostModel createPostRequest)
@@ -160,8 +162,9 @@ namespace ElecWasteCollection.Application.Services
                     Status = newProduct.Status,
                     StatusDescription = statusDescription
                 };
-
-                var newPost = new Post
+				var brandCategoryPoint = await _brandCategoryRepository.GetAsync(bc => bc.BrandId == createPostRequest.Product.BrandId && bc.CategoryId == createPostRequest.Product.SubCategoryId);
+				var basePoint = brandCategoryPoint != null ? brandCategoryPoint.Points : 50;
+				var newPost = new Post
                 {
                     PostId = Guid.NewGuid(),
                     SenderId = createPostRequest.SenderId,
@@ -171,7 +174,7 @@ namespace ElecWasteCollection.Application.Services
                     ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
                     Status = currentStatus,
                     ProductId = newProductId,
-                    EstimatePoint = 50,
+                    EstimatePoint = basePoint,
                     CheckMessage = new List<string>()
                 };
 

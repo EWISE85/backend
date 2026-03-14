@@ -39,6 +39,8 @@ namespace ElecWasteCollection.Domain.IRepository
 		IGenericRepository<PackageStatusHistory> PackageStatusHistory { get; }
         IGenericRepository<CompanyRecyclingCategory> CompanyRecyclingCategories { get; }
 
-        Task<int> SaveAsync();
+        IGenericRepository<BrandCategory> BrandCategories { get; }
+
+		Task<int> SaveAsync();
     }
 }

@@ -25,5 +25,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public virtual ICollection<Products> Products { get; set; }
 
 		public virtual ICollection<CompanyRecyclingCategory> CompanyRecyclingCategories { get; set; }
+		public virtual ICollection<BrandCategory> BrandCategories { get; set; } = new List<BrandCategory>();
+
 	}
 }

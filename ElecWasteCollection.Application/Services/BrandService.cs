@@ -13,14 +13,16 @@ namespace ElecWasteCollection.Application.Services
 	public class BrandService : IBrandService
 	{
 		private readonly IBrandRepository _brandRepository;
-		public BrandService(IBrandRepository brandRepository)
+		private readonly IUnitOfWork _unitOfWork;
+
+		public BrandService(IBrandRepository brandRepository, IUnitOfWork unitOfWork)
 		{
 			_brandRepository = brandRepository;
+			_unitOfWork = unitOfWork;
 		}
 		public async Task<List<BrandModel>> GetBrandsByCategoryIdAsync(Guid categoryId)
 		{
-			var brands = await _brandRepository
-				.GetsAsync(b => b.CategoryId == categoryId);
+			var brands = await _unitOfWork.BrandCategories.GetsAsync(bc => bc.CategoryId == categoryId, includeProperties: "Brand");
 			if (brands == null || !brands.Any())
 			{
 				return new List<BrandModel>();
@@ -28,7 +30,7 @@ namespace ElecWasteCollection.Application.Services
 			var brandModels = brands.Select(b => new BrandModel
 			{
 				BrandId = b.BrandId,
-				Name = b.Name,
+				Name = b.Brand.Name,
 				CategoryId = b.CategoryId
 			}).ToList();
 			return brandModels;
