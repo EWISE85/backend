@@ -20,17 +20,15 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ITokenService _tokenService;
 		private readonly IUserRepository _userRepository;
 		private readonly IUnitOfWork _unitOfWork;
-		private readonly IUserPointService _userPointService;
-		private readonly IUserPointRepository _userPointRepository;
+	
 
-		public UserService(IFirebaseService firebaseService, ITokenService tokenService, IUserRepository userRepository, IUnitOfWork unitOfWork, IUserPointService userPointService, IUserPointRepository userPointRepository)
+		public UserService(IFirebaseService firebaseService, ITokenService tokenService, IUserRepository userRepository, IUnitOfWork unitOfWork)
 		{
 			_firebaseService = firebaseService;
 			_tokenService = tokenService;
 			_userRepository = userRepository;
 			_unitOfWork = unitOfWork;
-			_userPointService = userPointService;
-			_userPointRepository = userPointRepository;
+
 		}
 
 		public async Task<List<UserResponse>> GetAll()
@@ -104,8 +102,6 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var user = await _userRepository.GetAsync(u => u.UserId == userId);
 			if (user == null) throw new AppException("User không tồn tại", 404);
-			var points = await _userPointRepository.GetAsync(p => p.UserId == user.UserId);
-			var pointsValue = points == null ? 0 : points.Points;
 			var smallCollectionPointName = await _unitOfWork.SmallCollectionPoints.GetAsync(s => s.SmallCollectionPointsId == user.SmallCollectionPointId);
 			var collectionCompanyName = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == user.CollectionCompanyId);
 			//UserSettingsModel settingsObj;
@@ -132,7 +128,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = user.Phone,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				Points = pointsValue,
+				Points = user.Points,
 				CollectionCompanyId = user.CollectionCompanyId,
 				SmallCollectionPointId = user.SmallCollectionPointId,
 				SmallCollectionName = smallCollectionPointName?.Name,
@@ -189,14 +185,13 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var user = await _userRepository.GetAsync(u => u.Email == infomation || u.Phone == infomation);
 			if (user == null) throw new AppException("User không tồn tại", 404);
-			var point = await _userPointRepository.GetAsync(p => p.UserId == user.UserId);
 			var userResponse = new UserResponse
 			{
 				UserId = user.UserId,
 				Name = user.Name,
 				Email = user.Email,
 				Phone = user.Phone,
-				Points = point?.Points,
+				Points = user.Points,
 				Avatar = user.Avatar,
 				Role = user.Role,
 				SmallCollectionPointId = user.SmallCollectionPointId,
@@ -276,6 +271,37 @@ namespace ElecWasteCollection.Application.Services
 
 			// Truyền result.TotalCount vào PagedResultModel
 			return new PagedResultModel<UserResponse>(userResponses, model.Page, model.Limit, result.TotalCount);
+		}
+
+		public async Task<bool> UpdatePointForUser(Guid userId, double pointToAdd)
+		{
+			var user = await _userRepository.GetAsync(u => u.UserId == userId);
+
+			if (user == null)
+			{
+				throw new AppException("Không tìm thấy người dùng", 404);
+			}
+			if (user.Points + pointToAdd < 0)
+			{
+				throw new AppException("User không đủ điểm để thực hiện điều chỉnh này", 400);
+			}
+
+			user.Points += pointToAdd;
+
+			_unitOfWork.Users.Update(user);
+
+			return true;
+		}
+		public async Task<UserPointModel> GetPointByUserId(Guid userId)
+		{
+			var userPoint = await _userRepository.GetAsync(up => up.UserId == userId);
+			if (userPoint == null) throw new AppException("Không tìm thấy điểm người dùng", 404);
+			var userPointModel = new UserPointModel
+			{
+				UserId = userPoint.UserId,
+				Points = userPoint.Points
+			};
+			return userPointModel;
 		}
 	}
 }

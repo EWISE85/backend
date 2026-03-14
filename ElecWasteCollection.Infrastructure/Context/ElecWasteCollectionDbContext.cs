@@ -33,7 +33,6 @@ namespace ElecWasteCollection.Infrastructure.Context
 		public DbSet<ProductValues> ProductValues { get; set; }
 		public DbSet<Shifts> Shifts { get; set; }
 		public DbSet<UserAddress> UserAddresses { get; set; }
-		public DbSet<UserPoints> UserPoints { get; set; }
 		public DbSet<Vehicles> Vehicles { get; set; }
 
 		public DbSet<ForgotPassword> ForgotPasswords { get; set; }
@@ -128,19 +127,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasConstraintName("FK_Account_User");
 			});
 
-			modelBuilder.Entity<UserPoints>(entity =>
-			{
-				entity.ToTable("UserPoints");
-				entity.HasKey(e => e.UserPointId);
-				entity.Property(e => e.UserPointId).ValueGeneratedOnAdd();
-				entity.Property(e => e.UserId).IsRequired();
-
-				entity.HasOne(e => e.User)
-					  .WithMany(u => u.UserPoints)
-					  .HasForeignKey(e => e.UserId)
-					  .HasConstraintName("FK_UserPoints_User");
-
-			});
+			
 
 			modelBuilder.Entity<UserAddress>(entity =>
 			{
@@ -173,10 +160,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasKey(e => e.BrandId);
 				entity.Property(e => e.BrandId).ValueGeneratedOnAdd();
 				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-				entity.HasOne(e => e.Category)
-					  .WithMany(c => c.Brands)
-					  .HasForeignKey(e => e.CategoryId)
-					  .HasConstraintName("FK_Brand_Category");
+				
 			});
 
 			modelBuilder.Entity<Attributes>(entity =>

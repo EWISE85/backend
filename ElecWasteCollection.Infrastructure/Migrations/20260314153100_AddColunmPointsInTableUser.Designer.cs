@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ElecWasteCollection.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ElecWasteCollection.Infrastructure.Migrations
 {
     [DbContext(typeof(ElecWasteCollectionDbContext))]
-    partial class ElecWasteCollectionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314153100_AddColunmPointsInTableUser")]
+    partial class AddColunmPointsInTableUser
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -922,6 +925,25 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.ToTable("UserDeviceToken", (string)null);
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserPoints", b =>
+                {
+                    b.Property<Guid>("UserPointId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Points")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserPointId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserPoints", (string)null);
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Vehicles", b =>
                 {
                     b.Property<string>("VehicleId")
@@ -1381,6 +1403,18 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserPoints", b =>
+                {
+                    b.HasOne("ElecWasteCollection.Domain.Entities.User", "User")
+                        .WithMany("UserPoints")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserPoints_User");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Vehicles", b =>
                 {
                     b.HasOne("ElecWasteCollection.Domain.Entities.SmallCollectionPoints", "SmallCollectionPoints")
@@ -1503,6 +1537,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("UserAddresses");
 
                     b.Navigation("UserDeviceTokens");
+
+                    b.Navigation("UserPoints");
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Vehicles", b =>

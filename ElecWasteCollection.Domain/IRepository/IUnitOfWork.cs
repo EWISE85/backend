@@ -30,7 +30,6 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
         IGenericRepository<Shifts> Shifts { get; }
         IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
-        IGenericRepository<UserPoints> UserPoints { get; }
         IGenericRepository<Vehicles> Vehicles { get; }
         IGenericRepository<ForgotPassword> ForgotPasswords { get; }
         IGenericRepository<SystemConfig> SystemConfig { get; }
