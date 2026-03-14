@@ -118,7 +118,7 @@ namespace ElecWasteCollection.Application.Services
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 				string statusToSave;
 
-				if (statusNormalized == "còn hoạt động" || statusNormalized == "active")
+				if (statusNormalized.Equals("còn hoạt động", StringComparison.OrdinalIgnoreCase) || statusNormalized == "active")
 				{
 					statusToSave = VehicleStatus.DANG_HOAT_DONG.ToString(); // Hoặc Enum
 				}

@@ -110,6 +110,7 @@ namespace ElecWasteCollection.Application.Services
 		public async Task<bool> ChangePassword(string email, string newPassword, string confirmPassword)
 		{
 			var user = await _userRepository.GetAsync(u => u.Email == email);
+			Console.WriteLine($"Id: {user.UserId}, User: {(user != null ? user.Email : "null")}");
 			if (user == null)
 			{
 				throw new AppException("User không tồn tại", 404);
@@ -147,25 +148,18 @@ namespace ElecWasteCollection.Application.Services
 				if (!string.IsNullOrEmpty(appleUser.Email))
 				{
 					user = await _userRepository.GetAsync(u => u.Email == appleUser.Email && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
+					if (user.Role != UserRole.User.ToString()) { throw new AppException("Email của appleId này đã tồn tại với một tài khoản khác!", 400); }
 				}
 
 				if (user != null)
 				{
 					
 					user.AppleId = appleUser.AppleId;
-
-					
-
 					_unitOfWork.Users.Update(user);
 					await _unitOfWork.SaveAsync();
 				}
 				else
 				{
-					var defaultSettings = new UserSettingsModel
-					{
-						ShowMap = false
-					};
-
 					string displayName = (!string.IsNullOrEmpty(firstName) || !string.IsNullOrEmpty(lastName))
 										 ? (firstName + " " + lastName).Trim()
 										 : (appleUser.Email ?? "Apple User");
