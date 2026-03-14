@@ -260,36 +260,24 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             var attMap = await GetAttributeIdMapAsync();
 
-            var company = (await _unitOfWork.Companies
-                    .GetAllAsync(includeProperties: "SmallCollectionPoints"))
-                    .FirstOrDefault(c => c.SmallCollectionPoints.Any(sp => sp.SmallCollectionPointsId == smallPointId));
+            var sp = await _unitOfWork.SmallCollectionPoints
+                .GetAsync(s => s.SmallCollectionPointsId == smallPointId);
 
-            if (company == null) throw new Exception("Không tìm thấy trạm.");
-            var sp = company.SmallCollectionPoints.First(s => s.SmallCollectionPointsId == smallPointId);
-
+            if (sp == null) throw new Exception("Không tìm thấy trạm.");
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.Product != null
                           && p.Product.SmallCollectionPointId == smallPointId
-
-                          && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
-
+                          && p.Product.AssignedAt == workDate, 
                 includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
             );
 
-            var filteredPosts = new List<Post>();
-            foreach (var post in allPosts)
-            {
-                if (TryParseDates(post.ScheduleJson, out var dates) && dates.Contains(workDate))
-                {
-                    filteredPosts.Add(post);
-                }
-            }
+            var filteredPosts = allPosts.ToList();
 
             int totalCount = filteredPosts.Count;
             var pagedPosts = filteredPosts
-                                .Skip((page - 1) * limit)
-                                .Take(limit)
-                                .ToList();
+                                 .Skip((page - 1) * limit)
+                                 .Take(limit)
+                                 .ToList();
 
             var result = new PagedSmallPointProductGroupDto
             {
@@ -298,7 +286,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 Page = page,
                 Limit = limit,
                 TotalItems = totalCount,
-                Products = new List<ProductDetailDto>()
+                Products = new List<ProductDetailDto>(),
+                TotalWeightKg = 0,
+                TotalVolumeM3 = 0
             };
 
             foreach (var post in pagedPosts)
