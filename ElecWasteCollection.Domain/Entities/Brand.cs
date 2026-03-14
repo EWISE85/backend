@@ -17,6 +17,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public Category Category { get; set; }
 
 		public virtual ICollection<Products> Products { get; set; } = new List<Products>();
+		public virtual ICollection<BrandCategory> BrandCategories { get; set; } = new List<BrandCategory>();
 
 	}
 }

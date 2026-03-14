@@ -179,6 +179,8 @@ namespace ElecWasteCollection.API
             builder.Services.AddScoped<CapacityHelper>();
 			builder.Services.Configure<MapboxSettings>(builder.Configuration.GetSection("Mapbox"));
 			builder.Services.AddHttpClient<IMapboxService, MapboxService>();
+			builder.Services.AddScoped<IBrandCategoryRepository, BrandCategoryRepository>();
+			builder.Services.AddScoped<IBrandCategoryService, BrandCategoryService>();
 
 			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
