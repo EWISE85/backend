@@ -328,10 +328,10 @@ namespace ElecWasteCollection.Application.Services
             foreach (var b in buckets.Values.Where(v => v.Products.Any()))
             {
                 var nodesForVRP = b.Products
-                    .GroupBy(p => p.Address)
+                    .GroupBy(p => new { p.Address, p.UserName })
                     .Select((g, idx) => {
                         var firstProd = g.First();
-                        var originalItem = pool.First(x => x.FullAddress == g.Key && x.UserName == firstProd.UserName);
+                        var originalItem = pool.First(x => x.FullAddress == g.Key.Address && x.UserName == g.Key.UserName);
                         return new OptimizationNode
                         {
                             OriginalIndex = idx,
@@ -341,35 +341,44 @@ namespace ElecWasteCollection.Application.Services
                             End = originalItem.CustEnd,
                             Lat = originalItem.Lat,
                             Lng = originalItem.Lng,
-                            Tag = g.ToList()
+                            Tag = g.ToList() 
                         };
                     }).ToList();
 
-                var matrix = BuildMatrixForVehicle(point.Latitude, point.Longitude, nodesForVRP, avgSpeedKmH);
+                var matrix = BuildMatrixForVehicle(point.Latitude, point.Longitude, nodesForVRP, avgSpeedKmH, serviceTimeMin);
                 var optimizedOrder = RouteOptimizer.SolveVRP(matrix.Distances, matrix.Times, nodesForVRP, b.Vehicle.Capacity_Kg, (b.Vehicle.Length_M * b.Vehicle.Width_M * b.Vehicle.Height_M), shiftStart, shiftEnd);
 
                 var newOrderedProducts = new List<PreAssignProduct>();
                 double timeAcc = 0;
-                double curLat = point.Latitude; double curLng = point.Longitude;
+                double curLat = point.Latitude;
+                double curLng = point.Longitude;
 
                 foreach (var i in optimizedOrder)
                 {
                     var node = nodesForVRP[i];
+
                     double dist = CalculateHaversine(curLat, curLng, node.Lat, node.Lng) * DETOUR_FACTOR;
                     double travel = (dist / avgSpeedKmH) * 60;
-                    TimeOnly arr = shiftStart.AddMinutes(timeAcc + travel);
-                    if (arr < node.Start) arr = node.Start;
 
+                    TimeOnly arrivalAtCustomer = shiftStart.AddMinutes(timeAcc + travel);
+
+                    if (arrivalAtCustomer < node.Start) arrivalAtCustomer = node.Start;
+
+                    bool isFirstProductOfCustomer = true;
                     foreach (var p in (List<PreAssignProduct>)node.Tag)
                     {
-                        p.DistanceKm = Math.Round(dist, 2);
-                        p.EstimatedArrival = arr.ToString("HH:mm");
+                        p.DistanceKm = isFirstProductOfCustomer ? Math.Round(dist, 2) : 0;
+                        p.EstimatedArrival = arrivalAtCustomer.ToString("HH:mm");
                         newOrderedProducts.Add(p);
-                        dist = 0; 
+                        isFirstProductOfCustomer = false;
                     }
-                    timeAcc += (travel + serviceTimeMin);
-                    curLat = node.Lat; curLng = node.Lng;
+
+                    timeAcc = (arrivalAtCustomer.ToTimeSpan() - shiftStart.ToTimeSpan()).TotalMinutes + serviceTimeMin;
+
+                    curLat = node.Lat;
+                    curLng = node.Lng;
                 }
+
                 b.Products = newOrderedProducts;
                 b.CurrentKg = b.Products.Sum(p => p.Weight);
                 b.CurrentM3 = b.Products.Sum(p => p.Volume);
@@ -679,8 +688,6 @@ namespace ElecWasteCollection.Application.Services
                     await _unitOfWork.SaveAsync();
                 }
 
-                // --- DUY CHỈNH THỨ TỰ LẤY HÀNG LIỀN KỀ CHO CÙNG 1 ĐỊA CHỈ ---
-                // StagingData đã lưu ProductDetails theo thứ tự thời gian EstimatedArrival từ PreAssign
                 for (int i = 0; i < stage.ProductDetails.Count; i++)
                 {
                     var detail = stage.ProductDetails[i];
@@ -1211,7 +1218,12 @@ namespace ElecWasteCollection.Application.Services
 
 
         //Helper for Pree-assign
-        private (long[,] Distances, long[,] Times) BuildMatrixForVehicle(double depotLat, double depotLng, List<OptimizationNode> nodes, double speed)
+        private (long[,] Distances, long[,] Times) BuildMatrixForVehicle(
+            double depotLat,
+            double depotLng,
+            List<OptimizationNode> nodes,
+            double speed,
+            double serviceTimeMin) 
         {
             int size = nodes.Count + 1;
             long[,] dists = new long[size, size];
@@ -1220,14 +1232,27 @@ namespace ElecWasteCollection.Application.Services
             var points = new List<(double Lat, double Lng)> { (depotLat, depotLng) };
             points.AddRange(nodes.Select(n => (n.Lat, n.Lng)));
 
+            long serviceTimeSeconds = (long)(serviceTimeMin * 60);
+
             for (int i = 0; i < size; i++)
             {
                 for (int j = 0; j < size; j++)
                 {
                     if (i == j) continue;
+
                     double d = CalculateHaversine(points[i].Lat, points[i].Lng, points[j].Lat, points[j].Lng) * 1.3;
-                    dists[i, j] = (long)(d * 1000); 
-                    times[i, j] = (long)((d / speed) * 3600); 
+                    dists[i, j] = (long)(d * 1000);
+
+                    long travelTimeSeconds = (long)((d / speed) * 3600);
+
+                    if (i > 0)
+                    {
+                        times[i, j] = serviceTimeSeconds + travelTimeSeconds;
+                    }
+                    else
+                    {
+                        times[i, j] = travelTimeSeconds;
+                    }
                 }
             }
             return (dists, times);
