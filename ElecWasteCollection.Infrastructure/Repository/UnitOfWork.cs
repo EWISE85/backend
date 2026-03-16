@@ -33,7 +33,6 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
 		public IGenericRepository<Shifts> Shifts { get; }
 		public IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
-		public IGenericRepository<UserPoints> UserPoints { get; }
 		public IGenericRepository<Vehicles> Vehicles { get; }
 		public IGenericRepository<ForgotPassword> ForgotPasswords { get; }
 		public IGenericRepository<SystemConfig> SystemConfig { get; }
@@ -43,6 +42,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public IGenericRepository<CompanyRecyclingCategory> CompanyRecyclingCategories { get; }
         public ICollectionGroupRepository CollectionGroups { get; }
 		public IGenericRepository<PackageStatusHistory> PackageStatusHistory { get; }
+		public IGenericRepository<BrandCategory> BrandCategories { get; }
 		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
@@ -66,7 +66,6 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			ProductStatusHistory = new GenericRepository<ProductStatusHistory>(_context);
 			Shifts = new GenericRepository<Shifts>(_context);
 			SmallCollectionPoints = new GenericRepository<SmallCollectionPoints>(_context);
-			UserPoints = new GenericRepository<UserPoints>(_context);
 			Vehicles = new GenericRepository<Vehicles>(_context);
 			ForgotPasswords = new GenericRepository<ForgotPassword>(_context);
 			SystemConfig = new GenericRepository<SystemConfig>(_context);
@@ -78,6 +77,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
             CollectionGroups = new CollectionGroupRepository(_context);
             PackageStatusHistory = new GenericRepository<PackageStatusHistory>(_context);
             CompanyRecyclingCategories = new GenericRepository<CompanyRecyclingCategory>(_context);
+			BrandCategories = new GenericRepository<BrandCategory>(_context);
 
 		}
 

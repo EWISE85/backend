@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Infrastructure.Repository
 {
-	public class UserPointRepository : GenericRepository<UserPoints>, IUserPointRepository
+	public class BrandCategoryRepository : GenericRepository<BrandCategory>, IBrandCategoryRepository
 	{
-		public UserPointRepository(DbContext context) : base(context)
+		public BrandCategoryRepository(DbContext context) : base(context)
 		{
 		}
 	}

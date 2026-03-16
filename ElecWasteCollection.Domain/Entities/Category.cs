@@ -16,8 +16,6 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public  Category ParentCategory { get; set; }
 
-		public virtual ICollection<Brand> Brands { get; set; }
-
 		public virtual ICollection<CategoryAttributes> CategoryAttributes { get; set; }
 
 		public virtual ICollection<Category> SubCategories { get; set; }
@@ -25,5 +23,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public virtual ICollection<Products> Products { get; set; }
 
 		public virtual ICollection<CompanyRecyclingCategory> CompanyRecyclingCategories { get; set; }
+		public virtual ICollection<BrandCategory> BrandCategories { get; set; } = new List<BrandCategory>();
+
 	}
 }

@@ -29,6 +29,9 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<PagedResultModel<UserResponse>> AdminFilterUser(AdminFilterUserModel model);
 
+		Task<bool> UpdatePointForUser(Guid userId, double pointToAdd);
+		Task<UserPointModel> GetPointByUserId(Guid userId);
+
 
 	}
 }

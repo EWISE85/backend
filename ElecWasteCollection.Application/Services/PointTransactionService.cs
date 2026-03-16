@@ -15,15 +15,15 @@ namespace ElecWasteCollection.Application.Services
 	{
 		private readonly IPointTransactionRepository _pointTransactionRepository;
 		private readonly IUnitOfWork _unitOfWork;
-		private readonly IUserPointService _userPointService;
 		private readonly IProductImageRepository _productImageRepository;
+		private readonly IUserService _userService;
 
-		public PointTransactionService(IPointTransactionRepository pointTransactionRepository, IUnitOfWork unitOfWork, IUserPointService userPointService, IProductImageRepository productImageRepository)
+		public PointTransactionService(IPointTransactionRepository pointTransactionRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IUserService userService)
 		{
 			_pointTransactionRepository = pointTransactionRepository;
 			_unitOfWork = unitOfWork;
-			_userPointService = userPointService;
 			_productImageRepository = productImageRepository;
+			_userService = userService;
 		}
 
 		public async Task<List<PointTransactionModel>> GetAllPointHistoryByUserId(Guid id)
@@ -59,7 +59,6 @@ namespace ElecWasteCollection.Application.Services
 			return result;
 		}
 
-		// Thêm tham số mặc định là true
 		public async Task<Guid> ReceivePointFromCollectionPoint(CreatePointTransactionModel model, bool saveChanges = true)
 		{
 			var points = new PointTransactions
@@ -73,16 +72,12 @@ namespace ElecWasteCollection.Application.Services
 				TransactionType = PointTransactionType.TICH_DIEM.ToString()
 			};
 
-			// 1. Add Transaction
 			await _unitOfWork.PointTransactions.AddAsync(points);
 
-			// 2. Update User (Hàm này đã bỏ Save, chỉ update RAM)
-			await _userPointService.UpdatePointForUser(model.UserId, points.Point);
+			await _userService.UpdatePointForUser(model.UserId, points.Point);
 
-			// 3. Xử lý SAVE dựa vào cờ
 			if (saveChanges)
 			{
-				// Nếu gọi 1 mình -> Lưu ngay lập tức (Lưu cả Trans + UserPoint)
 				await _unitOfWork.SaveAsync();
 			}
 
@@ -110,7 +105,7 @@ namespace ElecWasteCollection.Application.Services
 			};
 			await _unitOfWork.PointTransactions.AddAsync(adjustmentTrans);
 
-			await _userPointService.UpdatePointForUser(originalTrans.UserId, delta);
+			await _userService.UpdatePointForUser(originalTrans.UserId, delta);
 
 			var notification = new Notifications
 			{
@@ -141,7 +136,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				return true;
 			}
-			await _userPointService.UpdatePointForUser(userId, -netPointsToRevert);
+			await _userService.UpdatePointForUser(userId, -netPointsToRevert);
 			_unitOfWork.PointTransactions.DeleteRange(productTransactions);
 			if (saveChanges)
 			{

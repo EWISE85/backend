@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.IRepository
 {
-	public interface IUserPointRepository : IGenericRepository<UserPoints>
+	public interface IBrandCategoryRepository : IGenericRepository<BrandCategory>	
 	{
 	}
 }

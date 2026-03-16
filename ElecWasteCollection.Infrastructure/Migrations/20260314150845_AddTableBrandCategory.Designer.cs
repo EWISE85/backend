@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ElecWasteCollection.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ElecWasteCollection.Infrastructure.Migrations
 {
     [DbContext(typeof(ElecWasteCollectionDbContext))]
-    partial class ElecWasteCollectionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260314150845_AddTableBrandCategory")]
+    partial class AddTableBrandCategory
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -107,6 +110,9 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -114,31 +120,9 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
                     b.HasKey("BrandId");
 
-                    b.ToTable("Brand", (string)null);
-                });
-
-            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.BrandCategory", b =>
-                {
-                    b.Property<Guid>("BrandCategoryId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("BrandId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("CategoryId")
-                        .HasColumnType("uuid");
-
-                    b.Property<double>("Points")
-                        .HasColumnType("double precision");
-
-                    b.HasKey("BrandCategoryId");
-
-                    b.HasIndex("BrandId");
-
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("BrandCategory", (string)null);
+                    b.ToTable("Brand", (string)null);
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.BrandCategory", b =>
@@ -865,9 +849,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<string>("Phone")
                         .HasColumnType("text");
 
-                    b.Property<double>("Points")
-                        .HasColumnType("double precision");
-
                     b.Property<string>("Role")
                         .IsRequired()
                         .HasColumnType("text");
@@ -946,6 +927,25 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.ToTable("UserDeviceToken", (string)null);
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserPoints", b =>
+                {
+                    b.Property<Guid>("UserPointId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Points")
+                        .HasColumnType("double precision");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserPointId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserPoints", (string)null);
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Vehicles", b =>
                 {
                     b.Property<string>("VehicleId")
@@ -1011,23 +1011,14 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("Attribute");
                 });
 
-            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.BrandCategory", b =>
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Brand", b =>
                 {
-                    b.HasOne("ElecWasteCollection.Domain.Entities.Brand", "Brand")
-                        .WithMany("BrandCategories")
-                        .HasForeignKey("BrandId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("FK_BrandCategory_Brand");
-
                     b.HasOne("ElecWasteCollection.Domain.Entities.Category", "Category")
-                        .WithMany("BrandCategories")
+                        .WithMany("Brands")
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired()
-                        .HasConstraintName("FK_BrandCategory_Category");
-
-                    b.Navigation("Brand");
+                        .HasConstraintName("FK_Brand_Category");
 
                     b.Navigation("Category");
                 });
@@ -1426,6 +1417,18 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserPoints", b =>
+                {
+                    b.HasOne("ElecWasteCollection.Domain.Entities.User", "User")
+                        .WithMany("UserPoints")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserPoints_User");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Vehicles", b =>
                 {
                     b.HasOne("ElecWasteCollection.Domain.Entities.SmallCollectionPoints", "SmallCollectionPoints")
@@ -1457,6 +1460,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Category", b =>
                 {
                     b.Navigation("BrandCategories");
+
+                    b.Navigation("Brands");
 
                     b.Navigation("CategoryAttributes");
 
@@ -1548,6 +1553,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("UserAddresses");
 
                     b.Navigation("UserDeviceTokens");
+
+                    b.Navigation("UserPoints");
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Vehicles", b =>
