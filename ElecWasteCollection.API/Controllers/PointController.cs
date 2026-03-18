@@ -47,5 +47,18 @@ namespace ElecWasteCollection.API.Controllers
 			var result = await _pointTransactionService.UpdatePointByProductId(productId, request.NewPointValue, request.ReasonForUpdate);
 			return Ok(result);
 		}
-	}
+
+        [HttpPost("point/daily")]
+		public async Task<IActionResult> ReceiveDailyPoint([FromBody] ReceiveDailyPointRequest request)
+		{
+			var result = await _pointTransactionService.ReceivePointDaily(request.UserId, request.Points);
+			if (result)
+			{
+				return Ok(new { Message = "Nhận điểm hàng ngày thành công" });
+			}
+			else
+			{
+				return BadRequest(new { Message = "Nhận điểm hàng ngày thất bại" });
+			}
+		}
 }
