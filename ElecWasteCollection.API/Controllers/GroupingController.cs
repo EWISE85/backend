@@ -58,6 +58,23 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(result);
         }
 
+        [HttpGet("available-for-draft")]
+        public async Task<IActionResult> GetAvailableVehiclesForDraft([FromQuery] GetAvailableVehiclesRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.PointId))
+                    return BadRequest(new { Message = "Vui lòng cung cấp mã trạm (PointId)." });
+
+                var result = await _groupingService.GetAvailableVehiclesForDraftAsync(request);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { Message = "Lỗi hệ thống", Detail = ex.Message });
+            }
+        }
+
         [HttpPost("assign-day")]
         public async Task<IActionResult> AssignDay([FromBody] AssignDayRequest request)
         {
