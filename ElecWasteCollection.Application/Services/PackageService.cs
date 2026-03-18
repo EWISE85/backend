@@ -404,11 +404,82 @@ namespace ElecWasteCollection.Application.Services
         //	return true;
         //}
 
+        //     public async Task<bool> UpdatePackageStatusDelivery(string deliveryQrCode, List<string> packageIds, string status)
+        //     {
+        //         if (packageIds == null || !packageIds.Any()) return false;
+
+        //         var packages = await _unitOfWork.Packages.GetAllAsync(p => packageIds.Contains(p.PackageId));
+        //         var pointIdsToSync = packages.Select(p => p.SmallCollectionPointsId).Distinct().ToList();
+
+        //         var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
+        //         var productStatusEnum = statusEnum == PackageStatus.DANG_VAN_CHUYEN ? ProductStatus.DANG_VAN_CHUYEN : ProductStatus.TAI_CHE;
+
+        //         string historyDescription = statusEnum == PackageStatus.DANG_VAN_CHUYEN ? "Sản phẩm đang được vận chuyển" : "Sản phẩm đã được tái chế";
+        //         string statusString = statusEnum.ToString();
+        //         string productStatusString = productStatusEnum.ToString();
+
+        //         bool hasAnySuccess = false;
+        //var handoverTime = DateTime.UtcNow;
+        //foreach (var pkgId in packageIds)
+        //         {
+        //             var package = packages.FirstOrDefault(p => p.PackageId == pkgId);
+        //             if (package == null) continue;
+
+        //	package.Status = statusString;
+        //	package.DeliveryQrCode = deliveryQrCode;
+        //	package.DeliveryHandoverAt = handoverTime;
+        //	var newPackageStatusHistory = new PackageStatusHistory
+        //             {
+        //                 PackageStatusHistoryId = Guid.NewGuid(),
+        //                 PackageId = package.PackageId,
+        //                 ChangedAt = DateTime.UtcNow,
+        //                 StatusDescription = "Kiện hàng đang được vận chuyển về công ty tái chế",
+        //                 Status = statusString
+        //             };
+
+        //             _unitOfWork.Packages.Update(package);
+        //             await _unitOfWork.PackageStatusHistory.AddAsync(newPackageStatusHistory);
+
+        //             var productList = await _productService.GetProductsByPackageIdAsync(pkgId);
+        //             if (productList != null && productList.Any())
+        //             {
+        //                 foreach (var product in productList)
+        //                 {
+        //                     await _productService.UpdateProductStatusByQrCode(product.QrCode, productStatusString);
+
+        //                     var newHistory = new ProductStatusHistory
+        //                     {
+        //                         ProductStatusHistoryId = Guid.NewGuid(),
+        //                         ProductId = product.ProductId,
+        //                         ChangedAt = DateTime.UtcNow,
+        //                         StatusDescription = historyDescription,
+        //                         Status = productStatusString
+        //                     };
+        //                     await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
+        //                 }
+        //             }
+        //             hasAnySuccess = true;
+        //         }
+
+        //         if (!hasAnySuccess) return false;
+
+        //         await _unitOfWork.SaveAsync();
+
+        //         foreach (var pointId in pointIdsToSync)
+        //         {
+        //             if (!string.IsNullOrEmpty(pointId))
+        //                 await _capacityHelper.SyncRealtimeCapacityAsync(pointId);
+        //         }
+
+        //         return true;
+        //     }
+
         public async Task<bool> UpdatePackageStatusDelivery(string deliveryQrCode, List<string> packageIds, string status)
         {
             if (packageIds == null || !packageIds.Any()) return false;
 
             var packages = await _unitOfWork.Packages.GetAllAsync(p => packageIds.Contains(p.PackageId));
+
             var pointIdsToSync = packages.Select(p => p.SmallCollectionPointsId).Distinct().ToList();
 
             var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
@@ -419,16 +490,18 @@ namespace ElecWasteCollection.Application.Services
             string productStatusString = productStatusEnum.ToString();
 
             bool hasAnySuccess = false;
-			var handoverTime = DateTime.UtcNow;
-			foreach (var pkgId in packageIds)
+            var handoverTime = DateTime.UtcNow;
+
+            foreach (var pkgId in packageIds)
             {
                 var package = packages.FirstOrDefault(p => p.PackageId == pkgId);
                 if (package == null) continue;
 
-				package.Status = statusString;
-				package.DeliveryQrCode = deliveryQrCode;
-				package.DeliveryHandoverAt = handoverTime;
-				var newPackageStatusHistory = new PackageStatusHistory
+                package.Status = statusString;
+                package.DeliveryQrCode = deliveryQrCode;
+                package.DeliveryHandoverAt = handoverTime;
+
+                var newPackageStatusHistory = new PackageStatusHistory
                 {
                     PackageStatusHistoryId = Guid.NewGuid(),
                     PackageId = package.PackageId,

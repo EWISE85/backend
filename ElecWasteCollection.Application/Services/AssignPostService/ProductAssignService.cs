@@ -121,111 +121,144 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             });
         }
 
+
+
         //private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate, List<string>? targetCompanyIds)
         //{
         //    var result = new AssignProductResult();
-
+        //    var attIdMap = await GetAttributeIdMapAsync(unitOfWork);
         //    var allCategories = await unitOfWork.Categories.GetAllAsync();
         //    var categoryMap = allCategories.ToDictionary(c => c.CategoryId, c => c.ParentCategoryId ?? c.CategoryId);
+
         //    var allCompanies = await unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints,CompanyRecyclingCategories");
         //    var allConfigs = await unitOfWork.SystemConfig.GetAllAsync();
         //    var recyclingCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()).ToList();
-
         //    var collectionCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString()).OrderBy(c => c.CompanyId).ToList();
+
         //    var activeCompanies = targetCompanyIds?.Any() == true
         //        ? collectionCompanies.Where(c => targetCompanyIds.Contains(c.CompanyId)).ToList()
         //        : collectionCompanies;
 
-        //    double sumOfRatios = activeCompanies.Sum(comp => GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0));
-        //    if (sumOfRatios <= 0) throw new Exception("Không có đơn vị thu gom khả dụng hoặc tổng tỉ lệ bằng 0.");
+        //    var virtualCapacityTracker = new Dictionary<string, double>();
+        //    foreach (var sp in activeCompanies.SelectMany(c => c.SmallCollectionPoints))
+        //    {
+        //        var pendingProds = await unitOfWork.Products.GetAllAsync(p =>
+        //            p.SmallCollectionPointId == sp.SmallCollectionPointsId &&
+        //            (p.Status == ProductStatus.CHO_GOM_NHOM.ToString() || p.Status == ProductStatus.CHO_THU_GOM.ToString()));
 
+        //        double pendingVol = 0;
+        //        foreach (var p in pendingProds)
+        //        {
+        //            var m = await GetProductMetricsInternalAsync(unitOfWork, p.ProductId, attIdMap);
+        //            pendingVol += m.volume;
+        //        }
+        //        virtualCapacityTracker[sp.SmallCollectionPointsId] = sp.CurrentCapacity + pendingVol;
+        //    }
+
+        //    double sumOfRatios = activeCompanies.Sum(comp => GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0));
+        //    if (sumOfRatios <= 0) throw new Exception("Tổng tỉ lệ phân bổ bằng 0.");
         //    var rangeConfigs = new List<CompanyRangeConfig>();
         //    double currentPivot = 0.0;
         //    foreach (var comp in activeCompanies)
         //    {
-        //        double originalRatio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
-        //        if (originalRatio > 0)
+        //        double ratio = GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0);
+        //        if (ratio > 0)
         //        {
-        //            double normalizedRatio = originalRatio / sumOfRatios;
-        //            var cfg = new CompanyRangeConfig { CompanyEntity = comp, AssignRatio = originalRatio, MinRange = currentPivot };
-        //            currentPivot += normalizedRatio;
+        //            double norm = ratio / sumOfRatios;
+        //            var cfg = new CompanyRangeConfig { CompanyEntity = comp, MinRange = currentPivot };
+        //            currentPivot += norm;
         //            cfg.MaxRange = (comp == activeCompanies.Last()) ? 1.0 : currentPivot;
         //            rangeConfigs.Add(cfg);
         //        }
         //    }
 
+        //    // 3. Lấy dữ liệu và GOM NHÓM THEO USER + ĐỊA CHỈ
         //    var products = await unitOfWork.Products.GetAllAsync(p => productIds.Contains(p.ProductId));
         //    var posts = await unitOfWork.Posts.GetAllAsync(p => productIds.Contains(p.ProductId));
         //    var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => posts.Select(x => x.SenderId).Contains(a.UserId));
 
+        //    var userGroups = posts.GroupBy(p => new { p.SenderId, p.Address });
         //    var historyBag = new ConcurrentBag<ProductStatusHistory>();
         //    var detailsBag = new ConcurrentBag<object>();
         //    var trackingBag = new ConcurrentBag<AssignmentTracker>();
         //    int totalAssigned = 0; int totalUnassigned = 0;
 
-        //    foreach (var product in products)
+        //    // 4. Vòng lặp phân bổ theo NHÓM
+        //    foreach (var group in userGroups)
         //    {
-        //        var post = posts.FirstOrDefault(p => p.ProductId == product.ProductId);
-        //        if (post == null || string.IsNullOrEmpty(post.Address)) continue;
-        //        if (!categoryMap.TryGetValue(product.CategoryId, out Guid rootCateId)) continue;
+        //        var groupProds = products.Where(p => group.Select(g => g.ProductId).Contains(p.ProductId)).ToList();
+        //        var addr = addresses.FirstOrDefault(a => a.UserId == group.Key.SenderId && a.Address == group.Key.Address);
+        //        if (addr?.Iat == null || addr?.Ing == null) continue;
 
-        //        var matchedAddr = addresses.FirstOrDefault(a => a.UserId == post.SenderId && a.Address == post.Address);
-        //        if (matchedAddr?.Iat == null || matchedAddr?.Ing == null) continue;
+        //        double totalGroupVol = 0;
+        //        foreach (var prod in groupProds)
+        //        {
+        //            var m = await GetProductMetricsInternalAsync(unitOfWork, prod.ProductId, attIdMap);
+        //            totalGroupVol += m.volume;
+        //        }
 
         //        var candidates = new List<ProductAssignCandidate>();
         //        foreach (var rc in rangeConfigs)
         //        {
         //            foreach (var sp in rc.CompanyEntity.SmallCollectionPoints.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
         //            {
-        //                var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
-        //                if (rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootCateId) != true) continue;
+        //                // Kiểm tra xem kho có hỗ trợ TẤT CẢ Category trong nhóm không
+        //                bool supportsAll = true;
+        //                foreach (var prod in groupProds)
+        //                {
+        //                    if (!categoryMap.TryGetValue(prod.CategoryId, out Guid rootId)) { supportsAll = false; break; }
+        //                    var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
+        //                    if (rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootId) != true) { supportsAll = false; break; }
+        //                }
+        //                if (!supportsAll) continue;
 
-        //                double hvDist = Math.Round(GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, matchedAddr.Iat.Value, matchedAddr.Ing.Value), 3);
+        //                double hvDist = Math.Round(GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, addr.Iat.Value, addr.Ing.Value), 3);
         //                double radius = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
 
-        //                if (hvDist <= radius)
+        //                // KIỂM TRA DUNG TÍCH TỔNG
+        //                if (hvDist <= radius && (virtualCapacityTracker[sp.SmallCollectionPointsId] + totalGroupVol) <= sp.MaxCapacity)
         //                {
-        //                    candidates.Add(new ProductAssignCandidate
-        //                    {
-        //                        ProductId = product.ProductId,
-        //                        SmallPointId = sp.SmallCollectionPointsId,
-        //                        CompanyId = rc.CompanyEntity.CompanyId,
-        //                        HaversineKm = hvDist
-        //                    });
+        //                    candidates.Add(new ProductAssignCandidate { SmallPointId = sp.SmallCollectionPointsId, CompanyId = rc.CompanyEntity.CompanyId, HaversineKm = hvDist });
         //                }
         //            }
         //        }
 
         //        if (!candidates.Any())
         //        {
-        //            MarkAsUnassigned(product, detailsBag, ref totalUnassigned, "Không tìm thấy kho trong bán kính chim bay");
+        //            foreach (var p in groupProds) MarkAsUnassigned(p, detailsBag, ref totalUnassigned, "Kho đầy hoặc không có kho phù hợp bán kính.");
         //            continue;
         //        }
 
-        //        double magic = GetStableHashRatio(product.ProductId);
+        //        // Chọn kho dựa trên Hash UserId để ưu tiên 1 user về 1 công ty
+        //        double magic = GetStableHashRatio(group.Key.SenderId);
         //        var targetRC = rangeConfigs.FirstOrDefault(r => magic >= r.MinRange && magic < r.MaxRange) ?? rangeConfigs.Last();
-
         //        var chosen = candidates.Where(c => c.CompanyId == targetRC.CompanyEntity.CompanyId).OrderBy(c => c.HaversineKm).FirstOrDefault()
-        //                      ?? candidates.OrderBy(c => c.HaversineKm).First();
+        //                     ?? candidates.OrderBy(c => c.HaversineKm).First();
 
-        //        chosen.RoadKm = chosen.HaversineKm;
-        //        AssignSuccess(product, post, chosen, "Tự động phân bổ (Chờ cập nhật RoadKm thực tế)", historyBag, detailsBag, ref totalAssigned, workDate);
+        //        virtualCapacityTracker[chosen.SmallPointId] += totalGroupVol;
 
-        //        trackingBag.Add(new AssignmentTracker { ProductId = product.ProductId, SmallCollectionPointId = chosen.SmallPointId });
+        //        foreach (var product in groupProds)
+        //        {
+        //            var post = group.First(p => p.ProductId == product.ProductId);
+        //            chosen.RoadKm = chosen.HaversineKm;
+        //            AssignSuccess(product, post, chosen, $"Gom nhóm User (Group Vol: {totalGroupVol}m3)", historyBag, detailsBag, ref totalAssigned, workDate);
+        //            trackingBag.Add(new AssignmentTracker { ProductId = product.ProductId, SmallCollectionPointId = chosen.SmallPointId });
+        //        }
         //    }
 
-        //    foreach (var history in historyBag) await unitOfWork.ProductStatusHistory.AddAsync(history);
-
+        //    // Lưu dữ liệu
+        //    foreach (var h in historyBag) await unitOfWork.ProductStatusHistory.AddAsync(h);
         //    result.TotalAssigned = totalAssigned;
         //    result.TotalUnassigned = totalUnassigned;
         //    result.Details = detailsBag.ToList();
 
+        //    // Logic Admin Mapping (giữ nguyên)
         //    if (!trackingBag.IsEmpty)
         //    {
         //        var assignedIds = trackingBag.Select(t => t.SmallCollectionPointId).Distinct().ToList();
         //        var warehouses = await unitOfWork.SmallCollectionPoints.GetAllAsync(p => assignedIds.Contains(p.SmallCollectionPointsId));
         //        var warehouseMap = warehouses.ToDictionary(w => w.SmallCollectionPointsId, w => w.Name);
-        //        var adminUsers = await unitOfWork.Users.GetAllAsync(u => u.Role == UserRole.AdminWarehouse.ToString() && assignedIds.Contains(u.SmallCollectionPointId) && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
+        //        var adminUsers = await unitOfWork.Users.GetAllAsync(u => u.Role == UserRole.AdminWarehouse.ToString() && assignedIds.Contains(u.SmallCollectionPointId));
         //        var adminDict = adminUsers.GroupBy(u => u.SmallCollectionPointId).ToDictionary(g => g.Key, g => g.First().UserId.ToString());
 
         //        result.WarehouseAllocations = trackingBag.GroupBy(t => t.SmallCollectionPointId).Select(g => new WarehouseAllocationStats
@@ -238,9 +271,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         //    }
 
         //    await unitOfWork.SaveAsync();
-
         //    _ = Task.Run(() => UpdateRealDistanceAsync(productIds));
-
         //    return result;
         //}
 
@@ -261,23 +292,16 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 : collectionCompanies;
 
             var virtualCapacityTracker = new Dictionary<string, double>();
-            foreach (var sp in activeCompanies.SelectMany(c => c.SmallCollectionPoints))
-            {
-                var pendingProds = await unitOfWork.Products.GetAllAsync(p =>
-                    p.SmallCollectionPointId == sp.SmallCollectionPointsId &&
-                    (p.Status == ProductStatus.CHO_GOM_NHOM.ToString() || p.Status == ProductStatus.CHO_THU_GOM.ToString()));
+            var smallPointEntities = activeCompanies.SelectMany(c => c.SmallCollectionPoints).ToList();
 
-                double pendingVol = 0;
-                foreach (var p in pendingProds)
-                {
-                    var m = await GetProductMetricsInternalAsync(unitOfWork, p.ProductId, attIdMap);
-                    pendingVol += m.volume;
-                }
-                virtualCapacityTracker[sp.SmallCollectionPointsId] = sp.CurrentCapacity + pendingVol;
+            foreach (var sp in smallPointEntities)
+            {
+                virtualCapacityTracker[sp.SmallCollectionPointsId] = sp.CurrentCapacity + sp.PlannedCapacity;
             }
 
             double sumOfRatios = activeCompanies.Sum(comp => GetConfigValue(allConfigs, comp.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0));
             if (sumOfRatios <= 0) throw new Exception("Tổng tỉ lệ phân bổ bằng 0.");
+
             var rangeConfigs = new List<CompanyRangeConfig>();
             double currentPivot = 0.0;
             foreach (var comp in activeCompanies)
@@ -293,7 +317,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 }
             }
 
-            // 3. Lấy dữ liệu và GOM NHÓM THEO USER + ĐỊA CHỈ
             var products = await unitOfWork.Products.GetAllAsync(p => productIds.Contains(p.ProductId));
             var posts = await unitOfWork.Posts.GetAllAsync(p => productIds.Contains(p.ProductId));
             var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => posts.Select(x => x.SenderId).Contains(a.UserId));
@@ -304,7 +327,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var trackingBag = new ConcurrentBag<AssignmentTracker>();
             int totalAssigned = 0; int totalUnassigned = 0;
 
-            // 4. Vòng lặp phân bổ theo NHÓM
             foreach (var group in userGroups)
             {
                 var groupProds = products.Where(p => group.Select(g => g.ProductId).Contains(p.ProductId)).ToList();
@@ -323,7 +345,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 {
                     foreach (var sp in rc.CompanyEntity.SmallCollectionPoints.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
                     {
-                        // Kiểm tra xem kho có hỗ trợ TẤT CẢ Category trong nhóm không
                         bool supportsAll = true;
                         foreach (var prod in groupProds)
                         {
@@ -336,7 +357,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         double hvDist = Math.Round(GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, addr.Iat.Value, addr.Ing.Value), 3);
                         double radius = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
 
-                        // KIỂM TRA DUNG TÍCH TỔNG
                         if (hvDist <= radius && (virtualCapacityTracker[sp.SmallCollectionPointsId] + totalGroupVol) <= sp.MaxCapacity)
                         {
                             candidates.Add(new ProductAssignCandidate { SmallPointId = sp.SmallCollectionPointsId, CompanyId = rc.CompanyEntity.CompanyId, HaversineKm = hvDist });
@@ -350,11 +370,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     continue;
                 }
 
-                // Chọn kho dựa trên Hash UserId để ưu tiên 1 user về 1 công ty
                 double magic = GetStableHashRatio(group.Key.SenderId);
                 var targetRC = rangeConfigs.FirstOrDefault(r => magic >= r.MinRange && magic < r.MaxRange) ?? rangeConfigs.Last();
                 var chosen = candidates.Where(c => c.CompanyId == targetRC.CompanyEntity.CompanyId).OrderBy(c => c.HaversineKm).FirstOrDefault()
-                             ?? candidates.OrderBy(c => c.HaversineKm).First();
+                              ?? candidates.OrderBy(c => c.HaversineKm).First();
+
+                var chosenSp = smallPointEntities.First(s => s.SmallCollectionPointsId == chosen.SmallPointId);
+                chosenSp.PlannedCapacity += totalGroupVol;
+                unitOfWork.SmallCollectionPoints.Update(chosenSp);
 
                 virtualCapacityTracker[chosen.SmallPointId] += totalGroupVol;
 
@@ -362,18 +385,16 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 {
                     var post = group.First(p => p.ProductId == product.ProductId);
                     chosen.RoadKm = chosen.HaversineKm;
-                    AssignSuccess(product, post, chosen, $"Gom nhóm User (Group Vol: {totalGroupVol}m3)", historyBag, detailsBag, ref totalAssigned, workDate);
+                    AssignSuccess(product, post, chosen, $"Phân bổ theo nhóm (Vol: {totalGroupVol}m3)", historyBag, detailsBag, ref totalAssigned, workDate);
                     trackingBag.Add(new AssignmentTracker { ProductId = product.ProductId, SmallCollectionPointId = chosen.SmallPointId });
                 }
             }
 
-            // Lưu dữ liệu
             foreach (var h in historyBag) await unitOfWork.ProductStatusHistory.AddAsync(h);
             result.TotalAssigned = totalAssigned;
             result.TotalUnassigned = totalUnassigned;
             result.Details = detailsBag.ToList();
 
-            // Logic Admin Mapping (giữ nguyên)
             if (!trackingBag.IsEmpty)
             {
                 var assignedIds = trackingBag.Select(t => t.SmallCollectionPointId).Distinct().ToList();
@@ -393,6 +414,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             await unitOfWork.SaveAsync();
             _ = Task.Run(() => UpdateRealDistanceAsync(productIds));
+
             return result;
         }
 

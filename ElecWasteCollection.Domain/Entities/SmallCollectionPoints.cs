@@ -25,6 +25,7 @@ namespace ElecWasteCollection.Domain.Entities
         public string OpenTime { get; set; } = null!;
         public double MaxCapacity { get; set; }
         public double CurrentCapacity { get; set; }
+        public double PlannedCapacity { get; set; }
         [NotMapped]
         public double AvailableCapacity => MaxCapacity - CurrentCapacity;
         [NotMapped]

@@ -324,57 +324,113 @@ namespace ElecWasteCollection.Application.Services
         //    return true;
         //}
 
+        //      public async Task<bool> ReceiveProductAtWarehouse(List<UserReceivePointFromCollectionPointModel> models)
+        //      {
+        //	if (models == null || !models.Any()) return false;
+        //	string pointIdToSync = null;
+
+        //	foreach (var model in models)
+        //	{
+        //		var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == model.QRCode);
+        //		if (product == null) throw new AppException($"Không tìm thấy sản phẩm với mã QR: {model.QRCode}", 404);
+        //		if (string.IsNullOrEmpty(pointIdToSync))
+        //		{
+        //			pointIdToSync = product.SmallCollectionPointId;
+        //		}
+
+        //		var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
+        //		if (post == null) throw new AppException($"Không tìm thấy bài đăng liên quan đến sản phẩm mã QR: {model.QRCode}", 404);
+        //		double pointToSave = model.Point ?? post.EstimatePoint;
+        //		string descriptionToSave = !string.IsNullOrEmpty(model.Description) ? model.Description : "Sản phẩm đã về đến kho";
+        //		var pointTransaction = new CreatePointTransactionModel
+        //		{
+        //			UserId = product.UserId,
+        //			ProductId = product.ProductId,
+        //			Point = pointToSave,
+        //			Desciption = descriptionToSave
+        //		};
+
+        //		product.Status = ProductStatus.NHAP_KHO.ToString();
+        //		_unitOfWork.Products.Update(product);
+        //		var newHistory = new ProductStatusHistory
+        //		{
+        //			ProductStatusHistoryId = Guid.NewGuid(),
+        //			ProductId = product.ProductId,
+        //			ChangedAt = DateTime.UtcNow,
+        //			StatusDescription = descriptionToSave,
+        //			Status = ProductStatus.NHAP_KHO.ToString()
+        //		};
+        //		await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
+
+        //		await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
+        //	}
+
+        //	await _unitOfWork.SaveAsync();
+
+        //	if (!string.IsNullOrEmpty(pointIdToSync))
+        //	{
+        //		await _capacityHelper.SyncRealtimeCapacityAsync(pointIdToSync);
+        //	}
+
+        //	return true;
+        //}
+
+
         public async Task<bool> ReceiveProductAtWarehouse(List<UserReceivePointFromCollectionPointModel> models)
         {
-			if (models == null || !models.Any()) return false;
-			string pointIdToSync = null;
+            if (models == null || !models.Any()) return false;
 
-			foreach (var model in models)
-			{
-				var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == model.QRCode);
-				if (product == null) throw new AppException($"Không tìm thấy sản phẩm với mã QR: {model.QRCode}", 404);
-				if (string.IsNullOrEmpty(pointIdToSync))
-				{
-					pointIdToSync = product.SmallCollectionPointId;
-				}
+            var pointIdsToSync = new HashSet<string>();
 
-				var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
-				if (post == null) throw new AppException($"Không tìm thấy bài đăng liên quan đến sản phẩm mã QR: {model.QRCode}", 404);
-				double pointToSave = model.Point ?? post.EstimatePoint;
-				string descriptionToSave = !string.IsNullOrEmpty(model.Description) ? model.Description : "Sản phẩm đã về đến kho";
-				var pointTransaction = new CreatePointTransactionModel
-				{
-					UserId = product.UserId,
-					ProductId = product.ProductId,
-					Point = pointToSave,
-					Desciption = descriptionToSave
-				};
+            foreach (var model in models)
+            {
+                var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == model.QRCode);
+                if (product == null) throw new AppException($"Không tìm thấy sản phẩm với mã QR: {model.QRCode}", 404);
 
-				product.Status = ProductStatus.NHAP_KHO.ToString();
-				_unitOfWork.Products.Update(product);
-				var newHistory = new ProductStatusHistory
-				{
-					ProductStatusHistoryId = Guid.NewGuid(),
-					ProductId = product.ProductId,
-					ChangedAt = DateTime.UtcNow,
-					StatusDescription = descriptionToSave,
-					Status = ProductStatus.NHAP_KHO.ToString()
-				};
-				await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
+                if (!string.IsNullOrEmpty(product.SmallCollectionPointId))
+                {
+                    pointIdsToSync.Add(product.SmallCollectionPointId);
+                }
 
-				await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
-			}
+                var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
+                if (post == null) throw new AppException($"Không tìm thấy bài đăng liên quan đến sản phẩm mã QR: {model.QRCode}", 404);
 
-			await _unitOfWork.SaveAsync();
+                double pointToSave = model.Point ?? post.EstimatePoint;
+                string descriptionToSave = !string.IsNullOrEmpty(model.Description) ? model.Description : "Sản phẩm đã về đến kho";
 
-			if (!string.IsNullOrEmpty(pointIdToSync))
-			{
-				await _capacityHelper.SyncRealtimeCapacityAsync(pointIdToSync);
-			}
+                var pointTransaction = new CreatePointTransactionModel
+                {
+                    UserId = product.UserId,
+                    ProductId = product.ProductId,
+                    Point = pointToSave,
+                    Desciption = descriptionToSave
+                };
 
-			return true;
-		}
+                product.Status = ProductStatus.NHAP_KHO.ToString();
+                _unitOfWork.Products.Update(product);
 
+                var newHistory = new ProductStatusHistory
+                {
+                    ProductStatusHistoryId = Guid.NewGuid(),
+                    ProductId = product.ProductId,
+                    ChangedAt = DateTime.UtcNow,
+                    StatusDescription = descriptionToSave,
+                    Status = ProductStatus.NHAP_KHO.ToString()
+                };
+                await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
+
+                await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
+            }
+
+            await _unitOfWork.SaveAsync();
+
+            foreach (var pointId in pointIdsToSync)
+            {
+                await _capacityHelper.SyncRealtimeCapacityAsync(pointId);
+            }
+
+            return true;
+        }
 
 
         public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId, int page, int limit)
