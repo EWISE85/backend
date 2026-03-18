@@ -141,6 +141,30 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.ToTable("BrandCategory", (string)null);
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.BrandCategory", b =>
+                {
+                    b.Property<Guid>("BrandCategoryId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BrandId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<double>("Points")
+                        .HasColumnType("double precision");
+
+                    b.HasKey("BrandCategoryId");
+
+                    b.HasIndex("BrandId");
+
+                    b.HasIndex("CategoryId");
+
+                    b.ToTable("BrandCategory", (string)null);
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Category", b =>
                 {
                     b.Property<Guid>("CategoryId")
@@ -1062,6 +1086,27 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                         .HasConstraintName("FK_AttributeOptions_Attribute");
 
                     b.Navigation("Attribute");
+                });
+
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.BrandCategory", b =>
+                {
+                    b.HasOne("ElecWasteCollection.Domain.Entities.Brand", "Brand")
+                        .WithMany("BrandCategories")
+                        .HasForeignKey("BrandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BrandCategory_Brand");
+
+                    b.HasOne("ElecWasteCollection.Domain.Entities.Category", "Category")
+                        .WithMany("BrandCategories")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_BrandCategory_Category");
+
+                    b.Navigation("Brand");
+
+                    b.Navigation("Category");
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.BrandCategory", b =>
