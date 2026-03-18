@@ -37,22 +37,27 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 			{
 				var response = await FirebaseMessaging.DefaultInstance.SendEachForMulticastAsync(message);
 
-				if (response.FailureCount > 0)
+				// Bỏ điều kiện if (response.FailureCount > 0) để duyệt qua tất cả các token đã gửi
+				for (var i = 0; i < response.Responses.Count; i++)
 				{
-					for (var i = 0; i < response.Responses.Count; i++)
+					if (response.Responses[i].IsSuccess)
 					{
-						if (!response.Responses[i].IsSuccess)
+						// Thêm dòng log này để xem token nào đã gửi thành công
+						Console.WriteLine($"[FCM Success] Đã gửi thành công đến Token: {tokens[i]}");
+					}
+					else
+					{
+						// Giữ nguyên logic xử lý lỗi của bạn
+						var exception = response.Responses[i].Exception;
+						var errorCode = exception?.MessagingErrorCode;
+
+						if (errorCode == MessagingErrorCode.Unregistered ||
+							errorCode == MessagingErrorCode.InvalidArgument)
 						{
-							var errorCode = response.Responses[i].Exception.MessagingErrorCode;
-
-							if (errorCode == MessagingErrorCode.Unregistered ||
-								errorCode == MessagingErrorCode.InvalidArgument)
-							{
-								failedTokens.Add(tokens[i]);
-							}
-
-							Console.WriteLine($"[FCM Error] Token: {tokens[i]} - Error: {errorCode}");
+							failedTokens.Add(tokens[i]);
 						}
+
+						Console.WriteLine($"[FCM Error] Gửi thất bại đến Token: {tokens[i]} - Error: {errorCode} - Message: {exception?.Message}");
 					}
 				}
 			}
