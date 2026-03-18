@@ -105,7 +105,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return await query.FirstOrDefaultAsync();
 		}
-		public async Task<(List<Products> Items, int TotalCount)> GetProductsBySenderIdWithDetailsAsync(Guid senderId, int page, int limit)
+		public async Task<(List<Products> Items, int TotalCount)> GetProductsBySenderIdWithDetailsAsync(string? search, DateOnly? createAt,Guid senderId, int page, int limit)
 		{
 			var query = _dbSet.AsNoTracking()
 				.AsSplitQuery()
@@ -114,7 +114,17 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Posts)
+				.Include(p => p.CollectionRoutes)
 				.Where(p => p.UserId == senderId);
+			if (!string.IsNullOrEmpty(search))
+			{
+				query = query.Where(p => p.Brand.Name.Contains(search) || p.Category.Name.Contains(search));
+			}
+			if (createAt.HasValue)
+			{
+				query = query.Where(p => p.CreateAt.HasValue && p.CreateAt.Value == createAt.Value);
+			}
+
 
 			int totalCount = await query.CountAsync();
 

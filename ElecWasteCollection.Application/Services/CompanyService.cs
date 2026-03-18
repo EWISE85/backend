@@ -47,10 +47,11 @@ namespace ElecWasteCollection.Application.Services
 
 				if (existingCompany != null)
 				{
+					var statusEnum = StatusEnumHelper.GetValueFromDescription<CompanyStatus>(importData.Status);
 					existingCompany.Name = importData.Name;
 					existingCompany.Address = importData.Address;
 					existingCompany.Phone = importData.Phone;
-					existingCompany.Status = importData.Status;
+					existingCompany.Status = statusEnum.ToString();
 					existingCompany.CompanyEmail = importData.CompanyEmail;
 					existingCompany.Updated_At = DateTime.UtcNow;
 					_unitOfWork.Companies.Update(existingCompany);

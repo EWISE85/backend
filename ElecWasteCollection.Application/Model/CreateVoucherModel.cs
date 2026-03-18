@@ -23,5 +23,7 @@ namespace ElecWasteCollection.Application.Model
 		public double Value { get; set; }
 
 		public double PointsToRedeem { get; set; }
+
+		public string? Status { get; set; }
 	}
 }

@@ -29,11 +29,12 @@ namespace ElecWasteCollection.Application.Services
 			var existingShift = await _shiftRepository.GetAsync(s => s.ShiftId == shift.ShiftId);
 			if (existingShift != null)
 			{
+				var statusEnum = StatusEnumHelper.GetValueFromDescription<ShiftStatus>(shift.Status);
 				existingShift.CollectorId = shift.CollectorId;
 				existingShift.WorkDate = shift.WorkDate;
 				existingShift.Shift_Start_Time = shift.Shift_Start_Time;
 				existingShift.Shift_End_Time = shift.Shift_End_Time;
-				existingShift.Status = shift.Status;
+				existingShift.Status = statusEnum.ToString();
 				_unitOfWork.Shifts.Update(existingShift);
 			}
 			else

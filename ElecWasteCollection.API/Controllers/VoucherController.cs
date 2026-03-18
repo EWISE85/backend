@@ -11,10 +11,12 @@ namespace ElecWasteCollection.API.Controllers
 	public class VoucherController : ControllerBase
 	{
 		private readonly IVoucherService _voucherService;
+		private readonly IExcelImportService _excelImportService;
 
-		public VoucherController(IVoucherService voucherService)
+		public VoucherController(IVoucherService voucherService, IExcelImportService excelImportService)
 		{
 			_voucherService = voucherService;
+			_excelImportService = excelImportService;
 		}
 
 		[HttpPost]
@@ -85,8 +87,8 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpPost("user/receive-voucher")]
 		public async Task<IActionResult> ReceiveVoucher([FromBody] UserReceiveVoucherRequest request)
 		{
-			
-			var result = await _voucherService.UserReceiveVoucher(request.UserId,request.VoucherId);
+
+			var result = await _voucherService.UserReceiveVoucher(request.UserId, request.VoucherId);
 			if (result)
 			{
 				return Ok(new { Message = "Nhận voucher thành công" });
@@ -94,6 +96,47 @@ namespace ElecWasteCollection.API.Controllers
 			else
 			{
 				return BadRequest(new { Message = "Nhận voucher thất bại" });
+			}
+		}
+
+		[HttpPost("import-format")]
+		public async Task<IActionResult> ImportFormatExcel([FromForm] ImportFormatExcelRequest request)
+		{
+			if (request.FormFile == null || request.FormFile.Length == 0)
+			{
+				return BadRequest(new { Message = "Vui lòng chọn file Excel để tải lên." });
+			}
+			try
+			{
+				await _voucherService.UpdateFormatExcel(request.SystemConfigId, request.FormFile);
+				return Ok(new { Message = "Cập nhật định dạng Excel thành công." });
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { Message = "Lỗi khi cập nhật định dạng Excel.", Error = ex.Message });
+			}
+		}
+
+		[HttpPost("import-excel")]
+		public async Task<IActionResult> ImportVouchersFromExcel(IFormFile request)
+		{
+
+			try
+			{
+				using var stream = request.OpenReadStream();
+				var result = await _excelImportService.ImportAsync(stream, "Voucher");
+				if (result.Success)
+				{
+					return Ok(new { Message = "Import vouchers thành công.", Details = result.Messages });
+				}
+				else
+				{
+					return BadRequest(new { Message = "Import vouchers thất bại.", Details = result.Messages });
+				}
+			}
+			catch (Exception ex)
+			{
+				return StatusCode(500, new { Message = "Lỗi khi import vouchers từ Excel.", Error = ex.Message });
 			}
 		}
 	}

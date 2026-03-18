@@ -23,9 +23,10 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IVehicleService _vehicleService;
 		private readonly IEmailService _emailService;
 		private readonly IMapboxService _mapboxService;
+		private readonly IVoucherService _voucherService;
 
 
-		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService)
+		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService)
 		{
 			_companyService = CompanyService;
 			_accountService = accountService;
@@ -36,6 +37,7 @@ namespace ElecWasteCollection.Application.Services
 			_vehicleService = vehicleService;
 			_emailService = emailService;
 			_mapboxService = mapboxService;
+			_voucherService = voucherService;
 		}
 
 		public async Task<ImportResult> ImportAsync(Stream excelStream, string importType)
@@ -70,6 +72,10 @@ namespace ElecWasteCollection.Application.Services
 				{
 					await ImportUserAsync(worksheet, result);
 				}
+				else if (importType.Equals("Voucher", StringComparison.OrdinalIgnoreCase))
+				{
+					await ImportVoucherAsync(worksheet, result);
+				}
 				else
 				{
 					result.Success = false;
@@ -85,6 +91,57 @@ namespace ElecWasteCollection.Application.Services
 				result.Messages.Add(ex.Message);
 			}
 			return result;
+		}
+
+		private async Task ImportVoucherAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			int rowCount = worksheet.RowsUsed().Count();
+			for (int row = 2; row <= rowCount; row++)
+			{
+				var code = worksheet.Cell(row, 2).Value.ToString()?.Trim();
+				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var imageUrl = worksheet.Cell(row, 4).Value.ToString()?.Trim();
+				var description = worksheet.Cell(row, 5).Value.ToString()?.Trim();
+				var startAtStr = worksheet.Cell(row, 6).Value.ToString()?.Trim();
+				var endAtStr = worksheet.Cell(row, 7).Value.ToString()?.Trim();
+				var valueStr = worksheet.Cell(row, 8).Value.ToString()?.Trim();
+				var pointsToRedeemStr = worksheet.Cell(row, 9).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 10).Value.ToString();
+				string dateFormat = "dd/MM/yyyy";
+
+				DateOnly startAt = DateOnly.TryParseExact(startAtStr?.Trim(), dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tempStart)
+					? tempStart
+					: DateOnly.MinValue;
+
+				DateOnly endAt = DateOnly.TryParseExact(endAtStr?.Trim(), dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tempEnd)
+					? tempEnd
+					: DateOnly.MinValue;
+				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
+				string statusToSave;
+
+				if (statusNormalized.Equals("hoạt động", StringComparison.OrdinalIgnoreCase))
+				{
+					statusToSave = VoucherStatus.HOAT_DONG.ToString(); // Hoặc Enum
+				}
+				else
+				{
+					statusToSave = VoucherStatus.KHONG_HOAT_DONG.ToString();
+				}
+				var voucherModel = new CreateVoucherModel
+				{
+					Code = code,
+					Name = name,
+					ImageUrl = imageUrl,
+					Description = description,
+					StartAt = startAt,
+					EndAt = endAt,
+					Value = double.TryParse(valueStr, out var tempValue) ? tempValue : 0,
+					PointsToRedeem = double.TryParse(pointsToRedeemStr, out var tempPoints) ? tempPoints : 0,
+					Status = statusToSave
+				};
+				var importResult = await _voucherService.CheckAndUpdateVoucherAsync(voucherModel);
+				result.Messages.AddRange(importResult.Messages);
+			};
 		}
 
 		private async Task ImportVehicleAsync(IXLWorksheet worksheet, ImportResult result)

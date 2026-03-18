@@ -30,7 +30,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<List<ProductComeWarehouseDetailModel>> ProductsComeWarehouseByDateAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 
 
-		Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId, int page, int limit);
+		Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit);
 
 		Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId);
 

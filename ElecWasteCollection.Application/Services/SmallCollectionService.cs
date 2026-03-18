@@ -1,5 +1,6 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -169,12 +170,12 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.SmallCollectionPointsId == smallCollectionPoints.SmallCollectionPointsId);
 			if (smallPoint == null) throw new AppException("Không tìm thấy kho", 404);
-
+			var statusEnum = StatusEnumHelper.GetValueFromDescription<SmallCollectionPointStatus>(smallCollectionPoints.Status).ToString();
 			smallPoint.Name = smallCollectionPoints.Name;
 			smallPoint.Address = smallCollectionPoints.Address;
 			smallPoint.Latitude = smallCollectionPoints.Latitude;
 			smallPoint.Longitude = smallCollectionPoints.Longitude;
-			smallPoint.Status = smallCollectionPoints.Status;
+			smallPoint.Status = statusEnum.ToString();
 			smallPoint.CompanyId = smallCollectionPoints.CompanyId;
 			smallPoint.OpenTime = smallCollectionPoints.OpenTime;
 			_unitOfWork.SmallCollectionPoints.Update(smallPoint);
