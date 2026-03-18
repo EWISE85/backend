@@ -80,5 +80,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public virtual ICollection<Notifications> Notifications { get; set; } = new List<Notifications>();
 
+		public virtual ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
+
+
 	}
 }

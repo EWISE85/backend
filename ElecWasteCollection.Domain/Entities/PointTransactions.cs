@@ -21,7 +21,9 @@ namespace ElecWasteCollection.Domain.Entities
 	{
 		public Guid PointTransactionId { get; set; }
 
-		public Guid ProductId { get; set; }
+		public Guid? ProductId { get; set; }
+
+		public Guid? VoucherId { get; set; }
 
 		public Guid UserId { get; set; }
 		public string Desciption { get; set; }
@@ -35,5 +37,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public Products Product { get; set; }
 
 		public User User { get; set; }
+
+		public Voucher Voucher { get; set; }
 	}
 }

@@ -16,5 +16,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> UpdatePointByProductId(Guid productId, double newPointValue, string reason = "Cập nhật lại loại sản phẩm/Brand");
 
 		Task<bool> RevertPointFromCollectionPoint(Guid productId, Guid userId, bool saveChanges = true);
+
+		Task<bool> ReceivePointDaily(Guid userId, double point);
 	}
 }

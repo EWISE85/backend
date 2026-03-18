@@ -221,5 +221,80 @@ namespace ElecWasteCollection.Application.Services
 				});
 			}
 		}
+
+		public async Task ProcessApprovalNotificationsAsync(List<Post> approvedPosts)
+		{
+			foreach (var post in approvedPosts)
+			{
+				string title = "Bài đăng được duyệt!";
+				string body = "Bài đăng yêu cầu thu gom rác điện tử của bạn đã được phê duyệt thành công.";
+
+				var dataPayload = new Dictionary<string, string>
+		{
+			{ "type", "POST_APPROVED" },
+			{ "postId", post.PostId.ToString() }
+		};
+
+				// Lấy Token của người đăng bài
+				var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == post.SenderId);
+
+				// Gửi qua Firebase
+				if (userTokens != null && userTokens.Any())
+				{
+					var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+					await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+				}
+
+				// Tạo bản ghi Notification để lưu vào DB
+				var notification = new Notifications
+				{
+					NotificationId = Guid.NewGuid(),
+					UserId = post.SenderId,
+					Title = title,
+					Body = body,
+					IsRead = false,
+					CreatedAt = DateTime.UtcNow,
+					Type = NotificationType.System.ToString()
+				};
+
+				// Chỉ AddAsync vào UnitOfWork, việc SaveAsync sẽ do hàm ApprovePost đảm nhận
+				await _unitOfWork.Notifications.AddAsync(notification);
+			}
+		}
+		public async Task ProcessRejectionNotificationsAsync(List<Post> rejectedPosts, string reason)
+		{
+			foreach (var post in rejectedPosts)
+			{
+				string title = "Bài đăng bị từ chối";
+				string body = $"Bài đăng yêu cầu thu gom của bạn không được duyệt. Lý do: {reason}. Vui lòng kiểm tra lại.";
+
+				var dataPayload = new Dictionary<string, string>
+		{
+			{ "type", "POST_REJECTED" },
+			{ "postId", post.PostId.ToString() }
+		};
+
+				var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == post.SenderId);
+
+				if (userTokens != null && userTokens.Any())
+				{
+					var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+					await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+				}
+
+				var notification = new Notifications
+				{
+					NotificationId = Guid.NewGuid(),
+					UserId = post.SenderId,
+					Title = title,
+					Body = body,
+					IsRead = false,
+					CreatedAt = DateTime.UtcNow,
+					Type = NotificationType.System.ToString()
+				};
+
+				await _unitOfWork.Notifications.AddAsync(notification);
+			}
+		}
 	}
 }

@@ -40,6 +40,10 @@ namespace ElecWasteCollection.Domain.IRepository
 
         IGenericRepository<BrandCategory> BrandCategories { get; }
 
+        IGenericRepository<Voucher> Vouchers { get; }
+
+        IGenericRepository<UserVoucher> UserVouchers { get; }
+
 		Task<int> SaveAsync();
     }
 }

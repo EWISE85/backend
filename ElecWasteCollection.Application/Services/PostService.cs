@@ -35,8 +35,8 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IUserAddressRepository _userAddressRepository;
 		private readonly ICategoryAttributeRepsitory _categoryAttributeRepsitory;
 		private readonly IBrandCategoryRepository _brandCategoryRepository;
-
-		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache, IUserAddressRepository userAddressRepository, ICategoryAttributeRepsitory categoryAttributeRepsitory, IBrandCategoryRepository brandCategoryRepository)
+		private readonly INotificationService _notificationService;
+		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache, IUserAddressRepository userAddressRepository, ICategoryAttributeRepsitory categoryAttributeRepsitory, IBrandCategoryRepository brandCategoryRepository, INotificationService notificationService)
 		{
 			_profanityChecker = profanityChecker;
 			_productService = productService;
@@ -54,6 +54,7 @@ namespace ElecWasteCollection.Application.Services
 			_userAddressRepository = userAddressRepository;
 			_categoryAttributeRepsitory = categoryAttributeRepsitory;
 			_brandCategoryRepository = brandCategoryRepository;
+			_notificationService = notificationService;
 		}
 
         public async Task<bool> AddPost(CreatePostModel createPostRequest)
@@ -606,8 +607,12 @@ namespace ElecWasteCollection.Application.Services
 				throw new AppException("Không tìm thấy bài viết nào hợp lệ", 404);
 			}
 
+			// Tạo danh sách để lưu các bài post thực sự được duyệt trong lần chạy này
+			var newlyApprovedPosts = new List<Post>();
+
 			foreach (var post in posts)
 			{
+				// Nếu bài đã duyệt rồi thì bỏ qua, KHÔNG gửi thông báo lại
 				if (post.Status == PostStatus.DA_DUYET.ToString()) continue;
 
 				post.Status = PostStatus.DA_DUYET.ToString();
@@ -624,18 +629,27 @@ namespace ElecWasteCollection.Application.Services
 
 						var history = new ProductStatusHistory
 						{
-							ProductId = post.ProductId, 
+							ProductId = post.ProductId,
 							ChangedAt = DateTime.UtcNow,
 							Status = ProductStatus.CHO_PHAN_KHO.ToString(),
 							StatusDescription = "Yêu cầu được duyệt và chờ phân kho"
-                        };
+						};
 
 						await _unitOfWork.ProductStatusHistory.AddAsync(history);
 					}
 				}
+
+				// Thêm bài viết vào danh sách cần gửi thông báo
+				newlyApprovedPosts.Add(post);
 			}
 
-			 await _unitOfWork.SaveAsync();
+			if (newlyApprovedPosts.Any())
+			{
+				await _notificationService.ProcessApprovalNotificationsAsync(newlyApprovedPosts);
+			}
+
+			await _unitOfWork.SaveAsync();
+
 			return true;
 		}
 
@@ -643,12 +657,12 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var checkBadWord = await _profanityChecker.ContainsProfanityAsync(rejectMessage);
 			if (checkBadWord) throw new AppException("Lý do từ chối chứa từ ngữ không phù hợp.", 400);
-			
 
 			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId));
 
 			if (posts == null || !posts.Any()) throw new AppException("Không tìm thấy bài viết nào hợp lệ.", 404);
-			
+
+			var newlyRejectedPosts = new List<Post>();
 
 			foreach (var post in posts)
 			{
@@ -677,6 +691,13 @@ namespace ElecWasteCollection.Application.Services
 						await _unitOfWork.ProductStatusHistory.AddAsync(history);
 					}
 				}
+
+				newlyRejectedPosts.Add(post);
+			}
+
+			if (newlyRejectedPosts.Any())
+			{
+				await _notificationService.ProcessRejectionNotificationsAsync(newlyRejectedPosts, rejectMessage);
 			}
 
 			await _unitOfWork.SaveAsync();

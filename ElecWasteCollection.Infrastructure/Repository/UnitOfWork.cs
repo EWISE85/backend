@@ -43,6 +43,10 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public ICollectionGroupRepository CollectionGroups { get; }
 		public IGenericRepository<PackageStatusHistory> PackageStatusHistory { get; }
 		public IGenericRepository<BrandCategory> BrandCategories { get; }
+
+        public IGenericRepository<Voucher> Vouchers { get; }
+
+		public IGenericRepository<UserVoucher> UserVouchers { get; }
 		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
@@ -78,6 +82,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
             PackageStatusHistory = new GenericRepository<PackageStatusHistory>(_context);
             CompanyRecyclingCategories = new GenericRepository<CompanyRecyclingCategory>(_context);
 			BrandCategories = new GenericRepository<BrandCategory>(_context);
+			Vouchers = new GenericRepository<Voucher>(_context);
+			UserVouchers = new GenericRepository<UserVoucher>(_context);
 
 		}
 

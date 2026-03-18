@@ -49,6 +49,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<BrandCategory> BrandCategories { get; set; }
 
+		public DbSet<Voucher> Vouchers { get; set; }
+
+		public DbSet<UserVoucher> UserVouchers { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
@@ -295,6 +299,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .WithMany(p => p.PointTransactions)
 					  .HasForeignKey(e => e.ProductId)
 					  .HasConstraintName("FK_PointTransactions_Product");
+				entity.HasOne(e => e.Voucher)
+				.WithMany(v => v.PointTransactions)
+					  .HasForeignKey(e => e.VoucherId)
+					  .HasConstraintName("FK_PointTransactions_Voucher");
 			});
 
 
@@ -497,6 +505,32 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasForeignKey(e => e.CategoryId)
 					  .HasConstraintName("FK_BrandCategory_Category");
 
+			});
+
+			modelBuilder.Entity<Voucher>(entity =>
+			{
+				entity.ToTable("Voucher");
+				entity.HasKey(e => e.VoucherId);
+				entity.Property(e => e.VoucherId).ValueGeneratedOnAdd();
+			});
+
+			modelBuilder.Entity<UserVoucher>(entity =>
+			{
+				entity.ToTable("UserVoucher");
+				entity.HasKey(e => e.UserVoucherId);
+				entity.Property(e => e.UserVoucherId).ValueGeneratedOnAdd();
+				entity.Property(e => e.UserId).IsRequired();
+				entity.Property(e => e.VoucherId).IsRequired();
+
+				entity.HasOne(e => e.User)
+					  .WithMany(u => u.UserVouchers)
+					  .HasForeignKey(e => e.UserId)
+					  .HasConstraintName("FK_UserVoucher_User");
+
+				entity.HasOne(e => e.Voucher)
+				.WithMany(v => v.UserVouchers)
+					  .HasForeignKey(e => e.VoucherId)
+					  .HasConstraintName("FK_UserVoucher_Voucher");
 			});
 
 		}
