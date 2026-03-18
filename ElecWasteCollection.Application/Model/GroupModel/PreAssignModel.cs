@@ -18,6 +18,31 @@ namespace ElecWasteCollection.Application.Model.GroupModel
 
     }
 
+    public class CriticalGapSuggestion
+    {
+        public bool HasCriticalGap { get; set; }
+        public int SuggestedVehicleCount { get; set; }
+        public double TotalCriticalWeight { get; set; }
+        public double TotalCriticalVolume { get; set; }
+        public List<string> CriticalProductIds { get; set; } = new();
+        public string Message { get; set; } = null!;
+    }
+    public class GetAvailableVehiclesRequest
+    {
+        public string PointId { get; set; } = null!;
+        public DateOnly WorkDate { get; set; }
+    }
+
+    public class VehicleAvailableViewModel
+    {
+        public string VehicleId { get; set; } = null!;
+        public string PlateNumber { get; set; } = null!;
+        public string VehicleType { get; set; } = null!;
+        public double CapacityKg { get; set; }
+        public double CapacityM3 { get; set; }
+        public string Status { get; set; } = null!;
+    }
+
     public class PreAssignResponse
     {
         public string SmallCollectionPointId { get; set; }
@@ -25,8 +50,8 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public DateOnly WorkDate { get; set; }
         public double LoadThresholdPercent { get; set; }
         public List<PreAssignDay> Days { get; set; } = new List<PreAssignDay>();
-
         public List<UnAssignProductPreview> UnassignedProducts { get; set; }
+        public CriticalGapSuggestion? CriticalGapSuggestion { get; set; }
     }
 
     public class PreAssignDay
