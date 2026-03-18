@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ElecWasteCollection.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ElecWasteCollection.Infrastructure.Migrations
 {
     [DbContext(typeof(ElecWasteCollectionDbContext))]
-    partial class ElecWasteCollectionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260318065322_UpdateTablePointTransaction")]
+    partial class UpdateTablePointTransaction
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -750,9 +753,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<string>("OpenTime")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<double>("PlannedCapacity")
-                        .HasColumnType("double precision");
 
                     b.Property<string>("RecyclingCompanyId")
                         .HasColumnType("text");

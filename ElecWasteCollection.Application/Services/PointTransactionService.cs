@@ -145,5 +145,31 @@ namespace ElecWasteCollection.Application.Services
 
 			return true;
 		}
+
+		public async Task<bool> ReceivePointDaily(Guid userId, double point)
+		{
+			var user = await _unitOfWork.Users.GetAsync(u => u.UserId == userId);
+			if (user == null)
+			{
+				throw new AppException("Người dùng không tồn tại", 404);
+			}
+			if (point < 0)
+			{
+				throw new AppException("Số điểm hàng ngày phải là số dương", 400);
+			}
+			var pointTransaction = new PointTransactions
+			{
+				UserId = userId,
+				Desciption = "Nhận điểm hàng ngày",
+				TransactionType = PointTransactionType.TICH_DIEM.ToString(),
+				Point = point,
+				CreatedAt = DateTime.UtcNow
+			};
+			user.Points += point;
+			_unitOfWork.PointTransactions.Add(pointTransaction);
+			_unitOfWork.Users.Update(user);
+			var result = await _unitOfWork.SaveAsync();
+			return result > 0 ;
+		}
 	}
 }

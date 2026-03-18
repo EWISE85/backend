@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,5 +20,8 @@ namespace ElecWasteCollection.Application.IServices
 		Task SendNotificationToUser(SendNotificationToUserModel sendNotificationToUserModel);
 
 		Task<List<NotificationModel>> GetNotificationTypeEvent();
+
+		Task ProcessApprovalNotificationsAsync(List<Post> post);
+		Task ProcessRejectionNotificationsAsync(List<Post> rejectedPosts, string reason);
 	}
 }

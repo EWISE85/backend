@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ElecWasteCollection.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ElecWasteCollection.Infrastructure.Migrations
 {
     [DbContext(typeof(ElecWasteCollectionDbContext))]
-    partial class ElecWasteCollectionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260318061331_UpdateTableVoucher")]
+    partial class UpdateTableVoucher
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -457,7 +460,7 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<double>("Point")
                         .HasColumnType("double precision");
 
-                    b.Property<Guid?>("ProductId")
+                    b.Property<Guid>("ProductId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("TransactionType")
@@ -467,16 +470,11 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<Guid>("UserId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("VoucherId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("PointTransactionId");
 
                     b.HasIndex("ProductId");
 
                     b.HasIndex("UserId");
-
-                    b.HasIndex("VoucherId");
 
                     b.ToTable("PointTransactions", (string)null);
                 });
@@ -750,9 +748,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<string>("OpenTime")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<double>("PlannedCapacity")
-                        .HasColumnType("double precision");
 
                     b.Property<string>("RecyclingCompanyId")
                         .HasColumnType("text");
@@ -1226,6 +1221,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.HasOne("ElecWasteCollection.Domain.Entities.Products", "Product")
                         .WithMany("PointTransactions")
                         .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
                         .HasConstraintName("FK_PointTransactions_Product");
 
                     b.HasOne("ElecWasteCollection.Domain.Entities.User", "User")
@@ -1235,16 +1232,9 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_PointTransactions_User");
 
-                    b.HasOne("ElecWasteCollection.Domain.Entities.Voucher", "Voucher")
-                        .WithMany("PointTransactions")
-                        .HasForeignKey("VoucherId")
-                        .HasConstraintName("FK_PointTransactions_Voucher");
-
                     b.Navigation("Product");
 
                     b.Navigation("User");
-
-                    b.Navigation("Voucher");
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Post", b =>
@@ -1620,8 +1610,6 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Voucher", b =>
                 {
-                    b.Navigation("PointTransactions");
-
                     b.Navigation("UserVouchers");
                 });
 #pragma warning restore 612, 618
