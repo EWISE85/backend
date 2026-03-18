@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -153,14 +154,14 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var collectorToUpdate = await _collectorRepository.GetAsync(c => c.CollectorCode == collector.CollectorCode);
 			if (collectorToUpdate == null) throw new AppException("Không tìm thấy người thu gom", 404);
-			
-				collectorToUpdate.Name = collector.Name;
+			var status = StatusEnumHelper.GetValueFromDescription<UserStatus>(collector.Status);
+			collectorToUpdate.Name = collector.Name;
 				collectorToUpdate.Email = collector.Email;
 				collectorToUpdate.Phone = collector.Phone;
 				collectorToUpdate.Avatar = collector.Avatar;
 				collectorToUpdate.CollectionCompanyId = collector.CollectionCompanyId;
 				collectorToUpdate.SmallCollectionPointId = collector.SmallCollectionPointId;
-				collectorToUpdate.Status = collector.Status;
+				collectorToUpdate.Status = status.ToString();
 			_unitOfWork.Users.Update(collectorToUpdate);
 			await _unitOfWork.SaveAsync();
 			return true;

@@ -84,7 +84,7 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpGet("user/filter")]
 		public async Task<IActionResult> GetAllProductsByUserId([FromQuery] FilterProductByUserRequest request)
 		{
-			var products = await _productService.GetAllProductsByUserId(request.UserId,request.Page,request.Limit);
+			var products = await _productService.GetAllProductsByUserId(request.Search, request.CreateAt,request.UserId,request.Page,request.Limit);
 			return Ok(products);
 		}
 		[HttpPost("notify-arrival/{productId}")]

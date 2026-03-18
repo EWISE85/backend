@@ -6,6 +6,7 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,13 +20,87 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IVoucherRepository _voucherRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IUserRepository _userRepository;
-	
+		private readonly ICloudinaryService _cloudinaryService;
 
-		public VoucherService(IVoucherRepository voucherRepository, IUnitOfWork unitOfWork, IUserRepository userRepository)
+
+		public VoucherService(IVoucherRepository voucherRepository, IUnitOfWork unitOfWork, IUserRepository userRepository, ICloudinaryService cloudinaryService)
 		{
 			_voucherRepository = voucherRepository;
 			_unitOfWork = unitOfWork;
 			_userRepository = userRepository;
+			_cloudinaryService = cloudinaryService;
+		}
+
+		public async Task<ImportResult> CheckAndUpdateVoucherAsync(CreateVoucherModel model)
+		{
+			var result = new ImportResult();
+			if (model == null || string.IsNullOrWhiteSpace(model.Code))
+			{
+				result.Success = false;
+				result.Messages.Add("Dữ liệu voucher trống hoặc thiếu mã Code.");
+				return result;
+			}
+
+			try
+			{
+				var existingVoucher = await _unitOfWork.Vouchers.GetAsync(v => v.Code == model.Code);
+
+				if (existingVoucher != null)
+				{
+					existingVoucher.Name = model.Name;
+					existingVoucher.ImageUrl = model.ImageUrl;
+					existingVoucher.Description = model.Description;
+					existingVoucher.StartAt = model.StartAt;
+					existingVoucher.EndAt = model.EndAt;
+					existingVoucher.Value = model.Value;
+					existingVoucher.PointsToRedeem = model.PointsToRedeem;
+
+					if (!string.IsNullOrEmpty(model.Status))
+					{
+						var statusEnum = StatusEnumHelper.GetValueFromDescription<VoucherStatus>(model.Status);
+						existingVoucher.Status = statusEnum.ToString();
+					}
+
+					_unitOfWork.Vouchers.Update(existingVoucher);
+					result.Messages.Add($"Đã cập nhật thông tin voucher '{model.Name}' (Mã: {model.Code}).");
+					result.IsNew = false;
+				}
+				else
+				{
+					// Tạo mới voucher
+					var newVoucher = new Voucher
+					{
+						VoucherId = Guid.NewGuid(),
+						Code = model.Code,
+						Name = model.Name,
+						ImageUrl = model.ImageUrl,
+						Description = model.Description,
+						StartAt = model.StartAt,
+						EndAt = model.EndAt,
+						Value = model.Value,
+						PointsToRedeem = model.PointsToRedeem,
+						Status = string.IsNullOrEmpty(model.Status) ? VoucherStatus.HOAT_DONG.ToString() : model.Status
+					};
+
+					await _unitOfWork.Vouchers.AddAsync(newVoucher);
+					result.Messages.Add($"Thêm mới voucher '{model.Name}' (Mã: {model.Code}) thành công.");
+					result.IsNew = true;
+				}
+
+				await _unitOfWork.SaveAsync();
+
+				result.Success = true;
+				return result;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"[ERROR] CheckAndUpdateVoucherAsync: {ex}");
+
+				result.Success = false;
+				result.Messages.Add($"Lỗi xử lý voucher {model?.Code}: {ex.Message}");
+			}
+
+			return result;
 		}
 
 		public async Task<bool> CreateVoucher(CreateVoucherModel model)
@@ -131,6 +206,29 @@ namespace ElecWasteCollection.Application.Services
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VoucherStatus>(voucher.Status)
 			};
 
+		}
+
+		public async Task UpdateFormatExcel(Guid systemConfigId, IFormFile formFile)
+		{
+			var config = await _unitOfWork.SystemConfig.GetAsync(c => c.SystemConfigId == systemConfigId);
+			if (config == null)
+			{
+				throw new Exception($"System config with ID {systemConfigId} not found.");
+			}
+
+			// Kiểm tra file có hợp lệ không
+			if (formFile == null || formFile.Length == 0)
+			{
+				throw new Exception("File is empty or null.");
+			}
+			string publicId = Path.GetFileName(formFile.FileName);
+
+			// 3. Upload file dùng CloudinaryService
+			string fileUrl = await _cloudinaryService.UploadRawFileAsync(formFile, publicId);
+			// 4. Update link vào config.Value
+			config.Value = fileUrl;
+			_unitOfWork.SystemConfig.Update(config);
+			await _unitOfWork.SaveAsync();
 		}
 
 		public async Task<bool> UserReceiveVoucher(Guid userId, Guid voucherId)

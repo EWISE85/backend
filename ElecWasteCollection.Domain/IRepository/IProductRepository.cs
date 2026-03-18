@@ -15,7 +15,7 @@ namespace ElecWasteCollection.Domain.IRepository
 
 		Task<List<Products>> GetDirectlyEnteredProductsAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId);
 		Task<Products?> GetProductWithDetailsAsync(Guid productId);
-		Task<(List<Products> Items, int TotalCount)> GetProductsBySenderIdWithDetailsAsync(Guid senderId, int page, int limit);
+		Task<(List<Products> Items, int TotalCount)> GetProductsBySenderIdWithDetailsAsync(string? search, DateOnly? createAt, Guid senderId, int page, int limit);
 		Task<Products?> GetProductDetailWithAllRelationsAsync(Guid productId);
 			Task<(List<Products> Items, int TotalCount)> GetPagedProductsForAdminAsync(
 				int page,

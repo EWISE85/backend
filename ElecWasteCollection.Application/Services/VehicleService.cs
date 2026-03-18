@@ -24,12 +24,14 @@ namespace ElecWasteCollection.Application.Services
 			var existingVehicle = await _vehicleRepository.GetAsync(v => v.VehicleId == vehicle.VehicleId);
 			if (existingVehicle != null)
 			{
+				var statusEnum = StatusEnumHelper.GetValueFromDescription<VehicleStatus>(vehicle.Status);
 				existingVehicle.Plate_Number = vehicle.Plate_Number;
 				existingVehicle.Vehicle_Type = vehicle.Vehicle_Type;
 				existingVehicle.Capacity_Kg = vehicle.Capacity_Kg;
                 existingVehicle.Length_M = vehicle.Length_M;
                 existingVehicle.Width_M = vehicle.Width_M;
-                existingVehicle.Height_M = vehicle.Height_M; existingVehicle.Status = vehicle.Status;
+                existingVehicle.Height_M = vehicle.Height_M; 
+				existingVehicle.Status = statusEnum.ToString();
 				existingVehicle.Small_Collection_Point = vehicle.Small_Collection_Point;
 				 _unitOfWork.Vehicles.Update(existingVehicle);
 			}

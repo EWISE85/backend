@@ -279,6 +279,7 @@ namespace ElecWasteCollection.Application.Services
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				EstimatePoint = post?.EstimatePoint,
 				RealPoint = realPoint,
+				PickUpDate = product.CollectionRoutes?.FirstOrDefault()?.CollectionDate
 			};
 		}
 
@@ -433,10 +434,10 @@ namespace ElecWasteCollection.Application.Services
         }
 
 
-        public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(Guid userId, int page, int limit)
+        public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit)
 		{
 			// Gọi Repo lấy dữ liệu đã phân trang và tổng số item
-			var (products, totalItems) = await _productRepository.GetProductsBySenderIdWithDetailsAsync(userId, page, limit);
+			var (products, totalItems) = await _productRepository.GetProductsBySenderIdWithDetailsAsync(search, createAt, userId, page, limit);
 
 			if (products == null || !products.Any())
 			{
