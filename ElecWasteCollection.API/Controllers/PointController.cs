@@ -15,8 +15,8 @@ namespace ElecWasteCollection.API.Controllers
         public PointController(IPointTransactionService pointTransactionService, IUserService userService)
         {
             _pointTransactionService = pointTransactionService;
-			_userService = userService;
-		}
+            _userService = userService;
+        }
         [HttpGet("points/{userId}")]
         public async Task<IActionResult> GetUserPoints([FromRoute] Guid userId)
         {
@@ -32,7 +32,7 @@ namespace ElecWasteCollection.API.Controllers
                 Point = request.Point,
                 Desciption = request.Desciption,
             };
-            var result = await _pointTransactionService.ReceivePointFromCollectionPoint(model,true);
+            var result = await _pointTransactionService.ReceivePointFromCollectionPoint(model, true);
             return Ok(result);
         }
         [HttpGet("points-transaction/{userId}")]
@@ -42,23 +42,24 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(pointTransactions);
         }
         [HttpPut("points-transaction/{productId}")]
-		public async Task<IActionResult> UpdatePointByProductId([FromRoute] Guid productId, [FromBody] UpdatePointTransactionRequest request)
-		{
-			var result = await _pointTransactionService.UpdatePointByProductId(productId, request.NewPointValue, request.ReasonForUpdate);
-			return Ok(result);
-		}
+        public async Task<IActionResult> UpdatePointByProductId([FromRoute] Guid productId, [FromBody] UpdatePointTransactionRequest request)
+        {
+            var result = await _pointTransactionService.UpdatePointByProductId(productId, request.NewPointValue, request.ReasonForUpdate);
+            return Ok(result);
+        }
 
         [HttpPost("point/daily")]
-		public async Task<IActionResult> ReceiveDailyPoint([FromBody] ReceiveDailyPointRequest request)
-		{
-			var result = await _pointTransactionService.ReceivePointDaily(request.UserId, request.Points);
-			if (result)
-			{
-				return Ok(new { Message = "Nhận điểm hàng ngày thành công" });
-			}
-			else
-			{
-				return BadRequest(new { Message = "Nhận điểm hàng ngày thất bại" });
-			}
-		}
+        public async Task<IActionResult> ReceiveDailyPoint([FromBody] ReceiveDailyPointRequest request)
+        {
+            var result = await _pointTransactionService.ReceivePointDaily(request.UserId, request.Points);
+            if (result)
+            {
+                return Ok(new { Message = "Nhận điểm hàng ngày thành công" });
+            }
+            else
+            {
+                return BadRequest(new { Message = "Nhận điểm hàng ngày thất bại" });
+            }
+        }
+    }
 }
