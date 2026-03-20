@@ -177,6 +177,54 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return (pagedPackages, totalCount);
 		}
+
+		public async Task<(List<Packages> Items, int TotalCount)> GetTrackingPackage(string? recyclerId, DateOnly? fromDate, DateOnly? toDate, string? smallCollectionPointId,
+ string? packageId, string? status, int page, int limit)
+		{
+			var query = _dbSet.AsNoTracking().AsSplitQuery();
+
+			query = query
+				.Include(p => p.Products)
+				.Include(p => p.PackageStatusHistories)
+				.Include(p => p.SmallCollectionPoints)
+					.ThenInclude(scp => scp.RecyclingCompany);
+			if (!string.IsNullOrEmpty(recyclerId))
+			{
+				query = query.Where(p => p.SmallCollectionPoints.RecyclingCompanyId == recyclerId);
+			}
+			if (!string.IsNullOrEmpty(smallCollectionPointId))
+			{
+				query = query.Where(p => p.SmallCollectionPointsId == smallCollectionPointId);
+			}
+			if (!string.IsNullOrEmpty(packageId))
+			{
+				query = query.Where(p => p.PackageId == packageId);
+			}
+			if (!string.IsNullOrEmpty(status))
+			{
+				var trimmedStatus = status.Trim().ToLower();
+				query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
+			}
+			if (fromDate.HasValue)
+			{
+				var fromDateTime = DateTime.SpecifyKind(fromDate.Value.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+				query = query.Where(p => p.DeliveryHandoverAt >= fromDateTime);
+			}
+			if (toDate.HasValue)
+			{
+				var toDateTime = DateTime.SpecifyKind(toDate.Value.ToDateTime(TimeOnly.MaxValue), DateTimeKind.Utc);
+				query = query.Where(p => p.DeliveryHandoverAt <= toDateTime);
+			}
+			var totalCount = await query.CountAsync();
+
+			var pagedPackages = await query
+				.OrderByDescending(p => p.DeliveryHandoverAt)
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToListAsync();
+
+			return (pagedPackages, totalCount);
+		}
 	}
 
 }

@@ -169,5 +169,22 @@ namespace ElecWasteCollection.API.Controllers
 
 			return Ok(result);
 		}
-	}
+		[HttpGet("tracking")]
+		public async Task<IActionResult> GetTrackingPackage(
+			[FromQuery] string? recyclerId,
+			[FromQuery] string? smallCollectionPointId,
+			[FromQuery] string? packageId,
+			[FromQuery] string? status,
+			[FromQuery] DateOnly? fromDate,
+			[FromQuery] DateOnly? toDate,
+			[FromQuery] int page = 1,
+			[FromQuery] int limit = 10)
+		{
+			
+
+			var result = await _packageService.GetTrackingPackage(recyclerId,fromDate, toDate, smallCollectionPointId, packageId, status, page, limit);
+
+			return Ok(result);
+		}
+		}
 }

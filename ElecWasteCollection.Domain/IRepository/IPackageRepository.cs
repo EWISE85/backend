@@ -34,5 +34,14 @@ namespace ElecWasteCollection.Domain.IRepository
 	string deliveryQrCode,
 	int page,
 	int limit);
+
+		Task<(List<Packages> Items, int TotalCount)> GetTrackingPackage(
+	string? recyclerId,
+	DateOnly? fromDate, DateOnly? toDate,
+	string? smallCollectionPointId,
+	string? packageId,
+	string? status,
+	int page,
+	int limit);
 	}
 }

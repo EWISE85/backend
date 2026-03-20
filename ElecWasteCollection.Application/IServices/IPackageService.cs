@@ -23,5 +23,8 @@ namespace ElecWasteCollection.Application.IServices
 		Task<List<PackageDetailModel>> GetPackagesWhenDelivery();
 		Task<PagedResultModel<PackageDetailModel>> GetPackagesByDeliveryQrCodeAsync(string deliveryQrCode, int page, int limit);
 
+		Task<PagedResultModel<PackageDetailModel>> GetTrackingPackage(string? recyclerId, DateOnly? fromDate, DateOnly? toDate, string? smallCollectionPointId,
+ string? packageId, string? status, int page, int limit);
+
 	}
 }
