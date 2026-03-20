@@ -643,5 +643,53 @@ namespace ElecWasteCollection.Application.Services
 
 			return new PagedResultModel<PackageDetailModel>(resultItems, page, limit, totalCount);
 		}
+
+		public async Task<PagedResultModel<PackageDetailModel>> GetTrackingPackage(string? recyclerId, DateOnly? fromDate, DateOnly? toDate, string smallCollectionPointId ,string? packageId, string? status, int page, int limit)
+		{
+			var statusEnum = string.IsNullOrEmpty(status) ? (string?)null : StatusEnumHelper.GetValueFromDescription<PackageStatus>(status).ToString();
+			var (pagedPackages, totalCount) = await _packageRepository.GetTrackingPackage(
+				recyclerId,
+				fromDate, toDate,
+				smallCollectionPointId,	
+				packageId,
+				statusEnum,
+				page,
+				limit
+			);
+			var resultItems = pagedPackages.Select(pkg =>
+			{
+				int totalProductsInPkg = pkg.Products?.Count ?? 0;
+
+				var summaryProducts = new PagedResultModel<ProductDetailModel>(
+					new List<ProductDetailModel>(),
+					1,
+					0,
+					totalProductsInPkg
+				);
+
+				var histories = pkg.PackageStatusHistories?.Select(h => new PackageStatusHistoryModel
+				{
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(h.Status),
+					Description = h.StatusDescription,
+					CreateAt = h.ChangedAt
+				}).OrderByDescending(h => h.CreateAt).ToList() ?? new List<PackageStatusHistoryModel>();
+
+				return new PackageDetailModel
+				{
+					PackageId = pkg.PackageId,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
+					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
+					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
+					RecyclerName = pkg.SmallCollectionPoints?.RecyclingCompany?.Name,
+					RecyclerAddress = pkg.SmallCollectionPoints?.RecyclingCompany?.Address,
+					StatusHistories = histories,
+					DeliveryAt = pkg.DeliveryHandoverAt,
+					Products = summaryProducts
+				};
+			}).ToList();
+
+			return new PagedResultModel<PackageDetailModel>(resultItems, page, limit, totalCount);
+		}
 	}
 }

@@ -20,6 +20,8 @@ namespace ElecWasteCollection.Application.Model
 
 		public string? RecyclerAddress { get; set; }
 
+		public DateTime? DeliveryAt { get; set; }
+
 		public PagedResultModel<ProductDetailModel> Products { get; set; }
 
 		public List<PackageStatusHistoryModel> StatusHistories { get; set; }
