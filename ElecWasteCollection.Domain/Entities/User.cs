@@ -53,13 +53,16 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public DateTime CreateAt { get; set; }
 
-		//public string? Preferences { get; set; } 
+		public double TotalCo2Saved { get; set; } = 0.0;
+		public Guid? CurrentRankId { get; set; }
 
 		public string Status { get; set; }
 
 		public Company? CollectionCompany { get; set; }
 
 		public SmallCollectionPoints? SmallCollectionPoint { get; set; }
+
+		public Rank Rank { get; set; }
 
 		public virtual ICollection<UserAddress> UserAddresses { get; set; } = new List<UserAddress>();
 
@@ -81,6 +84,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public virtual ICollection<Notifications> Notifications { get; set; } = new List<Notifications>();
 
 		public virtual ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
+
 
 
 	}

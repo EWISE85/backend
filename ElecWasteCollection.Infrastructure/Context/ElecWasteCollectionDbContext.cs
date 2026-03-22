@@ -53,6 +53,8 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<UserVoucher> UserVouchers { get; set; }
 
+		public DbSet<Rank> Ranks { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
@@ -116,6 +118,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 				.WithMany(s => s.Users)
 					  .HasForeignKey(e => e.SmallCollectionPointId)
 					  .HasConstraintName("FK_User_SmallCollectionPoints");
+				entity.HasOne(e => e.Rank)
+				.WithMany(r => r.User)
+					  .HasForeignKey(e => e.CurrentRankId)
+					  .HasConstraintName("FK_User_Rank");
 			});
 
 			modelBuilder.Entity<Account>(entity =>
@@ -533,6 +539,13 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasConstraintName("FK_UserVoucher_Voucher");
 			});
 
+			modelBuilder.Entity<Rank>(entity =>
+			{
+				entity.ToTable("Rank");
+				entity.HasKey(e => e.RankId);
+				entity.Property(e => e.RankId).ValueGeneratedOnAdd();
+				entity.Property(e => e.RankName).IsRequired().HasMaxLength(200);
+			});
 		}
 	}
 }
