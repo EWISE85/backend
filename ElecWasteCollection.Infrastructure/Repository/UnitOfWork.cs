@@ -47,7 +47,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public IGenericRepository<Voucher> Vouchers { get; }
 
 		public IGenericRepository<UserVoucher> UserVouchers { get; }
-		public UnitOfWork(ElecWasteCollectionDbContext context)
+        public IGenericRepository<Rank> Ranks { get; }
+        public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
 
@@ -84,8 +85,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			BrandCategories = new GenericRepository<BrandCategory>(_context);
 			Vouchers = new GenericRepository<Voucher>(_context);
 			UserVouchers = new GenericRepository<UserVoucher>(_context);
+            Ranks = new GenericRepository<Rank>(_context);
 
-		}
+        }
 
 		public async Task<int> SaveAsync()
         {
