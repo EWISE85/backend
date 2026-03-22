@@ -182,8 +182,9 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IVoucherService, VoucherService>();
 			builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 			builder.Services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
+            builder.Services.AddScoped<IRankService, RankService>();
 
-			builder.Services.AddMemoryCache();
+            builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>

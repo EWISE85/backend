@@ -43,7 +43,9 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<Voucher> Vouchers { get; }
 
         IGenericRepository<UserVoucher> UserVouchers { get; }
+        IGenericRepository<Rank> Ranks { get; }
 
-		Task<int> SaveAsync();
+
+        Task<int> SaveAsync();
     }
 }
