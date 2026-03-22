@@ -13,7 +13,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public string Name { get; set; }
 
 		public Guid? ParentCategoryId { get; set; }
-
+		public double DefaultWeight { get; set; } = 0.0;
+		public double EmissionFactor { get; set; } = 0.0;
 		public  Category ParentCategory { get; set; }
 
 		public virtual ICollection<CategoryAttributes> CategoryAttributes { get; set; }
