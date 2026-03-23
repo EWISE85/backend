@@ -15,18 +15,20 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IProductStatusHistoryRepository _productStatusHistoryRepository;
 		private readonly IUserAddressRepository _userAddressRepository;
+		private readonly IRankService _rankService;
 
 
-		public CollectionRouteService(IShippingNotifierService notifierService, ICollectionRouteRepository collectionRouteRepository, IUnitOfWork unitOfWork, IProductStatusHistoryRepository productStatusHistoryRepository, IUserAddressRepository userAddressRepository)
-		{
-			_notifierService = notifierService;
-			_collectionRouteRepository = collectionRouteRepository;
-			_unitOfWork = unitOfWork;
-			_productStatusHistoryRepository = productStatusHistoryRepository;
-			_userAddressRepository = userAddressRepository;
-		}
+        public CollectionRouteService(IShippingNotifierService notifierService, ICollectionRouteRepository collectionRouteRepository, IUnitOfWork unitOfWork, IProductStatusHistoryRepository productStatusHistoryRepository, IUserAddressRepository userAddressRepository, IRankService rankService)
+        {
+            _notifierService = notifierService;
+            _collectionRouteRepository = collectionRouteRepository;
+            _unitOfWork = unitOfWork;
+            _productStatusHistoryRepository = productStatusHistoryRepository;
+            _userAddressRepository = userAddressRepository;
+            _rankService = rankService;
+        }
 
-		public async Task<bool> CancelCollection(Guid collectionRouteId, string rejectMessage)
+        public async Task<bool> CancelCollection(Guid collectionRouteId, string rejectMessage)
 		{
 			var route = await _collectionRouteRepository.GetAsync(r => r.CollectionRouteId == collectionRouteId,includeProperties: "Product");
 
@@ -57,49 +59,98 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		public async Task<bool> ConfirmCollection(Guid collectionRouteId, List<string> confirmImages, string QRCode)
-		{
-			
-			var route = await _collectionRouteRepository.GetAsync(
-				r => r.CollectionRouteId == collectionRouteId,
-				includeProperties: "Product"
-			);
+        //public async Task<bool> ConfirmCollection(Guid collectionRouteId, List<string> confirmImages, string QRCode)
+        //{
 
-			if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
+        //	var route = await _collectionRouteRepository.GetAsync(
+        //		r => r.CollectionRouteId == collectionRouteId,
+        //		includeProperties: "Product"
+        //	);
+
+        //	if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
 
 
-			route.Status = CollectionRouteStatus.HOAN_THANH.ToString();
-			route.ConfirmImages = confirmImages;
-			route.Actual_Time = TimeOnly.FromDateTime(DateTime.UtcNow);
+        //	route.Status = CollectionRouteStatus.HOAN_THANH.ToString();
+        //	route.ConfirmImages = confirmImages;
+        //	route.Actual_Time = TimeOnly.FromDateTime(DateTime.UtcNow);
 
-			if (route.Product != null)
-			{
-				route.Product.QRCode = QRCode;
-				route.Product.Status = ProductStatus.DA_THU_GOM.ToString();
-				var checkExistQrCode = await _unitOfWork.Products.GetAsync(p => p.QRCode == QRCode && p.ProductId != route.Product.ProductId);
-				if (checkExistQrCode != null)
-				{
-					throw new AppException("Mã QR đã tồn tại trên hệ thống. Vui lòng kiểm tra lại.", 400);
-				}
-				var history = new ProductStatusHistory
-				{
-					ProductStatusHistoryId = Guid.NewGuid(), 
-					ProductId = route.Product.ProductId,
-					ChangedAt = DateTime.UtcNow, 
-					StatusDescription = "Sản phẩm đã được thu gom thành công",
-					Status = ProductStatus.DA_THU_GOM.ToString()
-				};
+        //	if (route.Product != null)
+        //	{
+        //		route.Product.QRCode = QRCode;
+        //		route.Product.Status = ProductStatus.DA_THU_GOM.ToString();
+        //		var checkExistQrCode = await _unitOfWork.Products.GetAsync(p => p.QRCode == QRCode && p.ProductId != route.Product.ProductId);
+        //		if (checkExistQrCode != null)
+        //		{
+        //			throw new AppException("Mã QR đã tồn tại trên hệ thống. Vui lòng kiểm tra lại.", 400);
+        //		}
+        //		var history = new ProductStatusHistory
+        //		{
+        //			ProductStatusHistoryId = Guid.NewGuid(), 
+        //			ProductId = route.Product.ProductId,
+        //			ChangedAt = DateTime.UtcNow, 
+        //			StatusDescription = "Sản phẩm đã được thu gom thành công",
+        //			Status = ProductStatus.DA_THU_GOM.ToString()
+        //		};
 
-				await _unitOfWork.ProductStatusHistory.AddAsync(history);
-				_unitOfWork.Products.Update(route.Product);
-			}
-			_unitOfWork.CollecctionRoutes.Update(route);
-			await _unitOfWork.SaveAsync();
+        //		await _unitOfWork.ProductStatusHistory.AddAsync(history);
+        //		_unitOfWork.Products.Update(route.Product);
+        //	}
+        //	_unitOfWork.CollecctionRoutes.Update(route);
+        //	await _unitOfWork.SaveAsync();
 
-			return true;
-		}
+        //	return true;
+        //}
 
-		public async Task<List<CollectionRouteModel>> GetAllRoutes(DateOnly PickUpDate)
+        public async Task<bool> ConfirmCollection(Guid collectionRouteId, List<string> confirmImages, string QRCode)
+        {
+
+            var route = await _unitOfWork.CollecctionRoutes.GetAsync(
+                r => r.CollectionRouteId == collectionRouteId,
+                includeProperties: "Product,Product.User" 
+            );
+
+            if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
+            if (route.Product == null) throw new AppException("Sản phẩm không tồn tại trong lộ trình", 400);
+
+            var checkExistQrCode = await _unitOfWork.Products.GetAsync(p => p.QRCode == QRCode && p.ProductId != route.Product.ProductId);
+            if (checkExistQrCode != null)
+            {
+                throw new AppException("Mã QR đã tồn tại trên hệ thống. Vui lòng kiểm tra lại.", 400);
+            }
+
+            route.Status = CollectionRouteStatus.HOAN_THANH.ToString();
+            route.ConfirmImages = confirmImages;
+            route.Actual_Time = TimeOnly.FromDateTime(DateTime.UtcNow);
+
+            route.Product.QRCode = QRCode;
+            route.Product.Status = ProductStatus.DA_THU_GOM.ToString();
+
+            var history = new ProductStatusHistory
+            {
+                ProductStatusHistoryId = Guid.NewGuid(),
+                ProductId = route.Product.ProductId,
+                ChangedAt = DateTime.UtcNow,
+                StatusDescription = "Sản phẩm đã được thu gom thành công và tính điểm CO2",
+                Status = ProductStatus.DA_THU_GOM.ToString()
+            };
+            await _unitOfWork.ProductStatusHistory.AddAsync(history);
+
+            if (route.Product.User != null)
+            {
+
+                await _rankService.UpdateUserRankImpactAsync(route.Product.User, route.Product.ProductId);
+                _unitOfWork.Users.Update(route.Product.User);
+            }
+
+            _unitOfWork.Products.Update(route.Product);
+            _unitOfWork.CollecctionRoutes.Update(route);
+
+            await _unitOfWork.SaveAsync();
+
+            return true;
+        }
+
+        public async Task<List<CollectionRouteModel>> GetAllRoutes(DateOnly PickUpDate)
 		{
 			var routes = await _collectionRouteRepository.GetRoutesByDateWithDetailsAsync(PickUpDate);
 
