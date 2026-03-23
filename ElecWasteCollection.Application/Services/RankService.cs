@@ -109,9 +109,10 @@ public class RankService : IRankService
         double co2Saved = actualWeight * factor;
 
         user.TotalCo2Saved += co2Saved;
+        await _notificationService.NotifyCustomerCO2SavedAsync(user.UserId, co2Saved);
 
-        // Cập nhật Rank
-        var allRanks = await _unitOfWork.Ranks.GetAllAsync();
+		// Cập nhật Rank
+		var allRanks = await _unitOfWork.Ranks.GetAllAsync();
         var applicableRank = allRanks
             .Where(r => r.MinCo2 <= user.TotalCo2Saved)
             .OrderByDescending(r => r.MinCo2)
