@@ -296,5 +296,51 @@ namespace ElecWasteCollection.Application.Services
 				await _unitOfWork.Notifications.AddAsync(notification);
 			}
 		}
+
+		public async Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved)
+		{
+			var title = "Bạn đã tiết kiệm được CO2!";
+			var body = $"Bạn đã tiết kiệm được {co2Saved:F2} kg CO2 từ việc tái chế rác điện tử. Cảm ơn bạn đã góp phần bảo vệ môi trường!";
+
+			var dataPayload = new Dictionary<string, string>
+	{
+		{ "type", "CO2_SAVED" },
+		{ "co2Amount", co2Saved.ToString("F2") }
+	};
+
+			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
+
+			if (userTokens != null && userTokens.Any())
+			{
+				var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+
+				var failedTokens = await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+
+				if (failedTokens != null && failedTokens.Any())
+				{
+					var tokensToDelete = userTokens.Where(t => failedTokens.Contains(t.FCMToken)).ToList();
+
+					foreach (var invalidToken in tokensToDelete)
+					{
+						_unitOfWork.UserDeviceTokens.Delete(invalidToken);
+					}
+				}
+			}
+
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = userId,
+				Title = title,
+				Body = body,
+				IsRead = false,
+				CreatedAt = DateTime.UtcNow,
+				Type = NotificationType.System.ToString()
+			};
+
+			await _unitOfWork.Notifications.AddAsync(notification);
+
+			await _unitOfWork.SaveAsync();
+		}
 	}
 }

@@ -5,11 +5,13 @@ using ElecWasteCollection.Domain.IRepository;
 public class RankService : IRankService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService;
 
-    public RankService(IUnitOfWork unitOfWork)
+	public RankService(IUnitOfWork unitOfWork, INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
-    }
+		_notificationService = notificationService;
+	}
 
     //public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
     //{
