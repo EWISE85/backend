@@ -5,11 +5,13 @@ using ElecWasteCollection.Domain.IRepository;
 public class RankService : IRankService
 {
     private readonly IUnitOfWork _unitOfWork;
+    private readonly INotificationService _notificationService;
 
-    public RankService(IUnitOfWork unitOfWork)
+	public RankService(IUnitOfWork unitOfWork, INotificationService notificationService)
     {
         _unitOfWork = unitOfWork;
-    }
+		_notificationService = notificationService;
+	}
 
     public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
     {
@@ -48,8 +50,10 @@ public class RankService : IRankService
 
         user.TotalCo2Saved += co2Saved;
 
-        // 6. Check Rank
-        var allRanks = await _unitOfWork.Ranks.GetAllAsync();
+        await _notificationService.NotifyCustomerCO2SavedAsync(user.UserId, co2Saved);
+
+		// 6. Check Rank
+		var allRanks = await _unitOfWork.Ranks.GetAllAsync();
         var applicableRank = allRanks
             .Where(r => r.MinCo2 <= user.TotalCo2Saved)
             .OrderByDescending(r => r.MinCo2)

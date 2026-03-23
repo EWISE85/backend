@@ -23,5 +23,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task ProcessApprovalNotificationsAsync(List<Post> post);
 		Task ProcessRejectionNotificationsAsync(List<Post> rejectedPosts, string reason);
+
+		Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved);
 	}
 }

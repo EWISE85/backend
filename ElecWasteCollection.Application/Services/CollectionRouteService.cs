@@ -16,9 +16,10 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IProductStatusHistoryRepository _productStatusHistoryRepository;
 		private readonly IUserAddressRepository _userAddressRepository;
 		private readonly IRankService _rankService;
+		private readonly INotificationService _notificationService;
 
 
-        public CollectionRouteService(IShippingNotifierService notifierService, ICollectionRouteRepository collectionRouteRepository, IUnitOfWork unitOfWork, IProductStatusHistoryRepository productStatusHistoryRepository, IUserAddressRepository userAddressRepository, IRankService rankService)
+		public CollectionRouteService(IShippingNotifierService notifierService, ICollectionRouteRepository collectionRouteRepository, IUnitOfWork unitOfWork, IProductStatusHistoryRepository productStatusHistoryRepository, IUserAddressRepository userAddressRepository, IRankService rankService, INotificationService notificationService)
         {
             _notifierService = notifierService;
             _collectionRouteRepository = collectionRouteRepository;
@@ -26,7 +27,8 @@ namespace ElecWasteCollection.Application.Services
             _productStatusHistoryRepository = productStatusHistoryRepository;
             _userAddressRepository = userAddressRepository;
             _rankService = rankService;
-        }
+			_notificationService = notificationService;
+		}
 
         public async Task<bool> CancelCollection(Guid collectionRouteId, string rejectMessage)
 		{
@@ -137,9 +139,8 @@ namespace ElecWasteCollection.Application.Services
 
             if (route.Product.User != null)
             {
-
                 await _rankService.UpdateUserRankImpactAsync(route.Product.User, route.Product.ProductId);
-                _unitOfWork.Users.Update(route.Product.User);
+				_unitOfWork.Users.Update(route.Product.User);
             }
 
             _unitOfWork.Products.Update(route.Product);

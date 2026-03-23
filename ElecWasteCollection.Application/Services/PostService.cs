@@ -607,12 +607,10 @@ namespace ElecWasteCollection.Application.Services
 				throw new AppException("Không tìm thấy bài viết nào hợp lệ", 404);
 			}
 
-			// Tạo danh sách để lưu các bài post thực sự được duyệt trong lần chạy này
 			var newlyApprovedPosts = new List<Post>();
 
 			foreach (var post in posts)
 			{
-				// Nếu bài đã duyệt rồi thì bỏ qua, KHÔNG gửi thông báo lại
 				if (post.Status == PostStatus.DA_DUYET.ToString()) continue;
 
 				post.Status = PostStatus.DA_DUYET.ToString();
