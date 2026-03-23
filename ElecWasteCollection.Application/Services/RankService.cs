@@ -92,11 +92,11 @@ public class RankService : IRankService
                     }
                 }
 
-                if (pv.Value.HasValue && pv.Value > 0)
-                {
-                    actualWeight = pv.Value.Value;
-                    break;
-                }
+                //if (pv.Value.HasValue && pv.Value > 0)
+                //{
+                //    actualWeight = pv.Value.Value;
+                //    break;
+                //}
             }
         }
 
