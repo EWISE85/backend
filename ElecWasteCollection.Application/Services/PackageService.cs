@@ -417,154 +417,152 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
+		public async Task<bool> UpdatePackageStatusRecycler(string packageId, string status)
+		{
+			var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
 
+			var productList = await _productService.GetProductsByPackageIdAsync(packageId);
 
-        //      public async Task<bool> UpdatePackageStatusRecycler(string packageId, string status)
-        //{
-        //	var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
+			if (package == null)
+			{
+				return false;
+			}
 
-        //	var productList = await _productService.GetProductsByPackageIdAsync(packageId);
+			var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
 
-        //	if (package == null)
-        //	{
-        //		return false;
-        //	}
+			var productStatusEnum = statusEnum;
 
-        //	var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
+			package.Status = statusEnum.ToString();
+			var newPackageStatusHistory = new PackageStatusHistory
+			{
+				PackageStatusHistoryId = Guid.NewGuid(),
+				PackageId = package.PackageId,
+				ChangedAt = DateTime.UtcNow,
+				StatusDescription = "Kiện hàng đã về tới công ty tái chế",
+				Status = statusEnum.ToString()
+			};
+			await _unitOfWork.PackageStatusHistory.AddAsync(newPackageStatusHistory);
+			foreach (var product in productList)
+			{
+				await _productService.UpdateProductStatusByQrCode(product.QrCode, status);
 
-        //	var productStatusEnum = statusEnum;
+				var newHistory = new ProductStatusHistory
+				{
+					ProductStatusHistoryId = Guid.NewGuid(),
 
-        //	package.Status = statusEnum.ToString();
-        //	var newPackageStatusHistory = new PackageStatusHistory
-        //	{
-        //		PackageStatusHistoryId = Guid.NewGuid(),
-        //		PackageId = package.PackageId,
-        //		ChangedAt = DateTime.UtcNow,
-        //		StatusDescription = "Kiện hàng đã về tới công ty tái chế",
-        //		Status = statusEnum.ToString()
-        //	};
-        //	await _unitOfWork.PackageStatusHistory.AddAsync(newPackageStatusHistory);
-        //	foreach (var product in productList)
-        //	{
-        //		await _productService.UpdateProductStatusByQrCode(product.QrCode, status);
+					ProductId = product.ProductId,
 
-        //		var newHistory = new ProductStatusHistory
-        //		{
-        //			ProductStatusHistoryId = Guid.NewGuid(),
+					ChangedAt = DateTime.UtcNow,
 
-        //			ProductId = product.ProductId,
+					StatusDescription = "Sản phẩm đã được tái chế",
 
-        //			ChangedAt = DateTime.UtcNow,
+					Status = productStatusEnum.ToString()
+				};
 
-        //			StatusDescription = "Sản phẩm đã được tái chế",
+				await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 
-        //			Status = productStatusEnum.ToString()
-        //		};
+			}
 
-        //		await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
+			_unitOfWork.Packages.Update(package);
 
-        //	}
+			await _unitOfWork.SaveAsync();
 
-        //	_unitOfWork.Packages.Update(package);
+			return true;
 
-        //	await _unitOfWork.SaveAsync();
+		}
 
-        //	return true;
+		//public async Task<bool> UpdatePackageStatusRecycler(string packageId, string status)
+		//{
+		//    var package = await _unitOfWork.Packages.GetAsync(p => p.PackageId == packageId);
+		//    if (package == null) return false;
 
-        //}
+		//    var productList = await _unitOfWork.Products.GetAllAsync(
+		//        p => p.PackageId == packageId,
+		//        includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute"
+		//    );
 
-        public async Task<bool> UpdatePackageStatusRecycler(string packageId, string status)
-        {
-            var package = await _unitOfWork.Packages.GetAsync(p => p.PackageId == packageId);
-            if (package == null) return false;
+		//    var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
+		//    string statusString = statusEnum.ToString();
 
-            var productList = await _unitOfWork.Products.GetAllAsync(
-                p => p.PackageId == packageId,
-                includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute"
-            );
+		//    var userCo2Sum = new Dictionary<Guid, double>();
 
-            var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
-            string statusString = statusEnum.ToString();
+		//    foreach (var product in productList)
+		//    {
+		//        product.Status = statusString;
+		//        _unitOfWork.Products.Update(product);
 
-            var userCo2Sum = new Dictionary<Guid, double>();
+		//        if (statusEnum == PackageStatus.TAI_CHE)
+		//        {
+		//            double actualWeight = 0;
+		//            if (product.ProductValues != null && product.ProductValues.Any())
+		//            {
+		//                var weightAttr = product.ProductValues.FirstOrDefault(v =>
+		//                    v.Attribute != null && v.Attribute.Name.Contains("Trọng lượng", StringComparison.OrdinalIgnoreCase));
 
-            foreach (var product in productList)
-            {
-                product.Status = statusString;
-                _unitOfWork.Products.Update(product);
+		//                if (weightAttr != null && weightAttr.Value.HasValue)
+		//                    actualWeight = weightAttr.Value.Value;
+		//            }
 
-                if (statusEnum == PackageStatus.TAI_CHE)
-                {
-                    double actualWeight = 0;
-                    if (product.ProductValues != null && product.ProductValues.Any())
-                    {
-                        var weightAttr = product.ProductValues.FirstOrDefault(v =>
-                            v.Attribute != null && v.Attribute.Name.Contains("Trọng lượng", StringComparison.OrdinalIgnoreCase));
+		//            if (actualWeight <= 0)
+		//                actualWeight = product.Category.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
 
-                        if (weightAttr != null && weightAttr.Value.HasValue)
-                            actualWeight = weightAttr.Value.Value;
-                    }
+		//            double factor = product.Category.ParentCategory?.EmissionFactor ?? product.Category.EmissionFactor;
+		//            if (factor <= 0) factor = 0.5;
 
-                    if (actualWeight <= 0)
-                        actualWeight = product.Category.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
+		//            double co2OfThisProduct = actualWeight * factor;
 
-                    double factor = product.Category.ParentCategory?.EmissionFactor ?? product.Category.EmissionFactor;
-                    if (factor <= 0) factor = 0.5;
+		//            if (userCo2Sum.ContainsKey(product.UserId))
+		//                userCo2Sum[product.UserId] += co2OfThisProduct;
+		//            else
+		//                userCo2Sum[product.UserId] = co2OfThisProduct;
+		//        }
 
-                    double co2OfThisProduct = actualWeight * factor;
+		//        await _unitOfWork.ProductStatusHistory.AddAsync(new ProductStatusHistory
+		//        {
+		//            ProductStatusHistoryId = Guid.NewGuid(),
+		//            ProductId = product.ProductId,
+		//            ChangedAt = DateTime.UtcNow,
+		//            Status = statusString,
+		//            StatusDescription = "Sản phẩm đã được tái chế"
+		//        });
+		//    }
 
-                    if (userCo2Sum.ContainsKey(product.UserId))
-                        userCo2Sum[product.UserId] += co2OfThisProduct;
-                    else
-                        userCo2Sum[product.UserId] = co2OfThisProduct;
-                }
+		//    foreach (var entry in userCo2Sum)
+		//    {
+		//        var user = await _unitOfWork.Users.GetByIdAsync(entry.Key);
+		//        if (user != null)
+		//        {
+		//            user.TotalCo2Saved += entry.Value;
 
-                await _unitOfWork.ProductStatusHistory.AddAsync(new ProductStatusHistory
-                {
-                    ProductStatusHistoryId = Guid.NewGuid(),
-                    ProductId = product.ProductId,
-                    ChangedAt = DateTime.UtcNow,
-                    Status = statusString,
-                    StatusDescription = "Sản phẩm đã được tái chế"
-                });
-            }
+		//            var allRanks = await _unitOfWork.Ranks.GetAllAsync();
+		//            var applicableRank = allRanks
+		//                .Where(r => r.MinCo2 <= user.TotalCo2Saved)
+		//                .OrderByDescending(r => r.MinCo2)
+		//                .FirstOrDefault();
 
-            foreach (var entry in userCo2Sum)
-            {
-                var user = await _unitOfWork.Users.GetByIdAsync(entry.Key);
-                if (user != null)
-                {
-                    user.TotalCo2Saved += entry.Value;
+		//            if (applicableRank != null) user.CurrentRankId = applicableRank.RankId;
 
-                    var allRanks = await _unitOfWork.Ranks.GetAllAsync();
-                    var applicableRank = allRanks
-                        .Where(r => r.MinCo2 <= user.TotalCo2Saved)
-                        .OrderByDescending(r => r.MinCo2)
-                        .FirstOrDefault();
+		//            _unitOfWork.Users.Update(user);
+		//        }
+		//    }
 
-                    if (applicableRank != null) user.CurrentRankId = applicableRank.RankId;
+		//    package.Status = statusString;
+		//    _unitOfWork.Packages.Update(package);
 
-                    _unitOfWork.Users.Update(user);
-                }
-            }
+		//    await _unitOfWork.PackageStatusHistory.AddAsync(new PackageStatusHistory
+		//    {
+		//        PackageStatusHistoryId = Guid.NewGuid(),
+		//        PackageId = package.PackageId,
+		//        ChangedAt = DateTime.UtcNow,
+		//        Status = statusString,
+		//        StatusDescription = "Kiện hàng đã về tới công ty tái chế"
+		//    });
 
-            package.Status = statusString;
-            _unitOfWork.Packages.Update(package);
+		//    await _unitOfWork.SaveAsync();
+		//    return true;
+		//}
 
-            await _unitOfWork.PackageStatusHistory.AddAsync(new PackageStatusHistory
-            {
-                PackageStatusHistoryId = Guid.NewGuid(),
-                PackageId = package.PackageId,
-                ChangedAt = DateTime.UtcNow,
-                Status = statusString,
-                StatusDescription = "Kiện hàng đã về tới công ty tái chế"
-            });
-
-            await _unitOfWork.SaveAsync();
-            return true;
-        }
-
-        public async Task<PagedResultModel<PackageDetailModel>> GetPackagesByDeliveryQrCodeAsync(string deliveryQrCode, int page, int limit)
+		public async Task<PagedResultModel<PackageDetailModel>> GetPackagesByDeliveryQrCodeAsync(string deliveryQrCode, int page, int limit)
 		{
 			var (pagedPackages, totalCount) = await _packageRepository.GetPagedPackagesByDeliveryQrCodeAsync(
 				deliveryQrCode,
