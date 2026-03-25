@@ -35,6 +35,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public string Status { get; set; } = null!;
         public DateTime Created_At { get; set; }
         public DateTime Updated_At { get; set; }
+        public int Priority { get; set; } = 1;
+        public bool IsFallback { get; set; } = false;
 
         public virtual ICollection<User> Users { get; set; } = new List<User>();
 
