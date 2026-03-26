@@ -499,7 +499,9 @@ namespace ElecWasteCollection.Application.Services
 				Address = post.Address,
 				SenderName = senderName,
 				ThumbnailUrl = thumbnailUrl,
-				EstimatePoint = post.EstimatePoint
+				EstimatePoint = post.EstimatePoint,
+				BrandName = post.Product.Brand?.Name ?? "Không rõ",
+				ChildCategoryName = post.Product.Category?.Name ?? "Không rõ"
 			};
 		}
 

@@ -17,5 +17,9 @@ namespace ElecWasteCollection.Application.Model
 		public string ThumbnailUrl { get; set; }
 
 		public double EstimatePoint { get; set; }
+
+		public string BrandName { get; set; }
+
+		public string ChildCategoryName { get; set; }
 	}
 }
