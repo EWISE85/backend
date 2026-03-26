@@ -267,7 +267,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.Product != null
                           && p.Product.SmallCollectionPointId == smallPointId
-                          && p.Product.AssignedAt == workDate, 
+                          && p.Product.AssignedAt == workDate
+                          && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
             );
 

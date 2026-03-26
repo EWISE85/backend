@@ -14,7 +14,6 @@ namespace ElecWasteCollection.Application.Services
             _unitOfWork = unitOfWork;
         }
 
-        // Lấy tất cả kho: Chỉ cần Query trực tiếp cột trong DB
         public async Task<List<SCPCapacityModel>> GetAllSCPCapacityAsync()
         {
             var points = await _unitOfWork.SmallCollectionPoints.GetAllAsync();
@@ -24,11 +23,10 @@ namespace ElecWasteCollection.Application.Services
                 Id = p.SmallCollectionPointsId,
                 Name = p.Name,
                 MaxCapacity = p.MaxCapacity,
-                CurrentCapacity = p.CurrentCapacity // Lấy trực tiếp từ DB
+                CurrentCapacity = p.CurrentCapacity 
             }).ToList();
         }
 
-        // Lấy 1 kho cụ thể
         public async Task<SCPCapacityModel> GetSCPCapacityByIdAsync(string pointId)
         {
             var p = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId)
@@ -39,11 +37,10 @@ namespace ElecWasteCollection.Application.Services
                 Id = p.SmallCollectionPointsId,
                 Name = p.Name,
                 MaxCapacity = p.MaxCapacity,
-                CurrentCapacity = p.CurrentCapacity // Lấy trực tiếp từ DB
+                CurrentCapacity = p.CurrentCapacity 
             };
         }
 
-        // Lấy tổng công ty
         public async Task<CompanyCapacityModel> GetCompanyCapacitySummaryAsync(string companyId)
         {
             var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
