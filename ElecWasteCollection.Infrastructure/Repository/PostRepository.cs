@@ -34,6 +34,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Sender)
 				.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)
 				.Include(p => p.Product).ThenInclude(pr => pr.ProductImages)
+				.Include(p => p.Product).ThenInclude(pr => pr.Brand)
 				.AsQueryable();
 
 			if (!string.IsNullOrEmpty(status))
