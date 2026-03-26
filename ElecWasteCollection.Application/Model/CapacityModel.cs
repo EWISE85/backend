@@ -18,6 +18,7 @@ namespace ElecWasteCollection.Application.Model
     public class CompanyCapacityModel
     {
         public string CompanyId { get; set; }
+        public double CompanyAvailableCapacity => CompanyMaxCapacity - CompanyCurrentCapacity;
         public double CompanyMaxCapacity { get; set; }
         public double CompanyCurrentCapacity { get; set; }
         public List<SCPCapacityModel> Warehouses { get; set; } = new();

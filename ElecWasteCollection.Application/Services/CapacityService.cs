@@ -1,5 +1,6 @@
 ﻿using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 
 namespace ElecWasteCollection.Application.Services
@@ -45,24 +46,30 @@ namespace ElecWasteCollection.Application.Services
         // Lấy tổng công ty
         public async Task<CompanyCapacityModel> GetCompanyCapacitySummaryAsync(string companyId)
         {
-            var points = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
+            var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
 
-            var model = new CompanyCapacityModel { CompanyId = companyId };
+            var activePoints = allPoints.Where(p => p.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString()).ToList();
 
-            foreach (var p in points)
+            var model = new CompanyCapacityModel
+            {
+                CompanyId = companyId,
+                Warehouses = new List<SCPCapacityModel>()
+            };
+
+            foreach (var p in activePoints)
             {
                 var scpModel = new SCPCapacityModel
                 {
                     Id = p.SmallCollectionPointsId,
                     Name = p.Name,
                     MaxCapacity = p.MaxCapacity,
-                    CurrentCapacity = p.CurrentCapacity // Lấy trực tiếp từ DB
+                    CurrentCapacity = p.CurrentCapacity
                 };
+
                 model.Warehouses.Add(scpModel);
                 model.CompanyMaxCapacity += p.MaxCapacity;
                 model.CompanyCurrentCapacity += p.CurrentCapacity;
             }
-
             return model;
         }
     }
