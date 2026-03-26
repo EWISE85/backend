@@ -115,7 +115,7 @@ namespace ElecWasteCollection.API.Controllers
         [FromQuery] int page = 1,
         [FromQuery] int limit = 10)
         {
-            var result = await _productQueryService.GetSmallPointProductsPagedAsync(smallPointId, workDate, page, limit);
+            var result = await _productQueryService.GetSmallPointProductsPagedStatusAsync(smallPointId, workDate, page, limit);
             return Ok(result);
         }
     }
