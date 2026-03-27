@@ -214,7 +214,6 @@ namespace ElecWasteCollection.Application.Services
 				var startTimeString = worksheet.Cell(row, 6).Value.ToString()?.Trim();
 				var endTimeString = worksheet.Cell(row, 7).Value.ToString()?.Trim();
 				var smallCollectionPointId = worksheet.Cell(row, 8).Value.ToString()?.Trim();
-				var rawStatus = worksheet.Cell(row, 9).Value.ToString();
 
 				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(collectorId) || string.IsNullOrEmpty(dateString))
 				{
@@ -222,8 +221,7 @@ namespace ElecWasteCollection.Application.Services
 					continue;
 				}
 
-				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
-				string statusToSave = (statusNormalized == "còn hoạt động" || statusNormalized == "active") ? "Active" : "Inactive";
+				
 
 				// Parse Ngày
 				string[] formats = { "dd-MM-yyyy", "d-M-yyyy", "dd/MM/yyyy", "d/M/yyyy" };
@@ -263,7 +261,7 @@ namespace ElecWasteCollection.Application.Services
 					WorkDate = workDate,
 					Shift_Start_Time = shiftStartDateTime,
 					Shift_End_Time = shiftEndDateTime,
-					Status = statusToSave
+					Status = ShiftStatus.CO_SAN.ToString(),
 				};
 
 				var importResult = await _shiftService.CheckAndUpdateShiftAsync(shiftModel);
