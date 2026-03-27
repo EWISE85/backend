@@ -9,8 +9,9 @@ namespace ElecWasteCollection.Domain.Entities
         [Description("Đã hủy")]
         DA_HUY,
         [Description("Đã lên lịch")]
-        DA_LEN_LICH
-    }
+        DA_LEN_LICH,
+
+	}
     public class Shifts
     {
         public string ShiftId { get; set; }
