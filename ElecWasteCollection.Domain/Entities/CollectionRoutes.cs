@@ -15,8 +15,8 @@ namespace ElecWasteCollection.Domain.Entities
 		DANG_TIEN_HANH,
 		[Description("Hoàn thành")]
 		HOAN_THANH,
-		[Description("Hủy bỏ")]
-		HUY_BO
+		[Description("Thất bại")]
+		THAT_BAI
 	}
 	public class CollectionRoutes
 	{

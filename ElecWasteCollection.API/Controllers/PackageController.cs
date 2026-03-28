@@ -13,9 +13,9 @@ namespace ElecWasteCollection.API.Controllers
 	{
 		private readonly IPackageService _packageService;
         private readonly CapacityHelper _capacityHelper;
-        private const string DANG_VAN_CHUYEN = "Đang vận chuyển";
-		private const string TAI_CHE = "Tái chế";
-		private const string DA_DONG_THUNG = "Đã đóng thùng";
+        private const string DANG_VAN_CHUYEN = "DANG_VAN_CHUYEN";
+		private const string TAI_CHE = "TAI_CHE";
+		private const string DA_DONG_THUNG = "DA_DONG_THUNG";
 		public PackageController(IPackageService packageService)
 		{
 			_packageService = packageService;

@@ -1,7 +1,9 @@
 ﻿using ClosedXML.Excel;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -24,9 +26,10 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IEmailService _emailService;
 		private readonly IMapboxService _mapboxService;
 		private readonly IVoucherService _voucherService;
+		private	readonly IUserRepository _userRepository;
 
 
-		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService)
+		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository)
 		{
 			_companyService = CompanyService;
 			_accountService = accountService;
@@ -38,6 +41,7 @@ namespace ElecWasteCollection.Application.Services
 			_emailService = emailService;
 			_mapboxService = mapboxService;
 			_voucherService = voucherService;
+			_userRepository = userRepository;
 		}
 
 		public async Task<ImportResult> ImportAsync(Stream excelStream, string importType)
@@ -209,25 +213,30 @@ namespace ElecWasteCollection.Application.Services
 			for (int row = 2; row <= rowCount; row++)
 			{
 				var id = worksheet.Cell(row, 2).Value.ToString()?.Trim();
-				var collectorId = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var collectorCode = worksheet.Cell(row, 3).Value.ToString()?.Trim();
 				var dateString = worksheet.Cell(row, 5).Value.ToString()?.Trim();
 				var startTimeString = worksheet.Cell(row, 6).Value.ToString()?.Trim();
 				var endTimeString = worksheet.Cell(row, 7).Value.ToString()?.Trim();
 				var smallCollectionPointId = worksheet.Cell(row, 8).Value.ToString()?.Trim();
 
-				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(collectorId) || string.IsNullOrEmpty(dateString))
+				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(collectorCode) || string.IsNullOrEmpty(dateString))
 				{
 					result.Messages.Add($"Dữ liệu thiếu ở dòng {row}.");
 					continue;
 				}
 
-				
+
 
 				// Parse Ngày
-				string[] formats = { "dd-MM-yyyy", "d-M-yyyy", "dd/MM/yyyy", "d/M/yyyy" };
-				if (!DateOnly.TryParseExact(dateString, formats, CultureInfo.InvariantCulture, DateTimeStyles.None, out DateOnly workDate))
+				DateOnly workDate;
+				var dateCell = worksheet.Cell(row, 5);
+				if (dateCell.TryGetValue(out DateTime rawDate))
 				{
-					result.Messages.Add($"Ngày làm lỗi định dạng dòng {row}: {dateString}");
+					workDate = DateOnly.FromDateTime(rawDate);
+				}
+				else
+				{
+					result.Messages.Add($"Ngày làm tại dòng {row} không đúng định dạng Excel Date.");
 					continue;
 				}
 
@@ -254,10 +263,16 @@ namespace ElecWasteCollection.Application.Services
 					continue;
 				}
 
+				var collector = await _userRepository.GetAsync(c => c.CollectorCode == collectorCode);
+				if (collector == null)
+				{
+					result.Messages.Add($"Không tìm thấy collector với mã '{collectorCode}' ở dòng {row}.");
+					continue;
+				}
 				var shiftModel = new CreateShiftModel
 				{
 					ShiftId = id,
-					CollectorId = Guid.Parse(collectorId),
+					CollectorId = collector.UserId,
 					WorkDate = workDate,
 					Shift_Start_Time = shiftStartDateTime,
 					Shift_End_Time = shiftEndDateTime,

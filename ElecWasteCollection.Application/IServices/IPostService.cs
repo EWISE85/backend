@@ -19,5 +19,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<bool> RejectPost(List<Guid> postId, string rejectMessage);
 		Task<PagedResultModel<PostSummaryModel>> GetPagedPostsAsync(PostSearchQueryModel model);
+
+		Task AutoRejectExpiredPostsAsync();
 	}
 }

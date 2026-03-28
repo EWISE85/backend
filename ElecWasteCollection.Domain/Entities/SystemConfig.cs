@@ -31,8 +31,9 @@ namespace ElecWasteCollection.Domain.Entities
         MAX_ROAD_DISTANCE_KM,     
         SERVICE_TIME_MINUTES,     
         AVG_TRAVEL_TIME_MINUTES,
-        TRANSPORT_SPEED
-    }
+        TRANSPORT_SPEED,
+		TIME_TO_CHANGE_STATUS_ROUTE
+	}
 	public class SystemConfig
     {
         public Guid SystemConfigId { get; set; }

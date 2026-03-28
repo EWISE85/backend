@@ -22,6 +22,6 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<PagedResultModel<CollectionRouteModel>> GetPagedRoutes(RouteSearchQueryModel parameters);
 
-
+		Task AutoStartCollectionRoutesAsync();
 	}
 }
