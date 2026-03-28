@@ -164,5 +164,23 @@ namespace ElecWasteCollection.API.Controllers
 
             return Ok(new { Message = "Đã xóa cấu hình tốc độ thành công" });
         }
+
+
+        [HttpGet("auto-assign-settings")]
+        public async Task<IActionResult> GetAutoAssignSettings()
+        {
+            var settings = await _systemConfigService.GetAutoAssignSettingsAsync();
+            return Ok(new { success = true, data = settings });
+        }
+
+        [HttpPut("auto-assign-settings")]
+        public async Task<IActionResult> UpdateAutoAssignSettings([FromBody] UpdateAutoAssignRequest model)
+        {
+            var result = await _systemConfigService.UpdateAutoAssignSettingsAsync(model);
+            if (result)
+                return Ok(new { success = true, message = "Cập nhật cấu hình tự động thành công." });
+
+            return BadRequest(new { success = false, message = "Không có thay đổi nào được thực hiện." });
+        }
     }
 }
