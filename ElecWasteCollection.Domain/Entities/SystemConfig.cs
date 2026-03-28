@@ -32,6 +32,14 @@ namespace ElecWasteCollection.Domain.Entities
         SERVICE_TIME_MINUTES,     
         AVG_TRAVEL_TIME_MINUTES,
         TRANSPORT_SPEED,
+        AUTO_ASSIGN_ENABLED,                // Giá trị: "true" hoặc "false"
+        AUTO_ASSIGN_IMMEDIATE_THRESHOLD,    // Giá trị: "200" (Đạt ngưỡng này là chia ngay)
+        AUTO_ASSIGN_SCHEDULE_TIME,          // Giá trị: "23:59" (Giờ quét hằng ngày)
+        AUTO_ASSIGN_SCHEDULE_MIN_QTY,       // Giá trị: "100" (Tới giờ chốt, nếu >= 100 đơn thì chia)
+        AUTO_ASSIGN_LAST_RUN_DATE,           // Giá trị: "2026-03-28" (Để tránh chia trùng trong cùng 1 phút)
+        SYSTEM_ADMIN_ID
+    
+        TRANSPORT_SPEED,
 		TIME_TO_CHANGE_STATUS_ROUTE
 	}
 	public class SystemConfig

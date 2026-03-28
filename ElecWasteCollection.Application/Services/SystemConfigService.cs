@@ -265,6 +265,54 @@ namespace ElecWasteCollection.Application.Services
             };
         }
 
+        //Tự động chia
+        public async Task<AutoAssignSettings> GetAutoAssignSettingsAsync()
+        {
+            var configs = await _systemConfigRepository.GetsAsync(c =>
+                c.GroupName == "AutoAssign" && c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
+
+            return new AutoAssignSettings
+            {
+                IsEnabled = configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_ASSIGN_ENABLED.ToString())?.Value.ToLower() == "true",
+                ImmediateThreshold = int.Parse(configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_ASSIGN_IMMEDIATE_THRESHOLD.ToString())?.Value ?? "200"),
+                ScheduleTime = configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_ASSIGN_SCHEDULE_TIME.ToString())?.Value ?? "23:59",
+                ScheduleMinQty = int.Parse(configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_ASSIGN_SCHEDULE_MIN_QTY.ToString())?.Value ?? "100")
+            };
+        }
+
+        public async Task<bool> UpdateAutoAssignSettingsAsync(UpdateAutoAssignRequest model)
+        {
+            var keysToUpdate = new Dictionary<SystemConfigKey, string?>();
+
+            if (model.IsEnabled.HasValue) keysToUpdate.Add(SystemConfigKey.AUTO_ASSIGN_ENABLED, model.IsEnabled.Value.ToString().ToLower());
+            if (model.ImmediateThreshold.HasValue) keysToUpdate.Add(SystemConfigKey.AUTO_ASSIGN_IMMEDIATE_THRESHOLD, model.ImmediateThreshold.Value.ToString());
+            if (!string.IsNullOrEmpty(model.ScheduleTime)) keysToUpdate.Add(SystemConfigKey.AUTO_ASSIGN_SCHEDULE_TIME, model.ScheduleTime);
+            if (model.ScheduleMinQty.HasValue) keysToUpdate.Add(SystemConfigKey.AUTO_ASSIGN_SCHEDULE_MIN_QTY, model.ScheduleMinQty.Value.ToString());
+
+            foreach (var item in keysToUpdate)
+            {
+                var config = await _systemConfigRepository.GetAsync(c => c.Key == item.Key.ToString());
+                if (config != null)
+                {
+                    config.Value = item.Value!;
+                    _unitOfWork.SystemConfig.Update(config);
+                }
+                else
+                {
+                    await _unitOfWork.SystemConfig.AddAsync(new SystemConfig
+                    {
+                        SystemConfigId = Guid.NewGuid(),
+                        Key = item.Key.ToString(),
+                        Value = item.Value!,
+                        DisplayName = item.Key.ToString(),
+                        GroupName = "AutoAssign",
+                        Status = SystemConfigStatus.DANG_HOAT_DONG.ToString()
+                    });
+                }
+            }
+
+            return await _unitOfWork.SaveAsync() > 0;
+        }
 
     }
 }

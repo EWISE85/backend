@@ -2,6 +2,7 @@
 using ElecWasteCollection.API.Helper;
 using ElecWasteCollection.API.Hubs;
 using ElecWasteCollection.API.MiddlewareCustom;
+using ElecWasteCollection.Application.BackgroundWorkers;
 using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.Interfaces;
 
@@ -186,6 +187,7 @@ namespace ElecWasteCollection.API
             builder.Services.AddScoped<IRankService, RankService>();
 			builder.Services.AddHostedService<AutoRejectWorker>();
 			builder.Services.AddHostedService<CollectionRouteWorker>();
+            builder.Services.AddHostedService<AutoAssignWorker>();
 
 			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>

@@ -21,5 +21,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> DeleteWarehouseSpeedAsync(string smallCollectionPointId);
 		Task<bool> UpdateWarehouseSpeedAsync(WarehouseSpeedRequest model);
         Task<WarehouseSpeedResponse> GetWarehouseSpeedByPointIdAsync(string smallPointId);
+        Task<AutoAssignSettings> GetAutoAssignSettingsAsync();
+        Task<bool> UpdateAutoAssignSettingsAsync(UpdateAutoAssignRequest model);
     }
 }
