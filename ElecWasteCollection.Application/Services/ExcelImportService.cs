@@ -172,7 +172,7 @@ namespace ElecWasteCollection.Application.Services
 				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(plateNumber) || string.IsNullOrEmpty(smallCollectionPointId))
 				{
 					result.Messages.Add($"Dữ liệu thiếu ở dòng {row}.");
-					continue;
+					throw new AppException($"Dữ liệu thiếu ở dòng {row}.", 400);
 				}
 
 				// 3. XỬ LÝ TRẠNG THÁI (Status Logic)
@@ -222,7 +222,7 @@ namespace ElecWasteCollection.Application.Services
 				if (string.IsNullOrEmpty(id) || string.IsNullOrEmpty(collectorCode) || string.IsNullOrEmpty(dateString))
 				{
 					result.Messages.Add($"Dữ liệu thiếu ở dòng {row}.");
-					continue;
+					throw new AppException($"Dữ liệu thiếu ở dòng {row}.", 400);
 				}
 
 
@@ -237,7 +237,7 @@ namespace ElecWasteCollection.Application.Services
 				else
 				{
 					result.Messages.Add($"Ngày làm tại dòng {row} không đúng định dạng Excel Date.");
-					continue;
+					throw new AppException($"Ngày làm tại dòng {row} không đúng định dạng Excel Date.", 400);
 				}
 
 				DateTime shiftStartDateTime;
@@ -260,14 +260,14 @@ namespace ElecWasteCollection.Application.Services
 				catch
 				{
 					result.Messages.Add($"Giờ làm lỗi định dạng dòng {row}.");
-					continue;
+					throw new AppException($"Giờ làm lỗi định dạng dòng {row}.", 400);
 				}
 
 				var collector = await _userRepository.GetAsync(c => c.CollectorCode == collectorCode);
 				if (collector == null)
 				{
 					result.Messages.Add($"Không tìm thấy collector với mã '{collectorCode}' ở dòng {row}.");
-					continue;
+					throw new AppException($"Không tìm thấy collector với mã '{collectorCode}' ở dòng {row}.", 400);
 				}
 				var shiftModel = new CreateShiftModel
 				{
@@ -321,7 +321,7 @@ namespace ElecWasteCollection.Application.Services
 				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(email) || string.IsNullOrEmpty(smallCollectionPointId) || smallCollectionPointId == "0")
 				{
 					result.Messages.Add($"Dữ liệu thiếu hoặc không hợp lệ ở dòng {row}.");
-					continue;
+					throw new AppException($"Dữ liệu thiếu hoặc không hợp lệ ở dòng {row}.", 400);
 				}
 
 				var defaultSettings = new UserSettingsModel
@@ -405,7 +405,7 @@ Ban Quản Trị Hệ Thống";
 				if (string.IsNullOrEmpty(name) || string.IsNullOrEmpty(address) || string.IsNullOrEmpty(companyId) || companyId == "0")
 				{
 					result.Messages.Add($"Dữ liệu thiếu hoặc không hợp lệ ở dòng {row}.");
-					continue;
+					throw new AppException($"Dữ liệu thiếu hoặc không hợp lệ ở dòng {row}.", 400);
 				}
 				var adminUsername = string.IsNullOrEmpty(email) ? $"admin_{id}" : email;
 				var adminPassword = GenerateRandomPassword(6);
