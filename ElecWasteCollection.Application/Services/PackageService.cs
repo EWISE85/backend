@@ -444,7 +444,7 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.PackageStatusHistory.AddAsync(newPackageStatusHistory);
 			foreach (var product in productList)
 			{
-				await _productService.UpdateProductStatusByQrCode(product.QrCode, status);
+				await _productService.UpdateProductStatusByQrCode(product.QrCode, statusEnum.ToString());
 
 				var newHistory = new ProductStatusHistory
 				{

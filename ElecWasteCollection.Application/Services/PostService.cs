@@ -655,8 +655,8 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> RejectPost(List<Guid> postIds, string rejectMessage)
 		{
-			var checkBadWord = await _profanityChecker.ContainsProfanityAsync(rejectMessage);
-			if (checkBadWord) throw new AppException("Lý do từ chối chứa từ ngữ không phù hợp.", 400);
+			//var checkBadWord = await _profanityChecker.ContainsProfanityAsync(rejectMessage);
+			//if (checkBadWord) throw new AppException("Lý do từ chối chứa từ ngữ không phù hợp.", 400);
 
 			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId));
 
@@ -733,6 +733,38 @@ namespace ElecWasteCollection.Application.Services
 				model.Limit,
 				totalItems
 			);
+		}
+
+		public async Task AutoRejectExpiredPostsAsync()
+		{
+			var today = DateOnly.FromDateTime(DateTime.Now);
+			var pendingPosts = await _unitOfWork.Posts.GetsAsync(p => p.Status == PostStatus.CHO_DUYET.ToString());
+
+			var expiredPostIds = new List<Guid>();
+			var message = "Hệ thống tự động từ chối do đã quá hạn hoặc đến ngày thu gom.";
+
+			foreach (var post in pendingPosts)
+			{
+				if (string.IsNullOrEmpty(post.ScheduleJson)) continue;
+
+				try
+				{
+					var schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson);
+					if (schedule != null && schedule.Any(s => s.PickUpDate <= today))
+					{
+						expiredPostIds.Add(post.PostId);
+					}
+				}
+				catch (JsonException)
+				{
+					continue;
+				}
+			}
+
+			if (expiredPostIds.Any())
+			{
+				await RejectPost(expiredPostIds, message);
+			}
 		}
 	}
 }

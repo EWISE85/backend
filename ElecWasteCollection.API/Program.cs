@@ -13,6 +13,7 @@ using ElecWasteCollection.Application.Services;
 using ElecWasteCollection.Application.Services.AssignPackageService;
 using ElecWasteCollection.Application.Services.AssignPostService;
 using ElecWasteCollection.Domain.IRepository;
+using ElecWasteCollection.Infrastructure.BackgroundServices;
 using ElecWasteCollection.Infrastructure.Configuration;
 using ElecWasteCollection.Infrastructure.Context;
 using ElecWasteCollection.Infrastructure.ExternalService;
@@ -184,9 +185,11 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IVoucherRepository, VoucherRepository>();
 			builder.Services.AddScoped<IUserVoucherRepository, UserVoucherRepository>();
             builder.Services.AddScoped<IRankService, RankService>();
+			builder.Services.AddHostedService<AutoRejectWorker>();
+			builder.Services.AddHostedService<CollectionRouteWorker>();
             builder.Services.AddHostedService<AutoAssignWorker>();
 
-            builder.Services.AddMemoryCache();
+			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>

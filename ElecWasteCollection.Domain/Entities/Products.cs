@@ -25,8 +25,8 @@ namespace ElecWasteCollection.Domain.Entities
 		CHO_THU_GOM,
 		[Description("Đã thu gom")]
 		DA_THU_GOM,
-		[Description("Hủy bỏ")]
-		HUY_BO,
+		[Description("Thất bại")]
+		THAT_BAI,
 		[Description("Nhập kho")]
 		NHAP_KHO,
 		[Description("Đã đóng thùng")]

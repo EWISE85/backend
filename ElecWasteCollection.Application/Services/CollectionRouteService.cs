@@ -36,19 +36,19 @@ namespace ElecWasteCollection.Application.Services
 
 			if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
 
-			route.Status = CollectionRouteStatus.HUY_BO.ToString();
+			route.Status = CollectionRouteStatus.THAT_BAI.ToString();
 			route.RejectMessage = rejectMessage;
 
 			if (route.Product != null)
 			{
-				route.Product.Status = ProductStatus.HUY_BO.ToString();
+				route.Product.Status = ProductStatus.THAT_BAI.ToString();
 
 				var history = new ProductStatusHistory
 				{
 					ProductStatusHistoryId = Guid.NewGuid(), 
 					ProductId = route.Product.ProductId,
 					ChangedAt = DateTime.UtcNow, 
-					Status = ProductStatus.HUY_BO.ToString(),
+					Status = ProductStatus.THAT_BAI.ToString(),
 					StatusDescription = $"Hủy thu gom: {rejectMessage}"
 				};
 
@@ -411,6 +411,39 @@ namespace ElecWasteCollection.Application.Services
 			);
 		}
 
-		
+		public async Task AutoStartCollectionRoutesAsync()
+		{
+			var today = DateOnly.FromDateTime(DateTime.Now);
+
+			
+			var routesToProcess = await _unitOfWork.CollecctionRoutes.GetsAsync(r =>
+				(r.Status == CollectionRouteStatus.CHUA_BAT_DAU.ToString() ||
+				 r.Status == CollectionRouteStatus.DANG_TIEN_HANH.ToString()) &&
+				r.CollectionDate <= today);
+
+			if (routesToProcess.Any())
+			{
+				foreach (var route in routesToProcess)
+				{
+					if (route.CollectionDate < today)
+					{
+						route.Status = CollectionRouteStatus.THAT_BAI.ToString();
+						route.RejectMessage = "Hệ thống tự động đóng do quá ngày thu gom.";
+					}
+
+					else if (route.CollectionDate == today)
+					{
+						if (route.Status == CollectionRouteStatus.CHUA_BAT_DAU.ToString())
+						{
+							route.Status = CollectionRouteStatus.DANG_TIEN_HANH.ToString();
+						}
+					}
+
+					_unitOfWork.CollecctionRoutes.Update(route);
+				}
+
+				await _unitOfWork.SaveAsync();
+			}
+		}
 	}
 }
