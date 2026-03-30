@@ -8,7 +8,9 @@ services:
     container_name: elecwastecollection-api-container
     restart: unless-stopped 
     ports:
-      - "5000:8080" 
+      - "5000:8080"
+    volumes:  # <--- THÊM DÒNG NÀY
+      - ./elecWasteCollection.json:/app/elecWasteCollection.json 
     env_file:
       - .env 
     environment:
