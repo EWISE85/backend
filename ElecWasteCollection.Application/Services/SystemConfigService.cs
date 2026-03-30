@@ -39,7 +39,6 @@ namespace ElecWasteCollection.Application.Services
 				Status = SystemConfigStatus.DANG_HOAT_DONG.ToString()
 			};
 
-			// 4. Lưu xuống DB
 			await _unitOfWork.SystemConfig.AddAsync(newConfig);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -47,50 +46,55 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<(byte[] fileBytes, string fileName)> DownloadFileByConfigIdAsync(Guid id)
 		{
-			// 1. Lấy thông tin từ DB
 			var config = await _systemConfigRepository.GetByIdAsync(id);
 			if (config == null || string.IsNullOrEmpty(config.Value))
 			{
 				throw new Exception("Không tìm thấy cấu hình hoặc URL file.");
 			}
 
-			// 2. Dùng HttpClient để tải file từ Cloudinary về Server
 			using var httpClient = new HttpClient();
 			var fileBytes = await httpClient.GetByteArrayAsync(config.Value);
 
-			// 3. Xác định tên file (lấy từ URL hoặc dùng DisplayName)
 			string fileName = Path.GetFileName(config.Value) ?? "downloaded_file.xlsx";
 
 			return (fileBytes, fileName);
 		}
         public async Task<List<SystemConfigModel>> GetAllSystemConfigActive(string? groupName, string? companyId, string? scpId)
         {
-            var activeConfigs = await _systemConfigRepository.GetActiveConfigsByGroupAsync(groupName);
+            var activeConfigs = await _systemConfigRepository.GetActiveConfigsByFilterAsync(groupName, companyId, scpId);
+
             if (activeConfigs == null || !activeConfigs.Any()) return new List<SystemConfigModel>();
 
-            string companyName = "N/A";
-            if (!string.IsNullOrEmpty(companyId))
+            var result = new List<SystemConfigModel>();
+
+            foreach (var config in activeConfigs)
             {
-                companyName = await _companyRepository.GetCompanyNameAsync(companyId) ?? "Không tìm thấy Công ty";
+                string cName = "N/A";
+                if (!string.IsNullOrEmpty(config.CompanyId))
+                {
+                    cName = await _companyRepository.GetCompanyNameAsync(config.CompanyId) ?? "Không tìm thấy Công ty";
+                }
+
+                string sName = "N/A";
+                if (!string.IsNullOrEmpty(config.SmallCollectionPointId))
+                {
+                    sName = await _smallCollectionRepository.GetScpNameAsync(config.SmallCollectionPointId) ?? "Không tìm thấy SCP";
+                }
+
+                result.Add(new SystemConfigModel
+                {
+                    SystemConfigId = config.SystemConfigId,
+                    Key = config.Key,
+                    Value = config.Value,
+                    DisplayName = config.DisplayName,
+                    GroupName = config.GroupName,
+                    Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<SystemConfigStatus>(config.Status),
+                    CompanyName = cName,
+                    ScpName = sName
+                });
             }
 
-            string scpName = "N/A";
-            if (!string.IsNullOrEmpty(scpId))
-            {
-                scpName = await _smallCollectionRepository.GetScpNameAsync(scpId) ?? "Không tìm thấy SCP";
-            }
-
-            return activeConfigs.Select(config => new SystemConfigModel
-            {
-                SystemConfigId = config.SystemConfigId,
-                Key = config.Key,
-                Value = config.Value,
-                DisplayName = config.DisplayName,
-                GroupName = config.GroupName,
-                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<SystemConfigStatus>(config.Status),
-                CompanyName = companyName,
-                ScpName = scpName
-            }).ToList();
+            return result;
         }
 
         public async Task<SystemConfigModel> GetSystemConfigByKey(string key)
