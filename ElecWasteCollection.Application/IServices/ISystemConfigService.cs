@@ -10,8 +10,11 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface ISystemConfigService
 	{
-		Task<List<SystemConfigModel>> GetAllSystemConfigActive(string? GroupName);
-		Task<SystemConfigModel> GetSystemConfigByKey(string key);
+		//Task<List<SystemConfigModel>> GetAllSystemConfigActive(string? GroupName);
+		Task<List<SystemConfigModel>> GetAllSystemConfigActive(string? groupName, string? companyId, string? scpId);
+
+
+        Task<SystemConfigModel> GetSystemConfigByKey(string key);
 
 		Task<bool> UpdateSystemConfig(UpdateSystemConfigModel model);
 		Task<bool> CreateNewConfigWithFileAsync(IFormFile file);

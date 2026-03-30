@@ -10,5 +10,6 @@ namespace ElecWasteCollection.Domain.IRepository
 	public interface ISmallCollectionRepository : IGenericRepository<SmallCollectionPoints>
 	{
 		Task<(List<SmallCollectionPoints> Items, int TotalCount)> GetPagedAsync(string? companyId,string? status,int page,int limit);
-	}
+		Task<string?> GetScpNameAsync(string scpId);
+    }
 }

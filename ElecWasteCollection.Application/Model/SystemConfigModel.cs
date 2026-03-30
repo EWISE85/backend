@@ -17,8 +17,10 @@ namespace ElecWasteCollection.Application.Model
 		public string DisplayName { get; set; }
 
 		public string GroupName { get; set; }
+        public string? CompanyName { get; set; }
+        public string? ScpName { get; set; }
 
-		public string Status { get; set; }
+        public string Status { get; set; }
 	}
 
     public class WarehouseSpeedRequest

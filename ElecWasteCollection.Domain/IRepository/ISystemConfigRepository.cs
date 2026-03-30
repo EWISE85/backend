@@ -9,5 +9,6 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface ISystemConfigRepository : IGenericRepository<SystemConfig>
 	{
-	}
+        Task<List<SystemConfig>> GetActiveConfigsByGroupAsync(string? groupName);
+    }
 }
