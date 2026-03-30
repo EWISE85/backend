@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -12,12 +13,16 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ISystemConfigRepository _systemConfigRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly ICloudinaryService _cloudinaryService;
+        private readonly ISmallCollectionRepository _smallCollectionRepository;
+        private readonly ICompanyRepository _companyRepository;
 
-		public SystemConfigService(ISystemConfigRepository systemConfigRepository, IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
+		public SystemConfigService(ISystemConfigRepository systemConfigRepository, IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService, ISmallCollectionRepository smallCollectionRepository,ICompanyRepository companyRepository)
 		{
 			_systemConfigRepository = systemConfigRepository;
 			_unitOfWork = unitOfWork;
 			_cloudinaryService = cloudinaryService;
+            _companyRepository = companyRepository;
+            _smallCollectionRepository = smallCollectionRepository;
 		}
 
 		public async Task<bool> CreateNewConfigWithFileAsync(IFormFile file)
@@ -58,33 +63,37 @@ namespace ElecWasteCollection.Application.Services
 
 			return (fileBytes, fileName);
 		}
+        public async Task<List<SystemConfigModel>> GetAllSystemConfigActive(string? groupName, string? companyId, string? scpId)
+        {
+            var activeConfigs = await _systemConfigRepository.GetActiveConfigsByGroupAsync(groupName);
+            if (activeConfigs == null || !activeConfigs.Any()) return new List<SystemConfigModel>();
 
-		public async Task<List<SystemConfigModel>> GetAllSystemConfigActive(string? GroupName)
-		{
-			var activeConfigs = await _systemConfigRepository.GetsAsync(config => config.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
-			if (!string.IsNullOrEmpty(GroupName))
-			{
-				activeConfigs = activeConfigs.Where(c => c.GroupName == GroupName).ToList();
-			}
-			if (activeConfigs == null || !activeConfigs.Any())
-			{
-				return new List<SystemConfigModel>();
-			}
-			var result = activeConfigs.Select(config => new SystemConfigModel
-			{
-				SystemConfigId = config.SystemConfigId,
-				Key = config.Key,
-				Value = config.Value,
-				DisplayName = config.DisplayName,
-				GroupName = config.GroupName,
-				Status = config.Status
-				
-			}).ToList();
+            string companyName = "N/A";
+            if (!string.IsNullOrEmpty(companyId))
+            {
+                companyName = await _companyRepository.GetCompanyNameAsync(companyId) ?? "Không tìm thấy Công ty";
+            }
 
-			return result;
-		}
+            string scpName = "N/A";
+            if (!string.IsNullOrEmpty(scpId))
+            {
+                scpName = await _smallCollectionRepository.GetScpNameAsync(scpId) ?? "Không tìm thấy SCP";
+            }
 
-		public async Task<SystemConfigModel> GetSystemConfigByKey(string key)
+            return activeConfigs.Select(config => new SystemConfigModel
+            {
+                SystemConfigId = config.SystemConfigId,
+                Key = config.Key,
+                Value = config.Value,
+                DisplayName = config.DisplayName,
+                GroupName = config.GroupName,
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<SystemConfigStatus>(config.Status),
+                CompanyName = companyName,
+                ScpName = scpName
+            }).ToList();
+        }
+
+        public async Task<SystemConfigModel> GetSystemConfigByKey(string key)
 		{
 			var config = await _systemConfigRepository
 				.GetAsync(c => c.Key.ToLower() == key.ToLower()

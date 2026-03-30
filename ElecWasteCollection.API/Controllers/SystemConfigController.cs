@@ -15,13 +15,23 @@ namespace ElecWasteCollection.API.Controllers
 		{
 			_systemConfigService = systemConfigService;
 		}
-		[HttpGet("active")]
-		public async Task<IActionResult> GetAllActiveSystemConfigs([FromQuery] SystemConfigFilterRequest request)
-		{
-			var configs = await _systemConfigService.GetAllSystemConfigActive(request.GroupName);
-			return Ok(configs);
-		}
-		[HttpGet("{key}")]
+        [HttpGet("active")]
+        public async Task<IActionResult> GetAllActiveSystemConfigs([FromQuery] SystemConfigFilterRequest request)
+        {
+            var result = await _systemConfigService.GetAllSystemConfigActive(
+                request.GroupName,
+                request.CompanyId,
+                request.ScpId
+            );
+
+            if (result == null || !result.Any())
+            {
+                return Ok(new List<object>());
+            }
+
+            return Ok(result);
+        }
+        [HttpGet("{key}")]
 		public async Task<IActionResult> GetSystemConfigByKey(string key)
 		{
 			var config = await _systemConfigService.GetSystemConfigByKey(key);

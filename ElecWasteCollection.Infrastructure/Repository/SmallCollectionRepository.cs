@@ -40,5 +40,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return (items, totalCount);
 		}
-	}
+        public async Task<string?> GetScpNameAsync(string scpId)
+        {
+            return await _dbSet.AsNoTracking()
+                .Where(s => s.SmallCollectionPointsId == scpId)
+                .Select(s => s.Name)
+                .FirstOrDefaultAsync();
+        }
+    }
 }

@@ -69,5 +69,13 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Select(c => c.CompanyId)
 				.ToListAsync();
 		}
-	}
+
+        public async Task<string?> GetCompanyNameAsync(string companyId)
+        {
+            return await _dbSet.AsNoTracking()
+                .Where(c => c.CompanyId == companyId)
+                .Select(c => c.Name)
+                .FirstOrDefaultAsync();
+        }
+    }
 }
