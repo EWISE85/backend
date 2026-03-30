@@ -8,5 +8,6 @@ namespace ElecWasteCollection.Application.IServices
 {
     public interface IBrandCategoryService
     {
+        Task<double> EstimatePointForBrandAndCategory(Guid categoryId, Guid brandId);
     }
 }
