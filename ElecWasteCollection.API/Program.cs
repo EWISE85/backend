@@ -188,7 +188,11 @@ namespace ElecWasteCollection.API
 			builder.Services.AddHostedService<AutoRejectWorker>();
 			builder.Services.AddHostedService<CollectionRouteWorker>();
             builder.Services.AddHostedService<AutoAssignWorker>();
-
+			builder.Services.AddScoped<IPublicHolidayRepository, PublicHolidayRepository>();
+			builder.Services.AddScoped<IPublicHolidayService, PublicHolidayService>();
+			builder.Services.AddScoped<IReportRepository, ReportRepository>();
+			builder.Services.AddScoped<IReportService, ReportService>();
+			builder.Services.AddScoped<IAttributeService, AttributeService>();
 			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{

@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Exceptions;
+using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
@@ -33,12 +34,26 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<AttributeOptionResponse>> GetOptionsByAttributeId(Guid attributeId)
 		{
-			var options = await _attributeOptionRepository.GetsAsync(option => option.AttributeId == attributeId);
+			var options = await _attributeOptionRepository.GetsAsync(option => option.AttributeId == attributeId&& option.Status == AttributeOptionStatus.DANG_HOAT_DONG.ToString());
 			if (options == null) return new List<AttributeOptionResponse>(); 
 			var responseOptions = options.Select(option => new AttributeOptionResponse
 			{
 				AttributeOptionId = option.OptionId,
-				OptionName = option.OptionName
+				OptionName = option.OptionName,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<AttributeOptionStatus>(option.Status)
+			}).ToList();
+			return responseOptions;
+		}
+
+		public async Task<List<AttributeOptionResponse>> GetOptionsByAttributeIdForAdmin(Guid attributeId, string? status)
+		{
+			var options = await _attributeOptionRepository.GetsAsync(option => option.AttributeId == attributeId && (string.IsNullOrEmpty(status) || option.Status == status));
+			if (options == null) return new List<AttributeOptionResponse>();
+			var responseOptions = options.Select(option => new AttributeOptionResponse
+			{
+				AttributeOptionId = option.OptionId,
+				OptionName = option.OptionName,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<AttributeOptionStatus>(option.Status)
 			}).ToList();
 			return responseOptions;
 		}
