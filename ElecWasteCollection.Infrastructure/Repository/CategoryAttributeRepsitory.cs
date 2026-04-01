@@ -14,6 +14,16 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public CategoryAttributeRepsitory(DbContext context) : base(context)
 		{
 		}
-	
+
+		public async Task<List<CategoryAttributes>> GetCategoryAttributeForAdmin(Guid categoryId, string? status)
+		{
+			var query = _dbSet.AsNoTracking().Include(ca => ca.Attribute)
+				.Where(ca => ca.CategoryId == categoryId);
+			if (!string.IsNullOrEmpty(status))
+			{
+				query = query.Where(ca => ca.Status == status);
+			}
+			return await query.ToListAsync();
+		}
 	}
 }

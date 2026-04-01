@@ -110,7 +110,12 @@ namespace ElecWasteCollection.API.Controllers
 		//	}
 		//	return BadRequest(new { Message = "Không thể xóa danh mục cha. Vui lòng thử lại." });
 		//}
+		[HttpGet("attribute/admin")]
+		public async Task<IActionResult> GetAttributeByCategoryIdForAdmin([FromQuery] Guid categoryId, [FromQuery] string? status)
+		{
+			var attributes = await _categoryAttributeService.GetAttributeByCategoryIdForAdmin(categoryId, status);
+			return Ok(attributes);
+		}
 
-		
-	}
+		}
 }
