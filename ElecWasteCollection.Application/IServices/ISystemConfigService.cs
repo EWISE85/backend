@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.AssignPost;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
@@ -26,5 +27,7 @@ namespace ElecWasteCollection.Application.IServices
         Task<WarehouseSpeedResponse> GetWarehouseSpeedByPointIdAsync(string smallPointId);
         Task<AutoAssignSettings> GetAutoAssignSettingsAsync();
         Task<bool> UpdateAutoAssignSettingsAsync(UpdateAutoAssignRequest model);
+		Task<WarehouseLoadThresholdSettings> GetWarehouseLoadThresholdAsync();
+		Task<bool> UpdateWarehouseLoadThresholdAsync(UpdateThresholdRequest model);
     }
 }
