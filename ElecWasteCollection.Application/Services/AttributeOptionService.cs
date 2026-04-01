@@ -36,7 +36,10 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var options = await _attributeOptionRepository.GetsAsync(option => option.AttributeId == attributeId&& option.Status == AttributeOptionStatus.DANG_HOAT_DONG.ToString());
 			if (options == null) return new List<AttributeOptionResponse>(); 
-			var responseOptions = options.Select(option => new AttributeOptionResponse
+			var responseOptions = options
+				.OrderBy(option => option.EstimateWeight)
+				.ThenBy(option => option.EstimateVolume)
+				.Select(option => new AttributeOptionResponse
 			{
 				AttributeOptionId = option.OptionId,
 				OptionName = option.OptionName,
@@ -49,7 +52,10 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var options = await _attributeOptionRepository.GetsAsync(option => option.AttributeId == attributeId && (string.IsNullOrEmpty(status) || option.Status == status));
 			if (options == null) return new List<AttributeOptionResponse>();
-			var responseOptions = options.Select(option => new AttributeOptionResponse
+			var responseOptions = options
+				.OrderBy(option => option.EstimateWeight)
+				.ThenBy(option => option.EstimateVolume)
+				.Select(option => new AttributeOptionResponse
 			{
 				AttributeOptionId = option.OptionId,
 				OptionName = option.OptionName,
