@@ -39,7 +39,9 @@ namespace ElecWasteCollection.Domain.Entities
         AUTO_ASSIGN_LAST_RUN_DATE,           // Giá trị: "2026-03-28" (Để tránh chia trùng trong cùng 1 phút)
         SYSTEM_ADMIN_ID,
     
-		TIME_TO_CHANGE_STATUS_ROUTE
+		TIME_TO_CHANGE_STATUS_ROUTE,
+		FORMAT_IMPORT_VOUCHER,
+		FORMAT_IMPORT_HOLIDAY
 	}
 	public class SystemConfig
     {

@@ -85,7 +85,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public virtual ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();
 
-
+		public virtual ICollection<UserReport> UserReports { get; set; } = new List<UserReport>();
 
 	}
 }

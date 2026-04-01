@@ -14,6 +14,16 @@ namespace ElecWasteCollection.Application.IServices
 		Task<List<CategoryModel>> GetSubCategoryByParentId(Guid parentId);
 
 		Task<List<CategoryModel>> GetSubCategoryByName(string name, Guid parentId);
+		Task SyncCategoriesAsync(List<CategoryImportModel> excelCategories);
 
+		Task<List<CategoryModel>> GetParentCategoryForAdmin(string? status);
+
+		Task<PagedResultModel<CategoryModel>> GetSubCategoryByParentIdForAdmin(Guid parentId, string? name ,string? status, int page, int limit);
+
+		//Task<bool> DeleteChildCategory(Guid categoryId);
+		//Task<bool> DeleteParentCategory(Guid categoryId);
+
+		//Task<bool> ActiveParentCategory(Guid categoryId);
+		//Task<bool> ActiveChildCategory(Guid categoryId);
 	}
 }

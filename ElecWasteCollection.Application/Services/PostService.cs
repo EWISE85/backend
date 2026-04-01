@@ -108,14 +108,34 @@ namespace ElecWasteCollection.Application.Services
                     foreach (var attr in createPostRequest.Product.Attributes)
                     {
                         var rule = validationRules.FirstOrDefault(x => x.AttributeId == attr.AttributeId);
-                        if (attr.OptionId == null && attr.Value.HasValue && rule != null)
+						if (rule == null)
+						{
+							throw new AppException($"Thuộc tính với ID '{attr.AttributeId}' không hợp lệ cho danh mục này.", 400);
+						}
+						var attributeName = rule?.Attribute?.Name ?? "Unknown Attribute";
+						if (attr.OptionId == null && attr.Value.HasValue && rule != null)
                         {
                             if (rule.MinValue.HasValue && attr.Value.Value < rule.MinValue.Value)
                             {
                                 throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá nhỏ. Tối thiểu phải là {rule.MinValue} {rule.Unit}.", 400);
                             }
                         }
-                        var newProductValue = new ProductValues
+						if (attributeName == "Trọng lượng (kg)")
+						{
+							if (attr.OptionId.HasValue)
+							{
+								var option = await _unitOfWork.AttributeOptions.GetAsync(o => o.OptionId == attr.OptionId.Value);
+								if (option == null)
+								{
+									throw new AppException($"OptionId '{attr.OptionId.Value}' không tồn tại.", 400);
+								}
+								if (option.EstimateWeight < rule.MinValue.Value)
+								{
+									throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá nhỏ. Tối thiểu phải là {rule.MinValue} {rule.Unit}.", 400);
+								}
+							}
+						}
+									var newProductValue = new ProductValues
                         {
                             ProductValuesId = Guid.NewGuid(),
                             ProductId = newProductId,

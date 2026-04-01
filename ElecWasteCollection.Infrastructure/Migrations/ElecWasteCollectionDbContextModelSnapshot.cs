@@ -112,6 +112,10 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("BrandId");
 
                     b.ToTable("Brand", (string)null);
@@ -131,6 +135,10 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
                     b.Property<double>("Points")
                         .HasColumnType("double precision");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.HasKey("BrandCategoryId");
 
@@ -161,6 +169,10 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<Guid?>("ParentCategoryId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.HasKey("CategoryId");
 
                     b.HasIndex("ParentCategoryId");
@@ -184,6 +196,10 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
                     b.Property<double?>("MinValue")
                         .HasColumnType("double precision");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -693,6 +709,37 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.ToTable("Products", (string)null);
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.PublicHoliday", b =>
+                {
+                    b.Property<Guid>("PublicHolidayId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateOnly>("EndDate")
+                        .HasColumnType("date");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("StartDate")
+                        .HasColumnType("date");
+
+                    b.HasKey("PublicHolidayId");
+
+                    b.ToTable("PublicHoliday", (string)null);
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Rank", b =>
                 {
                     b.Property<Guid>("RankId")
@@ -971,6 +1018,48 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("UserDeviceToken", (string)null);
+                });
+
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserReport", b =>
+                {
+                    b.Property<Guid>("UserReportId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CollectionRouteId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ReportType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ResolveMessage")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("UserReportId");
+
+                    b.HasIndex("CollectionRouteId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserReport", (string)null);
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserVoucher", b =>
@@ -1516,6 +1605,25 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserReport", b =>
+                {
+                    b.HasOne("ElecWasteCollection.Domain.Entities.CollectionRoutes", "CollectionRoute")
+                        .WithMany("UserReports")
+                        .HasForeignKey("CollectionRouteId")
+                        .HasConstraintName("FK_UserReport_Route");
+
+                    b.HasOne("ElecWasteCollection.Domain.Entities.User", "User")
+                        .WithMany("UserReports")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired()
+                        .HasConstraintName("FK_UserReport_User");
+
+                    b.Navigation("CollectionRoute");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.UserVoucher", b =>
                 {
                     b.HasOne("ElecWasteCollection.Domain.Entities.User", "User")
@@ -1581,6 +1689,11 @@ namespace ElecWasteCollection.Infrastructure.Migrations
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.CollectionGroups", b =>
                 {
                     b.Navigation("CollectionRoutes");
+                });
+
+            modelBuilder.Entity("ElecWasteCollection.Domain.Entities.CollectionRoutes", b =>
+                {
+                    b.Navigation("UserReports");
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Company", b =>
@@ -1664,6 +1777,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Navigation("UserAddresses");
 
                     b.Navigation("UserDeviceTokens");
+
+                    b.Navigation("UserReports");
 
                     b.Navigation("UserVouchers");
                 });
