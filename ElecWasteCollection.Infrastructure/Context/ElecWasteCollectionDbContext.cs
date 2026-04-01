@@ -55,6 +55,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<Rank> Ranks { get; set; }
 
+		public DbSet<PublicHoliday> PublicHolidays { get; set; }
+
+		public DbSet<UserReport> UserReports { get; set; }
+
 		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
@@ -546,6 +550,32 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.Property(e => e.RankId).ValueGeneratedOnAdd();
 				entity.Property(e => e.RankName).IsRequired().HasMaxLength(200);
 			});
-		}
+
+			modelBuilder.Entity<PublicHoliday>(entity =>
+			{
+				entity.ToTable("PublicHoliday");
+				entity.HasKey(e => e.PublicHolidayId);
+				entity.Property(e => e.PublicHolidayId).ValueGeneratedOnAdd();
+				entity.Property(e => e.Description).HasMaxLength(200);
+			});
+
+			modelBuilder.Entity<UserReport>(entity =>
+			{
+				entity.ToTable("UserReport");
+				entity.HasKey(e => e.UserReportId);
+				entity.Property(e => e.UserReportId).ValueGeneratedOnAdd();
+				entity.Property(e => e.UserId).IsRequired();
+
+				entity.HasOne(e => e.User)
+					  .WithMany(u => u.UserReports)
+					  .HasForeignKey(e => e.UserId)
+					  .HasConstraintName("FK_UserReport_User");
+
+				entity.HasOne(e => e.CollectionRoute)
+				.WithMany(u => u.UserReports)
+					  .HasForeignKey(e => e.CollectionRouteId)
+					  .HasConstraintName("FK_UserReport_Route");
+			});
+			}
 	}
 }

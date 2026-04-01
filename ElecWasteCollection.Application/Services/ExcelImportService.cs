@@ -27,9 +27,15 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IMapboxService _mapboxService;
 		private readonly IVoucherService _voucherService;
 		private	readonly IUserRepository _userRepository;
+		private readonly IPublicHolidayService _publicHolidayService;
+		private readonly IAttributeService _attributeService;
+		private readonly IBrandService _brandService;
+		private readonly ICategoryService _categoryService;
+		private readonly IBrandCategoryService _brandCategoryService;
+		private readonly ICategoryAttributeService _categoryAttributeService;
 
 
-		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository)
+		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository, IPublicHolidayService publicHolidayService, IAttributeService attributeService, IBrandService brandService, ICategoryService categoryService, IBrandCategoryService brandCategoryService, ICategoryAttributeService categoryAttributeService)
 		{
 			_companyService = CompanyService;
 			_accountService = accountService;
@@ -42,6 +48,12 @@ namespace ElecWasteCollection.Application.Services
 			_mapboxService = mapboxService;
 			_voucherService = voucherService;
 			_userRepository = userRepository;
+			_publicHolidayService = publicHolidayService;
+			_attributeService = attributeService;
+			_brandService = brandService;
+			_categoryService = categoryService;
+			_brandCategoryService = brandCategoryService;
+			_categoryAttributeService = categoryAttributeService;
 		}
 
 		public async Task<ImportResult> ImportAsync(Stream excelStream, string importType)
@@ -50,43 +62,55 @@ namespace ElecWasteCollection.Application.Services
 			try
 			{
 				using var workbook = new XLWorkbook(excelStream);
-				var worksheet = workbook.Worksheet(1);
 
-				if (importType.Equals("Company", StringComparison.OrdinalIgnoreCase))
+				if (importType.Equals("CategorySystem", StringComparison.OrdinalIgnoreCase))
 				{
-					await ImportCompanyAsync(worksheet, result);
-				}
-				else if (importType.Equals("SmallCollectionPoint", StringComparison.OrdinalIgnoreCase))
-				{
-					await ImportSmallCollectionPointAsync(worksheet, result); 
-				}
-				else if (importType.Equals("Collector", StringComparison.OrdinalIgnoreCase))
-				{
-					await ImportCollectorAsync(worksheet, result); 
-				}
-				else if (importType.Equals("Shift", StringComparison.OrdinalIgnoreCase))
-				{
-					await ImportShiftAsync(worksheet, result); 
-				}
-				else if (importType.Equals("Vehicle", StringComparison.OrdinalIgnoreCase))
-				{
-					await ImportVehicleAsync(worksheet, result); 
-				}
-				else if (importType.Equals("User", StringComparison.OrdinalIgnoreCase))
-				{
-					await ImportUserAsync(worksheet, result);
-				}
-				else if (importType.Equals("Voucher", StringComparison.OrdinalIgnoreCase))
-				{
-					await ImportVoucherAsync(worksheet, result);
+					//Thứ tự cực kỳ quan trọng để tránh lỗi khóa ngoại
+					await ImportCategoriesAsync(workbook.Worksheet(1), result);
+					await ImportBrandsAsync(workbook.Worksheet(2), result);
+					await ImportAttributesAsync(workbook.Worksheet(4), result);
+
+					//// Sau khi có dữ liệu gốc mới tiến hành Map
+					await ImportCategoryBrandMapAsync(workbook.Worksheet(3), result);
+					await ImportCategoryAttributeMapAsync(workbook.Worksheet(5), result);
 				}
 				else
 				{
-					result.Success = false;
-					result.Messages.Add($"Import type '{importType}' chưa được hỗ trợ.");
-					return result;
-				}
+					var worksheet = workbook.Worksheet(1);
 
+					if (importType.Equals("Company", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportCompanyAsync(worksheet, result);
+					}
+					else if (importType.Equals("SmallCollectionPoint", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportSmallCollectionPointAsync(worksheet, result);
+					}
+					else if (importType.Equals("Collector", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportCollectorAsync(worksheet, result);
+					}
+					else if (importType.Equals("Shift", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportShiftAsync(worksheet, result);
+					}
+					else if (importType.Equals("Vehicle", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportVehicleAsync(worksheet, result);
+					}
+					else if (importType.Equals("User", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportUserAsync(worksheet, result);
+					}
+					else if (importType.Equals("Voucher", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportVoucherAsync(worksheet, result);
+					}
+					else if (importType.Equals("PublicHoliday", StringComparison.OrdinalIgnoreCase))
+					{
+						await ImportPublicHolidayAsync(worksheet, result);
+					}
+				}
 				result.Success = true;
 			}
 			catch (Exception ex)
@@ -95,6 +119,48 @@ namespace ElecWasteCollection.Application.Services
 				result.Messages.Add(ex.Message);
 			}
 			return result;
+		}
+
+		private async Task ImportPublicHolidayAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			int rowCount = worksheet.RowsUsed().Count();
+			var importedNames = new List<string>(); // Danh sách lưu tên từ Excel
+
+			for (int row = 2; row <= rowCount; row++)
+			{
+				var name = worksheet.Cell(row, 2).Value.ToString()?.Trim();
+				if (string.IsNullOrWhiteSpace(name)) continue;
+
+				importedNames.Add(name); // Thêm tên vào danh sách
+
+				var description = worksheet.Cell(row, 3).Value.ToString()?.Trim();
+				var startAtStr = worksheet.Cell(row, 4).Value.ToString()?.Trim();
+				var endAtStr = worksheet.Cell(row, 5).Value.ToString()?.Trim();
+				string dateFormat = "dd/MM/yyyy";
+
+				DateOnly startAt = DateOnly.TryParseExact(startAtStr, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tempStart)
+					? tempStart
+					: DateOnly.MinValue;
+
+				DateOnly endAt = DateOnly.TryParseExact(endAtStr, dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tempEnd)
+					? tempEnd
+					: DateOnly.MinValue;
+
+				var publicHoliday = new PublicHoliday
+				{
+					Name = name,
+					Description = description,
+					StartDate = startAt,
+					EndDate = endAt,
+					IsActive = true,
+					CreatedAt = DateTime.UtcNow
+				};
+
+				var importResult = await _publicHolidayService.CheckAndUpdatePublicHolidayAsync(publicHoliday);
+				result.Messages.AddRange(importResult.Messages);
+			}
+
+			await _publicHolidayService.DeactivateMissingHolidaysAsync(importedNames, result);
 		}
 
 		private async Task ImportVoucherAsync(IXLWorksheet worksheet, ImportResult result)
@@ -570,6 +636,158 @@ Ban Quản Trị Hệ Thống";
 			var random = new Random();
 			return new string(Enumerable.Repeat(validChars, length)
 				.Select(s => s[random.Next(s.Length)]).ToArray());
+		}
+		private async Task ImportAttributesAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			int rowCount = worksheet.RowsUsed().Count();
+
+			var excelData = new Dictionary<string, List<AttributeOptions>>();
+			string lastAttrName = "";
+
+			for (int row = 2; row <= rowCount; row++)
+			{
+				var attrName = worksheet.Cell(row, 2).Value.ToString().Trim();
+				if (string.IsNullOrEmpty(attrName))
+				{
+					attrName = lastAttrName;
+				}
+				else
+				{
+					lastAttrName = attrName;
+				}
+
+				if (string.IsNullOrEmpty(attrName)) continue;
+
+				if (!excelData.ContainsKey(attrName))
+				{
+					excelData[attrName] = new List<AttributeOptions>();
+				}
+
+				var optionName = worksheet.Cell(row, 4).Value.ToString().Trim();
+
+				if (!string.IsNullOrEmpty(optionName))
+				{
+					var weightStr = worksheet.Cell(row, 5).Value.ToString().Trim();
+					var volumeStr = worksheet.Cell(row, 6).Value.ToString().Trim();
+
+					excelData[attrName].Add(new AttributeOptions
+					{
+						OptionName = optionName,
+						EstimateWeight = double.TryParse(weightStr, out var w) ? w : 0,
+						EstimateVolume = double.TryParse(volumeStr, out var v) ? v : 0
+					});
+				}
+			}
+
+			foreach (var entry in excelData)
+			{
+				try
+				{
+					var attrName = entry.Key;
+					var options = entry.Value;
+
+					// Gọi hàm Sync mới để tự động: 
+					// 1. Tạo Attribute nếu chưa có.
+					// 2. Update option cũ, Add option mới.
+					// 3. Tắt (Inactive) các option không có trong file Excel này.
+					await _attributeService.SyncAttributeOptionsAsync(attrName, options);
+
+					result.Messages.Add($"Đồng bộ thành công thuộc tính: {attrName} ({options.Count} tùy chọn).");
+				}
+				catch (Exception ex)
+				{
+					result.Messages.Add($"Lỗi khi xử lý thuộc tính '{entry.Key}': {ex.Message}");
+					result.Success = false;
+				}
+			}
+		}
+
+		private async Task ImportBrandsAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			int rowCount = worksheet.RowsUsed().Count();
+			var excelBrandNames = new List<string>();
+
+			for (int row = 2; row <= rowCount; row++)
+			{
+				var brandName = worksheet.Cell(row, 2).Value.ToString().Trim();
+				if (!string.IsNullOrEmpty(brandName))
+				{
+					excelBrandNames.Add(brandName);
+				}
+			}
+
+			try
+			{
+				await _brandService.SyncBrandsAsync(excelBrandNames);
+				result.Messages.Add($"Đã đồng bộ {excelBrandNames.Count} thương hiệu.");
+			}
+			catch (Exception ex)
+			{
+				result.Messages.Add($"Lỗi đồng bộ thương hiệu: {ex.Message}");
+				result.Success = false;
+			}
+		}
+		private async Task ImportCategoriesAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			int rowCount = worksheet.RowsUsed().Count();
+			var excelCategories = new List<CategoryImportModel>();
+
+			for (int row = 2; row <= rowCount; row++)
+			{
+				var name = worksheet.Cell(row, 2).Value.ToString().Trim();
+				if (string.IsNullOrEmpty(name)) throw new AppException("Tên danh mục đang bị trống",400) ;
+
+				excelCategories.Add(new CategoryImportModel
+				{
+					Name = name,
+					ParentName = worksheet.Cell(row, 3).Value.ToString().Trim(),
+					EmissionFactor = double.TryParse(worksheet.Cell(row, 4).Value.ToString(), out var ef) ? ef : 0
+				});
+			}
+
+			try
+			{
+				await _categoryService.SyncCategoriesAsync(excelCategories);
+				result.Messages.Add($"[Danh mục] Đồng bộ thành công {excelCategories.Count} dòng.");
+			}
+			catch (Exception ex)
+			{
+				result.Messages.Add($"[Danh mục] Lỗi hệ thống: {ex.Message}");
+				result.Success = false;
+			}
+		}
+		// Import Sheet 3
+		private async Task ImportCategoryBrandMapAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			var maps = new List<BrandCategoryMapModel>();
+			foreach (var row in worksheet.RowsUsed().Skip(1))
+			{
+				maps.Add(new BrandCategoryMapModel
+				{
+					CategoryName = row.Cell(2).Value.ToString(),
+					BrandName = row.Cell(3).Value.ToString(),
+					Points = double.TryParse(row.Cell(4).Value.ToString(), out var p) ? p : 0
+				});
+			}
+			await _brandCategoryService.SyncBrandCategoryMapsAsync(maps);
+		}
+
+		// Import Sheet 5
+		private async Task ImportCategoryAttributeMapAsync(IXLWorksheet worksheet, ImportResult result)
+		{
+			var maps = new List<CategoryAttributeMapModel>();
+			foreach (var row in worksheet.RowsUsed().Skip(1))
+			{
+				maps.Add(new CategoryAttributeMapModel
+				{
+					CategoryName = row.Cell(2).Value.ToString(),
+					AttributeName = row.Cell(3).Value.ToString(),
+					Unit = row.Cell(4).Value.ToString(),
+					MinValue = double.TryParse(row.Cell(5).Value.ToString(), out var min) ? min : null,
+					MaxValue = double.TryParse(row.Cell(6).Value.ToString(), out var max) ? max : null
+				});
+			}
+			await _categoryAttributeService.SyncCategoryAttributeMapsAsync(maps);
 		}
 	}
 }

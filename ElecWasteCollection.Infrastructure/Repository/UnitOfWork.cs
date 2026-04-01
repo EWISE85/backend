@@ -48,7 +48,11 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 		public IGenericRepository<UserVoucher> UserVouchers { get; }
         public IGenericRepository<Rank> Ranks { get; }
-        public UnitOfWork(ElecWasteCollectionDbContext context)
+
+		public IGenericRepository<PublicHoliday> PublicHolidays { get; }
+
+        public IGenericRepository<UserReport> UserReports { get; }
+		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
 
@@ -86,8 +90,10 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			Vouchers = new GenericRepository<Voucher>(_context);
 			UserVouchers = new GenericRepository<UserVoucher>(_context);
             Ranks = new GenericRepository<Rank>(_context);
+			PublicHolidays = new GenericRepository<PublicHoliday>(_context);
+			UserReports = new GenericRepository<UserReport>(_context);
 
-        }
+		}
 
 		public async Task<int> SaveAsync()
         {

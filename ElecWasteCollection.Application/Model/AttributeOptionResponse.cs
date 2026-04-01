@@ -11,5 +11,7 @@ namespace ElecWasteCollection.Application.Model
 		public Guid AttributeOptionId { get; set; }
 		public string OptionName { get; set; }
 
+		public string Status { get; set; }
+
 	}
 }

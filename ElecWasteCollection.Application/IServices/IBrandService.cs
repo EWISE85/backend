@@ -10,5 +10,7 @@ namespace ElecWasteCollection.Application.IServices
     public interface IBrandService
     {
 		Task<List<BrandModel>> GetBrandsByCategoryIdAsync(Guid categoryId);
+		Task<Guid> CheckAndUpdateBrandAsync(string brandName);
+		Task SyncBrandsAsync(List<string> excelBrandNames);
 	}
 }

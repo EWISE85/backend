@@ -9,5 +9,6 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface ICategoryAttributeRepsitory : IGenericRepository<CategoryAttributes>	
 	{
+		Task<List<CategoryAttributes>> GetCategoryAttributeForAdmin(Guid categoryId, string? status);
 	}
 }

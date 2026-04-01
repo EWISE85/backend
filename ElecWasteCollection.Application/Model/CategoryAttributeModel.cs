@@ -13,5 +13,11 @@ namespace ElecWasteCollection.Application.Model
 		public string Name { get; set; }
 
 		public double? MinValue { get; set; }
+
+		public double? MaxValue { get; set; }
+
+		public string Unit { get; set; }
+
+		public string Status { get; set; }
 	}
 }

@@ -10,7 +10,7 @@ namespace ElecWasteCollection.Application.Helper
 			new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase)
 		{
 			// === 1. Đồ gia dụng lớn ===
-			{ "Tủ lạnh", new List<string> { "refrigerator", "fridge", "freezer", "home appliance", "white goods" } },
+			{ "Tủ lạnh", new List<string> { "refrigerator", "fridge", "freezer", "home appliance", "white goods", "refrigeration system" } },
 			{ "Máy giặt", new List<string> { "washing machine", "washer", "laundry", "home appliance", "white goods" } },
 			{ "Máy sấy quần áo", new List<string> { "clothes dryer", "dryer", "laundry", "home appliance", "white goods" } },
 			{ "Máy rửa bát", new List<string> { "dishwasher", "home appliance" , "white goods" } },

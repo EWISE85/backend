@@ -11,5 +11,7 @@ namespace ElecWasteCollection.Application.IServices
     {
        Task<List<AttributeOptionResponse>> GetOptionsByAttributeId(Guid attributeId);
 		Task<AttributeOptionResponse?> GetOptionByOptionId(Guid optionId);
+		Task<List<AttributeOptionResponse>> GetOptionsByAttributeIdForAdmin(Guid attributeId, string? status);
+
 	}
 }

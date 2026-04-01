@@ -9,5 +9,6 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface ICategoryRepository : IGenericRepository<Category>
 	{
+		Task<(List<Category> Items, int TotalCount)> GetPagedCategoryForAdmin(Guid parentId, string? name, string? status, int page, int limit);
 	}
 }

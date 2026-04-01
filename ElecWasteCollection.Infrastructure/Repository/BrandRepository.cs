@@ -14,5 +14,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public BrandRepository(DbContext context) : base(context)
 		{
 		}
+
+		
 	}
 }
