@@ -8,15 +8,19 @@ public class SystemConfigRepository : GenericRepository<SystemConfig>, ISystemCo
 {
     public SystemConfigRepository(ElecWasteCollectionDbContext context) : base(context) { }
 
-    public async Task<List<SystemConfig>> GetActiveConfigsByGroupAsync(string? groupName)
+    public async Task<List<SystemConfig>> GetActiveConfigsByFilterAsync(string? groupName, string? companyId, string? scpId)
     {
         var query = _dbSet.AsNoTracking()
             .Where(c => c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
 
         if (!string.IsNullOrEmpty(groupName))
-        {
             query = query.Where(c => c.GroupName == groupName);
-        }
+
+        if (!string.IsNullOrEmpty(companyId))
+            query = query.Where(c => c.CompanyId == companyId);
+
+        if (!string.IsNullOrEmpty(scpId))
+            query = query.Where(c => c.SmallCollectionPointId == scpId);
 
         return await query.ToListAsync();
     }
