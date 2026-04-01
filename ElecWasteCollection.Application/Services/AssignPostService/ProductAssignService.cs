@@ -374,8 +374,43 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     double magic = GetStableHashRatio(group.Key.SenderId);
                     var targetRC = rangeConfigs.FirstOrDefault(r => magic >= r.MinRange && magic < r.MaxRange) ?? rangeConfigs.LastOrDefault();
 
-                    chosenCandidate = candidates.Where(c => targetRC != null && c.CompanyId == targetRC.CompanyEntity.CompanyId).OrderBy(c => c.HaversineKm).FirstOrDefault()
-                                       ?? candidates.OrderBy(c => c.HaversineKm).First();
+                    //chosenCandidate = candidates.Where(c => targetRC != null && c.CompanyId == targetRC.CompanyEntity.CompanyId).OrderBy(c => c.HaversineKm).FirstOrDefault()
+                    //                   ?? candidates.OrderBy(c => c.HaversineKm).First();
+
+                    if (targetRC != null)
+                    {
+                        var thresholdStr = allConfigs.FirstOrDefault(c => c.Key == SystemConfigKey.WAREHOUSE_LOAD_THRESHOLD.ToString())?.Value;
+                        double loadThreshold = double.TryParse(thresholdStr, out var val) ? val : 0.7;
+
+                        var companyPoints = candidates
+                            .Where(c => c.CompanyId == targetRC.CompanyEntity.CompanyId)
+                            .Select(c => {
+                                var sp = allSmallPoints.First(s => s.SmallCollectionPointsId == c.SmallPointId);
+                                double occupancy = (virtualCapacityTracker[c.SmallPointId] + totalGroupVol) / (double)sp.MaxCapacity;
+                                return new { Candidate = c, Load = occupancy };
+                            }).ToList();
+
+                        // Ưu tiên 1: Chọn kho GẦN NHẤT trong nhóm các kho chưa quá tải (< Threshold)
+                        chosenCandidate = companyPoints
+                            .Where(p => p.Load < loadThreshold)
+                            .OrderBy(p => p.Candidate.HaversineKm)
+                            .Select(p => p.Candidate)
+                            .FirstOrDefault();
+
+                        if (chosenCandidate != null)
+                        {
+                            assignNote = $"Phân bổ vùng xanh (Tải < {Math.Round(loadThreshold * 100)}%, Cách: {chosenCandidate.HaversineKm}km)";
+                        }
+                        else
+                        {
+                            // Ưu tiên 2: Nếu tất cả đều > Threshold, chọn kho RẢNH NHẤT
+                            var bestLoadPoint = companyPoints.OrderBy(p => p.Load).FirstOrDefault();
+                            chosenCandidate = bestLoadPoint?.Candidate;
+                            assignNote = $"Cân bằng tải vùng vàng (Tải thấp nhất: {Math.Round((bestLoadPoint?.Load ?? 0) * 100, 1)}%)";
+                        }
+                    }
+
+
                     assignNote = $"Phân bổ theo nhóm (Vol: {totalGroupVol}m3)";
                 }
                 else if (fallbackComp != null)
