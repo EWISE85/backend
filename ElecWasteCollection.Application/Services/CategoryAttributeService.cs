@@ -29,7 +29,12 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<CategoryAttributeModel>> GetAttributeByCategoryIdForAdmin(Guid categoryId, string? status)
 		{
-			var listEntities = await _categoryAttributeRepsitory.GetsAsync(x => x.CategoryId == categoryId && (string.IsNullOrEmpty(status) || x.Status == status), "Attribute");
+			string statusEnum = null;
+			if (!string.IsNullOrEmpty(status))
+			{
+				statusEnum = StatusEnumHelper.GetValueFromDescription<CategoryAttributeStatus>(status).ToString();
+			}
+			var listEntities = await _categoryAttributeRepsitory.GetCategoryAttributeForAdmin(categoryId, statusEnum);
 			if (listEntities == null)
 			{
 				return new List<CategoryAttributeModel>();
