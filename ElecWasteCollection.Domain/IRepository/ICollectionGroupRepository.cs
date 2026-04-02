@@ -10,5 +10,6 @@ namespace ElecWasteCollection.Domain.IRepository
     public interface ICollectionGroupRepository
     {
         Task<(List<CollectionGroups> Items, int TotalCount)> GetPagedGroupsByCollectionPointAsync( string collectionPointId, int page, int limit);
+        Task<(List<CollectionGroups> Items, int TotalCount)> GetPagedGroupsByCollectionPointDateAsync( string collectionPointId, DateOnly? date, int page, int limit);
     }
 }
