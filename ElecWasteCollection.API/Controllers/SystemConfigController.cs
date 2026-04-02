@@ -1,6 +1,7 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.AssignPost;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -192,5 +193,38 @@ namespace ElecWasteCollection.API.Controllers
 
             return BadRequest(new { success = false, message = "Không có thay đổi nào được thực hiện." });
         }
+
+        [HttpGet("load-threshold")]
+        public async Task<IActionResult> GetLoadThreshold()
+        {
+            var result = await _systemConfigService.GetWarehouseLoadThresholdAsync();
+            return Ok(new { success = true, data = result });
+        }
+
+        [HttpPut("warehouse-load-threshold")]
+        public async Task<IActionResult> UpdateWarehouseLoadThreshold([FromBody] UpdateThresholdRequest model)
+        {
+            // Kiểm tra dữ liệu đầu vào cơ bản
+            if (string.IsNullOrEmpty(model.SmallCollectionPointId))
+            {
+                return BadRequest(new { success = false, message = "ID điểm thu gom không được để trống." });
+            }
+
+            // Gọi hàm Service bạn đã viết
+            var result = await _systemConfigService.UpdateWarehouseLoadThresholdAsync(model);
+
+            if (result)
+            {
+                return Ok(new
+                {
+                    success = true,
+                    message = $"Cập nhật ngưỡng tải trọng cho kho {model.SmallCollectionPointId} thành công."
+                });
+            }
+
+            // Trường hợp không có thay đổi (ví dụ Admin nhấn Save nhưng giá trị cũ vẫn thế)
+            return Ok(new { success = true, message = "Không có thay đổi nào được thực hiện." });
+        }
+
     }
 }

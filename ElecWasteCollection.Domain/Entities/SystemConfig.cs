@@ -36,9 +36,9 @@ namespace ElecWasteCollection.Domain.Entities
         AUTO_ASSIGN_IMMEDIATE_THRESHOLD,    // Giá trị: "200" (Đạt ngưỡng này là chia ngay)
         AUTO_ASSIGN_SCHEDULE_TIME,          // Giá trị: "23:59" (Giờ quét hằng ngày)
         AUTO_ASSIGN_SCHEDULE_MIN_QTY,       // Giá trị: "100" (Tới giờ chốt, nếu >= 100 đơn thì chia)
-        AUTO_ASSIGN_LAST_RUN_DATE,           // Giá trị: "2026-03-28" (Để tránh chia trùng trong cùng 1 phút)
+        AUTO_ASSIGN_LAST_RUN_DATE,          // Giá trị: "2026-03-28" (Để tránh chia trùng trong cùng 1 phút)
         SYSTEM_ADMIN_ID,
-    
+        WAREHOUSE_LOAD_THRESHOLD,           // Giá trị mặc định ngưỡng chứa: "0.7"    
 		TIME_TO_CHANGE_STATUS_ROUTE,
 		FORMAT_IMPORT_VOUCHER,
 		FORMAT_IMPORT_HOLIDAY
