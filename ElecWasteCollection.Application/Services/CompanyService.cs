@@ -148,12 +148,30 @@ namespace ElecWasteCollection.Application.Services
             };
         }
 
-        public async Task<CollectionCompanyResponse>? GetCompanyById(string collectionCompanyId)
+		public async Task<CollectionCompanyResponse> GetCompanyById(string collectionCompanyId)
 		{
 			var company = await _collectionCompanyRepository.GetAsync(c => c.CompanyId == collectionCompanyId);
 			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
-			var warehousesEntity = await _unitOfWork.SmallCollectionPoints.GetAllAsync(s => s.CompanyId == company.CompanyId && s.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString());
+
+			IEnumerable<SmallCollectionPoints> warehousesEntity = new List<SmallCollectionPoints>();
+
+			if (company.CompanyType == CompanyType.CTY_THU_GOM.ToString())
+			{
+				warehousesEntity = await _unitOfWork.SmallCollectionPoints.GetAllAsync(
+					s => s.CompanyId == company.CompanyId &&
+						 s.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString(),
+					includeProperties: "CollectionCompany");
+			}
+			else if (company.CompanyType == CompanyType.CTY_TAI_CHE.ToString())
+			{
+				warehousesEntity = await _unitOfWork.SmallCollectionPoints.GetAllAsync(
+					s => s.RecyclingCompanyId == company.CompanyId &&
+						 s.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString(),
+					includeProperties: "CollectionCompany");
+			}
+
 			if (warehousesEntity == null) warehousesEntity = new List<SmallCollectionPoints>();
+
 			var response = new CollectionCompanyResponse
 			{
 				Id = company.CompanyId,
@@ -169,11 +187,13 @@ namespace ElecWasteCollection.Application.Services
 					Latitude = w.Latitude,
 					Longitude = w.Longitude,
 					OpenTime = w.OpenTime,
+					CompanyName = w.CollectionCompany?.Name,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<SmallCollectionPointStatus>(w.Status)
 				}).ToList(),
 
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(company.Status)
 			};
+
 			return response;
 		}
 

@@ -19,5 +19,7 @@ namespace ElecWasteCollection.Application.Model
 		public string Status { get; set; } = null!;
 	
 		public string CompanyId { get; set; }
+
+		public string CompanyName { get; set; }
 	}
 }
