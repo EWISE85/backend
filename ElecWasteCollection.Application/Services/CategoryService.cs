@@ -143,7 +143,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				statusEnum = StatusEnumHelper.GetValueFromDescription<CategoryStatus>(status).ToString();
 			}
-			var (category,total) = await _categoryRepository.GetPagedCategoryForAdmin(parentId,name,status,page,limit);
+			var (category,total) = await _categoryRepository.GetPagedCategoryForAdmin(parentId,name, statusEnum, page,limit);
 			var response = category.Select(c => new CategoryModel
 			{
 				Id = c.CategoryId,
