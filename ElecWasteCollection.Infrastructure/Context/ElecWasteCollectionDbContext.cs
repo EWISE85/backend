@@ -58,8 +58,9 @@ namespace ElecWasteCollection.Infrastructure.Context
 		public DbSet<PublicHoliday> PublicHolidays { get; set; }
 
 		public DbSet<UserReport> UserReports { get; set; }
+        public DbSet<CollectionOffDay> CollectionOffDay { get; set; }
 
-		protected override void OnModelCreating(ModelBuilder modelBuilder)
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
 			{
@@ -576,6 +577,20 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasForeignKey(e => e.CollectionRouteId)
 					  .HasConstraintName("FK_UserReport_Route");
 			});
-			}
+            modelBuilder.Entity<CollectionOffDay>(entity =>
+            {
+                entity.HasIndex(e => e.OffDate);
+                entity.HasOne(d => d.Company)
+                      .WithMany()
+                      .HasForeignKey(d => d.CompanyId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(d => d.SmallCollectionPoint)
+                      .WithMany()
+                      .HasForeignKey(d => d.SmallCollectionPointId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+        }
 	}
 }
