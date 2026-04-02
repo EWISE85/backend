@@ -126,6 +126,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				PublicHolidayId = h.PublicHolidayId,
 				Name = h.Name,
+				Description = h.Description,
 				StartDate = h.StartDate,
 				EndDate = h.EndDate,
 			}).ToList();
