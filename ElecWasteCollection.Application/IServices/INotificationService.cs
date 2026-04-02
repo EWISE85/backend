@@ -27,5 +27,6 @@ namespace ElecWasteCollection.Application.IServices
 		Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved);
 
 		Task SendNotificationForUserWhenReportAnswerd(Guid userId);
+		Task NotifyScheduleConfirmedAsync(Dictionary<Guid, (DateOnly Date, string Time)> userSchedules);
 	}
 }
