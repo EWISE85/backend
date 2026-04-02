@@ -26,6 +26,10 @@ namespace ElecWasteCollection.Application.Model
 
 		public Guid ReportUserId { get; set; }
 
+		public string CompanyName { get; set; }
+
+		public string SmallCollectionPointName { get; set; }
+
 		public string Status { get; set; }
 
 	}

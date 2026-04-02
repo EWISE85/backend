@@ -122,6 +122,49 @@ namespace ElecWasteCollection.Application.Services
 			
 		}
 
+		public async Task<ReportModel> GetReport(Guid reportId)
+		{
+			var report = await _unitOfWork.UserReports.GetAsync(
+				r => r.UserReportId == reportId,
+				"User,CollectionRoute.Product.SmallCollectionPoint.CollectionCompany"
+			);
+
+			if (report == null) throw new AppException("Không tìm thấy khiếu nại", 404);
+
+			string smallCollectionPointName = null;
+			string companyName = null;
+
+			if (report.CollectionRouteId.HasValue)
+			{
+				var smallCollectionPoint = report.CollectionRoute?.Product?.SmallCollectionPoint;
+
+				if (smallCollectionPoint != null)
+				{
+					smallCollectionPointName = smallCollectionPoint.Name;
+					companyName = smallCollectionPoint.CollectionCompany?.Name;
+				}
+			}
+
+			var reportModel = new ReportModel
+			{
+				ReportId = report.UserReportId,
+				ReportUserId = report.UserId,
+				ReportRouteId = report.CollectionRouteId,
+				ReportDescription = report.Description,
+				ReportType = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportType>(report.ReportType),
+				CreatedAt = report.CreatedAt,
+				ResolvedAt = report.ResolvedAt,
+				AnswerMessage = report.ResolveMessage,
+				ReportUserName = report.User?.Name,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportStatus>(report.Status),
+
+				SmallCollectionPointName = smallCollectionPointName,
+				CompanyName = companyName
+			};
+
+			return reportModel;
+		}
+
 		public async Task<List<string>> GetReportTypes()
 		{
 			var list = Enum.GetValues(typeof(ReportType))
