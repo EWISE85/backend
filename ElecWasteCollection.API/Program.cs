@@ -8,6 +8,7 @@ using ElecWasteCollection.Application.Interfaces;
 
 //using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.IServices.ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Services;
 using ElecWasteCollection.Application.Services.AssignPackageService;
@@ -193,7 +194,8 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IReportRepository, ReportRepository>();
 			builder.Services.AddScoped<IReportService, ReportService>();
 			builder.Services.AddScoped<IAttributeService, AttributeService>();
-			builder.Services.AddMemoryCache();
+            builder.Services.AddScoped<ICollectionOffDayService, CollectionOffDayService>();
+            builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
