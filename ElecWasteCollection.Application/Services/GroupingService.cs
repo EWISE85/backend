@@ -1,11 +1,13 @@
 ﻿using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.Interfaces;
+using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.GroupModel;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
+using System.Collections.Generic;
 using System.Text.Json;
 
 namespace ElecWasteCollection.Application.Services
@@ -26,12 +28,14 @@ namespace ElecWasteCollection.Application.Services
 
         private readonly ICollectionGroupRepository _repository;
         private readonly IUnitOfWork _unitOfWork;
-
-        public GroupingService(IUnitOfWork unitOfWork)
+        private readonly INotificationService _notificationService;
+		public GroupingService(IUnitOfWork unitOfWork, INotificationService notificationService, ICollectionGroupRepository collectionGroupRepository)
         {
             _unitOfWork = unitOfWork;
+			_notificationService = notificationService;
+			_repository = collectionGroupRepository;
 
-        }
+		}
 
         //public async Task<PreAssignResponse> PreAssignAsync(PreAssignRequest request)
         //{
@@ -747,7 +751,7 @@ namespace ElecWasteCollection.Application.Services
 
             var attIdMap = await GetAttributeIdMapAsync();
             string companyCode = GetCompanyInitials(point.CollectionCompany?.Name ?? "CORP");
-
+			var userSchedules = new Dictionary<Guid, (DateOnly Date, string Time)>();
             foreach (var stage in stagingData)
             {
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(stage.VehicleId);
@@ -814,7 +818,8 @@ namespace ElecWasteCollection.Application.Services
                         if (prod != null)
                         {
                             prod.Status = ProductStatus.CHO_THU_GOM.ToString();
-                            _unitOfWork.Products.Update(prod);
+							userSchedules.TryAdd(prod.UserId, (stage.Date, detail.EstimatedArrival)); 
+							_unitOfWork.Products.Update(prod);
                         }
 
                         TimeOnly.TryParseExact(detail.EstimatedArrival, "HH:mm", out var parsedTime);
@@ -842,7 +847,11 @@ namespace ElecWasteCollection.Application.Services
             if (request.SaveResult)
             {
                 lock (_lockObj) { _inMemoryStaging.RemoveAll(s => s.PointId == request.CollectionPointId); }
-            }
+				if (userSchedules.Any())
+				{
+					await _notificationService.NotifyScheduleConfirmedAsync(userSchedules);
+				}
+			}
             return response;
         }
 
