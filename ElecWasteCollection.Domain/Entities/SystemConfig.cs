@@ -41,7 +41,8 @@ namespace ElecWasteCollection.Domain.Entities
         WAREHOUSE_LOAD_THRESHOLD,           // Giá trị mặc định ngưỡng chứa: "0.7"    
 		TIME_TO_CHANGE_STATUS_ROUTE,
 		FORMAT_IMPORT_VOUCHER,
-		FORMAT_IMPORT_HOLIDAY
+		FORMAT_IMPORT_HOLIDAY,
+        CONFIG_TIME_ABLE_TO_POST
 	}
 	public class SystemConfig
     {
