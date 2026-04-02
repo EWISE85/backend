@@ -29,6 +29,10 @@ namespace ElecWasteCollection.Application.Model
 
 		public string? Address { get; set; }
 
+		public double? Points { get; set; }
+
+		public Guid CollectionRouteId { get; set; }
+
 		public string Status { get; set; }
 	}
 }

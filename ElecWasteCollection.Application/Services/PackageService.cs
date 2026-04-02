@@ -283,40 +283,67 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UpdatePackageAsync(UpdatePackageModel model)
 		{
-			var package = await _packageRepository.GetAsync(p => p.PackageId == model.PackageId);
+			// 1. Lấy Package và kiểm tra tồn tại
+			var package = await _unitOfWork.Packages.GetAsync(p => p.PackageId == model.PackageId);
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
 			package.SmallCollectionPointsId = model.SmallCollectionPointsId;
 
-			var currentProductsInPackage = await _productService.GetProductsByPackageIdAsync(model.PackageId);
+			// 2. Lấy tất cả sản phẩm liên quan (Đang trong thùng OR nằm trong list QR mới)
+			var qrCodesList = model.ProductsQrCode.ToList();
+			var relevantProducts = await _unitOfWork.Products.GetsAsync(
+				p => p.PackageId == model.PackageId || qrCodesList.Contains(p.QRCode));
 
 			var newQrCodesSet = model.ProductsQrCode.ToHashSet();
 
-			foreach (var existingProduct in currentProductsInPackage)
+			foreach (var product in relevantProducts)
 			{
-				if (!newQrCodesSet.Contains(existingProduct.QrCode))
+				// TRƯỜNG HỢP 1: Bị loại bỏ khỏi thùng (Có trong thùng cũ nhưng không có trong list mới)
+				if (product.PackageId == model.PackageId && !newQrCodesSet.Contains(product.QRCode))
 				{
-					await _productService.RemovePackageIdFromProductByQrCode(existingProduct.QrCode);
+					product.PackageId = null;
+					product.Package = null;
+					product.Status = ProductStatus.NHAP_KHO.ToString();
 
-					var oldHistory = await _productStatusHistoryRepository.GetAsync(h => h.ProductId == existingProduct.ProductId && h.Status == ProductStatus.DA_DONG_THUNG.ToString());
+					// Xóa lịch sử cũ nếu bạn muốn (theo logic cũ của bạn) hoặc giữ lại để track
+					var oldHistory = await _unitOfWork.ProductStatusHistory.GetAsync(
+						h => h.ProductId == product.ProductId && h.Status == ProductStatus.DA_DONG_THUNG.ToString());
+
 					if (oldHistory != null)
 					{
 						_unitOfWork.ProductStatusHistory.Delete(oldHistory);
 					}
-
 				}
-			}
 
-			foreach (var qrCode in model.ProductsQrCode)
-			{
-				var product = await _productService.GetByQrCode(qrCode);
-				if (product != null)
+				// TRƯỜNG HỢP 2: Được thêm mới vào thùng hoặc giữ lại trong thùng
+				else if (newQrCodesSet.Contains(product.QRCode))
 				{
-					await _productService.AddPackageIdToProductByQrCode(product.QrCode, package.PackageId);
+					// Chỉ tạo lịch sử nếu trạng thái thực sự thay đổi sang DA_DONG_THUNG
+					if (product.Status != ProductStatus.DA_DONG_THUNG.ToString())
+					{
+						product.Status = ProductStatus.DA_DONG_THUNG.ToString();
+
+						// TẠO LỊCH SỬ MỚI
+						var history = new ProductStatusHistory
+						{
+							ProductStatusHistoryId = Guid.NewGuid(), 
+							ProductId = product.ProductId,
+							Status = ProductStatus.DA_DONG_THUNG.ToString(),
+							ChangedAt = DateTime.UtcNow, 
+							StatusDescription = $"Được thêm vào kiện hàng {package.PackageId}"
+						};
+
+						await _unitOfWork.ProductStatusHistory.AddAsync(history);
+					}
+
+					// Cập nhật PackageId (trường hợp đổi từ thùng này sang thùng khác hoặc từ ngoài vào)
+					product.PackageId = package.PackageId;
 				}
 			}
-			_unitOfWork.Packages.Update(package);
+
+			// 3. Lưu tất cả thay đổi (Package, Product, History) trong 1 Transaction duy nhất
 			await _unitOfWork.SaveAsync();
+
 			return true;
 		}
 
