@@ -342,5 +342,38 @@ namespace ElecWasteCollection.Application.Services
 
 			await _unitOfWork.SaveAsync();
 		}
+
+		public async Task SendNotificationForUserWhenReportAnswerd(Guid userId)
+		{
+			var title = "Khiếu nại đã được trả lời!";
+			var body = "Khiếu nại của bạn đã được trả lời. Vui lòng kiểm tra để xem chi tiết.";
+
+			var dataPayload = new Dictionary<string, string>
+			{
+				{ "type", "REPORT_ANSWERED" }
+			};
+
+			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
+
+			if (userTokens != null && userTokens.Any())
+			{
+				var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+				await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+			}
+
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = userId,
+				Title = title,
+				Body = body,
+				IsRead = false,
+				CreatedAt = DateTime.UtcNow,
+				Type = NotificationType.System.ToString()
+			};
+
+			await _unitOfWork.Notifications.AddAsync(notification);
+			await _unitOfWork.SaveAsync();
+		}
 	}
 }
