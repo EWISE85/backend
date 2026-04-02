@@ -764,8 +764,9 @@ namespace ElecWasteCollection.Application.Services
 			var product = await _productRepository.GetAsync(p => p.QRCode == qrCode);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm", 404);
 			product.PackageId = null;
-			_unitOfWork.Products.Update(product);
+			product.Package = null;
 			product.Status = ProductStatus.NHAP_KHO.ToString();
+			_unitOfWork.Products.Update(product);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
