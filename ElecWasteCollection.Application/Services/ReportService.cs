@@ -103,7 +103,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					statusEnum = StatusEnumHelper.GetValueFromDescription<ReportStatus>(model.Status).ToString();
 				}
-				var (reports, totalCount) = await _reportRepository.GetPagedReport(typeEnum, statusEnum, model.Start, model.End, model.PageNumber, model.Limit);
+				var (reports, totalCount) = await _reportRepository.GetPagedReportForUser(model.UserId,typeEnum, statusEnum, model.Start, model.End, model.PageNumber, model.Limit);
 				var reportModels = reports.Select(r => new ReportModel
 				{
 					ReportId = r.UserReportId,
