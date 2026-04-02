@@ -12,5 +12,6 @@ namespace ElecWasteCollection.Application.IServices
         Task<List<SCPCapacityModel>> GetAllSCPCapacityAsync();
         Task<SCPCapacityModel> GetSCPCapacityByIdAsync(string pointId);
         Task<CompanyCapacityModel> GetCompanyCapacitySummaryAsync(string companyId);
+        Task<CompanyCapacityModel> GetCompanyCapacityByDateAsync(string companyId, DateOnly date);
     }
 }

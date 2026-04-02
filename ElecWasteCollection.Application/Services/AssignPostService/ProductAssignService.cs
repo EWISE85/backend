@@ -368,54 +368,86 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 ProductAssignCandidate? chosenCandidate = null;
                 string assignNote = "";
 
+                //if (candidates.Any())
+                //{
+                //    // Có kho trong bán kính -> Chia theo Ratio
+                //    double magic = GetStableHashRatio(group.Key.SenderId);
+                //    var targetRC = rangeConfigs.FirstOrDefault(r => magic >= r.MinRange && magic < r.MaxRange) ?? rangeConfigs.LastOrDefault();
+
+                //    chosenCandidate = candidates.Where(c => targetRC != null && c.CompanyId == targetRC.CompanyEntity.CompanyId).OrderBy(c => c.HaversineKm).FirstOrDefault()
+                //                       ?? candidates.OrderBy(c => c.HaversineKm).First();
+
+                //    assignNote = $"Phân bổ theo nhóm (Vol: {totalGroupVol}m3)";
+                //}
+                //else if (fallbackComp != null)
+                //{
+                //    // KHÔNG CÓ KHO TRONG BÁN KÍNH, Đẩy về Ewise
+                //    var fallbackPoint = fallbackComp.SmallCollectionPoints.FirstOrDefault(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString());
+                //    if (fallbackPoint != null)
+                //    {
+                //        chosenCandidate = new ProductAssignCandidate
+                //        {
+                //            SmallPointId = fallbackPoint.SmallCollectionPointsId,
+                //            CompanyId = fallbackComp.CompanyId,
+                //            HaversineKm = Math.Round(GeoHelper.DistanceKm(fallbackPoint.Latitude, fallbackPoint.Longitude, addr.Iat.Value, addr.Ing.Value), 3)
+                //        };
+                //        assignNote = "Điều phối cứu trợ bởi EWISE EXPRESS";
+                //    }
+                //}
+                // Quyết định chọn kho (Primary hoặc Fallback)
+
                 if (candidates.Any())
                 {
-                    // Có kho trong bán kính -> Chia theo Ratio
+                    // 1. Xác định Công ty mục tiêu dựa trên tỉ lệ (Ratio)
                     double magic = GetStableHashRatio(group.Key.SenderId);
                     var targetRC = rangeConfigs.FirstOrDefault(r => magic >= r.MinRange && magic < r.MaxRange) ?? rangeConfigs.LastOrDefault();
 
-                    //chosenCandidate = candidates.Where(c => targetRC != null && c.CompanyId == targetRC.CompanyEntity.CompanyId).OrderBy(c => c.HaversineKm).FirstOrDefault()
-                    //                   ?? candidates.OrderBy(c => c.HaversineKm).First();
-
                     if (targetRC != null)
                     {
-                        var thresholdStr = allConfigs.FirstOrDefault(c => c.Key == SystemConfigKey.WAREHOUSE_LOAD_THRESHOLD.ToString())?.Value;
-                        double loadThreshold = double.TryParse(thresholdStr, out var val) ? val : 0.7;
-
+                        // 2. Lấy danh sách các kho thuộc Công ty mục tiêu này (đã được lọc candidates ở trên)
                         var companyPoints = candidates
                             .Where(c => c.CompanyId == targetRC.CompanyEntity.CompanyId)
                             .Select(c => {
                                 var sp = allSmallPoints.First(s => s.SmallCollectionPointsId == c.SmallPointId);
-                                double occupancy = (virtualCapacityTracker[c.SmallPointId] + totalGroupVol) / (double)sp.MaxCapacity;
+                                double occupancy = (virtualCapacityTracker[c.SmallPointId]) / (double)sp.MaxCapacity;
                                 return new { Candidate = c, Load = occupancy };
                             }).ToList();
 
-                        // Ưu tiên 1: Chọn kho GẦN NHẤT trong nhóm các kho chưa quá tải (< Threshold)
-                        chosenCandidate = companyPoints
-                            .Where(p => p.Load < loadThreshold)
-                            .OrderBy(p => p.Candidate.HaversineKm)
-                            .Select(p => p.Candidate)
-                            .FirstOrDefault();
-
-                        if (chosenCandidate != null)
+                        if (companyPoints.Count == 1)
                         {
-                            assignNote = $"Phân bổ vùng xanh (Tải < {Math.Round(loadThreshold * 100)}%, Cách: {chosenCandidate.HaversineKm}km)";
+                            chosenCandidate = companyPoints[0].Candidate;
+                            assignNote = $"Phân bổ trực tiếp kho {targetRC.CompanyEntity.Name} (Vol: {totalGroupVol}m3)";
                         }
-                        else
+                        else if (companyPoints.Count > 1)
                         {
-                            // Ưu tiên 2: Nếu tất cả đều > Threshold, chọn kho RẢNH NHẤT
-                            var bestLoadPoint = companyPoints.OrderBy(p => p.Load).FirstOrDefault();
-                            chosenCandidate = bestLoadPoint?.Candidate;
-                            assignNote = $"Cân bằng tải vùng vàng (Tải thấp nhất: {Math.Round((bestLoadPoint?.Load ?? 0) * 100, 1)}%)";
+                            double threshold = GetConfigValue(allConfigs, null, null, SystemConfigKey.WAREHOUSE_LOAD_THRESHOLD, 0.7);
+
+                            var greenPoints = companyPoints.Where(p => p.Load < threshold).ToList();
+
+                            if (greenPoints.Any())
+                            {
+                                var bestGreen = greenPoints.OrderBy(p => p.Candidate.HaversineKm).First();
+                                chosenCandidate = bestGreen.Candidate;
+                                assignNote = $"Vùng xanh <{threshold * 100}%: Ưu tiên khoảng cách ({chosenCandidate.HaversineKm}km)";
+                            }
+                            else
+                            {
+                                var bestYellow = companyPoints.OrderBy(p => p.Load).First();
+                                chosenCandidate = bestYellow.Candidate;
+                                assignNote = $"Vùng vàng: Cân bằng tải (Rảnh nhất: {Math.Round(bestYellow.Load * 100, 1)}%)";
+                            }
                         }
                     }
 
-
-                    assignNote = $"Phân bổ theo nhóm (Vol: {totalGroupVol}m3)";
+                    if (chosenCandidate == null)
+                    {
+                        chosenCandidate = candidates.OrderBy(c => c.HaversineKm).First();
+                        assignNote = $"Phân bổ theo nhóm đối tác gần nhất (Vol: {totalGroupVol}m3)";
+                    }
                 }
-                else if (fallbackComp != null)
+
+                if (chosenCandidate == null && fallbackComp != null)
                 {
-                    // KHÔNG CÓ KHO TRONG BÁN KÍNH, Đẩy về Ewise
                     var fallbackPoint = fallbackComp.SmallCollectionPoints.FirstOrDefault(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString());
                     if (fallbackPoint != null)
                     {
@@ -425,11 +457,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                             CompanyId = fallbackComp.CompanyId,
                             HaversineKm = Math.Round(GeoHelper.DistanceKm(fallbackPoint.Latitude, fallbackPoint.Longitude, addr.Iat.Value, addr.Ing.Value), 3)
                         };
-                        assignNote = "Điều phối cứu trợ bởi EWISE EXPRESS (Ngoài vùng phục vụ)";
+                        assignNote = "Điều phối cứu trợ bởi EWISE EXPRESS";
                     }
                 }
 
-                
+
                 if (chosenCandidate != null)
                 {
                     var chosenSp = allSmallPoints.First(s => s.SmallCollectionPointsId == chosenCandidate.SmallPointId);
