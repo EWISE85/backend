@@ -1051,7 +1051,11 @@ namespace ElecWasteCollection.Application.Services
                 });
             }
         }
-        public async Task<PagedResult<CollectionGroupModel>> GetGroupsByCollectionPointAsync(string collectionPointId, int page, int limit)
+        public async Task<PagedResult<CollectionGroupModel>> GetGroupsByCollectionPointAsync(
+       string collectionPointId,
+       DateOnly? date, 
+       int page,
+       int limit)
         {
             var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(collectionPointId);
             if (point == null)
@@ -1059,8 +1063,9 @@ namespace ElecWasteCollection.Application.Services
 
             var attMap = await GetAttributeIdMapAsync();
 
-            var (groups, totalCount) =
-                await _unitOfWork.CollectionGroups.GetPagedGroupsByCollectionPointAsync(collectionPointId, page, limit);
+            // Truyền date vào hàm Repository
+            var (groups, totalCount) = await _unitOfWork.CollectionGroups
+                .GetPagedGroupsByCollectionPointDateAsync(collectionPointId, date, page, limit);
 
             var resultItems = new List<CollectionGroupModel>();
 
@@ -1084,14 +1089,14 @@ namespace ElecWasteCollection.Application.Services
                     GroupId = group.CollectionGroupId,
                     GroupCode = group.Group_Code,
                     ShiftId = group.Shift_Id,
-                    Vehicle = group.Shifts.Vehicle != null
+                    Vehicle = group.Shifts?.Vehicle != null
                         ? $"{group.Shifts.Vehicle.Plate_Number} ({group.Shifts.Vehicle.Vehicle_Type})"
                         : "Không rõ",
-                    Collector = group.Shifts.Collector?.Name ?? "Không rõ",
-                    Date = group.Shifts.WorkDate.ToString("yyyy-MM-dd"),
+                    Collector = group.Shifts?.Collector?.Name ?? "Không rõ",
+                    Date = group.Shifts?.WorkDate.ToString("yyyy-MM-dd") ?? "N/A",
                     TotalOrders = routes.Count(),
                     TotalWeightKg = Math.Round(totalW, 2),
-                    TotalVolumeM3 = Math.Round(totalV, 4),
+                    TotalVolumeM3 = Math.Round(totalV, 2), 
                     CreatedAt = group.Created_At
                 });
             }

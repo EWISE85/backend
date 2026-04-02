@@ -92,9 +92,10 @@ namespace ElecWasteCollection.API.Controllers
 
         [HttpGet("groups/{collectionPointId}")]
         public async Task<IActionResult> GetByCollectionPoint(
-        string collectionPointId,
-        [FromQuery] int page = 1,
-        [FromQuery] int limit = 10)
+            string collectionPointId,
+            [FromQuery] DateOnly? date, 
+            [FromQuery] int page = 1,
+            [FromQuery] int limit = 10)
         {
             if (page <= 0 || limit <= 0)
                 return BadRequest("Page và Limit phải > 0");
@@ -102,6 +103,7 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _groupingService
                 .GetGroupsByCollectionPointAsync(
                     collectionPointId,
+                    date,
                     page,
                     limit);
 
