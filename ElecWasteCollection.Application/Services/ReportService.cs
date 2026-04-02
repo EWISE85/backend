@@ -17,11 +17,13 @@ namespace ElecWasteCollection.Application.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IReportRepository _reportRepository;
+		private readonly INotificationService _notificationService;
 
-		public ReportService(IUnitOfWork unitOfWork, IReportRepository reportRepository)
+		public ReportService(IUnitOfWork unitOfWork, IReportRepository reportRepository, INotificationService notificationService)
 		{
 			_unitOfWork = unitOfWork;
 			_reportRepository = reportRepository;
+			_notificationService = notificationService;
 		}
 
 		public async Task<bool> AnswerReport(Guid reportId, string answerMessage)
@@ -32,6 +34,7 @@ namespace ElecWasteCollection.Application.Services
 			report.ResolveMessage = answerMessage;
 			report.ResolvedAt = DateTime.UtcNow;
 			report.Status = ReportStatus.DA_XU_LY.ToString();
+			await _notificationService.SendNotificationForUserWhenReportAnswerd(report.UserId);
 			_unitOfWork.UserReports.Update(report);
 			return await _unitOfWork.SaveAsync() > 0;
 
