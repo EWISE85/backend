@@ -69,7 +69,17 @@ namespace ElecWasteCollection.API.Controllers
 
 			return Ok(reportTypes);
 		}
+		[HttpGet("{reportId}")]
+		public async Task<IActionResult> GetReport(Guid reportId)
+		{
+			var report = await _reportService.GetReport(reportId);
+			if (report == null)
+			{
+				return NotFound(new { Message = "Không tìm thấy khiếu nại." });
+			}
+			return Ok(report);
+		}
 
-	}
+		}
 
 }

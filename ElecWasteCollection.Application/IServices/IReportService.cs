@@ -19,5 +19,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<List<string>> GetReportTypes();
 
+		Task<ReportModel> GetReport(Guid reportId);
+
 	}
 }
