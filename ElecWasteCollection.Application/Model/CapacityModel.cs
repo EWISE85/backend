@@ -6,14 +6,13 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Model
 {
-    using System.Text.Json.Serialization;
-
     public class CompanyCapacityModel
     {
         public string CompanyId { get; set; }
         public double CompanyMaxCapacity { get; set; }
         public double CompanyCurrentCapacity { get; set; }
         public double CompanyAvailableCapacity => Math.Round(CompanyMaxCapacity - CompanyCurrentCapacity, 2);
+        public double CompanyTotalPlannedCapacity { get; set; }
         public double CompanyTotalAddedToday { get; set; }
         public List<SCPCapacityModel> Warehouses { get; set; } = new();
     }

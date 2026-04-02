@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using DocumentFormat.OpenXml.Spreadsheet;
+using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
@@ -14,6 +15,7 @@ namespace ElecWasteCollection.Application.Services
             _unitOfWork = unitOfWork;
         }
 
+
         public async Task<List<SCPCapacityModel>> GetAllSCPCapacityAsync()
         {
             var points = await _unitOfWork.SmallCollectionPoints.GetAllAsync();
@@ -22,8 +24,11 @@ namespace ElecWasteCollection.Application.Services
             {
                 Id = p.SmallCollectionPointsId,
                 Name = p.Name,
-                MaxCapacity = p.MaxCapacity,
-                CurrentCapacity = p.CurrentCapacity 
+                MaxCapacity = Math.Round(p.MaxCapacity, 2),
+                CurrentCapacity = Math.Round(p.CurrentCapacity, 2),
+                AvailableCapacity = Math.Round(p.MaxCapacity - p.CurrentCapacity, 2),
+                PlannedCapacity = Math.Round(p.PlannedCapacity, 2),
+                AddedVolumeThisDate = 0
             }).ToList();
         }
 
@@ -36,15 +41,17 @@ namespace ElecWasteCollection.Application.Services
             {
                 Id = p.SmallCollectionPointsId,
                 Name = p.Name,
-                MaxCapacity = p.MaxCapacity,
-                CurrentCapacity = p.CurrentCapacity 
+                MaxCapacity = Math.Round(p.MaxCapacity, 2),
+                CurrentCapacity = Math.Round(p.CurrentCapacity, 2),
+                AvailableCapacity = Math.Round(p.MaxCapacity - p.CurrentCapacity, 2),
+                PlannedCapacity = Math.Round(p.PlannedCapacity, 2),
+                AddedVolumeThisDate = 0
             };
         }
 
         public async Task<CompanyCapacityModel> GetCompanyCapacitySummaryAsync(string companyId)
         {
             var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
-
             var activePoints = allPoints.Where(p => p.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString()).ToList();
 
             var model = new CompanyCapacityModel
@@ -59,21 +66,28 @@ namespace ElecWasteCollection.Application.Services
                 {
                     Id = p.SmallCollectionPointsId,
                     Name = p.Name,
-                    MaxCapacity = p.MaxCapacity,
-                    CurrentCapacity = p.CurrentCapacity
+                    MaxCapacity = Math.Round(p.MaxCapacity, 2),
+                    CurrentCapacity = Math.Round(p.CurrentCapacity, 2),
+                    AvailableCapacity = Math.Round(p.MaxCapacity - p.CurrentCapacity, 2),
+                    PlannedCapacity = Math.Round(p.PlannedCapacity, 2)
                 };
 
                 model.Warehouses.Add(scpModel);
                 model.CompanyMaxCapacity += p.MaxCapacity;
                 model.CompanyCurrentCapacity += p.CurrentCapacity;
+                model.CompanyTotalPlannedCapacity += p.PlannedCapacity;
             }
+
+            model.CompanyMaxCapacity = Math.Round(model.CompanyMaxCapacity, 2);
+            model.CompanyCurrentCapacity = Math.Round(model.CompanyCurrentCapacity, 2);
+            model.CompanyTotalPlannedCapacity = Math.Round(model.CompanyTotalPlannedCapacity, 2);
+
             return model;
         }
 
         public async Task<CompanyCapacityModel> GetCompanyCapacityByDateAsync(string companyId, DateOnly date)
         {
             var attMap = await GetAttributeIdMapInternalAsync();
-
             var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
 
             var activePoints = allPoints
@@ -117,11 +131,13 @@ namespace ElecWasteCollection.Application.Services
 
                 model.CompanyMaxCapacity += p.MaxCapacity;
                 model.CompanyCurrentCapacity += p.CurrentCapacity;
+                model.CompanyTotalPlannedCapacity += p.PlannedCapacity;
                 model.CompanyTotalAddedToday += dailyTotalVol;
             }
 
             model.CompanyMaxCapacity = Math.Round(model.CompanyMaxCapacity, 2);
             model.CompanyCurrentCapacity = Math.Round(model.CompanyCurrentCapacity, 2);
+            model.CompanyTotalPlannedCapacity = Math.Round(model.CompanyTotalPlannedCapacity, 2);
             model.CompanyTotalAddedToday = Math.Round(model.CompanyTotalAddedToday, 2);
 
             return model;
