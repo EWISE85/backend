@@ -31,6 +31,7 @@ namespace ElecWasteCollection.Application.Services
 			if(report.Status != ReportStatus.DANG_XU_LY.ToString()) throw new AppException("Chỉ có thể trả lời khiếu nại đang xử lý", 400);
 			report.ResolveMessage = answerMessage;
 			report.ResolvedAt = DateTime.UtcNow;
+			report.Status = ReportStatus.DA_XU_LY.ToString();
 			_unitOfWork.UserReports.Update(report);
 			return await _unitOfWork.SaveAsync() > 0;
 
@@ -44,7 +45,7 @@ namespace ElecWasteCollection.Application.Services
 				UserId = createReportModel.UserId,
 				CollectionRouteId = createReportModel.CollectionRouteId,
 				Description = createReportModel.Description,
-				ReportType = createReportModel.ReportType,
+				ReportType = StatusEnumHelper.GetValueFromDescription<ReportType>(createReportModel.ReportType).ToString(),
 				CreatedAt = DateTime.UtcNow,
 				Status = ReportStatus.DANG_XU_LY.ToString()
 			};
