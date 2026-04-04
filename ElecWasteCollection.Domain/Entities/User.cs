@@ -43,7 +43,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string Role { get; set; }
 
-		public string? SmallCollectionPointId { get; set; }
+		public string? CollectionUnitId { get; set; }
 
 		public string? CollectionCompanyId { get; set; }
 
@@ -60,7 +60,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public Company? CollectionCompany { get; set; }
 
-		public SmallCollectionPoints? SmallCollectionPoint { get; set; }
+		public CollectionUnit? CollectionUnits { get; set; }
 
 		public Rank Rank { get; set; }
 

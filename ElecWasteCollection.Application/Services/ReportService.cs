@@ -140,12 +140,12 @@ namespace ElecWasteCollection.Application.Services
 
 			if (report.CollectionRouteId.HasValue)
 			{
-				var smallCollectionPoint = report.CollectionRoute?.Product?.SmallCollectionPoint;
+				var smallCollectionPoint = report.CollectionRoute?.Product?.CollectionUnits;
 
 				if (smallCollectionPoint != null)
 				{
 					smallCollectionPointName = smallCollectionPoint.Name;
-					companyName = smallCollectionPoint.CollectionCompany?.Name;
+					companyName = smallCollectionPoint.Company?.Name;
 				}
 			}
 

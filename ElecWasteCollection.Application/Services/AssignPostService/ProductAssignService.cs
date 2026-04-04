@@ -270,13 +270,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var allCategories = await unitOfWork.Categories.GetAllAsync();
             var categoryMap = allCategories.ToDictionary(c => c.CategoryId, c => c.ParentCategoryId ?? c.CategoryId);
 
-            var allCompanies = await unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints,CompanyRecyclingCategories");
+            var allCompanies = await unitOfWork.Companies.GetAllAsync(includeProperties: "CollectionUnits,CompanyRecyclingCategories");
             var allConfigs = await unitOfWork.SystemConfig.GetAllAsync();
             var recyclingCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()).ToList();
 
             // Tách nhóm Primary và Fallback
             var allColCompanies = allCompanies
-                .Where(c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString() && c.Status == CompanyStatus.DANG_HOAT_DONG.ToString())
+                .Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString() && c.Status == CompanyStatus.DANG_HOAT_DONG.ToString())
                 .ToList();
 
             var primaryCompanies = allColCompanies.Where(c => !c.IsFallback).OrderBy(c => c.Priority).ToList();
@@ -289,10 +289,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             // Khởi tạo Tracker dung tích ảo
             var virtualCapacityTracker = new Dictionary<string, double>();
-            var allSmallPoints = allColCompanies.SelectMany(c => c.SmallCollectionPoints).ToList();
+            var allSmallPoints = allColCompanies.SelectMany(c => c.CollectionUnits).ToList();
             foreach (var sp in allSmallPoints)
             {
-                virtualCapacityTracker[sp.SmallCollectionPointsId] = sp.CurrentCapacity + sp.PlannedCapacity;
+                virtualCapacityTracker[sp.CollectionUnitId] = sp.CurrentCapacity + sp.PlannedCapacity;
             }
 
             // Tính toán tỉ lệ cho các công ty Primary
@@ -343,23 +343,23 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 var candidates = new List<ProductAssignCandidate>();
                 foreach (var rc in rangeConfigs)
                 {
-                    foreach (var sp in rc.CompanyEntity.SmallCollectionPoints.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
+                    foreach (var sp in rc.CompanyEntity.CollectionUnits.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
                     {
                         bool supportsAll = true;
                         foreach (var prod in groupProds)
                         {
                             if (!categoryMap.TryGetValue(prod.CategoryId, out Guid rootId)) { supportsAll = false; break; }
-                            var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
+                            var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.CompanyId);
                             if (rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootId) != true) { supportsAll = false; break; }
                         }
                         if (!supportsAll) continue;
 
                         double hvDist = Math.Round(GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, addr.Iat.Value, addr.Ing.Value), 3);
-                        double radius = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
+                        double radius = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.RADIUS_KM, 10);
 
-                        if (hvDist <= radius && (virtualCapacityTracker[sp.SmallCollectionPointsId] + totalGroupVol) <= sp.MaxCapacity)
+                        if (hvDist <= radius && (virtualCapacityTracker[sp.CollectionUnitId] + totalGroupVol) <= sp.MaxCapacity)
                         {
-                            candidates.Add(new ProductAssignCandidate { SmallPointId = sp.SmallCollectionPointsId, CompanyId = rc.CompanyEntity.CompanyId, HaversineKm = hvDist });
+                            candidates.Add(new ProductAssignCandidate { SmallPointId = sp.CollectionUnitId, CompanyId = rc.CompanyEntity.CompanyId, HaversineKm = hvDist });
                         }
                     }
                 }
@@ -408,7 +408,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         var companyPoints = candidates
                             .Where(c => c.CompanyId == targetRC.CompanyEntity.CompanyId)
                             .Select(c => {
-                                var sp = allSmallPoints.First(s => s.SmallCollectionPointsId == c.SmallPointId);
+                                var sp = allSmallPoints.First(s => s.CollectionUnitId == c.SmallPointId);
                                 double occupancy = (virtualCapacityTracker[c.SmallPointId]) / (double)sp.MaxCapacity;
                                 return new { Candidate = c, Load = occupancy };
                             }).ToList();
@@ -448,12 +448,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 if (chosenCandidate == null && fallbackComp != null)
                 {
-                    var fallbackPoint = fallbackComp.SmallCollectionPoints.FirstOrDefault(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString());
+                    var fallbackPoint = fallbackComp.CollectionUnits.FirstOrDefault(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString());
                     if (fallbackPoint != null)
                     {
                         chosenCandidate = new ProductAssignCandidate
                         {
-                            SmallPointId = fallbackPoint.SmallCollectionPointsId,
+                            SmallPointId = fallbackPoint.CollectionUnitId,
                             CompanyId = fallbackComp.CompanyId,
                             HaversineKm = Math.Round(GeoHelper.DistanceKm(fallbackPoint.Latitude, fallbackPoint.Longitude, addr.Iat.Value, addr.Ing.Value), 3)
                         };
@@ -464,9 +464,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 if (chosenCandidate != null)
                 {
-                    var chosenSp = allSmallPoints.First(s => s.SmallCollectionPointsId == chosenCandidate.SmallPointId);
+                    var chosenSp = allSmallPoints.First(s => s.CollectionUnitId == chosenCandidate.SmallPointId);
                     chosenSp.PlannedCapacity += totalGroupVol;
-                    unitOfWork.SmallCollectionPoints.Update(chosenSp);
+                    unitOfWork.CollectionUnits.Update(chosenSp);
                     virtualCapacityTracker[chosenCandidate.SmallPointId] += totalGroupVol;
 
                     foreach (var product in groupProds)
@@ -492,10 +492,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             if (!trackingBag.IsEmpty)
             {
                 var assignedIds = trackingBag.Select(t => t.SmallCollectionPointId).Distinct().ToList();
-                var warehouses = await unitOfWork.SmallCollectionPoints.GetAllAsync(p => assignedIds.Contains(p.SmallCollectionPointsId));
-                var warehouseMap = warehouses.ToDictionary(w => w.SmallCollectionPointsId, w => w.Name);
-                var adminUsers = await unitOfWork.Users.GetAllAsync(u => u.Role == UserRole.AdminWarehouse.ToString() && assignedIds.Contains(u.SmallCollectionPointId));
-                var adminDict = adminUsers.GroupBy(u => u.SmallCollectionPointId).ToDictionary(g => g.Key, g => g.First().UserId.ToString());
+                var warehouses = await unitOfWork.CollectionUnits.GetAllAsync(p => assignedIds.Contains(p.CollectionUnitId));
+                var warehouseMap = warehouses.ToDictionary(w => w.CollectionUnitId, w => w.Name);
+                var adminUsers = await unitOfWork.Users.GetAllAsync(u => u.Role == UserRole.AdminWarehouse.ToString() && assignedIds.Contains(u.CollectionUnitId));
+                var adminDict = adminUsers.GroupBy(u => u.CollectionUnitId).ToDictionary(g => g.Key, g => g.First().UserId.ToString());
 
                 result.WarehouseAllocations = trackingBag.GroupBy(t => t.SmallCollectionPointId).Select(g => new WarehouseAllocationStats
                 {
@@ -553,8 +553,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var mapboxClient = scope.ServiceProvider.GetRequiredService<MapboxDirectionsClient>();
 
             var posts = await unitOfWork.Posts.GetAllAsync(
-                p => productIds.Contains(p.ProductId) && !string.IsNullOrEmpty(p.AssignedSmallPointId),
-                includeProperties: "AssignedSmallPoint"
+                p => productIds.Contains(p.ProductId) && !string.IsNullOrEmpty(p.AssignedCollectionUnitId),
+                includeProperties: "AssignedCollectionUnit"
             );
 
             var senderIds = posts.Select(p => p.SenderId).Distinct().ToList();
@@ -571,13 +571,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 try
                 {
                     var addr = addresses.FirstOrDefault(a => a.UserId == post.SenderId && a.Address == post.Address);
-                    if (addr?.Iat == null || addr?.Ing == null || post.AssignedSmallPoint == null)
+                    if (addr?.Iat == null || addr?.Ing == null || post.AssignedCollectionUnit == null)
                     {
                         Interlocked.Increment(ref keptOldCount);
                         return;
                     }
 
-                    var route = await mapboxClient.GetRouteAsync(addr.Iat.Value, addr.Ing.Value, post.AssignedSmallPoint.Latitude, post.AssignedSmallPoint.Longitude);
+                    var route = await mapboxClient.GetRouteAsync(addr.Iat.Value, addr.Ing.Value, post.AssignedCollectionUnit.Latitude, post.AssignedCollectionUnit.Longitude);
 
                     if (route != null && route.Distance > 0)
                     {
@@ -631,7 +631,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         continue;
                     }
 
-                    if (product.SmallCollectionPointId != request.SmallCollectionPointId)
+                    if (product.CollectionUnitId != request.SmallCollectionPointId)
                     {
                         detail.Status = "failed";
                         detail.Message = "Sản phẩm này không thuộc quyền quản lý của kho bạn.";
@@ -640,7 +640,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     }
 
                     product.Status = ProductStatus.CHO_PHAN_KHO.ToString();
-                    product.SmallCollectionPointId = null;
+                    product.CollectionUnitId = null;
 
                     var history = new ProductStatusHistory
                     {
@@ -721,11 +721,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
         {
-            var config = configs.FirstOrDefault(x => x.Key == key.ToString() && x.SmallCollectionPointId == pointId && pointId != null);
+            var config = configs.FirstOrDefault(x => x.Key == key.ToString() && x.CollectionUnitId == pointId && pointId != null);
             if (config == null && companyId != null)
-                config = configs.FirstOrDefault(x => x.Key == key.ToString() && x.CompanyId == companyId && x.SmallCollectionPointId == null);
+                config = configs.FirstOrDefault(x => x.Key == key.ToString() && x.CompanyId == companyId && x.CollectionUnitId == null);
             if (config == null)
-                config = configs.FirstOrDefault(x => x.Key == key.ToString() && x.CompanyId == null && x.SmallCollectionPointId == null);
+                config = configs.FirstOrDefault(x => x.Key == key.ToString() && x.CompanyId == null && x.CollectionUnitId == null);
             if (config != null && double.TryParse(config.Value, out double result)) return result;
             return defaultValue;
         }
@@ -739,11 +739,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         private void AssignSuccess(Products product, Post post, ProductAssignCandidate chosen, string note, ConcurrentBag<ProductStatusHistory> historyBag, ConcurrentBag<object> details, ref int assignedCount, DateOnly workDate)
         {
-            product.SmallCollectionPointId = chosen.SmallPointId;
+            product.CollectionUnitId = chosen.SmallPointId;
             product.Status = ProductStatus.CHO_GOM_NHOM.ToString();
             product.AssignedAt = workDate;
-            post.AssignedSmallPointId = chosen.SmallPointId;
-            post.CollectionCompanyId = chosen.CompanyId;
+            post.AssignedCollectionUnitId = chosen.SmallPointId;
+            post.CompanyId = chosen.CompanyId;
             post.DistanceToPointKm = chosen.RoadKm;
 
             historyBag.Add(new ProductStatusHistory

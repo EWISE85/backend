@@ -9,13 +9,13 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Infrastructure.Repository
 {
-	public class SmallCollectionRepository : GenericRepository<SmallCollectionPoints>, ISmallCollectionRepository
-	{
-		public SmallCollectionRepository(DbContext context) : base(context)
+	public class CollectionUnitRepository : GenericRepository<CollectionUnit>, ICollectionUnitRepository
+    {
+		public CollectionUnitRepository(DbContext context) : base(context)
 		{
 		}
 
-		public async Task<(List<SmallCollectionPoints> Items, int TotalCount)> GetPagedAsync(string? companyId, string? status, int page, int limit)
+		public async Task<(List<CollectionUnit> Items, int TotalCount)> GetPagedAsync(string? companyId, string? status, int page, int limit)
 		{
 			var query = _dbSet.AsNoTracking();
 
@@ -33,7 +33,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			var totalCount = await query.CountAsync();
 
 			var items = await query
-				.OrderByDescending(s => s.SmallCollectionPointsId)
+				.OrderByDescending(s => s.CollectionUnitId)
 				.Skip((page - 1) * limit)
 				.Take(limit)
 				.ToListAsync();
@@ -43,7 +43,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public async Task<string?> GetScpNameAsync(string scpId)
         {
             return await _dbSet.AsNoTracking()
-                .Where(s => s.SmallCollectionPointsId == scpId)
+                .Where(s => s.CollectionUnitId == scpId)
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync();
         }

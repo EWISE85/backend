@@ -46,7 +46,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = u.Phone,
 				Avatar = u.Avatar,
 				Role = u.Role,
-				SmallCollectionPointId = u.SmallCollectionPointId,
+				SmallCollectionPointId = u.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
 
 			}).ToList();
@@ -79,7 +79,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = user.Phone,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				SmallCollectionPointId = user.SmallCollectionPointId,
+				SmallCollectionPointId = user.CollectionUnitId,
 				CollectionCompanyId = user.CollectionCompanyId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
@@ -102,7 +102,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var user = await _userRepository.GetAsync(u => u.UserId == userId);
 			if (user == null) throw new AppException("User không tồn tại", 404);
-			var smallCollectionPointName = await _unitOfWork.SmallCollectionPoints.GetAsync(s => s.SmallCollectionPointsId == user.SmallCollectionPointId);
+			var smallCollectionPointName = await _unitOfWork.CollectionUnits.GetAsync(s => s.CollectionUnitId == user.CollectionUnitId);
 			var collectionCompanyName = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == user.CollectionCompanyId);
 			//UserSettingsModel settingsObj;
 			//if (string.IsNullOrEmpty(user.Preferences))
@@ -130,7 +130,7 @@ namespace ElecWasteCollection.Application.Services
 				Role = user.Role,
 				Points = user.Points,
 				CollectionCompanyId = user.CollectionCompanyId,
-				SmallCollectionPointId = user.SmallCollectionPointId,
+				SmallCollectionPointId = user.CollectionUnitId,
 				SmallCollectionName = smallCollectionPointName?.Name,
 				CompanyName = collectionCompanyName?.Name,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
@@ -150,7 +150,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = user.Phone,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				SmallCollectionPointId = user.SmallCollectionPointId,
+				SmallCollectionPointId = user.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userResponse;
@@ -194,7 +194,7 @@ namespace ElecWasteCollection.Application.Services
 				Points = user.Points,
 				Avatar = user.Avatar,
 				Role = user.Role,
-				SmallCollectionPointId = user.SmallCollectionPointId,
+				SmallCollectionPointId = user.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userResponse;
@@ -218,7 +218,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = u.Phone,
 				Avatar = u.Avatar,
 				Role = u.Role,
-				SmallCollectionPointId = u.SmallCollectionPointId,
+				SmallCollectionPointId = u.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
 			}).ToList();
 
@@ -264,7 +264,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = u.Phone,
 				Avatar = u.Avatar,
 				Role = u.Role,
-				SmallCollectionPointId = u.SmallCollectionPointId,
+				SmallCollectionPointId = u.CollectionUnitId,
 				CreateAt = u.CreateAt,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
 			}).ToList();

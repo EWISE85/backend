@@ -117,7 +117,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IExcelImportService, ExcelImportService>();
 			builder.Services.AddScoped<ICompanyService, CompanyService>();
 			builder.Services.AddScoped<IAccountService, AccountService>();
-			builder.Services.AddScoped<ISmallCollectionService, SmallCollectionService>();
+			builder.Services.AddScoped<ICollectionUnitService, CollectionUnitService>();
 			builder.Services.AddScoped<IImageRecognitionService, ImaggaImageService>();
 			builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
 			builder.Services.AddScoped<IShiftService, ShiftService>();
@@ -148,7 +148,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IProductStatusHistoryRepository, ProductStatusHistoryRepository>();
 			builder.Services.AddScoped<IProductValuesRepository, ProductValuesRepository>();
 			builder.Services.AddScoped<IShiftRepository, ShiftRepository>();
-			builder.Services.AddScoped<ISmallCollectionRepository, SmallCollectionRepository>();
+			builder.Services.AddScoped<ICollectionUnitRepository, CollectionUnitRepository>();
 			builder.Services.AddScoped<IUserAddressRepository, UserAddressRepository>();
 			builder.Services.AddScoped<IUserRepository, UserRepository>();
 			builder.Services.AddScoped<IVehicleRepository, VehicleRepository>();

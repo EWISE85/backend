@@ -19,8 +19,8 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<RecyclerCollectionTaskDto>> GetPackagesToCollectAsync(string recyclingCompanyId)
         {
-            var assignedScps = await _unitOfWork.SmallCollectionPoints.GetAllAsync(
-                filter: s => s.RecyclingCompanyId == recyclingCompanyId,
+            var assignedScps = await _unitOfWork.CollectionUnits.GetAllAsync(
+                filter: s => s.CompanyId == recyclingCompanyId,
                 includeProperties: "Packages"
             );
 
@@ -37,7 +37,7 @@ namespace ElecWasteCollection.Application.Services
                 {
                     result.Add(new RecyclerCollectionTaskDto
                     {
-                        SmallCollectionPointId = scp.SmallCollectionPointsId,
+                        SmallCollectionPointId = scp.CollectionUnitId,
                         SmallCollectionName = scp.Name,
                         Address = scp.Address,
                         TotalPackage = readyPackages.Count,
@@ -93,11 +93,11 @@ namespace ElecWasteCollection.Application.Services
 				return new PackageDetailModel
 				{
 					PackageId = pkg.PackageId,
-					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
+					SmallCollectionPointsId = pkg.CollectionUnitId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 
-					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name ?? "Không xác định",
-					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address ?? "Không xác định",
+					SmallCollectionPointsName = pkg.CollectionUnits?.Name ?? "Không xác định",
+					SmallCollectionPointsAddress = pkg.CollectionUnits?.Address ?? "Không xác định",
 
 					Products = productsSummary
 				};

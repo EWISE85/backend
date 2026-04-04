@@ -14,31 +14,31 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
-	public class SmallCollectionService : ISmallCollectionService
-	{
-		private readonly ISmallCollectionRepository _smallCollectionRepository;
+	public class CollectionUnitService : ICollectionUnitService
+    {
+		private readonly ICollectionUnitRepository _smallCollectionRepository;
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IUserRepository _userRepository;
 		private readonly IAccountRepsitory _accountRepository;
-		public SmallCollectionService(IUnitOfWork unitOfWork, IUserRepository userRepository, IAccountRepsitory accountRepository, ISmallCollectionRepository smallCollectionRepository)
+		public CollectionUnitService(IUnitOfWork unitOfWork, IUserRepository userRepository, IAccountRepsitory accountRepository, ICollectionUnitRepository smallCollectionRepository)
 		{
 			_unitOfWork = unitOfWork;
 			_userRepository = userRepository;
 			_accountRepository = accountRepository;
 			_smallCollectionRepository = smallCollectionRepository;
 		}
-		public async Task<bool> AddNewSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints)
+		public async Task<bool> AddNewSmallCollectionPoint(CollectionUnit smallCollectionPoints)
 		{
-			await _unitOfWork.SmallCollectionPoints.AddAsync(smallCollectionPoints);
+			await _unitOfWork.CollectionUnits.AddAsync(smallCollectionPoints);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
 
-		public async Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(SmallCollectionPoints smallCollectionPoints, string adminUsername, string adminPassword)
+		public async Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(CollectionUnit smallCollectionPoints, string adminUsername, string adminPassword)
 		{
 			var result = new ImportResult();
 
-			var existingCompany = await _smallCollectionRepository.GetAsync(s => s.SmallCollectionPointsId == smallCollectionPoints.SmallCollectionPointsId);
+			var existingCompany = await _smallCollectionRepository.GetAsync(s => s.CollectionUnitId == smallCollectionPoints.CollectionUnitId);
 			if (existingCompany != null)
 			{
 				await UpdateSmallCollectionPoint(smallCollectionPoints);
@@ -57,7 +57,7 @@ namespace ElecWasteCollection.Application.Services
 					Role = UserRole.AdminCompany.ToString(),
 					Status = UserStatus.DANG_HOAT_DONG.ToString(),
 					CollectionCompanyId = smallCollectionPoints.CompanyId,
-					SmallCollectionPointId = smallCollectionPoints.SmallCollectionPointsId,
+                    CollectionUnitId = smallCollectionPoints.CollectionUnitId,
 				};
 				await _unitOfWork.Users.AddAsync(newAdminWarehouse);
 				var adminAccount = new Account
@@ -79,10 +79,10 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> DeleteSmallCollectionPoint(string smallCollectionPointId)
 		{
-			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.SmallCollectionPointsId == smallCollectionPointId);
+			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.CollectionUnitId == smallCollectionPointId);
 			if (smallPoint == null) throw new AppException("Không tìm thấy kho",404);
-			smallPoint.Status = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
-			_unitOfWork.SmallCollectionPoints.Update(smallPoint);
+			smallPoint.Status = CollectionUnitStatus.KHONG_HOAT_DONG.ToString();
+			_unitOfWork.CollectionUnits.Update(smallPoint);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
@@ -97,7 +97,7 @@ namespace ElecWasteCollection.Application.Services
 			);
 			var resultList = entities.Select(point => new SmallCollectionPointsResponse
 			{
-				Id = point.SmallCollectionPointsId,
+				Id = point.CollectionUnitId,
 				CompanyId = point.CompanyId,
 				Name = point.Name,
 				Address = point.Address,
@@ -116,12 +116,12 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<SmallCollectionPointsResponse> GetSmallCollectionById(string smallCollectionPointId)
 		{
-			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.SmallCollectionPointsId == smallCollectionPointId);
+			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.CollectionUnitId == smallCollectionPointId);
 			if (smallPoint == null) throw new AppException("Không tìm thấy kho", 404);
 			
 				return new SmallCollectionPointsResponse
 				{
-					Id = smallPoint.SmallCollectionPointsId,
+					Id = smallPoint.CollectionUnitId,
 					CompanyId = smallPoint.CompanyId,
 					Name = smallPoint.Name,
 					Address = smallPoint.Address,
@@ -135,10 +135,10 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointActive()
 		{
-			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString());
+			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString());
 			return smallPoints.Select(point => new SmallCollectionPointsResponse
 			{
-				Id = point.SmallCollectionPointsId,
+				Id = point.CollectionUnitId,
 				CompanyId = point.CompanyId,
 				Name = point.Name,
 				Address = point.Address,
@@ -154,7 +154,7 @@ namespace ElecWasteCollection.Application.Services
 			var smallPoints = await _smallCollectionRepository.GetsAsync(s => s.CompanyId == companyId);
 			var result = smallPoints.Select(point => new SmallCollectionPointsResponse
 			{
-				Id = point.SmallCollectionPointsId,
+				Id = point.CollectionUnitId,
 				CompanyId = point.CompanyId,
 				Name = point.Name,
 				Address = point.Address,
@@ -166,11 +166,11 @@ namespace ElecWasteCollection.Application.Services
 			return result;
 		}
 
-		public async Task<bool> UpdateSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints)
+		public async Task<bool> UpdateSmallCollectionPoint(CollectionUnit smallCollectionPoints)
 		{
-			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.SmallCollectionPointsId == smallCollectionPoints.SmallCollectionPointsId);
+			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.CollectionUnitId == smallCollectionPoints.CollectionUnitId);
 			if (smallPoint == null) throw new AppException("Không tìm thấy kho", 404);
-			var statusEnum = StatusEnumHelper.GetValueFromDescription<SmallCollectionPointStatus>(smallCollectionPoints.Status).ToString();
+			var statusEnum = StatusEnumHelper.GetValueFromDescription<CollectionUnitStatus>(smallCollectionPoints.Status).ToString();
 			smallPoint.Name = smallCollectionPoints.Name;
 			smallPoint.Address = smallCollectionPoints.Address;
 			smallPoint.Latitude = smallCollectionPoints.Latitude;
@@ -178,7 +178,7 @@ namespace ElecWasteCollection.Application.Services
 			smallPoint.Status = statusEnum.ToString();
 			smallPoint.CompanyId = smallCollectionPoints.CompanyId;
 			smallPoint.OpenTime = smallCollectionPoints.OpenTime;
-			_unitOfWork.SmallCollectionPoints.Update(smallPoint);
+			_unitOfWork.CollectionUnits.Update(smallPoint);
 			await _unitOfWork.SaveAsync();
 			return true;
 		}

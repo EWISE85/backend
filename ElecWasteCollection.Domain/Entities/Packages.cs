@@ -23,12 +23,12 @@ namespace ElecWasteCollection.Domain.Entities
 	{
 		public string PackageId { get; set; }
 		public DateTime CreateAt { get; set; }
-		public string SmallCollectionPointsId { get; set; }
+		public string CollectionUnitId { get; set; }
 		public string Status { get; set; }
 		public string? DeliveryQrCode { get; set; } 
 		public DateTime? DeliveryHandoverAt { get; set; }
 
-		public SmallCollectionPoints SmallCollectionPoints { get; set; }
+		public CollectionUnit CollectionUnits { get; set; }
 		public ICollection<Products> Products { get; set; }
 
 		public ICollection<PackageStatusHistory> PackageStatusHistories { get; set; }

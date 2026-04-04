@@ -142,12 +142,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
             var companyEntity = await _unitOfWork.Companies.GetAsync(
                 filter: c => c.CompanyId == companyId,
-                includeProperties: "SmallCollectionPoints");
+                includeProperties: "CollectionUnits");
 
             if (companyEntity == null) throw new Exception("Không tìm thấy công ty nào.");
 
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
-                filter: p => p.CollectionCompanyId == companyId,
+                filter: p => p.CompanyId == companyId,
                 includeProperties: "Product,Product.Category,Product.Brand,Sender"
             );
 
@@ -166,12 +166,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             };
 
             double totalWeight = 0, totalVolume = 0;
-            var grouped = posts.GroupBy(p => p.AssignedSmallPointId);
+            var grouped = posts.GroupBy(p => p.AssignedCollectionUnitId);
 
             foreach (var grp in grouped)
             {
                 var spId = grp.Key;
-                var spEntity = companyEntity.SmallCollectionPoints.FirstOrDefault(s => s.SmallCollectionPointsId == spId);
+                var spEntity = companyEntity.CollectionUnits.FirstOrDefault(s => s.CollectionUnitId == spId);
                 if (spEntity == null) continue;
 
                 double radiusConfig = GetConfigValue(allConfigs, null, spId, SystemConfigKey.RADIUS_KM, 0);
@@ -260,13 +260,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             var attMap = await GetAttributeIdMapAsync();
 
-            var sp = await _unitOfWork.SmallCollectionPoints
-                .GetAsync(s => s.SmallCollectionPointsId == smallPointId);
+            var sp = await _unitOfWork.CollectionUnits
+                .GetAsync(s => s.CollectionUnitId == smallPointId);
 
             if (sp == null) throw new Exception("Không tìm thấy trạm.");
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.Product != null
-                          && p.Product.SmallCollectionPointId == smallPointId
+                          && p.Product.CollectionUnitId == smallPointId
                           && p.Product.AssignedAt == workDate
                           && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
@@ -326,8 +326,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<List<CompanyWithPointsResponse>> GetCompaniesWithSmallPointsAsync()
         {
             var companies = await _unitOfWork.Companies.GetAllAsync(
-                filter: c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString(),
-                includeProperties: "SmallCollectionPoints");
+                filter: c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString(),
+                includeProperties: "CollectionUnits");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 
@@ -335,14 +335,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             {
                 CompanyId = company.CompanyId,
                 CompanyName = company.Name,
-                SmallPoints = company.SmallCollectionPoints.Select(sp => new SmallPointDto
+                SmallPoints = company.CollectionUnits.Select(sp => new SmallPointDto
                 {
-                    SmallPointId = sp.SmallCollectionPointsId,
+                    SmallPointId = sp.CollectionUnitId,
                     Name = sp.Name,
                     Lat = sp.Latitude,
                     Lng = sp.Longitude,
-                    RadiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 0),
-                    MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
+                    RadiusKm = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.RADIUS_KM, 0),
+                    MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
                     Active = true
                 }).ToList()
             }).ToList();
@@ -352,20 +352,20 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         {
             var company = await _unitOfWork.Companies.GetAsync(
                 filter: c => c.CompanyId == companyId,
-                includeProperties: "SmallCollectionPoints");
+                includeProperties: "CollectionUnits");
 
             if (company == null) throw new Exception("Không tìm thấy trạm thu gom nào.");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
 
-            return company.SmallCollectionPoints.Select(sp => new SmallPointDto
+            return company.CollectionUnits.Select(sp => new SmallPointDto
             {
-                SmallPointId = sp.SmallCollectionPointsId,
+                SmallPointId = sp.CollectionUnitId,
                 Name = sp.Name,
                 Lat = sp.Latitude,
                 Lng = sp.Longitude,
-                RadiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 0),
-                MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
+                RadiusKm = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.RADIUS_KM, 0),
+                MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
                 Active = true
             }).ToList();
         }
@@ -374,7 +374,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         {
             var company = await _unitOfWork.Companies.GetAsync(
                 filter: c => c.CompanyId == companyId,
-                includeProperties: "SmallCollectionPoints");
+                includeProperties: "CollectionUnits");
 
             if (company == null) throw new Exception("Không tìm thấy trạm thu gom nào.");
 
@@ -385,14 +385,14 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 CompanyId = company.CompanyId,
                 CompanyName = company.Name,
                 RatioPercent = GetConfigValue(allConfigs, company.CompanyId, null, SystemConfigKey.ASSIGN_RATIO, 0),
-                SmallPoints = company.SmallCollectionPoints.Select(sp => new SmallPointDto
+                SmallPoints = company.CollectionUnits.Select(sp => new SmallPointDto
                 {
-                    SmallPointId = sp.SmallCollectionPointsId,
+                    SmallPointId = sp.CollectionUnitId,
                     Name = sp.Name,
                     Lat = sp.Latitude,
                     Lng = sp.Longitude,
-                    RadiusKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 0),
-                    MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
+                    RadiusKm = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.RADIUS_KM, 0),
+                    MaxRoadDistanceKm = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 0),
                     Active = true
                 }).ToList()
             };
@@ -401,7 +401,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         public async Task<object> GetProductIdsAtSmallPointAsync(string smallPointId, DateOnly workDate)
         {
             var posts = await _unitOfWork.Posts.GetAllAsync(
-                filter: p => p.AssignedSmallPointId == smallPointId
+                filter: p => p.AssignedCollectionUnitId == smallPointId
                           && p.Product != null
                           && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product"
@@ -442,18 +442,18 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             if (!activePosts.Any()) return new List<CompanyDailySummaryDto>();
 
-            var companyIds = activePosts.Select(p => p.CollectionCompanyId).Distinct().ToList();
+            var companyIds = activePosts.Select(p => p.CompanyId).Distinct().ToList();
 
             var companies = await _unitOfWork.Companies.GetAllAsync(
                 filter: c => companyIds.Contains(c.CompanyId),
-                includeProperties: "SmallCollectionPoints"
+                includeProperties: "CollectionUnits"
             );
 
             var response = new List<CompanyDailySummaryDto>();
 
             foreach (var company in companies)
             {
-                var companyPosts = activePosts.Where(p => p.CollectionCompanyId == company.CompanyId).ToList();
+                var companyPosts = activePosts.Where(p => p.CompanyId == company.CompanyId).ToList();
 
                 var companyDto = new CompanyDailySummaryDto
                 {
@@ -462,13 +462,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     TotalCompanyProducts = companyPosts.Select(p => p.ProductId).Distinct().Count()
                 };
 
-                var pointGroups = companyPosts.GroupBy(p => p.AssignedSmallPointId);
+                var pointGroups = companyPosts.GroupBy(p => p.AssignedCollectionUnitId);
 
                 foreach (var grp in pointGroups)
                 {
                     var spId = grp.Key;
-                    var spEntity = company.SmallCollectionPoints?
-                        .FirstOrDefault(s => s.SmallCollectionPointsId == spId);
+                    var spEntity = company.CollectionUnits?
+                        .FirstOrDefault(s => s.CollectionUnitId == spId);
 
                     var spName = spEntity != null ? spEntity.Name : "Điểm thu gom không xác định";
 
@@ -488,17 +488,17 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
         public async Task<List<CompanyMetricsDto>> GetAllCompaniesDailyMetricsAsync(DateOnly workDate)
         {
-            var targetType = CompanyType.CTY_THU_GOM.ToString();
+            var targetType = CompanyType.CTY_TAI_CHE.ToString();
             var companies = await _unitOfWork.Companies.GetAllAsync(
                 filter: c => c.CompanyType == targetType,
-                includeProperties: "SmallCollectionPoints"
-            );
+                includeProperties: "CollectionUnits"
+            );  
 
             var attMap = await GetAttributeIdMapAsync();
             var allOptions = await _unitOfWork.AttributeOptions.GetAllAsync();
 
             var allAssignedProducts = await _unitOfWork.Products.GetAllAsync(
-                filter: p => p.AssignedAt == workDate && p.SmallCollectionPointId != null,
+                filter: p => p.AssignedAt == workDate && p.CollectionUnitId != null,
                 includeProperties: "ProductValues"
             );
 
@@ -508,10 +508,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             {
                 var pointMetricsList = new List<SmallPointMetricsDto>();
 
-                foreach (var point in company.SmallCollectionPoints)
+                foreach (var point in company.CollectionUnits)
                 {
                     var productsInPoint = allAssignedProducts
-                        .Where(p => p.SmallCollectionPointId == point.SmallCollectionPointsId)
+                        .Where(p => p.CollectionUnitId == point.CollectionUnitId)
                         .ToList();
 
                     double pointWeight = 0;
@@ -526,7 +526,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     pointMetricsList.Add(new SmallPointMetricsDto
                     {
-                        PointId = point.SmallCollectionPointsId,
+                        PointId = point.CollectionUnitId,
                         PointName = point.Name,
                         TotalOrders = productsInPoint.Count,
                         TotalWeightKg = Math.Round(pointWeight, 2),
@@ -554,13 +554,13 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             if (page <= 0) page = 1;
             if (limit <= 0) limit = 10;
 
-            var sp = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(smallPointId)
+            var sp = await _unitOfWork.CollectionUnits.GetByIdAsync(smallPointId)
                       ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.Product != null &&
                              p.Product.AssignedAt == workDate &&
-                             p.Product.SmallCollectionPointId == smallPointId,
+                             p.Product.CollectionUnitId == smallPointId,
                 includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
             );
 
@@ -719,7 +719,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var config = configs.FirstOrDefault(x =>
                 x.Key == key.ToString() &&
                 x.CompanyId == companyId &&
-                x.SmallCollectionPointId == pointId);
+                x.CollectionUnitId == pointId);
 
             if (config != null && double.TryParse(config.Value, out double result))
             {

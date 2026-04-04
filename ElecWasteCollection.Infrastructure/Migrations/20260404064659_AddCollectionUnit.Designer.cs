@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using ElecWasteCollection.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -12,9 +13,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ElecWasteCollection.Infrastructure.Migrations
 {
     [DbContext(typeof(ElecWasteCollectionDbContext))]
-    partial class ElecWasteCollectionDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260404064659_AddCollectionUnit")]
+    partial class AddCollectionUnit
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -357,6 +360,9 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.Property<double>("PlannedCapacity")
                         .HasColumnType("double precision");
 
+                    b.Property<string>("RecyclingCompanyId")
+                        .HasColumnType("text");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -372,6 +378,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
                     b.HasIndex("Name")
                         .IsUnique();
+
+                    b.HasIndex("RecyclingCompanyId");
 
                     b.ToTable("CollectionUnits", (string)null);
                 });
@@ -615,7 +623,7 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                     b.PrimitiveCollection<List<string>>("CheckMessage")
                         .HasColumnType("text[]");
 
-                    b.Property<string>("CompanyId")
+                    b.Property<string>("CollectionCompanyId")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("Date")
@@ -651,7 +659,7 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
                     b.HasIndex("AssignedCollectionUnitId");
 
-                    b.HasIndex("CompanyId");
+                    b.HasIndex("CollectionCompanyId");
 
                     b.HasIndex("ProductId");
 
@@ -1337,7 +1345,15 @@ namespace ElecWasteCollection.Infrastructure.Migrations
                         .IsRequired()
                         .HasConstraintName("FK_CollectionUnit_CollectionCompany");
 
+                    b.HasOne("ElecWasteCollection.Domain.Entities.Company", "RecyclingCompany")
+                        .WithMany("AssignedRecyclingPoints")
+                        .HasForeignKey("RecyclingCompanyId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .HasConstraintName("FK_CollectionUnit_RecyclingCompany");
+
                     b.Navigation("Company");
+
+                    b.Navigation("RecyclingCompany");
                 });
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.CompanyRecyclingCategory", b =>
@@ -1444,7 +1460,7 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
                     b.HasOne("ElecWasteCollection.Domain.Entities.Company", "CollectionCompany")
                         .WithMany("Posts")
-                        .HasForeignKey("CompanyId")
+                        .HasForeignKey("CollectionCompanyId")
                         .HasConstraintName("FK_Post_CollectionCompany");
 
                     b.HasOne("ElecWasteCollection.Domain.Entities.Products", "Product")
@@ -1749,6 +1765,8 @@ namespace ElecWasteCollection.Infrastructure.Migrations
 
             modelBuilder.Entity("ElecWasteCollection.Domain.Entities.Company", b =>
                 {
+                    b.Navigation("AssignedRecyclingPoints");
+
                     b.Navigation("CollectionUnits");
 
                     b.Navigation("CompanyRecyclingCategories");

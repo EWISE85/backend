@@ -7,9 +7,9 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.IRepository
 {
-	public interface ISmallCollectionRepository : IGenericRepository<SmallCollectionPoints>
+	public interface ICollectionUnitRepository : IGenericRepository<CollectionUnit>
 	{
-		Task<(List<SmallCollectionPoints> Items, int TotalCount)> GetPagedAsync(string? companyId,string? status,int page,int limit);
+		Task<(List<CollectionUnit> Items, int TotalCount)> GetPagedAsync(string? companyId,string? status,int page,int limit);
 		Task<string?> GetScpNameAsync(string scpId);
     }
 }

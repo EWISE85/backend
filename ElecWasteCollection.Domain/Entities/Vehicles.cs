@@ -24,7 +24,7 @@ namespace ElecWasteCollection.Domain.Entities
         public string Status { get; set; } = null!;
         public string Small_Collection_Point { get; set; }
         [JsonIgnore]
-        public SmallCollectionPoints SmallCollectionPoints { get; set; } = null!;
+        public CollectionUnit CollectionUnits { get; set; } = null!;
         [JsonIgnore]
         public virtual ICollection<Shifts> Shifts { get; set; } = new List<Shifts>();
 	}

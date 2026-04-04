@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ElecWasteCollection.Domain.Entities
 {
-    public enum SmallCollectionPointStatus
+    public enum CollectionUnitStatus
     {
         [Description("Đang hoạt động")]
         DANG_HOAT_DONG,
@@ -12,16 +12,16 @@ namespace ElecWasteCollection.Domain.Entities
         [Description("Bảo trì")]
         BAO_TRI
     }
-    public class SmallCollectionPoints
+    public class CollectionUnit
     {
-        public string SmallCollectionPointsId { get; set; }
+        public string CollectionUnitId { get; set; }
         public string Name { get; set; } = null!;
         public string Address { get; set; } = null!;
         public double Latitude { get; set; }
         public double Longitude { get; set; }
         public string Status { get; set; } = null!;
         public string CompanyId { get; set; }
-
+        public virtual Company Company { get; set; } = null!;
         public string OpenTime { get; set; } = null!;
         public double MaxCapacity { get; set; }
         public double CurrentCapacity { get; set; }
@@ -32,10 +32,9 @@ namespace ElecWasteCollection.Domain.Entities
         public double FillPercentage => MaxCapacity > 0 ? (CurrentCapacity / MaxCapacity) * 100 : 0;
         public DateTime Created_At { get; set; }
         public DateTime Updated_At { get; set; }
-
-        public Company CollectionCompany { get; set; } = null!;
-        public string? RecyclingCompanyId { get; set; }
-        public Company? RecyclingCompany { get; set; }
+        //public Company CollectionCompany { get; set; } = null!;
+        //public string? RecyclingCompanyId { get; set; }
+        //public Company? RecyclingCompany { get; set; }
         public virtual ICollection<User> Users { get; set; } = new List<User>();
 
 		public virtual ICollection<Products> Products { get; set; } = new List<Products>();

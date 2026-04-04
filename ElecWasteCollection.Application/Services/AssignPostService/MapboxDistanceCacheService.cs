@@ -56,7 +56,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             return (fallback, 0);
         }
 
-        public async Task<Dictionary<string, double>> GetMatrixDistancesAsync(double originLat, double originLng, List<SmallCollectionPoints> destinations)
+        public async Task<Dictionary<string, double>> GetMatrixDistancesAsync(double originLat, double originLng, List<CollectionUnit> destinations)
         {
             var result = new Dictionary<string, double>();
             if (destinations == null || !destinations.Any()) return result;
@@ -106,7 +106,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                                     {
                                         if (distancesFromOrigin[i].HasValue)
                                         {
-                                            result[chunk[i].SmallCollectionPointsId] = distancesFromOrigin[i].Value / 1000.0;
+                                            result[chunk[i].CollectionUnitId] = distancesFromOrigin[i].Value / 1000.0;
                                         }
                                     }
                                 }
@@ -135,7 +135,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                         }
                         catch (Exception ex)
                         {
-                            if (retry == maxRetries) Console.WriteLine($"[Mapbox Exception] Post {chunk[0].SmallCollectionPointsId}: {ex.Message}");
+                            if (retry == maxRetries) Console.WriteLine($"[Mapbox Exception] Post {chunk[0].CollectionUnitId}: {ex.Message}");
                             else await Task.Delay(delayMs);
                         }
                     }

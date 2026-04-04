@@ -9,8 +9,8 @@ public class CollectionOffDay
     public Guid Id { get; set; }
     public string? CompanyId { get; set; }
     public virtual Company? Company { get; set; }
-    public string? SmallCollectionPointId { get; set; }
-    public virtual SmallCollectionPoints? SmallCollectionPoint { get; set; }
+    public string? CollectionUnitId { get; set; }
+    public virtual CollectionUnit? CollectionUnits { get; set; }
     public DateOnly OffDate { get; set; }
 
     public string? Reason { get; set; } 

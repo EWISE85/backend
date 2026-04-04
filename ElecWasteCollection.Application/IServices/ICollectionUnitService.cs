@@ -8,10 +8,10 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.IServices
 {
-	public interface ISmallCollectionService
-	{
-		Task<bool> AddNewSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints);
-		Task<bool> UpdateSmallCollectionPoint(SmallCollectionPoints smallCollectionPoints);
+	public interface ICollectionUnitService
+    {
+		Task<bool> AddNewSmallCollectionPoint(CollectionUnit smallCollectionPoints);
+		Task<bool> UpdateSmallCollectionPoint(CollectionUnit smallCollectionPoints);
 
 		Task<bool> DeleteSmallCollectionPoint(string smallCollectionPointId);
 
@@ -19,7 +19,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<SmallCollectionPointsResponse> GetSmallCollectionById(string smallCollectionPointId);
 
-		Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(SmallCollectionPoints smallCollectionPoints, string adminUsername, string adminPassword);
+		Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(CollectionUnit smallCollectionPoints, string adminUsername, string adminPassword);
 
 		Task<PagedResultModel<SmallCollectionPointsResponse>> GetPagedSmallCollectionPointsAsync(SmallCollectionSearchModel model);
 

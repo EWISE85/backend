@@ -14,10 +14,10 @@ namespace ElecWasteCollection.Application.Services
         private readonly ISystemConfigRepository _systemConfigRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly ICloudinaryService _cloudinaryService;
-        private readonly ISmallCollectionRepository _smallCollectionRepository;
+        private readonly ICollectionUnitRepository _smallCollectionRepository;
         private readonly ICompanyRepository _companyRepository;
 
-        public SystemConfigService(ISystemConfigRepository systemConfigRepository, IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService, ISmallCollectionRepository smallCollectionRepository, ICompanyRepository companyRepository)
+        public SystemConfigService(ISystemConfigRepository systemConfigRepository, IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService, ICollectionUnitRepository smallCollectionRepository, ICompanyRepository companyRepository)
         {
             _systemConfigRepository = systemConfigRepository;
             _unitOfWork = unitOfWork;
@@ -77,9 +77,9 @@ namespace ElecWasteCollection.Application.Services
                 }
 
                 string sName = "N/A";
-                if (!string.IsNullOrEmpty(config.SmallCollectionPointId))
+                if (!string.IsNullOrEmpty(config.CollectionUnitId))
                 {
-                    sName = await _smallCollectionRepository.GetScpNameAsync(config.SmallCollectionPointId) ?? "Không tìm thấy SCP";
+                    sName = await _smallCollectionRepository.GetScpNameAsync(config.CollectionUnitId) ?? "Không tìm thấy SCP";
                 }
 
                 result.Add(new SystemConfigModel
@@ -139,18 +139,18 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<PagedResult<WarehouseSpeedResponse>> GetWarehouseSpeedsPagedAsync(int page, int limit, string? searchTerm)
         {
-            var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync();
+            var allPoints = await _unitOfWork.CollectionUnits.GetAllAsync();
             var speedConfigs = await _systemConfigRepository.GetsAsync(c =>
                 c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString());
 
             var query = allPoints.Select(point =>
             {
-                var config = speedConfigs.FirstOrDefault(c => c.SmallCollectionPointId == point.SmallCollectionPointsId);
+                var config = speedConfigs.FirstOrDefault(c => c.CollectionUnitId == point.CollectionUnitId);
 
                 return new WarehouseSpeedResponse
                 {
                     SystemConfigId = config?.SystemConfigId ?? Guid.Empty,
-                    SmallCollectionPointId = point.SmallCollectionPointsId,
+                    SmallCollectionPointId = point.CollectionUnitId,
                     DisplayName = point.Name,
                     Value = config?.Value ?? "0",
 
@@ -186,7 +186,7 @@ namespace ElecWasteCollection.Application.Services
         {
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString() &&
-                c.SmallCollectionPointId == model.SmallCollectionPointId);
+                c.CollectionUnitId == model.SmallCollectionPointId);
 
             if (config != null)
             {
@@ -207,7 +207,7 @@ namespace ElecWasteCollection.Application.Services
                     DisplayName = SystemConfigKey.TRANSPORT_SPEED.ToString(),
                     GroupName = "PointConfig",
                     Status = SystemConfigStatus.DANG_HOAT_DONG.ToString(),
-                    SmallCollectionPointId = model.SmallCollectionPointId
+                    CollectionUnitId = model.SmallCollectionPointId
                 };
                 await _unitOfWork.SystemConfig.AddAsync(newConfig);
             }
@@ -218,7 +218,7 @@ namespace ElecWasteCollection.Application.Services
         {
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString() &&
-                c.SmallCollectionPointId == model.SmallCollectionPointId &&
+                c.CollectionUnitId == model.SmallCollectionPointId &&
                 c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
 
             if (config == null)
@@ -239,7 +239,7 @@ namespace ElecWasteCollection.Application.Services
         {
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString() &&
-                c.SmallCollectionPointId == smallCollectionPointId &&
+                c.CollectionUnitId == smallCollectionPointId &&
                 c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
 
             if (config == null)
@@ -258,18 +258,18 @@ namespace ElecWasteCollection.Application.Services
             if (string.IsNullOrWhiteSpace(smallPointId))
                 throw new ArgumentException("ID điểm thu gom không được để trống.");
 
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(smallPointId);
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(smallPointId);
             if (point == null)
                 throw new KeyNotFoundException($"Không tìm thấy điểm thu gom với ID: {smallPointId}");
 
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == SystemConfigKey.TRANSPORT_SPEED.ToString() &&
-                c.SmallCollectionPointId == smallPointId);
+                c.CollectionUnitId == smallPointId);
 
             return new WarehouseSpeedResponse
             {
                 SystemConfigId = config?.SystemConfigId ?? Guid.Empty,
-                SmallCollectionPointId = point.SmallCollectionPointsId,
+                SmallCollectionPointId = point.CollectionUnitId,
                 DisplayName = point.Name,
                 Value = config?.Value ?? "0",
 
@@ -361,7 +361,7 @@ namespace ElecWasteCollection.Application.Services
             var key = SystemConfigKey.WAREHOUSE_LOAD_THRESHOLD.ToString();
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == key &&
-                c.SmallCollectionPointId == model.SmallCollectionPointId);
+                c.CollectionUnitId == model.SmallCollectionPointId);
 
             if (config != null)
             {
@@ -384,7 +384,7 @@ namespace ElecWasteCollection.Application.Services
                     DisplayName = "Ngưỡng tải trọng kho hàng",
                     GroupName = "LoadThreshold",
                     Status = SystemConfigStatus.DANG_HOAT_DONG.ToString(),
-                    SmallCollectionPointId = model.SmallCollectionPointId
+                    CollectionUnitId = model.SmallCollectionPointId
                 };
                 await _unitOfWork.SystemConfig.AddAsync(newConfig);
             }

@@ -34,26 +34,26 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public async Task<int> CountPackagesByScpIdAsync(string scpId, DateTime fromUtc, DateTime toUtc)
         {
             return await _context.Packages
-                .Where(p => p.SmallCollectionPointsId == scpId)
+                .Where(p => p.CollectionUnitId == scpId)
                 .CountAsync(p => p.CreateAt >= fromUtc && p.CreateAt <= toUtc);
         }
         public async Task<List<DateTime>> GetPackageCreationDatesByScpIdAsync(string scpId, DateTime fromUtc, DateTime toUtc)
         {
             return await _context.Packages
-                .Where(p => p.SmallCollectionPointsId == scpId && p.CreateAt >= fromUtc && p.CreateAt <= toUtc)
+                .Where(p => p.CollectionUnitId == scpId && p.CreateAt >= fromUtc && p.CreateAt <= toUtc)
                 .Select(p => p.CreateAt)
                 .ToListAsync();
         }
         public async Task<int> CountProductsByScpIdAsync(string scpId, DateOnly from, DateOnly to)
         {
             return await _context.Products
-                .Where(p => p.SmallCollectionPointId == scpId)
+                .Where(p => p.CollectionUnitId == scpId)
                 .CountAsync(p => p.CreateAt >= from && p.CreateAt <= to);
         }
         public async Task<Dictionary<string, int>> GetProductCountsByCategoryByScpIdAsync(string scpId, DateOnly from, DateOnly to)
         {
             return await _context.Products
-                .Where(p => p.SmallCollectionPointId == scpId && p.CreateAt >= from && p.CreateAt <= to)
+                .Where(p => p.CollectionUnitId == scpId && p.CreateAt >= from && p.CreateAt <= to)
                 .GroupBy(p => p.Category.Name)
                 .Select(g => new { Name = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(k => k.Name, v => v.Count);

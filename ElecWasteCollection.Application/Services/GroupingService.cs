@@ -345,15 +345,15 @@ namespace ElecWasteCollection.Application.Services
                     x.WorkDate == request.WorkDate);
             }
 
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId)
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(request.CollectionPointId)
                 ?? throw new Exception("Không tìm thấy trạm thu gom.");
 
             if (point.Latitude == 0 || point.Longitude == 0)
                 throw new Exception("Trạm thu gom chưa cấu hình tọa độ GPS.");
 
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync(c => c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
-            double avgSpeedKmH = GetConfigValue(allConfigs, point.CompanyId, point.SmallCollectionPointsId.ToString(), SystemConfigKey.TRANSPORT_SPEED, 25);
-            double serviceTimeMin = GetConfigValue(allConfigs, point.CompanyId, point.SmallCollectionPointsId.ToString(), SystemConfigKey.SERVICE_TIME_MINUTES, 10);
+            double avgSpeedKmH = GetConfigValue(allConfigs, point.CompanyId, point.CollectionUnitId.ToString(), SystemConfigKey.TRANSPORT_SPEED, 25);
+            double serviceTimeMin = GetConfigValue(allConfigs, point.CompanyId, point.CollectionUnitId.ToString(), SystemConfigKey.SERVICE_TIME_MINUTES, 10);
 
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync(v =>
                 request.VehicleIds.Contains(v.VehicleId) &&
@@ -370,7 +370,7 @@ namespace ElecWasteCollection.Application.Services
             var shift = (await _unitOfWork.Shifts.GetAllAsync(s =>
                 s.WorkDate == request.WorkDate &&
                 s.Status == ShiftStatus.CO_SAN.ToString() &&
-                s.Collector.SmallCollectionPointId == request.CollectionPointId, includeProperties: "Collector")).FirstOrDefault()
+                s.Collector.CollectionUnitId == request.CollectionPointId, includeProperties: "Collector")).FirstOrDefault()
                 ?? throw new Exception($"Không có ca làm việc trống ngày {request.WorkDate:dd/MM/yyyy}");
 
             double totalShiftMin = (shift.Shift_End_Time.ToLocalTime() - shift.Shift_Start_Time.ToLocalTime()).TotalMinutes;
@@ -408,7 +408,7 @@ namespace ElecWasteCollection.Application.Services
 
             var attIdMap = await GetAttributeIdMapAsync();
             var rawPosts = await _unitOfWork.Posts.GetAllAsync(p =>
-                p.AssignedSmallPointId == request.CollectionPointId && request.ProductIds.Contains(p.ProductId),
+                p.AssignedCollectionUnitId == request.CollectionPointId && request.ProductIds.Contains(p.ProductId),
                 includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions");
 
             var groupedPosts = rawPosts
@@ -664,7 +664,7 @@ namespace ElecWasteCollection.Application.Services
             if (request.Assignments == null || !request.Assignments.Any())
                 throw new Exception("Danh sách điều phối xe trống.");
 
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.CollectionPointId);
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(request.CollectionPointId);
             if (point == null)
                 throw new Exception($"Trạm thu gom không tồn tại (ID: {request.CollectionPointId})");
 
@@ -739,8 +739,8 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request)
         {
-            var point = await _unitOfWork.SmallCollectionPoints.GetAsync(
-                p => p.SmallCollectionPointsId == request.CollectionPointId,
+            var point = await _unitOfWork.CollectionUnits.GetAsync(
+                p => p.CollectionUnitId == request.CollectionPointId,
                 includeProperties: "CollectionCompany")
                 ?? throw new Exception($"Không tìm thấy trạm thu gom với ID: {request.CollectionPointId}");
 
@@ -750,7 +750,7 @@ namespace ElecWasteCollection.Application.Services
             if (!stagingData.Any()) throw new Exception("Không có dữ liệu điều phối trong bộ nhớ tạm.");
 
             var attIdMap = await GetAttributeIdMapAsync();
-            string companyCode = GetCompanyInitials(point.CollectionCompany?.Name ?? "CORP");
+            string companyCode = GetCompanyInitials(point.Company?.Name ?? "CORP");
 			var userSchedules = new Dictionary<Guid, (DateOnly Date, string Time)>();
             foreach (var stage in stagingData)
             {
@@ -930,7 +930,7 @@ namespace ElecWasteCollection.Application.Services
                             string.IsNullOrEmpty(s.Vehicle_Id) &&
                             !busyCollectorIds.Contains(s.CollectorId) &&
                             s.Collector != null &&
-                            string.Equals(s.Collector.SmallCollectionPointId, pointIdStr, StringComparison.OrdinalIgnoreCase))
+                            string.Equals(s.Collector.CollectionUnitId, pointIdStr, StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault();
 
             if (availableShift != null)
@@ -1066,7 +1066,7 @@ namespace ElecWasteCollection.Application.Services
        int page,
        int limit)
         {
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(collectionPointId);
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(collectionPointId);
             if (point == null)
                 throw new Exception("Trạm thu gom không tồn tại.");
 
@@ -1156,8 +1156,8 @@ namespace ElecWasteCollection.Application.Services
 
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(shift.Vehicle_Id);
             var collector = await _unitOfWork.Users.GetByIdAsync(shift.CollectorId);
-            string pointId = vehicle?.Small_Collection_Point ?? collector?.SmallCollectionPointId;
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId);
+            string pointId = vehicle?.Small_Collection_Point ?? collector?.CollectionUnitId;
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(pointId);
 
             int order = (page - 1) * limit + 1;
             var routeList = new List<object>();
@@ -1259,17 +1259,17 @@ namespace ElecWasteCollection.Application.Services
         }
         public async Task<bool> UpdatePointSettingAsync(UpdatePointSettingRequest request)
         {
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(request.PointId);
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(request.PointId);
             if (point == null) throw new Exception("Trạm thu gom không tồn tại.");
 
             if (request.ServiceTimeMinutes.HasValue)
             {
-                await UpsertConfigAsync(null, point.SmallCollectionPointsId, SystemConfigKey.SERVICE_TIME_MINUTES, request.ServiceTimeMinutes.Value.ToString());
+                await UpsertConfigAsync(null, point.CollectionUnitId, SystemConfigKey.SERVICE_TIME_MINUTES, request.ServiceTimeMinutes.Value.ToString());
             }
 
             if (request.AvgTravelTimeMinutes.HasValue)
             {
-                await UpsertConfigAsync(null, point.SmallCollectionPointsId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, request.AvgTravelTimeMinutes.Value.ToString());
+                await UpsertConfigAsync(null, point.CollectionUnitId, SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, request.AvgTravelTimeMinutes.Value.ToString());
             }
 
             await _unitOfWork.SaveAsync();
@@ -1283,7 +1283,7 @@ namespace ElecWasteCollection.Application.Services
             var company = await _unitOfWork.Companies.GetByIdAsync(companyId)
                 ?? throw new Exception($"Không tìm thấy công ty với ID: {companyId}");
 
-            var pointQuery = _unitOfWork.SmallCollectionPoints
+            var pointQuery = _unitOfWork.CollectionUnits
                 .AsQueryable()
                 .Where(p => p.CompanyId == companyId);
 
@@ -1297,7 +1297,7 @@ namespace ElecWasteCollection.Application.Services
                 .ToListAsync();
 
             var configs = await _unitOfWork.SystemConfig.GetAllAsync(c =>
-                c.CompanyId == companyId || c.SmallCollectionPointId != null);
+                c.CompanyId == companyId || c.CollectionUnitId != null);
 
             return new PagedCompanySettingsResponse
             {
@@ -1309,20 +1309,20 @@ namespace ElecWasteCollection.Application.Services
                 TotalPages = totalPages,
                 Points = points.Select(p => new PointSettingDetailDto
                 {
-                    SmallPointId = p.SmallCollectionPointsId,
+                    SmallPointId = p.CollectionUnitId,
                     SmallPointName = p.Name,
 
                     ServiceTimeMinutes = GetConfigValue(
                         configs,
                         companyId,
-                        p.SmallCollectionPointsId,
+                        p.CollectionUnitId,
                         SystemConfigKey.SERVICE_TIME_MINUTES,
                         DEFAULT_SERVICE_TIME),
 
                     AvgTravelTimeMinutes = GetConfigValue(
                         configs,
                         companyId,
-                        p.SmallCollectionPointsId,
+                        p.CollectionUnitId,
                         SystemConfigKey.AVG_TRAVEL_TIME_MINUTES, 
                         DEFAULT_SPEED_KMH),
 
@@ -1332,7 +1332,7 @@ namespace ElecWasteCollection.Application.Services
         }
         public async Task<SinglePointSettingResponse> GetPointSettingAsync(string pointId)
         {
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId);
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(pointId);
             if (point == null) throw new Exception("Trạm thu gom không tồn tại.");
 
             var company = await _unitOfWork.Companies.GetByIdAsync(point.CompanyId);
@@ -1342,19 +1342,19 @@ namespace ElecWasteCollection.Application.Services
             {
                 CompanyId = company?.CompanyId ?? "Không rõ",
                 CompanyName = company?.Name ?? "Không rõ",
-                SmallPointId = point.SmallCollectionPointsId,
+                SmallPointId = point.CollectionUnitId,
                 SmallPointName = point.Name,
                 ServiceTimeMinutes = GetConfigValue(
                     allConfigs,
                     point.CompanyId,
-                    point.SmallCollectionPointsId,
+                    point.CollectionUnitId,
                     SystemConfigKey.SERVICE_TIME_MINUTES,
                     DEFAULT_SERVICE_TIME),
 
                 AvgTravelTimeMinutes = GetConfigValue(
                     allConfigs,
                     point.CompanyId,
-                    point.SmallCollectionPointsId,
+                    point.CollectionUnitId,
                     SystemConfigKey.AVG_TRAVEL_TIME_MINUTES,
                     DEFAULT_SPEED_KMH),
 
@@ -1677,7 +1677,7 @@ namespace ElecWasteCollection.Application.Services
         {
             var config = configs.FirstOrDefault(x =>
                 x.Key == key.ToString() &&
-                x.SmallCollectionPointId == pointId &&
+                x.CollectionUnitId == pointId &&
                 pointId != null);
 
             if (config == null && companyId != null)
@@ -1685,7 +1685,7 @@ namespace ElecWasteCollection.Application.Services
                 config = configs.FirstOrDefault(x =>
                 x.Key == key.ToString() &&
                 x.CompanyId == companyId &&
-                x.SmallCollectionPointId == null);
+                x.CollectionUnitId == null);
             }
 
             if (config == null)
@@ -1693,7 +1693,7 @@ namespace ElecWasteCollection.Application.Services
                 config = configs.FirstOrDefault(x =>
                x.Key == key.ToString() &&
                x.CompanyId == null &&
-               x.SmallCollectionPointId == null);
+               x.CollectionUnitId == null);
             }
 
             if (config != null && double.TryParse(config.Value, out double result))
@@ -1707,7 +1707,7 @@ namespace ElecWasteCollection.Application.Services
             var existingConfig = await _unitOfWork.SystemConfig.GetAsync(x =>
                 x.Key == key.ToString() &&
                 x.CompanyId == companyId &&
-                x.SmallCollectionPointId == pointId);
+                x.CollectionUnitId == pointId);
 
             if (existingConfig != null)
             {
@@ -1722,7 +1722,7 @@ namespace ElecWasteCollection.Application.Services
                     Key = key.ToString(),
                     Value = value,
                     CompanyId = companyId,
-                    SmallCollectionPointId = pointId,
+                    CollectionUnitId = pointId,
                     Status = SystemConfigStatus.DANG_HOAT_DONG.ToString(),
                     DisplayName = key.ToString(),
                     GroupName = pointId != null ? "PointConfig" : "CompanyConfig"

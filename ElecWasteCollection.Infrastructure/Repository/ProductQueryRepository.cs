@@ -26,7 +26,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
             var baseQuery = _context.Products
                 .AsNoTracking()
                 .Where(p =>
-                    p.SmallCollectionPointId == smallPointId &&
+                    p.CollectionUnitId == smallPointId &&
                     p.Status == ProductStatus.CHO_GOM_NHOM.ToString() &&
                     p.CreateAt == workDate);
 

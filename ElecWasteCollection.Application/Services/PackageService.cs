@@ -37,7 +37,7 @@ namespace ElecWasteCollection.Application.Services
 			var newPackage = new Packages
 			{
 				PackageId = model.PackageId,
-				SmallCollectionPointsId = model.SmallCollectionPointsId,
+                CollectionUnitId = model.SmallCollectionPointsId,
 				CreateAt = DateTime.UtcNow,
 				Status = PackageStatus.DANG_DONG_GOI.ToString()
 			};
@@ -79,8 +79,8 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var package = await _packageRepository.GetAsync(
 				p => p.PackageId == packageId,
-				includeProperties: "SmallCollectionPoints" 
-			);
+				includeProperties: "CollectionUnits"
+            );
 
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
 			var packageStatusHistories = await _unitOfWork.PackageStatusHistory.GetsAsync(p => p.PackageId == packageId);
@@ -102,9 +102,9 @@ namespace ElecWasteCollection.Application.Services
 			return new PackageDetailModel
 			{
 				PackageId = package.PackageId,
-				SmallCollectionPointsId = package.SmallCollectionPointsId,
-				SmallCollectionPointsName = package.SmallCollectionPoints?.Name,
-				SmallCollectionPointsAddress = package.SmallCollectionPoints?.Address,
+				SmallCollectionPointsId = package.CollectionUnitId,
+				SmallCollectionPointsName = package.CollectionUnits?.Name,
+				SmallCollectionPointsAddress = package.CollectionUnits?.Address,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(package.Status),
 				StatusHistories = statusHistoryModels,
 				Products = pagedProducts 
@@ -145,8 +145,8 @@ namespace ElecWasteCollection.Application.Services
 				{
 					PackageId = pkg.PackageId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
-					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
+					SmallCollectionPointsId = pkg.CollectionUnitId,
+					SmallCollectionPointsName = pkg.CollectionUnits?.Name,
 					Products = summaryProducts
 				};
 			}).ToList();
@@ -186,9 +186,9 @@ namespace ElecWasteCollection.Application.Services
 				{
 					PackageId = pkg.PackageId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
-					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
-					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
+					SmallCollectionPointsId = pkg.CollectionUnitId,
+					SmallCollectionPointsName = pkg.CollectionUnits?.Name,
+					SmallCollectionPointsAddress = pkg.CollectionUnits?.Address,
 
 					// Gán object tóm tắt vào đây
 					Products = summaryProducts
@@ -233,8 +233,8 @@ namespace ElecWasteCollection.Application.Services
 				{
 					PackageId = pkg.PackageId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
-					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
+					SmallCollectionPointsId = pkg.CollectionUnitId,
+					SmallCollectionPointsName = pkg.CollectionUnits?.Name,
 					Products = summaryProducts
 				};
 			}).ToList();
@@ -248,8 +248,8 @@ namespace ElecWasteCollection.Application.Services
 			
 			var deliveringPackages = await _packageRepository.GetsAsync(
 				filter: p => p.Status == PackageStatus.DANG_VAN_CHUYEN.ToString(),
-				includeProperties: "Products,SmallCollectionPoints"
-			);
+				includeProperties: "Products,CollectionUnits"
+            );
 
 			var result = new List<PackageDetailModel>();
 
@@ -269,9 +269,9 @@ namespace ElecWasteCollection.Application.Services
 						PackageId = pkg.PackageId,
 						Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
 
-						SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-						SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,     
-						SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
+						SmallCollectionPointsId = pkg.CollectionUnitId,
+						SmallCollectionPointsName = pkg.CollectionUnits?.Name,     
+						SmallCollectionPointsAddress = pkg.CollectionUnits?.Address,
 
 						Products = summaryProducts
 					};
@@ -287,7 +287,7 @@ namespace ElecWasteCollection.Application.Services
 			var package = await _unitOfWork.Packages.GetAsync(p => p.PackageId == model.PackageId);
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
 
-			package.SmallCollectionPointsId = model.SmallCollectionPointsId;
+			package.CollectionUnitId = model.SmallCollectionPointsId;
 
 			// 2. Lấy tất cả sản phẩm liên quan (Đang trong thùng OR nằm trong list QR mới)
 			var qrCodesList = model.ProductsQrCode.ToList();
@@ -377,7 +377,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var packages = await _unitOfWork.Packages.GetAllAsync(p => packageIds.Contains(p.PackageId));
 
-			var pointIdsToSync = packages.Select(p => p.SmallCollectionPointsId).Distinct().ToList();
+			var pointIdsToSync = packages.Select(p => p.CollectionUnitId).Distinct().ToList();
 
 			var statusEnum = StatusEnumHelper.GetValueFromDescription<PackageStatus>(status);
 			var productStatusEnum = statusEnum == PackageStatus.DANG_VAN_CHUYEN ? ProductStatus.DANG_VAN_CHUYEN : ProductStatus.TAI_CHE;
@@ -619,11 +619,11 @@ namespace ElecWasteCollection.Application.Services
 				{
 					PackageId = pkg.PackageId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
-					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
-					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
-					RecyclerName = pkg.SmallCollectionPoints?.RecyclingCompany?.Name,
-					RecyclerAddress = pkg.SmallCollectionPoints?.RecyclingCompany?.Address,
+					SmallCollectionPointsId = pkg.CollectionUnitId,
+					SmallCollectionPointsName = pkg.CollectionUnits?.Name,
+					SmallCollectionPointsAddress = pkg.CollectionUnits?.Address,
+					RecyclerName = pkg.CollectionUnits?.Company?.Name,
+					RecyclerAddress = pkg.CollectionUnits?.Company?.Address,
 					StatusHistories = histories,
 					Products = summaryProducts
 				};
@@ -666,11 +666,11 @@ namespace ElecWasteCollection.Application.Services
 				{
 					PackageId = pkg.PackageId,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PackageStatus>(pkg.Status),
-					SmallCollectionPointsId = pkg.SmallCollectionPointsId,
-					SmallCollectionPointsName = pkg.SmallCollectionPoints?.Name,
-					SmallCollectionPointsAddress = pkg.SmallCollectionPoints?.Address,
-					RecyclerName = pkg.SmallCollectionPoints?.RecyclingCompany?.Name,
-					RecyclerAddress = pkg.SmallCollectionPoints?.RecyclingCompany?.Address,
+					SmallCollectionPointsId = pkg.CollectionUnitId,
+					SmallCollectionPointsName = pkg.CollectionUnits?.Name,
+					SmallCollectionPointsAddress = pkg.CollectionUnits?.Address,
+					RecyclerName = pkg.CollectionUnits?.Company?.Name,
+					RecyclerAddress = pkg.CollectionUnits?.Company?.Address,
 					StatusHistories = histories,
 					DeliveryAt = pkg.DeliveryHandoverAt,
 					Products = summaryProducts

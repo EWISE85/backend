@@ -32,7 +32,6 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public IGenericRepository<ProductImages> ProductImages { get; }
 		public IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
 		public IGenericRepository<Shifts> Shifts { get; }
-		public IGenericRepository<SmallCollectionPoints> SmallCollectionPoints { get; }
 		public IGenericRepository<Vehicles> Vehicles { get; }
 		public IGenericRepository<ForgotPassword> ForgotPasswords { get; }
 		public IGenericRepository<SystemConfig> SystemConfig { get; }
@@ -53,6 +52,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
         public IGenericRepository<UserReport> UserReports { get; }
         public IGenericRepository<CollectionOffDay> CollectionOffDays { get; }
+        public IGenericRepository<CollectionUnit> CollectionUnits { get; }
+
 
         public UnitOfWork(ElecWasteCollectionDbContext context)
         {
@@ -76,7 +77,6 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			ProductImages = new GenericRepository<ProductImages>(_context);
 			ProductStatusHistory = new GenericRepository<ProductStatusHistory>(_context);
 			Shifts = new GenericRepository<Shifts>(_context);
-			SmallCollectionPoints = new GenericRepository<SmallCollectionPoints>(_context);
 			Vehicles = new GenericRepository<Vehicles>(_context);
 			ForgotPasswords = new GenericRepository<ForgotPassword>(_context);
 			SystemConfig = new GenericRepository<SystemConfig>(_context);
@@ -95,6 +95,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			PublicHolidays = new GenericRepository<PublicHoliday>(_context);
 			UserReports = new GenericRepository<UserReport>(_context);
             CollectionOffDays = new GenericRepository<CollectionOffDay>(_context);
+            CollectionUnits = new GenericRepository<CollectionUnit>(_context);
 
         }
 

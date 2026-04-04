@@ -23,7 +23,6 @@ namespace ElecWasteCollection.Infrastructure.Context
 		public DbSet<AttributeOptions> AttributeOptions { get; set; }
 		public DbSet<CategoryAttributes> CategoryAttributes { get; set; }
 		public DbSet<Company> Companies { get; set; }
-		public DbSet<SmallCollectionPoints> SmallCollectionPoints { get; set; }
 		public DbSet<CollectionGroups> CollectionGroups { get; set; }
 		public DbSet<CollectionRoutes> CollectionRoutes { get; set; }
 		public DbSet<Packages> Packages { get; set; }
@@ -59,6 +58,8 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<UserReport> UserReports { get; set; }
         public DbSet<CollectionOffDay> CollectionOffDay { get; set; }
+        public DbSet<CollectionUnit> CollectionUnits { get; set; }
+
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -84,25 +85,20 @@ namespace ElecWasteCollection.Infrastructure.Context
 			//		  .HasForeignKey(e => e.CompanyId)
 			//		  .HasConstraintName("FK_SmallCollectionPoints_CollectionCompany");
 			//});
-			modelBuilder.Entity<SmallCollectionPoints>(entity =>
+			modelBuilder.Entity<CollectionUnit>(entity =>
 			{
-				entity.ToTable("SmallCollectionPoints");
-				entity.HasKey(e => e.SmallCollectionPointsId);
-				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
-				entity.HasIndex(e => e.Name).IsUnique();
-				entity.HasIndex(e => e.Created_At);
+                entity.ToTable("CollectionUnits");
+                entity.HasKey(e => e.CollectionUnitId);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.HasIndex(e => e.Name).IsUnique();
+                entity.HasIndex(e => e.Created_At);
 
-				entity.HasOne(e => e.CollectionCompany)
-					  .WithMany(c => c.SmallCollectionPoints)
-					  .HasForeignKey(e => e.CompanyId)
-					  .HasConstraintName("FK_SmallCollectionPoints_CollectionCompany");
+                entity.HasOne(e => e.Company)
+                      .WithMany(c => c.CollectionUnits)
+                      .HasForeignKey(e => e.CompanyId)
+                      .OnDelete(DeleteBehavior.Restrict)
+                      .HasConstraintName("FK_CollectionUnit_CollectionCompany");
 
-				entity.HasOne(e => e.RecyclingCompany)
-					  .WithMany(c => c.AssignedRecyclingPoints)
-					  .HasForeignKey(e => e.RecyclingCompanyId)
-					  .IsRequired(false)
-					  .OnDelete(DeleteBehavior.SetNull)
-					  .HasConstraintName("FK_SmallCollectionPoints_RecyclingCompany");
 			});
 
 			modelBuilder.Entity<User>(entity =>
@@ -111,7 +107,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasKey(e => e.UserId);
 				entity.Property(e => e.UserId).ValueGeneratedOnAdd();
 				entity.Property(e => e.CollectionCompanyId).IsRequired(false);
-				entity.Property(e => e.SmallCollectionPointId).IsRequired(false);
+				entity.Property(e => e.CollectionUnitId).IsRequired(false);
 				entity.HasIndex(e => e.CreateAt);
 
 				entity.HasOne(e => e.CollectionCompany)
@@ -119,10 +115,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasForeignKey(e => e.CollectionCompanyId)
 					  .HasConstraintName("FK_User_CollectionCompany");
 
-				entity.HasOne(e => e.SmallCollectionPoint)
+				entity.HasOne(e => e.CollectionUnits)
 				.WithMany(s => s.Users)
-					  .HasForeignKey(e => e.SmallCollectionPointId)
-					  .HasConstraintName("FK_User_SmallCollectionPoints");
+					  .HasForeignKey(e => e.CollectionUnitId)
+					  .HasConstraintName("FK_User_CollectionUnits");
 				entity.HasOne(e => e.Rank)
 				.WithMany(r => r.User)
 					  .HasForeignKey(e => e.CurrentRankId)
@@ -220,7 +216,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.Property(e => e.ProductId).ValueGeneratedOnAdd();
 				entity.Property(e => e.UserId).IsRequired();
 				entity.HasIndex(e => e.QRCode).IsUnique();
-				entity.Property(e => e.SmallCollectionPointId).IsRequired(false);
+				entity.Property(e => e.CollectionUnitId).IsRequired(false);
 				entity.Property(e => e.PackageId).IsRequired(false);
 				entity.HasIndex(e => e.CreateAt);
 				entity.Property(e => e.Status).HasColumnName("Status");
@@ -242,10 +238,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasForeignKey(e => e.BrandId)
 					  .HasConstraintName("FK_Products_Brand");
 
-				entity.HasOne(e => e.SmallCollectionPoint)
+				entity.HasOne(e => e.CollectionUnits)
 					  .WithMany(c => c.Products)
-					  .HasForeignKey(e => e.SmallCollectionPointId)
-					  .HasConstraintName("FK_Products_SmallCollectionPoints");
+					  .HasForeignKey(e => e.CollectionUnitId)
+					  .HasConstraintName("FK_Products_CollectionUnits");
 
 				entity.HasOne(e => e.Package)
 					  .WithMany(p => p.Products)
@@ -323,8 +319,8 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasKey(e => e.PostId);
 				entity.Property(e => e.PostId).ValueGeneratedOnAdd();
 				entity.Property(e => e.SenderId).IsRequired();
-				entity.Property(e => e.CollectionCompanyId).IsRequired(false);
-				entity.Property(e => e.AssignedSmallPointId).IsRequired(false);
+				entity.Property(e => e.CompanyId).IsRequired(false);
+				entity.Property(e => e.AssignedCollectionUnitId).IsRequired(false);
 
 				entity.HasOne(e => e.Sender)
 					  .WithMany(u => u.Posts)
@@ -338,13 +334,13 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 				entity.HasOne(e => e.CollectionCompany)
 				.WithMany(c => c.Posts)
-					  .HasForeignKey(e => e.CollectionCompanyId)
+					  .HasForeignKey(e => e.CompanyId)
 					  .HasConstraintName("FK_Post_CollectionCompany");
 
-				entity.HasOne(e => e.AssignedSmallPoint)
+				entity.HasOne(e => e.AssignedCollectionUnit)
 				.WithMany(s => s.Posts)
-					  .HasForeignKey(e => e.AssignedSmallPointId)
-					  .HasConstraintName("FK_Post_SmallCollectionPoints");
+					  .HasForeignKey(e => e.AssignedCollectionUnitId)
+					  .HasConstraintName("FK_Post_CollectionUnits");
 			});
 
 			modelBuilder.Entity<Vehicles>(entity =>
@@ -353,10 +349,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.HasKey(e => e.VehicleId);
 				entity.Property(e => e.VehicleId).ValueGeneratedOnAdd();
 				entity.Property(e => e.Small_Collection_Point).IsRequired();
-				entity.HasOne(e => e.SmallCollectionPoints)
+				entity.HasOne(e => e.CollectionUnits)
 					  .WithMany(s => s.Vehicles)
 					  .HasForeignKey(e => e.Small_Collection_Point)
-					  .HasConstraintName("FK_Vehicles_SmallCollectionPoints");
+					  .HasConstraintName("FK_Vehicles_CollectionUnits");
 			});
 
 			modelBuilder.Entity<Shifts>(entity =>
@@ -410,11 +406,11 @@ namespace ElecWasteCollection.Infrastructure.Context
 			{
 				entity.ToTable("Packages");
 				entity.HasKey(e => e.PackageId);
-				entity.Property(e => e.SmallCollectionPointsId).IsRequired();
-				entity.HasOne(e => e.SmallCollectionPoints)
+				entity.Property(e => e.CollectionUnitId).IsRequired();
+				entity.HasOne(e => e.CollectionUnits)
 					  .WithMany(s => s.Packages)
-					  .HasForeignKey(e => e.SmallCollectionPointsId)
-					  .HasConstraintName("FK_Packages_SmallCollectionPoints");
+					  .HasForeignKey(e => e.CollectionUnitId)
+					  .HasConstraintName("FK_Packages_CollectionUnits");
 			});
 
 			modelBuilder.Entity<ForgotPassword>(entity =>
@@ -440,10 +436,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasForeignKey(e => e.CompanyId)
 					  .HasConstraintName("FK_SystemConfig_Company");
 
-				entity.HasOne(e => e.SmallCollectionPoint)
+				entity.HasOne(e => e.CollectionUnits)
 				.WithMany(s => s.CustomSettings)
-					  .HasForeignKey(e => e.SmallCollectionPointId)
-					  .HasConstraintName("FK_SystemConfig_SmallCollectionPoints");
+					  .HasForeignKey(e => e.CollectionUnitId)
+					  .HasConstraintName("FK_SystemConfig_CollectionUnits");
 			});
 
 			modelBuilder.Entity<UserDeviceToken>(entity =>
@@ -585,9 +581,9 @@ namespace ElecWasteCollection.Infrastructure.Context
                       .HasForeignKey(d => d.CompanyId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(d => d.SmallCollectionPoint)
+                entity.HasOne(d => d.CollectionUnits)
                       .WithMany()
-                      .HasForeignKey(d => d.SmallCollectionPointId)
+                      .HasForeignKey(d => d.CollectionUnitId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
