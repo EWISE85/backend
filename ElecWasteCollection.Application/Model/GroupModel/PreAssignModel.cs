@@ -77,6 +77,8 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public string EstimatedArrival { get; set; }
         public string CategoryName { get; set; }
         public string BrandName { get; set; }
+        public double Lat { get; set; }
+        public double Lng { get; set; } 
     }
     public class VehicleBucket
     {
