@@ -219,23 +219,23 @@ namespace ElecWasteCollection.Application.Services
             var category = allCategories.FirstOrDefault(c => c.CategoryId == subCategoryId);
             Guid rootCateId = category?.ParentCategoryId ?? subCategoryId;
 
-            var allCompanies = await _unitOfWork.Companies.GetAllAsync(includeProperties: "SmallCollectionPoints,CompanyRecyclingCategories");
+            var allCompanies = await _unitOfWork.Companies.GetAllAsync(includeProperties: "CollectionUnits,CompanyRecyclingCategories");
             var allConfigs = await _unitOfWork.SystemConfig.GetAllAsync();
             var recyclingCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()).ToList();
 
-            var validCandidates = new List<SmallCollectionPoints>();
+            var validCandidates = new List<CollectionUnit>();
 
-            foreach (var comp in allCompanies.Where(c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString()))
+            foreach (var comp in allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()))
             {
-                foreach (var sp in comp.SmallCollectionPoints.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
+                foreach (var sp in comp.CollectionUnits.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
                 {
-                    var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.RecyclingCompanyId);
+                    var rComp = recyclingCompanies.FirstOrDefault(c => c.CompanyId == sp.CompanyId);
                     bool canHandle = rComp?.CompanyRecyclingCategories.Any(crc => crc.CategoryId == rootCateId) ?? false;
 
                     if (!canHandle) continue;
 
                     double hvDist = GeoHelper.DistanceKm(sp.Latitude, sp.Longitude, userLat, userLng);
-                    double radius = GetConfigValue(allConfigs, null, sp.SmallCollectionPointsId, SystemConfigKey.RADIUS_KM, 10);
+                    double radius = GetConfigValue(allConfigs, null, sp.CollectionUnitId, SystemConfigKey.RADIUS_KM, 10);
 
                     if (hvDist <= radius)
                     {
@@ -250,10 +250,10 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var point in validCandidates)
             {
-                double maxRoad = GetConfigValue(allConfigs, null, point.SmallCollectionPointsId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
+                double maxRoad = GetConfigValue(allConfigs, null, point.CollectionUnitId, SystemConfigKey.MAX_ROAD_DISTANCE_KM, 15);
                 double hvDist = GeoHelper.DistanceKm(point.Latitude, point.Longitude, userLat, userLng);
 
-                if (roadDistances.TryGetValue(point.SmallCollectionPointsId, out double roadKm))
+                if (roadDistances.TryGetValue(point.CollectionUnitId, out double roadKm))
                 {
                     if (roadKm <= maxRoad) return true;
                 }
@@ -262,7 +262,7 @@ namespace ElecWasteCollection.Application.Services
 
                     if (hvDist <= maxRoad)
                     {
-                        Console.WriteLine($"[AddPost Fallback] Mapbox Error. Approved by Haversine: {hvDist}km for Point: {point.SmallCollectionPointsId}");
+                        Console.WriteLine($"[AddPost Fallback] Mapbox Error. Approved by Haversine: {hvDist}km for Point: {point.CollectionUnitId}");
                         return true;
                     }
                 }
@@ -273,9 +273,9 @@ namespace ElecWasteCollection.Application.Services
 
         private double GetConfigValue(IEnumerable<SystemConfig> configs, string? companyId, string? pointId, SystemConfigKey key, double defaultValue)
         {
-            var cfg = configs.FirstOrDefault(c => c.Key == key.ToString() && c.CompanyId == companyId && c.SmallCollectionPointId == pointId)
-                   ?? configs.FirstOrDefault(c => c.Key == key.ToString() && c.CompanyId == companyId && c.SmallCollectionPointId == null)
-                   ?? configs.FirstOrDefault(c => c.Key == key.ToString() && c.CompanyId == null && c.SmallCollectionPointId == null);
+            var cfg = configs.FirstOrDefault(c => c.Key == key.ToString() && c.CompanyId == companyId && c.CollectionUnitId == pointId)
+                   ?? configs.FirstOrDefault(c => c.Key == key.ToString() && c.CompanyId == companyId && c.CollectionUnitId == null)
+                   ?? configs.FirstOrDefault(c => c.Key == key.ToString() && c.CompanyId == null && c.CollectionUnitId == null);
 
             return cfg != null && double.TryParse(cfg.Value, out double val) ? val : defaultValue;
         }
@@ -539,7 +539,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = post.Sender.Name,
 					Phone = post.Sender.Phone,
 					Role = post.Sender.Role,
-					SmallCollectionPointId = post.Sender.SmallCollectionPointId?.ToString()
+					SmallCollectionPointId = post.Sender.CollectionUnitId?.ToString()
 				};
 			}
 			var productDetail = new ProductDetailModel();

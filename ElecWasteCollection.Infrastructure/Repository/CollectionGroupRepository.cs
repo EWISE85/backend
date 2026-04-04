@@ -33,7 +33,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
                      g.Shifts.Vehicle.Small_Collection_Point == collectionPointId)
                     ||
                     (g.Shifts.Collector != null &&
-                     g.Shifts.Collector.SmallCollectionPointId == collectionPointId)
+                     g.Shifts.Collector.CollectionUnitId == collectionPointId)
                 );
 
             var totalCount = await query.CountAsync();
@@ -66,7 +66,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
                      g.Shifts.Vehicle.Small_Collection_Point == collectionPointId)
                     ||
                     (g.Shifts.Collector != null &&
-                     g.Shifts.Collector.SmallCollectionPointId == collectionPointId)
+                     g.Shifts.Collector.CollectionUnitId == collectionPointId)
                 );
 
             if (date.HasValue)

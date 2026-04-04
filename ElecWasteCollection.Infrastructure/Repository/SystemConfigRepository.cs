@@ -20,7 +20,7 @@ public class SystemConfigRepository : GenericRepository<SystemConfig>, ISystemCo
             query = query.Where(c => c.CompanyId == companyId);
 
         if (!string.IsNullOrEmpty(scpId))
-            query = query.Where(c => c.SmallCollectionPointId == scpId);
+            query = query.Where(c => c.CollectionUnitId == scpId);
 
         return await query.ToListAsync();
     }

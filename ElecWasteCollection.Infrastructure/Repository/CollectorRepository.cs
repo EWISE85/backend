@@ -20,7 +20,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			var query = _dbSet.AsNoTracking();
 			string collectorRole = UserRole.Collector.ToString();
 			query = query.Where(u => u.Role == collectorRole);
-			query = query.Include(u => u.SmallCollectionPoint);
+			query = query.Include(u => u.CollectionUnits);
 
 			if (!string.IsNullOrEmpty(status))
 			{
@@ -35,7 +35,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (smallCollectionPointId != null)
 			{
-				query = query.Where(u => u.SmallCollectionPointId == smallCollectionPointId);
+				query = query.Where(u => u.CollectionUnitId == smallCollectionPointId);
 			}
 
 			var totalCount = await query.CountAsync();

@@ -11,6 +11,6 @@ namespace ElecWasteCollection.Application.IServices.IAssignPost
     {
         Task<double> GetRoadDistanceKm(double latA, double lngA, double latB, double lngB);
         Task<(double distanceKm, double durationMinutes)> GetRoadDistanceAndEta( double latA, double lngA, double latB, double lngB);
-        Task<Dictionary<string, double>> GetMatrixDistancesAsync( double originLat, double originLng, List<SmallCollectionPoints> destinations );
+        Task<Dictionary<string, double>> GetMatrixDistancesAsync( double originLat, double originLng, List<CollectionUnit> destinations );
     }
 }

@@ -72,7 +72,7 @@ namespace ElecWasteCollection.Application.Services
 				Description = createProductRequest.Description,
 				QRCode = createProductRequest.QrCode,
 				CreateAt = DateOnly.FromDateTime(DateTime.UtcNow),
-				SmallCollectionPointId = createProductRequest.SmallCollectionPointId,
+                CollectionUnitId = createProductRequest.SmallCollectionPointId,
 				isChecked = false,
 				Status = ProductStatus.NHAP_KHO.ToString()
 			};
@@ -388,9 +388,9 @@ namespace ElecWasteCollection.Application.Services
                 var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == model.QRCode);
                 if (product == null) throw new AppException($"Không tìm thấy sản phẩm với mã QR: {model.QRCode}", 404);
 
-                if (!string.IsNullOrEmpty(product.SmallCollectionPointId))
+                if (!string.IsNullOrEmpty(product.CollectionUnitId))
                 {
-                    pointIdsToSync.Add(product.SmallCollectionPointId);
+                    pointIdsToSync.Add(product.CollectionUnitId);
                 }
 
                 var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
@@ -509,8 +509,8 @@ namespace ElecWasteCollection.Application.Services
 				Email = sender?.Email,
 				Avatar = sender?.Avatar,
 				Role = sender.Role,
-				SmallCollectionPointId = sender?.SmallCollectionPointId
-			};
+				SmallCollectionPointId = sender?.CollectionUnitId
+            };
 
 			double? realPoints = null;
 			string? changedPointMessage = null;
@@ -634,8 +634,8 @@ namespace ElecWasteCollection.Application.Services
 					Email = sender?.Email,
 					Avatar = sender?.Avatar,
 					Role = sender?.Role,
-					SmallCollectionPointId = sender?.SmallCollectionPointId
-				};
+					SmallCollectionPointId = sender?.CollectionUnitId
+                };
 
 				return new ProductDetail
 				{

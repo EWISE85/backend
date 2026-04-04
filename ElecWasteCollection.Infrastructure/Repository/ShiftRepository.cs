@@ -27,7 +27,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			}
 			if (smallCollectionPointId != null)
 			{
-				query = query.Where(s => s.Collector.SmallCollectionPointId == smallCollectionPointId);
+				query = query.Where(s => s.Collector.CollectionUnitId == smallCollectionPointId);
 			}
 
 			if (!string.IsNullOrEmpty(status))

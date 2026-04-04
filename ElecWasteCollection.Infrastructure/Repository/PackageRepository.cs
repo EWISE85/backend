@@ -31,7 +31,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (smallCollectionPointsId != null)
 			{
-				query = query.Where(p => p.SmallCollectionPointsId == smallCollectionPointsId);
+				query = query.Where(p => p.CollectionUnitId == smallCollectionPointsId);
 			}
 
 			if (!string.IsNullOrEmpty(status))
@@ -66,7 +66,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					.ThenInclude(pr => pr.Brand)
 				.Include(p => p.Products)
 					.ThenInclude(pr => pr.Category)
-				.Include(p => p.SmallCollectionPoints);
+				.Include(p => p.CollectionUnits);
 
 			if (startDate.HasValue && startDate.Value.Kind == DateTimeKind.Unspecified)
 			{
@@ -82,7 +82,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (!string.IsNullOrEmpty(companyId))
 			{
-				query = query.Where(p => p.SmallCollectionPoints.CompanyId == companyId);
+				query = query.Where(p => p.CollectionUnits.CompanyId == companyId);
 			}
 
 			if (startDate.HasValue)
@@ -125,11 +125,11 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					.ThenInclude(pr => pr.Brand)
 				.Include(p => p.Products)
 					.ThenInclude(pr => pr.Category)
-				.Include(p => p.SmallCollectionPoints);
+				.Include(p => p.CollectionUnits);
 
 			if (!string.IsNullOrEmpty(recyclerId))
 			{
-				query = query.Where(p => p.SmallCollectionPoints.RecyclingCompanyId == recyclerId);
+				query = query.Where(p => p.CollectionUnits.CompanyId == recyclerId);
 			}
 
 			if (!string.IsNullOrEmpty(status))
@@ -159,8 +159,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(p => p.Products)
 				.Include(p => p.PackageStatusHistories)
-				.Include(p => p.SmallCollectionPoints)
-					.ThenInclude(scp => scp.RecyclingCompany); 
+				.Include(p => p.CollectionUnits)
+					.ThenInclude(scp => scp.Company); 
 
 			if (!string.IsNullOrEmpty(deliveryQrCode))
 			{
@@ -186,15 +186,15 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(p => p.Products)
 				.Include(p => p.PackageStatusHistories)
-				.Include(p => p.SmallCollectionPoints)
-					.ThenInclude(scp => scp.RecyclingCompany);
+				.Include(p => p.CollectionUnits)
+					.ThenInclude(scp => scp.Company);
 			if (!string.IsNullOrEmpty(recyclerId))
 			{
-				query = query.Where(p => p.SmallCollectionPoints.RecyclingCompanyId == recyclerId);
+				query = query.Where(p => p.CollectionUnits.CompanyId == recyclerId);
 			}
 			if (!string.IsNullOrEmpty(smallCollectionPointId))
 			{
-				query = query.Where(p => p.SmallCollectionPointsId == smallCollectionPointId);
+				query = query.Where(p => p.CollectionUnitId == smallCollectionPointId);
 			}
 			if (!string.IsNullOrEmpty(packageId))
 			{

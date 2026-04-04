@@ -317,8 +317,8 @@ namespace ElecWasteCollection.Application.Services
 					Email = collectorUser.Email,
 					Phone = collectorUser.Phone,
 					Avatar = collectorUser.Avatar,
-					SmallCollectionPointId = collectorUser.SmallCollectionPointId
-				};
+					SmallCollectionPointId = collectorUser.CollectionUnitId
+                };
 			}
 
 			// 3. Map Hình ảnh sản phẩm

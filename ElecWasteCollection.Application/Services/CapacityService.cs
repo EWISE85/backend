@@ -18,11 +18,11 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<List<SCPCapacityModel>> GetAllSCPCapacityAsync()
         {
-            var points = await _unitOfWork.SmallCollectionPoints.GetAllAsync();
+            var points = await _unitOfWork.CollectionUnits.GetAllAsync();
 
             return points.Select(p => new SCPCapacityModel
             {
-                Id = p.SmallCollectionPointsId,
+                Id = p.CollectionUnitId,
                 Name = p.Name,
                 MaxCapacity = Math.Round(p.MaxCapacity, 2),
                 CurrentCapacity = Math.Round(p.CurrentCapacity, 2),
@@ -34,12 +34,12 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<SCPCapacityModel> GetSCPCapacityByIdAsync(string pointId)
         {
-            var p = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId)
+            var p = await _unitOfWork.CollectionUnits.GetByIdAsync(pointId)
                 ?? throw new Exception("Trạm thu gom không tồn tại.");
 
             return new SCPCapacityModel
             {
-                Id = p.SmallCollectionPointsId,
+                Id = p.CollectionUnitId,
                 Name = p.Name,
                 MaxCapacity = Math.Round(p.MaxCapacity, 2),
                 CurrentCapacity = Math.Round(p.CurrentCapacity, 2),
@@ -51,8 +51,8 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<CompanyCapacityModel> GetCompanyCapacitySummaryAsync(string companyId)
         {
-            var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
-            var activePoints = allPoints.Where(p => p.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString()).ToList();
+            var allPoints = await _unitOfWork.CollectionUnits.GetAllAsync(p => p.CompanyId == companyId);
+            var activePoints = allPoints.Where(p => p.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString()).ToList();
 
             var model = new CompanyCapacityModel
             {
@@ -64,7 +64,7 @@ namespace ElecWasteCollection.Application.Services
             {
                 var scpModel = new SCPCapacityModel
                 {
-                    Id = p.SmallCollectionPointsId,
+                    Id = p.CollectionUnitId,
                     Name = p.Name,
                     MaxCapacity = Math.Round(p.MaxCapacity, 2),
                     CurrentCapacity = Math.Round(p.CurrentCapacity, 2),
@@ -88,17 +88,17 @@ namespace ElecWasteCollection.Application.Services
         public async Task<CompanyCapacityModel> GetCompanyCapacityByDateAsync(string companyId, DateOnly date)
         {
             var attMap = await GetAttributeIdMapInternalAsync();
-            var allPoints = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
+            var allPoints = await _unitOfWork.CollectionUnits.GetAllAsync(p => p.CompanyId == companyId);
 
             var activePoints = allPoints
-                .Where(p => p.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString())
+                .Where(p => p.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString())
                 .ToList();
 
-            var activePointIds = activePoints.Select(p => p.SmallCollectionPointsId).ToList();
+            var activePointIds = activePoints.Select(p => p.CollectionUnitId).ToList();
 
             var productsInDate = await _unitOfWork.Products.GetAllAsync(p =>
-                p.SmallCollectionPointId != null &&
-                activePointIds.Contains(p.SmallCollectionPointId) &&
+                p.CollectionUnitId != null &&
+                activePointIds.Contains(p.CollectionUnitId) &&
                 p.AssignedAt.HasValue &&
                 p.AssignedAt.Value == date);
 
@@ -111,7 +111,7 @@ namespace ElecWasteCollection.Application.Services
             foreach (var p in activePoints)
             {
                 double dailyTotalVol = 0;
-                var scpProducts = productsInDate.Where(prod => prod.SmallCollectionPointId == p.SmallCollectionPointsId);
+                var scpProducts = productsInDate.Where(prod => prod.CollectionUnitId == p.CollectionUnitId);
 
                 foreach (var prod in scpProducts)
                 {
@@ -120,7 +120,7 @@ namespace ElecWasteCollection.Application.Services
 
                 model.Warehouses.Add(new SCPCapacityModel
                 {
-                    Id = p.SmallCollectionPointsId,
+                    Id = p.CollectionUnitId,
                     Name = p.Name,
                     MaxCapacity = Math.Round(p.MaxCapacity, 2),
                     CurrentCapacity = Math.Round(p.CurrentCapacity, 2),

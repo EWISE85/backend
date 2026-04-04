@@ -57,7 +57,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public bool isChecked { get; set; } = false;
 
-		public string? SmallCollectionPointId { get; set; }
+		public string? CollectionUnitId { get; set; }
         public DateOnly? AssignedAt { get; set; }
         public Category Category { get; set; }
 
@@ -67,7 +67,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public User User { get; set; }
 
-		public SmallCollectionPoints? SmallCollectionPoint { get; set; }
+		public CollectionUnit? CollectionUnits { get; set; }
 
 		public virtual ICollection<ProductImages> ProductImages { get; set; } = new List<ProductImages>();
 

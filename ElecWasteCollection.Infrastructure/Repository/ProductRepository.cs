@@ -81,7 +81,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.AsQueryable();
 
 			query = query.Where(p =>
-				p.SmallCollectionPointId == smallCollectionPointId &&
+				p.CollectionUnitId == smallCollectionPointId &&
 				p.CreateAt >= fromDate &&
 				p.CreateAt <= toDate &&
 				p.PackageId == null &&
@@ -181,12 +181,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (collectionCompanyId != null)
 			{
-				var relevantScpIds = _context.Set<SmallCollectionPoints>()
+				var relevantScpIds = _context.Set<CollectionUnit>()
 											 .Where(scp => scp.CompanyId == collectionCompanyId)
-											 .Select(scp => scp.SmallCollectionPointsId);
+											 .Select(scp => scp.CollectionUnitId);
 				query = query.Where(p => p.CollectionRoutes.Any(route =>
-					route.CollectionGroup.Shifts.Collector.SmallCollectionPointId != null &&
-					relevantScpIds.Contains(route.CollectionGroup.Shifts.Collector.SmallCollectionPointId)
+					route.CollectionGroup.Shifts.Collector.CollectionUnitId != null &&
+					relevantScpIds.Contains(route.CollectionGroup.Shifts.Collector.CollectionUnitId)
 				));
 			}
 

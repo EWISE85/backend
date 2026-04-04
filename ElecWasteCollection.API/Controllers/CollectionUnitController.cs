@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [Route("api/small-collection")]
+    [Route("api/collectionUnit")]
     [ApiController]
-    public class SmallCollectionPointController : ControllerBase
+    public class CollectionUnitController : ControllerBase
     {
-        private readonly ISmallCollectionService _smallCollectionService;
+        private readonly ICollectionUnitService _smallCollectionService;
 		private readonly IExcelImportService _excelImportService;
-		public SmallCollectionPointController(ISmallCollectionService smallCollectionService, IExcelImportService excelImportService)
+		public CollectionUnitController(ICollectionUnitService smallCollectionService, IExcelImportService excelImportService)
 		{
 			_smallCollectionService = smallCollectionService;
 			_excelImportService = excelImportService;

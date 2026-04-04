@@ -17,8 +17,8 @@ namespace ElecWasteCollection.Domain.Entities
     }
     public enum CompanyType
     {
-        [Description("Công ty thu gom")]
-        CTY_THU_GOM,
+        //[Description("Công ty thu gom")]
+        //CTY_THU_GOM,
 
         [Description("Công ty tái chế")]
         CTY_TAI_CHE
@@ -37,17 +37,10 @@ namespace ElecWasteCollection.Domain.Entities
         public DateTime Updated_At { get; set; }
         public int Priority { get; set; } = 1;
         public bool IsFallback { get; set; } = false;
-
         public virtual ICollection<User> Users { get; set; } = new List<User>();
-
-		public virtual ICollection<SmallCollectionPoints> SmallCollectionPoints { get; set; } = new List<SmallCollectionPoints>();
-
+		public virtual ICollection<CollectionUnit> CollectionUnits { get; set; } = new List<CollectionUnit>();
 		public virtual ICollection<Post> Posts { get; set; } = new List<Post>();
-
         public virtual ICollection<SystemConfig> CustomSettings { get; set; } = new List<SystemConfig>();
-
-        public virtual ICollection<SmallCollectionPoints> AssignedRecyclingPoints { get; set; } = new List<SmallCollectionPoints>();
-
 		public virtual ICollection<CompanyRecyclingCategory> CompanyRecyclingCategories { get; set; } = new List<CompanyRecyclingCategory>();
 	}
 }

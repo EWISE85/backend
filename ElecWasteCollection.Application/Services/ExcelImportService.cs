@@ -19,7 +19,7 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ICompanyService _companyService;
 		private readonly IAccountService _accountService;
 		private readonly IUserService _userService;
-		private readonly ISmallCollectionService _smallCollectionPointService;
+		private readonly ICollectionUnitService _smallCollectionPointService;
 		private readonly ICollectorService _collectorService;
 		private readonly IShiftService _shiftService;
 		private readonly IVehicleService _vehicleService;
@@ -35,7 +35,7 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ICategoryAttributeService _categoryAttributeService;
 
 
-		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ISmallCollectionService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository, IPublicHolidayService publicHolidayService, IAttributeService attributeService, IBrandService brandService, ICategoryService categoryService, IBrandCategoryService brandCategoryService, ICategoryAttributeService categoryAttributeService)
+		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ICollectionUnitService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository, IPublicHolidayService publicHolidayService, IAttributeService attributeService, IBrandService brandService, ICategoryService categoryService, IBrandCategoryService brandCategoryService, ICategoryAttributeService categoryAttributeService)
 		{
 			_companyService = CompanyService;
 			_accountService = accountService;
@@ -82,7 +82,7 @@ namespace ElecWasteCollection.Application.Services
 					{
 						await ImportCompanyAsync(worksheet, result);
 					}
-					else if (importType.Equals("SmallCollectionPoint", StringComparison.OrdinalIgnoreCase))
+					else if (importType.Equals("CollectionUnit", StringComparison.OrdinalIgnoreCase))
 					{
 						await ImportSmallCollectionPointAsync(worksheet, result);
 					}
@@ -403,7 +403,7 @@ namespace ElecWasteCollection.Application.Services
 					Phone = phone,
 					Avatar = avatar,
 					CollectorCode = code,
-					SmallCollectionPointId = smallCollectionPointId,
+                    CollectionUnitId = smallCollectionPointId,
 					CollectionCompanyId = companyId,
 					Role = UserRole.Collector.ToString(),
 					Status = statusToSave, 
@@ -456,15 +456,15 @@ Ban Quản Trị Hệ Thống";
 
 				if (statusNormalized.Equals("còn hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
-					statusToSave = SmallCollectionPointStatus.DANG_HOAT_DONG.ToString(); 
+					statusToSave = CollectionUnitStatus.DANG_HOAT_DONG.ToString(); 
 				}
 				else if (statusNormalized.Equals("không hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
-					statusToSave = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
+					statusToSave = CollectionUnitStatus.KHONG_HOAT_DONG.ToString();
 				}
 				else
 				{
-					statusToSave = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
+					statusToSave = CollectionUnitStatus.KHONG_HOAT_DONG.ToString();
 
 				}
 
@@ -491,9 +491,9 @@ Ban Quản Trị Hệ Thống";
 						result.Messages.Add($"Cảnh báo dòng {row}: Không thể tìm thấy tọa độ cho địa chỉ '{address}'. Đã đặt tọa độ về 0.");
 					}
 				}
-				var smallCollectionPoint = new SmallCollectionPoints
-				{
-					SmallCollectionPointsId = id,
+				var smallCollectionPoint = new CollectionUnit
+                {
+                    CollectionUnitId = id,
 					Name = name,
 					Address = address,
 					Latitude = latitude,
@@ -569,7 +569,7 @@ Ban Quản Trị Hệ Thống";
 
 				if (companyType.Equals("Collection Company", StringComparison.OrdinalIgnoreCase) || companyType.Equals("Công ty thu gom", StringComparison.OrdinalIgnoreCase))
 				{
-					companyTypeToSave = CompanyType.CTY_THU_GOM.ToString();
+					companyTypeToSave = CompanyType.CTY_TAI_CHE.ToString();
 				}
 				else if (companyType.Equals("Recycling Company", StringComparison.OrdinalIgnoreCase) || companyType.Equals("Công ty tái chế", StringComparison.OrdinalIgnoreCase))
 				{
@@ -577,7 +577,7 @@ Ban Quản Trị Hệ Thống";
 				}
 				else
 				{
-					companyTypeToSave = CompanyType.CTY_THU_GOM.ToString();
+					companyTypeToSave = CompanyType.CTY_TAI_CHE.ToString();
 				}
 				var company = new Company
 				{

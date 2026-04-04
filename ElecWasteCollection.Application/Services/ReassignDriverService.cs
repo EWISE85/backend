@@ -40,7 +40,7 @@ namespace ElecWasteCollection.Application.Services
 
             var allCollectors = await _unitOfWork.Users.GetAllAsync(
                 u => u.Role == UserRole.Collector.ToString() &&
-                     u.SmallCollectionPointId == smallCollectionPointId &&
+                     u.CollectionUnitId == smallCollectionPointId &&
                      u.Status == UserStatus.DANG_HOAT_DONG.ToString()
             );
 

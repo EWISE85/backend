@@ -29,8 +29,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			if (!string.IsNullOrEmpty(collectionCompanyId))
 			{
 				// Giả sử logic là check bảng SmallCollectionPoints
-				query = query.Where(v => _context.Set<SmallCollectionPoints>()
-					.Any(scp => scp.SmallCollectionPointsId == v.Small_Collection_Point &&
+				query = query.Where(v => _context.Set<CollectionUnit>()
+					.Any(scp => scp.CollectionUnitId == v.Small_Collection_Point &&
 								scp.CompanyId == collectionCompanyId));
 			}
 

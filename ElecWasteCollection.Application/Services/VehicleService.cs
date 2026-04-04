@@ -11,8 +11,8 @@ namespace ElecWasteCollection.Application.Services
 	{
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IVehicleRepository _vehicleRepository;
-		private readonly ISmallCollectionRepository _smallCollectionRepository;
-		public VehicleService(IUnitOfWork unitOfWork, IVehicleRepository vehicleRepository, ISmallCollectionRepository smallCollectionRepository)
+		private readonly ICollectionUnitRepository _smallCollectionRepository;
+		public VehicleService(IUnitOfWork unitOfWork, IVehicleRepository vehicleRepository, ICollectionUnitRepository smallCollectionRepository)
 		{
 			_unitOfWork = unitOfWork;
 			_vehicleRepository = vehicleRepository;
@@ -63,7 +63,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Xe không tồn tại", 404);
 			}
-			var smallCollectionPoint = await _smallCollectionRepository.GetAsync(scp => scp.SmallCollectionPointsId == vehicle.Small_Collection_Point);
+			var smallCollectionPoint = await _smallCollectionRepository.GetAsync(scp => scp.CollectionUnitId == vehicle.Small_Collection_Point);
 			return new VehicleModel
 			{
 				VehicleId = vehicle.VehicleId,
@@ -106,8 +106,8 @@ namespace ElecWasteCollection.Application.Services
 			if (scpIds.Any())
 			{
 				// Giả sử bạn có _scpRepository
-				var scps = await _smallCollectionRepository.GetsAsync(s => scpIds.Contains(s.SmallCollectionPointsId));
-				scpDict = scps.ToDictionary(k => k.SmallCollectionPointsId, v => v.Name);
+				var scps = await _smallCollectionRepository.GetsAsync(s => scpIds.Contains(s.CollectionUnitId));
+				scpDict = scps.ToDictionary(k => k.CollectionUnitId, v => v.Name);
 			}
 
 			var resultList = vehicles.Select(v =>

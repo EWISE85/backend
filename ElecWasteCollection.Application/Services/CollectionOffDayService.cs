@@ -40,8 +40,8 @@ namespace ElecWasteCollection.Application.Services
                 {
                     foreach (var spId in request.SmallCollectionPointIds)
                     {
-                        var point = await _unitOfWork.SmallCollectionPoints.GetAsync(p =>
-                            p.SmallCollectionPointsId == spId && p.CompanyId == request.CompanyId);
+                        var point = await _unitOfWork.CollectionUnits.GetAsync(p =>
+                            p.CollectionUnitId == spId && p.CompanyId == request.CompanyId);
 
                         if (point == null)
                             throw new Exception($"Kho {spId} không tồn tại hoặc không thuộc quản lý của công ty này.");
@@ -57,7 +57,7 @@ namespace ElecWasteCollection.Application.Services
         private async Task AddUniqueOffDayAsync(DateOnly date, string? companyId, string? spId, string? reason)
         {
             var exists = await _unitOfWork.CollectionOffDays.GetAsync(x =>
-                x.OffDate == date && x.CompanyId == companyId && x.SmallCollectionPointId == spId);
+                x.OffDate == date && x.CompanyId == companyId && x.CollectionUnitId == spId);
 
             if (exists == null)
             {
@@ -65,7 +65,7 @@ namespace ElecWasteCollection.Application.Services
                 {
                     Id = Guid.NewGuid(),
                     CompanyId = companyId,
-                    SmallCollectionPointId = spId,
+                    CollectionUnitId = spId,
                     OffDate = date,
                     Reason = reason,
                     CreatedAt = DateTime.UtcNow
@@ -76,7 +76,7 @@ namespace ElecWasteCollection.Application.Services
         public async Task<bool> RemoveOffDayAsync(string? companyId, string? pointId, DateOnly date)
         {
             var offDay = await _unitOfWork.CollectionOffDays.GetAsync(x =>
-                x.OffDate == date && x.CompanyId == companyId && x.SmallCollectionPointId == pointId);
+                x.OffDate == date && x.CompanyId == companyId && x.CollectionUnitId == pointId);
 
             if (offDay == null)
                 throw new Exception("Không tìm thấy lịch nghỉ yêu cầu để xóa.");
@@ -91,17 +91,17 @@ namespace ElecWasteCollection.Application.Services
         public async Task<List<CompanyAvailableModel>> GetAvailableCompaniesForAssignAsync(DateOnly workDate)
         {
             var allCompanies = await _unitOfWork.Companies.GetAllAsync(
-                c => c.CompanyType == CompanyType.CTY_THU_GOM.ToString() && c.Status == CompanyStatus.DANG_HOAT_DONG.ToString(),
-                includeProperties: "SmallCollectionPoints"
+                c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString() && c.Status == CompanyStatus.DANG_HOAT_DONG.ToString(),
+                includeProperties: "CollectionUnits"
             );
 
             var offDays = await _unitOfWork.CollectionOffDays.GetAllAsync(x => x.OffDate == workDate);
 
-            var offCompanyIds = offDays.Where(x => x.CompanyId != null && x.SmallCollectionPointId == null)
+            var offCompanyIds = offDays.Where(x => x.CompanyId != null && x.CollectionUnitId == null)
                                        .Select(x => x.CompanyId).ToList();
 
-            var offPointIds = offDays.Where(x => x.SmallCollectionPointId != null)
-                                     .Select(x => x.SmallCollectionPointId).ToList();
+            var offPointIds = offDays.Where(x => x.CollectionUnitId != null)
+                                     .Select(x => x.CollectionUnitId).ToList();
 
             return allCompanies
                 .Where(c => !offCompanyIds.Contains(c.CompanyId))
@@ -109,9 +109,9 @@ namespace ElecWasteCollection.Application.Services
                 {
                     CompanyId = c.CompanyId,
                     CompanyName = c.Name,
-                    ActivePoints = c.SmallCollectionPoints
-                        .Where(p => !offPointIds.Contains(p.SmallCollectionPointsId) &&
-                        p.Status == SmallCollectionPointStatus.DANG_HOAT_DONG.ToString())
+                    ActivePoints = c.CollectionUnits
+                        .Where(p => !offPointIds.Contains(p.CollectionUnitId) &&
+                        p.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString())
                         .Select(p => p.Name).ToList()
                 })
                 .Where(c => c.ActivePoints.Any())
@@ -128,8 +128,8 @@ namespace ElecWasteCollection.Application.Services
             List<string> relatedPointIds = new List<string>();
             if (!string.IsNullOrEmpty(companyId))
             {
-                var points = await _unitOfWork.SmallCollectionPoints.GetAllAsync(p => p.CompanyId == companyId);
-                relatedPointIds = points.Select(p => p.SmallCollectionPointsId).ToList();
+                var points = await _unitOfWork.CollectionUnits.GetAllAsync(p => p.CompanyId == companyId);
+                relatedPointIds = points.Select(p => p.CollectionUnitId).ToList();
             }
 
             var query = _unitOfWork.CollectionOffDays.GetQueryable();
@@ -137,12 +137,12 @@ namespace ElecWasteCollection.Application.Services
             if (!string.IsNullOrEmpty(companyId))
             {
                 query = query.Where(x => x.CompanyId == companyId
-                                         || (x.SmallCollectionPointId != null && relatedPointIds.Contains(x.SmallCollectionPointId)));
+                                         || (x.CollectionUnitId != null && relatedPointIds.Contains(x.CollectionUnitId)));
             }
 
             if (!string.IsNullOrEmpty(smallCollectionPointId))
             {
-                query = query.Where(x => x.SmallCollectionPointId == smallCollectionPointId);
+                query = query.Where(x => x.CollectionUnitId == smallCollectionPointId);
             }
 
             if (date.HasValue)
@@ -154,17 +154,17 @@ namespace ElecWasteCollection.Application.Services
 
             var offDays = await _unitOfWork.CollectionOffDays.GetAllAsync(
                 filter: x => query.Select(q => q.Id).Contains(x.Id),
-                includeProperties: "Company,SmallCollectionPoint"
+                includeProperties: "Company,CollectionUnits"
             );
 
             var resultItems = offDays
                 .Select(x => new CollectionOffDayModel
                 {
                     Id = x.Id,
-                    CompanyId = x.CompanyId ?? x.SmallCollectionPoint?.CompanyId,
+                    CompanyId = x.CompanyId ?? x.CollectionUnits?.CompanyId,
                     CompanyName = x.Company?.Name ?? "N/A",
-                    SmallCollectionPointId = x.SmallCollectionPointId,
-                    PointName = x.SmallCollectionPoint?.Name ?? "Nghỉ toàn hệ thống công ty",
+                    SmallCollectionPointId = x.CollectionUnitId,
+                    PointName = x.CollectionUnits?.Name ?? "Nghỉ toàn hệ thống công ty",
                     OffDate = x.OffDate,
                     Reason = x.Reason
                 })

@@ -23,7 +23,7 @@ namespace ElecWasteCollection.API.Controllers
 			var collectors = await _collectorService.GetAll();
 			return Ok(collectors);
 		}
-		[HttpGet("small-collection-point/{SmallCollectionPointId}")]
+		[HttpGet("collectionUnit/{SmallCollectionPointId}")]
 		public async Task<IActionResult> GetCollectors([FromRoute] string SmallCollectionPointId)
 		{
 			var collectors = await _collectorService.GetCollectorByWareHouseId(SmallCollectionPointId);

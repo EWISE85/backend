@@ -9,12 +9,12 @@ namespace ElecWasteCollection.Application.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IVehicleRepository _vehicleRepository;
-        private readonly ISmallCollectionRepository _smallCollectionRepository;
+        private readonly ICollectionUnitRepository _smallCollectionRepository;
 
         public VehiAndSCPManagementService(
             IUnitOfWork unitOfWork,
             IVehicleRepository vehicleRepository,
-            ISmallCollectionRepository smallCollectionRepository)
+            ICollectionUnitRepository smallCollectionRepository)
         {
             _unitOfWork = unitOfWork;
             _vehicleRepository = vehicleRepository;
@@ -28,11 +28,11 @@ namespace ElecWasteCollection.Application.Services
 
             if (vehicle == null) throw new AppException("Xe không tồn tại", 404);
 
-            var parentPoint = await _smallCollectionRepository.GetAsync(p => p.SmallCollectionPointsId == vehicle.Small_Collection_Point);
+            var parentPoint = await _smallCollectionRepository.GetAsync(p => p.CollectionUnitId == vehicle.Small_Collection_Point);
             if (parentPoint == null)
                 throw new AppException("Không thể duyệt xe vì chưa gán điểm thu gom hợp lệ.", 400);
 
-            if (parentPoint.Status != SmallCollectionPointStatus.DANG_HOAT_DONG.ToString())
+            if (parentPoint.Status != CollectionUnitStatus.DANG_HOAT_DONG.ToString())
                 throw new AppException("Không thể duyệt xe khi điểm thu gom chủ quản đang bị khóa hoặc bảo trì.", 400);
 
             if (vehicle.Status == VehicleStatus.DANG_HOAT_DONG.ToString()) return true;
@@ -56,19 +56,19 @@ namespace ElecWasteCollection.Application.Services
         #region Small Collection Point Management
         public async Task<bool> ApproveSmallCollectionPointAsync(string pointId)
         {
-            var point = await _smallCollectionRepository.GetAsync(p => p.SmallCollectionPointsId == pointId);
+            var point = await _smallCollectionRepository.GetAsync(p => p.CollectionUnitId == pointId);
             if (point == null) throw new AppException("Điểm thu gom không tồn tại", 404);;
 
-            point.Status = SmallCollectionPointStatus.DANG_HOAT_DONG.ToString();
+            point.Status = CollectionUnitStatus.DANG_HOAT_DONG.ToString();
             point.Updated_At = DateTime.UtcNow;
 
-            _unitOfWork.SmallCollectionPoints.Update(point);
+            _unitOfWork.CollectionUnits.Update(point);
             return await _unitOfWork.SaveAsync() > 0;
         }
 
         public async Task<bool> BlockSmallCollectionPointAsync(string pointId)
         {
-            var point = await _smallCollectionRepository.GetAsync(p => p.SmallCollectionPointsId == pointId, includeProperties: "Vehicles");
+            var point = await _smallCollectionRepository.GetAsync(p => p.CollectionUnitId == pointId, includeProperties: "Vehicles");
             if (point == null) throw new AppException("Điểm thu gom không tồn tại", 404);
 
             if (point.Vehicles.Any(v => v.Status == VehicleStatus.DANG_HOAT_DONG.ToString()))
@@ -76,10 +76,10 @@ namespace ElecWasteCollection.Application.Services
                 throw new AppException("Vẫn còn xe đang hoạt động tại điểm này. Hãy khóa tất cả xe trước khi khóa điểm thu gom.", 400);
             }
 
-            point.Status = SmallCollectionPointStatus.KHONG_HOAT_DONG.ToString();
+            point.Status = CollectionUnitStatus.KHONG_HOAT_DONG.ToString();
             point.Updated_At = DateTime.UtcNow;
 
-            _unitOfWork.SmallCollectionPoints.Update(point);
+            _unitOfWork.CollectionUnits.Update(point);
             return await _unitOfWork.SaveAsync() > 0;
         }
         #endregion

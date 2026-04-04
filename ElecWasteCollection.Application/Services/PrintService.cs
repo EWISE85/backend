@@ -28,8 +28,8 @@ namespace ElecWasteCollection.Application.Services
 
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(shift.Vehicle_Id);
             var collector = await _unitOfWork.Users.GetByIdAsync(shift.CollectorId);
-            var pointId = vehicle?.Small_Collection_Point ?? collector?.SmallCollectionPointId;
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId);
+            var pointId = vehicle?.Small_Collection_Point ?? collector?.CollectionUnitId;
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(pointId);
 
             var routeDtos = new List<RouteDto>();
             int order = 1;

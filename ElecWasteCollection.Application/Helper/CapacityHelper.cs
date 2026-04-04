@@ -19,7 +19,7 @@ namespace ElecWasteCollection.Application.Helper
             var attIdMap = await GetAttributeIdMapInternalAsync();
 
             var allRelatedProducts = await _unitOfWork.Products.GetAllAsync(p =>
-                p.SmallCollectionPointId == pointId,
+                p.CollectionUnitId == pointId,
                 includeProperties: "ProductValues");
 
             double realVolume = 0;    
@@ -41,13 +41,13 @@ namespace ElecWasteCollection.Application.Helper
                 }
             }
 
-            var point = await _unitOfWork.SmallCollectionPoints.GetByIdAsync(pointId);
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(pointId);
             if (point != null)
             {
                 point.CurrentCapacity = Math.Round(realVolume, 4);
                 point.PlannedCapacity = Math.Round(plannedVolume, 4);
 
-                _unitOfWork.SmallCollectionPoints.Update(point);
+                _unitOfWork.CollectionUnits.Update(point);
                 await _unitOfWork.SaveAsync();
             }
         }
