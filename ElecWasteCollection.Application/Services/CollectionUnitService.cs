@@ -65,7 +65,7 @@ namespace ElecWasteCollection.Application.Services
 					AccountId = Guid.NewGuid(),
 					UserId = newAdminWarehouse.UserId,
 					Username = adminUsername,
-					PasswordHash = adminPassword,
+					PasswordHash = BCrypt.Net.BCrypt.HashPassword(adminPassword),
 					IsFirstLogin = true
 				};
 				await _unitOfWork.Accounts.AddAsync(adminAccount);

@@ -17,12 +17,14 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ITrackingRepository _trackingRepository;
 		private readonly IProductRepository _productRepository;
 		private readonly IPostRepository _postRepository;
+		private readonly IUnitOfWork _unitOfWork;
 
-		public TrackingService(ITrackingRepository trackingRepository, IProductRepository productRepository, IPostRepository postRepository)
+		public TrackingService(ITrackingRepository trackingRepository, IProductRepository productRepository, IPostRepository postRepository, IUnitOfWork unitOfWork)
 		{
 			_trackingRepository = trackingRepository;
 			_productRepository = productRepository;
 			_postRepository = postRepository;
+			_unitOfWork = unitOfWork;
 		}
 
 		public async Task<ProductTrackingTimelineResponse> GetFullTimelineByProductIdAsync(Guid productId)
@@ -37,7 +39,18 @@ namespace ElecWasteCollection.Application.Services
 
 			var post = await _postRepository.GetAsync(p => p.ProductId == productId);
 
-			// Xử lý TimeZone (Giữ nguyên logic của bạn)
+			var pointTransactions = await _unitOfWork.PointTransactions.GetsAsync(t => t.ProductId == productId);
+
+			double? realPoints = null;
+			if (pointTransactions != null && pointTransactions.Any())
+			{
+				realPoints = pointTransactions.Sum(t => t.Point);
+			}
+			else if (post != null)
+			{
+				realPoints = post.EstimatePoint;
+			}
+
 			string timeZoneId = "SE Asia Standard Time";
 			TimeZoneInfo vnTimeZone;
 			try
@@ -49,7 +62,6 @@ namespace ElecWasteCollection.Application.Services
 				vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh");
 			}
 
-			// 1. Chuẩn bị thông tin sản phẩm (ProductInfo)
 			var productResponse = new ProductDetailForTracking
 			{
 				CategoryName = product.Category.Name,
@@ -57,7 +69,11 @@ namespace ElecWasteCollection.Application.Services
 				BrandName = product.Brand.Name,
 				Images = product.ProductImages.Select(img => img.ImageUrl).ToList(),
 				Address = post != null ? post.Address : "Không có địa chỉ thu gom do người dùng tự mang đến kho",
-				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status).ToString()
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status).ToString(),
+				Points = realPoints ,
+				CollectionRouteId = product.CollectionRoutes != null && product.CollectionRoutes.Any()
+							? product.CollectionRoutes.OrderByDescending(r => r.CollectionDate).FirstOrDefault().CollectionRouteId
+							: Guid.Empty
 			};
 
 			// 2. Chuẩn bị danh sách Timeline

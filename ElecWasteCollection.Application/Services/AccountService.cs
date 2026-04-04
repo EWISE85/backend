@@ -79,11 +79,18 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<LoginResponseModel> Login(string userName, string password)
 		{
-			var account = await _accountRepository.GetAsync(u => u.Username == userName && u.PasswordHash == password);
+			var account = await _accountRepository.GetAsync(u => u.Username == userName);
 			if (account == null)
 			{
-				throw new AppException("Tài khoản không tồn tại", 404);
+				throw new AppException("Tài khoản hoặc mật khẩu không chính xác", 400);
 			}
+
+			bool isPasswordValid = BCrypt.Net.BCrypt.Verify(password, account.PasswordHash);
+			if (!isPasswordValid)
+			{
+				throw new AppException("Tài khoản hoặc mật khẩu không chính xác", 400);
+			}
+
 			var user = await _userRepository.GetAsync(u => u.UserId == account.UserId);
 			if (user == null)
 			{
@@ -93,12 +100,14 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Tài khoản đã bị khóa", 403);
 			}
+
 			var accessToken = await _tokenService.GenerateToken(user);
 			var loginResponse = new LoginResponseModel
 			{
 				AccessToken = accessToken,
 				IsFirstLogin = account.IsFirstLogin
 			};
+
 			return loginResponse;
 		}
 
@@ -119,7 +128,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Tài khoản không tồn tại", 404);
 			}
-			account.PasswordHash = newPassword;
+			account.PasswordHash = BCrypt.Net.BCrypt.HashPassword(newPassword);
 			account.IsFirstLogin = false;
 			_unitOfWork.Accounts.Update(account);
 			await _unitOfWork.SaveAsync();

@@ -99,7 +99,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
 				.Include(p => p.ProductImages)
-				.Include(p => p.Posts);
+				.Include(p => p.Posts)
+				.Include(p => p.CollectionRoutes);
 
 			query = query.Where(p => p.ProductId == productId);
 
