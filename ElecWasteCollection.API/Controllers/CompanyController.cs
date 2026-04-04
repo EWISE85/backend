@@ -7,13 +7,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-	[Route("api/collection-company")]
+	[Route("api/company")]
 	[ApiController]
-	public class CollectionCompanyController : ControllerBase
+	public class CompanyController : ControllerBase
 	{
 		private readonly IExcelImportService _excelImportService;
 		private readonly ICompanyService _collectionCompanyService;
-		public CollectionCompanyController(
+		public CompanyController(
 			IExcelImportService excelImportService,
 			ICompanyService collectionCompanyService)
 		{
