@@ -155,22 +155,14 @@ namespace ElecWasteCollection.Application.Services
 
 			IEnumerable<CollectionUnit> warehousesEntity = new List<CollectionUnit>();
 
+			// Chỉ còn loại hình tái chế, gộp logic lại cho gọn
 			if (company.CompanyType == CompanyType.CTY_TAI_CHE.ToString())
 			{
 				warehousesEntity = await _unitOfWork.CollectionUnits.GetAllAsync(
 					s => s.CompanyId == company.CompanyId &&
 						 s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString(),
-					includeProperties: "CollectionCompany");
+					includeProperties: "Company"); // <-- Sửa thành "Company" cho khớp với Entity
 			}
-			else if (company.CompanyType == CompanyType.CTY_TAI_CHE.ToString())
-			{
-				warehousesEntity = await _unitOfWork.CollectionUnits.GetAllAsync(
-					s => s.CompanyId == company.CompanyId &&
-						 s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString(),
-					includeProperties: "CollectionCompany");
-			}
-
-			if (warehousesEntity == null) warehousesEntity = new List<CollectionUnit>();
 
 			var response = new CollectionCompanyResponse
 			{
@@ -190,7 +182,6 @@ namespace ElecWasteCollection.Application.Services
 					CompanyName = w.Company?.Name,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CollectionUnitStatus>(w.Status)
 				}).ToList(),
-
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CompanyStatus>(company.Status)
 			};
 
