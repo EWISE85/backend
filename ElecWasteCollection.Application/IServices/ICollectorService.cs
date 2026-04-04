@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.CollectorStatistic;
 using ElecWasteCollection.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -27,5 +28,7 @@ namespace ElecWasteCollection.Application.IServices
             string companyId,
             int page,
             int limit);
-    }
+		Task<CollectorStatisticsResponseModel> GetStatisticsAsync(CollectorStatisticModel request);
+
+	}
 }

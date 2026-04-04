@@ -383,7 +383,7 @@ namespace ElecWasteCollection.Application.Services
 			string title = "Lịch thu gom đã được xác nhận!";
 			var dataPayload = new Dictionary<string, string>
 	{
-		{ "type", "SCHEDULE_CONFIRMED" }
+		{ "type", "SHIPPER_ARRIVAL" }
 	};
 
 			foreach (var kvp in userSchedules)

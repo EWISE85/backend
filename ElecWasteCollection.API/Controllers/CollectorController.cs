@@ -1,6 +1,7 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.CollectorStatistic;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -77,6 +78,39 @@ namespace ElecWasteCollection.API.Controllers
 			};
 			var result = await _collectorService.GetPagedCollectorsAsync(model);
 			return Ok(result);
+		}
+		[HttpGet("{collectorId}/statistics")]
+		public async Task<IActionResult> GetStatistics(
+			Guid collectorId,
+			[FromQuery] StatisticPeriod period = StatisticPeriod.Week,
+			[FromQuery] DateTime? targetDate = null)
+		{
+			try
+			{
+				var request = new CollectorStatisticModel
+				{
+					CollectorId = collectorId,
+					Period = period,
+					TargetDate = targetDate ?? DateTime.UtcNow // Mặc định lấy giờ hiện tại nếu không truyền
+				};
+
+				var result = await _collectorService.GetStatisticsAsync(request);
+
+				return Ok(new
+				{
+					Success = true,
+					Data = result
+				});
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new
+				{
+					Success = false,
+					Message = "Đã xảy ra lỗi khi lấy dữ liệu thống kê.",
+					Error = ex.Message
+				});
+			}
 		}
 	}
 }

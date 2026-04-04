@@ -12,6 +12,7 @@
 	
 	<ItemGroup>
 		<PackageReference Include="APIVerve.API.ProfanityFilter" Version="1.1.9" />
+		<PackageReference Include="BCrypt.Net-Next" Version="4.1.0" />
 		<PackageReference Include="ClosedXML" Version="0.105.0" />
 		<PackageReference Include="Google.OrTools" Version="9.14.6206" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
