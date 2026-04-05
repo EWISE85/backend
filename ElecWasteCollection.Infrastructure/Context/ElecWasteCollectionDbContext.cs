@@ -60,6 +60,7 @@ namespace ElecWasteCollection.Infrastructure.Context
         public DbSet<CollectionOffDay> CollectionOffDay { get; set; }
         public DbSet<CollectionUnit> CollectionUnits { get; set; }
 
+		public DbSet<UserToken> UserTokens { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
@@ -586,7 +587,21 @@ namespace ElecWasteCollection.Infrastructure.Context
                       .HasForeignKey(d => d.CollectionUnitId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
+			modelBuilder.Entity<UserToken>(entity =>
+			{
+				entity.ToTable("UserToken");
+				entity.HasKey(e => e.UserTokenId);
+				entity.Property(e => e.UserTokenId).ValueGeneratedOnAdd();
 
-        }
+				entity.HasIndex(e => e.UserId).IsUnique();
+				entity.Property(e => e.UserId).IsRequired();
+
+				entity.HasOne(e => e.User)
+					  .WithOne(u => u.UserToken) 
+					  .HasForeignKey<UserToken>(e => e.UserId) 
+					  .HasConstraintName("FK_UserToken_User");
+			});
+
+		}
 	}
 }

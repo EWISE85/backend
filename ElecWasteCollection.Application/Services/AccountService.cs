@@ -2,11 +2,15 @@
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.Tokens;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Google.Apis.Auth.OAuth2.Requests;
+using Google.Apis.Auth.OAuth2.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -66,12 +70,27 @@ namespace ElecWasteCollection.Application.Services
 				
 				var repo = _unitOfWork.Users;
 				await repo.AddAsync(user);
-				await _unitOfWork.SaveAsync();
 			}
+			var oldTokens = await _unitOfWork.UserTokens.GetsAsync(t => t.UserId == user.UserId);
+			foreach (var ot in oldTokens) _unitOfWork.UserTokens.Delete(ot);
+
 			var accessToken = await _tokenService.GenerateToken(user);
+			var refreshTokenString = _tokenService.GenerateRefreshTokenString(); 
+
+			await _unitOfWork.UserTokens.AddAsync(new UserToken
+			{
+				UserTokenId = Guid.NewGuid(),
+				Token = refreshTokenString,
+				AccessToken = accessToken, 
+				UserId = user.UserId,
+				ExpiryDate = DateTime.UtcNow.AddDays(7),
+				CreatedAt = DateTime.UtcNow
+			});
+			await _unitOfWork.SaveAsync();
 			var loginResponse = new LoginResponseModel
 			{
 				AccessToken = accessToken,
+				RefreshToken = refreshTokenString,
 				IsFirstLogin = false
 			};
 			return loginResponse;
@@ -100,11 +119,36 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Tài khoản đã bị khóa", 403);
 			}
+			var oldTokens = await _unitOfWork.UserTokens.GetsAsync(t => t.UserId == user.UserId);
+			if (oldTokens != null && oldTokens.Any())
+			{
+				foreach (var oldToken in oldTokens)
+				{
+					_unitOfWork.UserTokens.Delete(oldToken);
+				}
+			}
 
 			var accessToken = await _tokenService.GenerateToken(user);
+			var refreshTokenString = _tokenService.GenerateRefreshTokenString();
+
+			var newUserToken = new UserToken
+			{
+				UserTokenId = Guid.NewGuid(), 
+				Token = refreshTokenString,
+				AccessToken = accessToken,
+				UserId = user.UserId,
+				ExpiryDate = DateTime.UtcNow.AddDays(7), 
+				CreatedAt = DateTime.UtcNow
+			};
+
+			await _unitOfWork.UserTokens.AddAsync(newUserToken);
+			await _unitOfWork.SaveAsync();
+
+
 			var loginResponse = new LoginResponseModel
 			{
 				AccessToken = accessToken,
+				RefreshToken = refreshTokenString,
 				IsFirstLogin = account.IsFirstLogin
 			};
 
@@ -160,7 +204,6 @@ namespace ElecWasteCollection.Application.Services
 					
 					user.AppleId = appleUser.AppleId;
 					_unitOfWork.Users.Update(user);
-					await _unitOfWork.SaveAsync();
 				}
 				else
 				{
@@ -185,19 +228,75 @@ namespace ElecWasteCollection.Application.Services
 					
 
 					await _unitOfWork.Users.AddAsync(user);
-					await _unitOfWork.SaveAsync();
 				}
 			}
+			var oldTokens = await _unitOfWork.UserTokens.GetsAsync(t => t.UserId == user.UserId);
+			foreach (var ot in oldTokens) _unitOfWork.UserTokens.Delete(ot);
 
 			var accessToken = await _tokenService.GenerateToken(user);
+			var refreshTokenString = _tokenService.GenerateRefreshTokenString();
+
+			await _unitOfWork.UserTokens.AddAsync(new UserToken
+			{
+				UserTokenId = Guid.NewGuid(),
+				Token = refreshTokenString,
+				AccessToken = accessToken,
+				UserId = user.UserId,
+				ExpiryDate = DateTime.UtcNow.AddDays(7),
+				CreatedAt = DateTime.UtcNow
+			});
+			await _unitOfWork.SaveAsync();
 
 			var loginResponse = new LoginResponseModel
 			{
 				AccessToken = accessToken,
-				
+				RefreshToken = refreshTokenString,
+				IsFirstLogin = false
 			};
 
 			return loginResponse;
+		}
+		public async Task<LoginResponseModel?> RefreshTokenAsync(RefreshTokenModel request)
+		{
+			var principal = _tokenService.GetPrincipalFromExpiredToken(request.AccessToken);
+			if (principal == null) return null;
+
+			var userIdStr = principal.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+			if (!Guid.TryParse(userIdStr, out Guid userId)) return null;
+
+			var storedToken = await _unitOfWork.UserTokens.GetAsync(
+				t => t.Token == request.RefreshToken && t.UserId == userId);
+
+			if (storedToken == null || storedToken.ExpiryDate <= DateTime.UtcNow)
+			{
+				return null; 
+			}
+
+			_unitOfWork.UserTokens.Delete(storedToken);
+
+			var user = await _unitOfWork.Users.GetByIdAsync(userId);
+			if (user == null) throw new AppException("Không tìm thấy người dùng",404);
+			var newAccessToken = await _tokenService.GenerateToken(user);
+			var newRefreshToken = _tokenService.GenerateRefreshTokenString(); 
+
+			await _unitOfWork.UserTokens.AddAsync(new UserToken
+			{
+				UserTokenId = Guid.NewGuid(),
+				Token = newRefreshToken,
+				AccessToken = newAccessToken,
+				ExpiryDate = DateTime.UtcNow.AddDays(7),
+				UserId = userId,
+				CreatedAt = DateTime.UtcNow
+			});
+
+			await _unitOfWork.SaveAsync();
+
+			return new LoginResponseModel
+			{
+				AccessToken = newAccessToken,
+				RefreshToken = newRefreshToken,
+				IsFirstLogin = false
+			};
 		}
 	}
 }

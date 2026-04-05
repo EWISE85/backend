@@ -24,7 +24,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task ProcessApprovalNotificationsAsync(List<Post> post);
 		Task ProcessRejectionNotificationsAsync(List<Post> rejectedPosts, string reason);
 
-		Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved);
+		Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved, string oldRankName = null, string newRankName = null);
 
 		Task SendNotificationForUserWhenReportAnswerd(Guid userId);
 		Task NotifyScheduleConfirmedAsync(Dictionary<Guid, (DateOnly Date, string Time)> userSchedules);

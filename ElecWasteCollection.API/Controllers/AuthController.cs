@@ -1,5 +1,8 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
 using ElecWasteCollection.Application.IServices;
+using ElecWasteCollection.Application.Model.Tokens;
+using Google.Apis.Auth.OAuth2.Requests;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,7 +35,32 @@ namespace ElecWasteCollection.API.Controllers
 			var response = await _accountService.LoginWithAppleAsync(request.IdentityToken, request.FirstName, request.LastName);
 			return Ok(new { token = response });
 		}
+		[HttpPost("refresh-token")]
+		[AllowAnonymous] 
+		public async Task<IActionResult> RefreshToken([FromBody] RefreshTokensRequest request)
+		{
+			var model = new RefreshTokenModel
+			{
+				AccessToken = request.AccessToken,
+				RefreshToken = request.RefreshToken
+			};
+			if (model == null)
+			{
+				return BadRequest("Dữ liệu yêu cầu không hợp lệ.");
+			}
 
+			var result = await _accountService.RefreshTokenAsync(model);
+
+			if (result == null)
+			{
+				return Unauthorized(new
+				{
+					message = "Phiên đăng nhập đã hết hạn hoặc tài khoản đã đăng nhập ở thiết bị khác."
+				});
+			}
+
+			return Ok(result);
+		}
 
 	}
 }

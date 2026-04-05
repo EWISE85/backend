@@ -13,120 +13,131 @@ public class RankService : IRankService
 		_notificationService = notificationService;
 	}
 
-    //public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
-    //{
-    //    var product = await _unitOfWork.Products.GetAsync(
-    //        filter: p => p.ProductId == productId,
-    //        includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute"
-    //    );
+	//public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
+	//{
+	//    var product = await _unitOfWork.Products.GetAsync(
+	//        filter: p => p.ProductId == productId,
+	//        includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute"
+	//    );
 
-    //    if (product == null || user == null) return 0;
+	//    if (product == null || user == null) return 0;
 
-    //    double actualWeight = 0;
+	//    double actualWeight = 0;
 
-    //    if (product.ProductValues != null && product.ProductValues.Any())
-    //    {
+	//    if (product.ProductValues != null && product.ProductValues.Any())
+	//    {
 
-    //        var weightAttr = product.ProductValues.FirstOrDefault(v =>
-    //            v.Attribute != null && (
-    //                v.Attribute.Name.Contains("Trọng lượng", StringComparison.OrdinalIgnoreCase) ||
-    //                v.Attribute.Name.Contains("Khối lượng", StringComparison.OrdinalIgnoreCase)));
+	//        var weightAttr = product.ProductValues.FirstOrDefault(v =>
+	//            v.Attribute != null && (
+	//                v.Attribute.Name.Contains("Trọng lượng", StringComparison.OrdinalIgnoreCase) ||
+	//                v.Attribute.Name.Contains("Khối lượng", StringComparison.OrdinalIgnoreCase)));
 
-    //        if (weightAttr != null && weightAttr.Value.HasValue)
-    //        {
-    //            actualWeight = weightAttr.Value.Value; 
-    //        }
-    //    }
+	//        if (weightAttr != null && weightAttr.Value.HasValue)
+	//        {
+	//            actualWeight = weightAttr.Value.Value; 
+	//        }
+	//    }
 
-    //    if (actualWeight <= 0)
-    //    {
-    //        actualWeight = product.Category.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
-    //    }
+	//    if (actualWeight <= 0)
+	//    {
+	//        actualWeight = product.Category.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
+	//    }
 
-    //    double factor = product.Category.ParentCategory?.EmissionFactor ?? product.Category.EmissionFactor;
-    //    if (factor <= 0) factor = 0.5;
+	//    double factor = product.Category.ParentCategory?.EmissionFactor ?? product.Category.EmissionFactor;
+	//    if (factor <= 0) factor = 0.5;
 
-    //    double co2Saved = actualWeight * factor;
+	//    double co2Saved = actualWeight * factor;
 
-    //    user.TotalCo2Saved += co2Saved;
+	//    user.TotalCo2Saved += co2Saved;
 
-    //    // 6. Check Rank
-    //    var allRanks = await _unitOfWork.Ranks.GetAllAsync();
-    //    var applicableRank = allRanks
-    //        .Where(r => r.MinCo2 <= user.TotalCo2Saved)
-    //        .OrderByDescending(r => r.MinCo2)
-    //        .FirstOrDefault();
+	//    // 6. Check Rank
+	//    var allRanks = await _unitOfWork.Ranks.GetAllAsync();
+	//    var applicableRank = allRanks
+	//        .Where(r => r.MinCo2 <= user.TotalCo2Saved)
+	//        .OrderByDescending(r => r.MinCo2)
+	//        .FirstOrDefault();
 
-    //    if (applicableRank != null)
-    //    {
-    //        user.CurrentRankId = applicableRank.RankId;
-    //    }
+	//    if (applicableRank != null)
+	//    {
+	//        user.CurrentRankId = applicableRank.RankId;
+	//    }
 
-    //    return co2Saved;
-    //}
+	//    return co2Saved;
+	//}
 
-    public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
-    {
-        var product = await _unitOfWork.Products.GetAsync(
-            filter: p => p.ProductId == productId,
-            includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute.AttributeOptions"
-        );
+	public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
+	{
+		var product = await _unitOfWork.Products.GetAsync(
+			filter: p => p.ProductId == productId,
+			includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute.AttributeOptions"
+		);
 
-        if (product == null || user == null) return 0;
+		if (product == null || user == null) return 0;
 
-        double actualWeight = 0;
+		double actualWeight = 0;
 
-        if (product.ProductValues != null && product.ProductValues.Any())
-        {
-            foreach (var pv in product.ProductValues)
-            {
-                if (pv.AttributeOptionId.HasValue && pv.Attribute != null && pv.Attribute.AttributeOptions != null)
-                {
-                    var matchedOption = pv.Attribute.AttributeOptions
-                        .FirstOrDefault(o => o.OptionId == pv.AttributeOptionId.Value);
+		if (product.ProductValues != null && product.ProductValues.Any())
+		{
+			foreach (var pv in product.ProductValues)
+			{
+				if (pv.AttributeOptionId.HasValue && pv.Attribute != null && pv.Attribute.AttributeOptions != null)
+				{
+					var matchedOption = pv.Attribute.AttributeOptions
+						.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId.Value);
 
-                    if (matchedOption != null && matchedOption.EstimateWeight.HasValue)
-                    {
-                        actualWeight = matchedOption.EstimateWeight.Value;
-                        break; 
-                    }
-                }
+					if (matchedOption != null && matchedOption.EstimateWeight.HasValue)
+					{
+						actualWeight = matchedOption.EstimateWeight.Value;
+						break;
+					}
+				}
+			}
+		}
 
-                //if (pv.Value.HasValue && pv.Value > 0)
-                //{
-                //    actualWeight = pv.Value.Value;
-                //    break;
-                //}
-            }
-        }
+		if (actualWeight <= 0)
+		{
+			actualWeight = product.Category?.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
+		}
 
-        if (actualWeight <= 0)
-        {
-            actualWeight = product.Category?.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
-        }
+		double factor = product.Category?.ParentCategory?.EmissionFactor ?? product.Category?.EmissionFactor ?? 0.5;
+		double co2Saved = actualWeight * factor;
 
-        double factor = product.Category?.ParentCategory?.EmissionFactor ?? product.Category?.EmissionFactor ?? 0.5;
-        double co2Saved = actualWeight * factor;
+		user.TotalCo2Saved += co2Saved;
 
-        user.TotalCo2Saved += co2Saved;
-        await _notificationService.NotifyCustomerCO2SavedAsync(user.UserId, co2Saved);
-
-		// Cập nhật Rank
 		var allRanks = await _unitOfWork.Ranks.GetAllAsync();
-        var applicableRank = allRanks
-            .Where(r => r.MinCo2 <= user.TotalCo2Saved)
-            .OrderByDescending(r => r.MinCo2)
-            .FirstOrDefault();
 
-        if (applicableRank != null)
-        {
-            user.CurrentRankId = applicableRank.RankId;
-        }
+		var oldRank = allRanks.FirstOrDefault(r => r.RankId == user.CurrentRankId);
+		string oldRankName = oldRank != null ? oldRank.RankName : "Thành viên mới"; // Xử lý trường hợp user chưa có rank
+		string newRankName = null;
+		bool isRankUp = false;
 
-        return co2Saved;
-    }
+		var applicableRank = allRanks
+			.Where(r => r.MinCo2 <= user.TotalCo2Saved)
+			.OrderByDescending(r => r.MinCo2)
+			.FirstOrDefault();
 
-    public async Task<object?> GetRankProgressAsync(Guid userId)
+		if (applicableRank != null)
+		{
+			if (user.CurrentRankId != applicableRank.RankId)
+			{
+				isRankUp = true;
+				newRankName = applicableRank.RankName;
+			}
+
+			user.CurrentRankId = applicableRank.RankId;
+		}
+
+		await _notificationService.NotifyCustomerCO2SavedAsync(
+			user.UserId,
+			co2Saved,
+			isRankUp ? oldRankName : null,
+			isRankUp ? newRankName : null
+		);
+
+		return co2Saved;
+	}
+
+	public async Task<object?> GetRankProgressAsync(Guid userId)
     {
         var user = await _unitOfWork.Users.GetAsync(
             filter: u => u.UserId == userId,

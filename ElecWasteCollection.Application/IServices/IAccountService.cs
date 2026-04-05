@@ -1,10 +1,7 @@
 ﻿using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.Tokens;
 using ElecWasteCollection.Domain.Entities;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
 
 namespace ElecWasteCollection.Application.IServices
 {
@@ -19,6 +16,6 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> ChangePassword(string email, string newPassword, string confirmPassword);
 
 		Task<LoginResponseModel> LoginWithAppleAsync(string identityToken, string? firstName, string? lastName);
-
+		Task<LoginResponseModel?> RefreshTokenAsync(RefreshTokenModel request);
 	}
 }

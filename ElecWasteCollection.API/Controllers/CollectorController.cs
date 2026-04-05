@@ -91,7 +91,7 @@ namespace ElecWasteCollection.API.Controllers
 				{
 					CollectorId = collectorId,
 					Period = period,
-					TargetDate = targetDate ?? DateTime.UtcNow // Mặc định lấy giờ hiện tại nếu không truyền
+					TargetDate = targetDate ?? DateTime.UtcNow
 				};
 
 				var result = await _collectorService.GetStatisticsAsync(request);

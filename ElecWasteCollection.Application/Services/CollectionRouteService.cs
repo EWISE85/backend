@@ -431,7 +431,7 @@ namespace ElecWasteCollection.Application.Services
 						route.RejectMessage = "Hệ thống tự động đóng do quá ngày thu gom.";
 					}
 
-					else if (route.CollectionDate == today)
+					if (route.CollectionDate == today)
 					{
 						if (route.Status == CollectionRouteStatus.CHUA_BAT_DAU.ToString())
 						{
