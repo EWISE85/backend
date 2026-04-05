@@ -195,6 +195,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IReportService, ReportService>();
 			builder.Services.AddScoped<IAttributeService, AttributeService>();
             builder.Services.AddScoped<ICollectionOffDayService, CollectionOffDayService>();
+			builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
             builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
@@ -229,6 +230,7 @@ namespace ElecWasteCollection.API
 					ValidateIssuerSigningKey = true,
 					ValidIssuer = jwtSettings["Issuer"],
 					ValidAudience = jwtSettings["Audience"],
+					ClockSkew = TimeSpan.Zero,
 					IssuerSigningKey = new SymmetricSecurityKey(keyBytes)
 				};
 				options.Events = new JwtBearerEvents
@@ -265,6 +267,7 @@ namespace ElecWasteCollection.API
             app.UseHttpsRedirection();
 			app.UseMiddleware<HandlingException>();
 			app.UseAuthentication();
+			app.UseMiddleware<ActiveSessionMiddleware>();
 			app.UseAuthorization();
 
 			app.MapHub<ShippingHub>("/shippingHub");

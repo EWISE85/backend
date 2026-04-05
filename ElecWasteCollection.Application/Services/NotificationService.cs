@@ -297,7 +297,8 @@ namespace ElecWasteCollection.Application.Services
 			}
 		}
 
-		public async Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved)
+		// Thêm tham số optional cho oldRankName và newRankName
+		public async Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved, string oldRankName = null, string newRankName = null)
 		{
 			var title = "Bạn đã tiết kiệm được CO2!";
 			var body = $"Bạn đã tiết kiệm được {co2Saved:F2} kg CO2 từ việc tái chế rác điện tử. Cảm ơn bạn đã góp phần bảo vệ môi trường!";
@@ -307,6 +308,13 @@ namespace ElecWasteCollection.Application.Services
 		{ "type", "CO2_SAVED" },
 		{ "co2Amount", co2Saved.ToString("F2") }
 	};
+
+			if (!string.IsNullOrEmpty(oldRankName) && !string.IsNullOrEmpty(newRankName))
+			{
+				dataPayload.Add("isRankUp", "true");
+				dataPayload.Add("oldRankName", oldRankName);
+				dataPayload.Add("newRankName", newRankName);
+			}
 
 			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
 
@@ -339,7 +347,6 @@ namespace ElecWasteCollection.Application.Services
 			};
 
 			await _unitOfWork.Notifications.AddAsync(notification);
-
 			await _unitOfWork.SaveAsync();
 		}
 

@@ -87,5 +87,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public virtual ICollection<UserReport> UserReports { get; set; } = new List<UserReport>();
 
+		public virtual UserToken? UserToken { get; set; }
+
 	}
 }

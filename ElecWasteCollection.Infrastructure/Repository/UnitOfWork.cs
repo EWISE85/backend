@@ -54,6 +54,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
         public IGenericRepository<CollectionOffDay> CollectionOffDays { get; }
         public IGenericRepository<CollectionUnit> CollectionUnits { get; }
 
+        public IGenericRepository<UserToken> UserTokens { get; }
 
         public UnitOfWork(ElecWasteCollectionDbContext context)
         {
@@ -96,8 +97,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			UserReports = new GenericRepository<UserReport>(_context);
             CollectionOffDays = new GenericRepository<CollectionOffDay>(_context);
             CollectionUnits = new GenericRepository<CollectionUnit>(_context);
+            UserTokens = new GenericRepository<UserToken>(_context); 
 
-        }
+		}
 
 		public async Task<int> SaveAsync()
         {

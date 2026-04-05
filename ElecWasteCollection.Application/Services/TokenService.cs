@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Security.Principal;
 using System.Text;
 using System.Threading.Tasks;
@@ -25,14 +26,14 @@ namespace ElecWasteCollection.Application.Services
 			var jwtTokenHandler = new JwtSecurityTokenHandler();
 			var jwtSettings = _configuration.GetSection("Jwt");
 
-			var secretKey = jwtSettings["SecretKey"];
+			var secretKey = jwtSettings["SecretKey"]; // Lưu ý tên key ở đây
 			var issuer = jwtSettings["Issuer"];
 			var audience = jwtSettings["Audience"];
 			var keyBytes = Encoding.UTF8.GetBytes(secretKey);
 
 			var claims = new List<Claim>
 	{
-        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+		new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
 		new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString())
 	};
 
@@ -44,12 +45,11 @@ namespace ElecWasteCollection.Application.Services
 			{
 				claims.Add(new Claim("apple_id", user.AppleId));
 			}
+
 			var tokenDescriptor = new SecurityTokenDescriptor
 			{
-				// Truyền cái List claims vừa tạo vào đây
 				Subject = new ClaimsIdentity(claims),
-
-				Expires = DateTime.UtcNow.AddMonths(10),
+				Expires = DateTime.UtcNow.AddMinutes(1),
 				SigningCredentials = new SigningCredentials(
 					new SymmetricSecurityKey(keyBytes),
 					SecurityAlgorithms.HmacSha256Signature
@@ -62,6 +62,49 @@ namespace ElecWasteCollection.Application.Services
 			var tokenString = jwtTokenHandler.WriteToken(token);
 
 			return Task.FromResult(tokenString);
+		}
+
+		public ClaimsPrincipal? GetPrincipalFromExpiredToken(string? token)
+		{
+			if (string.IsNullOrEmpty(token)) return null;
+
+			var jwtSettings = _configuration.GetSection("Jwt");
+			var secretKey = jwtSettings["SecretKey"];
+
+			var tokenValidationParameters = new TokenValidationParameters
+			{
+				ValidateIssuerSigningKey = true,
+				IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey)),
+				ValidateIssuer = false, 
+				ValidateAudience = false, 
+				ValidateLifetime = false 
+			};
+
+			var tokenHandler = new JwtSecurityTokenHandler();
+
+			try
+			{
+				var principal = tokenHandler.ValidateToken(token, tokenValidationParameters, out SecurityToken securityToken);
+
+				if (securityToken is not JwtSecurityToken jwtSecurityToken ||
+					!jwtSecurityToken.Header.Alg.Equals(SecurityAlgorithms.HmacSha256, StringComparison.InvariantCultureIgnoreCase))
+				{
+					return null;
+				}
+
+				return principal;
+			}
+			catch (Exception)
+			{
+				return null;
+			}
+		}
+		public string GenerateRefreshTokenString()
+		{
+			var randomNumber = new byte[64];
+			using var rng = RandomNumberGenerator.Create();
+			rng.GetBytes(randomNumber);
+			return Convert.ToBase64String(randomNumber);
 		}
 	}
 }
