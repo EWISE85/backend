@@ -445,5 +445,120 @@ namespace ElecWasteCollection.Application.Services
 				await _unitOfWork.SaveAsync();
 			}
 		}
+		public async Task<bool> RevertCollection(Guid collectionRouteId)
+		{
+			var route = await _unitOfWork.CollecctionRoutes.GetAsync(
+				r => r.CollectionRouteId == collectionRouteId,
+				includeProperties: "Product,Product.User"
+			);
+
+			if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
+			if (route.Status != CollectionRouteStatus.HOAN_THANH.ToString())
+				throw new AppException("Chỉ có thể hoàn tác các tuyến đã hoàn thành", 400);
+			if (route.Product == null) throw new AppException("Sản phẩm không tồn tại trong lộ trình", 400);
+
+			// 1. Hoàn tác thông tin CollectionRoute
+			// Lưu ý: Đổi DANG_THU_GOM thành trạng thái trước đó thực tế trong hệ thống của bạn
+			route.Status = CollectionRouteStatus.DANG_TIEN_HANH.ToString();
+			route.ConfirmImages = null; // Hoặc new List<string>() tùy vào DB của bạn
+			route.Actual_Time = null;
+
+			// 2. Hoàn tác thông tin Product
+			route.Product.QRCode = null;
+			route.Product.Status = ProductStatus.CHO_THU_GOM.ToString(); // Trạng thái trước khi thu gom
+
+			// 3. Xử lý lịch sử (Xóa lịch sử ĐÃ_THU_GOM để làm sạch dữ liệu)
+			// Lấy record lịch sử mới nhất vừa được tạo khi Confirm
+			var latestHistory = await _unitOfWork.ProductStatusHistory.GetAsync(
+				h => h.ProductId == route.Product.ProductId && h.Status == ProductStatus.DA_THU_GOM.ToString()
+			);
+
+			if (latestHistory != null)
+			{
+				_unitOfWork.ProductStatusHistory.Delete(latestHistory);
+			}
+			// (Tùy chọn) Hoặc bạn có thể AddAsync một record mới với Status = "HOAN_TAC" nếu muốn giữ log
+
+			// 4. Hoàn tác CO2 và Rank của User
+			if (route.Product.User != null)
+			{
+				await RevertUserRankImpactAsync(route.Product.User, route.Product.ProductId);
+				_unitOfWork.Users.Update(route.Product.User);
+			}
+
+			_unitOfWork.Products.Update(route.Product);
+			_unitOfWork.CollecctionRoutes.Update(route);
+
+			await _unitOfWork.SaveAsync();
+
+			return true;
+		}
+		private async Task<double> RevertUserRankImpactAsync(User user, Guid productId)
+		{
+			var product = await _unitOfWork.Products.GetAsync(
+				filter: p => p.ProductId == productId,
+				includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute.AttributeOptions"
+			);
+
+			if (product == null || user == null) return 0;
+
+			// --- BƯỚC 1: TÍNH LẠI CHÍNH XÁC LƯỢNG CO2 ĐÃ CỘNG ---
+			double actualWeight = 0;
+
+			if (product.ProductValues != null && product.ProductValues.Any())
+			{
+				foreach (var pv in product.ProductValues)
+				{
+					if (pv.AttributeOptionId.HasValue && pv.Attribute != null && pv.Attribute.AttributeOptions != null)
+					{
+						var matchedOption = pv.Attribute.AttributeOptions
+							.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId.Value);
+
+						if (matchedOption != null && matchedOption.EstimateWeight.HasValue)
+						{
+							actualWeight = matchedOption.EstimateWeight.Value;
+							break;
+						}
+					}
+				}
+			}
+
+			if (actualWeight <= 0)
+			{
+				actualWeight = product.Category?.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
+			}
+
+			double factor = product.Category?.ParentCategory?.EmissionFactor ?? product.Category?.EmissionFactor ?? 0.5;
+			double co2ToRevert = actualWeight * factor;
+
+			// --- BƯỚC 2: TRỪ CO2 VÀ TÍNH LẠI RANK ---
+
+			// Trừ điểm CO2 (Đảm bảo không bị âm)
+			user.TotalCo2Saved = Math.Max(0, user.TotalCo2Saved - co2ToRevert);
+
+			var allRanks = await _unitOfWork.Ranks.GetAllAsync();
+
+			// Tìm Rank mới phù hợp với số điểm CO2 đã bị giảm
+			var applicableRank = allRanks
+				.Where(r => r.MinCo2 <= user.TotalCo2Saved)
+				.OrderByDescending(r => r.MinCo2)
+				.FirstOrDefault();
+
+			if (applicableRank != null)
+			{
+				user.CurrentRankId = applicableRank.RankId;
+			}
+			else
+			{
+				var lowestRank = allRanks.OrderBy(r => r.MinCo2).FirstOrDefault();
+				if (lowestRank != null)
+				{
+					user.CurrentRankId = lowestRank.RankId;
+				}
+			}
+
+
+			return co2ToRevert;
+		}
 	}
 }

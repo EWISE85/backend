@@ -90,5 +90,16 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "User confirmation processed successfully." });
 		}
+		[HttpPut("revert/{collectionRouteId}")]
+		public async Task<IActionResult> RevertCollection(Guid collectionRouteId)
+		{
+			var result = await _collectionRouteService.RevertCollection(collectionRouteId);
+			if (!result)
+			{
+				return StatusCode(400, "An error occurred while reverting the collection.");
+			}
+			return Ok(new { message = "Collection reverted successfully." });
+		}
+		
 	}
 }
