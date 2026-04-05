@@ -1,10 +1,12 @@
 ﻿using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.Model.GroupModel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("api/grouping")]
     public class GroupingController : ControllerBase
     {

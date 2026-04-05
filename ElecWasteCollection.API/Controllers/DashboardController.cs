@@ -3,9 +3,11 @@ using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.API.Controllers
 {
+	[Authorize]
 	[Route("api/dashboard")]
 	[ApiController]
 	public class DashboardController : ControllerBase

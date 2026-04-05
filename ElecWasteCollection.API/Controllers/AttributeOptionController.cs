@@ -1,10 +1,12 @@
 ﻿using ElecWasteCollection.Application.IServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [Route("api/attribute-option")]
+	[Authorize]
+	[Route("api/attribute-option")]
     [ApiController]
     public class AttributeOptionController : ControllerBase
     {

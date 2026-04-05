@@ -2,12 +2,14 @@
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Model.AssignPost;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [Route("api/system-config")]
+	[Authorize]
+	[Route("api/system-config")]
     [ApiController]
     public class SystemConfigController : ControllerBase
     {

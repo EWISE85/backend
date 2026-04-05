@@ -1,11 +1,12 @@
 ﻿using ElecWasteCollection.Application.IServices.IAssignPost;
 using ElecWasteCollection.Application.Model.AssignPost;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("api/product-query")]
     public class ProductQueryController : ControllerBase
     {

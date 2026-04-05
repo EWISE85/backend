@@ -1,9 +1,11 @@
 ﻿using ElecWasteCollection.Application.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
+	[Authorize]
 	[Route("api/categories")]
 	[ApiController]
 	public class CategoryController : ControllerBase
