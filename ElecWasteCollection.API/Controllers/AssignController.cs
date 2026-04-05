@@ -5,10 +5,13 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Http.Timeouts;
 using System.Security.Claims;
 using ElecWasteCollection.Application.Model;
+using Microsoft.AspNetCore.Authorization;
+
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("api/assign")]
     public class AssignController : ControllerBase
     {

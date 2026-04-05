@@ -1,35 +1,41 @@
 ﻿using ElecWasteCollection.Application.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
-[ApiController]
-[Route("api/[controller]")]
-public class RankController : ControllerBase
+namespace ElecWasteCollection.API.Controllers
 {
-    private readonly IRankService _rankService;
 
-    public RankController(IRankService rankService)
+    [Authorize]
+    [ApiController]
+    [Route("api/[controller]")]
+    public class RankController : ControllerBase
     {
-        _rankService = rankService;
-    }
+        private readonly IRankService _rankService;
 
-    [HttpGet("progress/{userId}")]
-    public async Task<IActionResult> GetUserProgress(Guid userId)
-    {
-        var result = await _rankService.GetRankProgressAsync(userId);
-        return result != null ? Ok(result) : NotFound("Không tìm thấy người dùng.");
-    }
+        public RankController(IRankService rankService)
+        {
+            _rankService = rankService;
+        }
 
-    [HttpGet("all")]
-    public async Task<IActionResult> GetAllRanks()
-    {
-        var ranks = await _rankService.GetAllRanksAsync();
-        return Ok(ranks);
-    }
+        [HttpGet("progress/{userId}")]
+        public async Task<IActionResult> GetUserProgress(Guid userId)
+        {
+            var result = await _rankService.GetRankProgressAsync(userId);
+            return result != null ? Ok(result) : NotFound("Không tìm thấy người dùng.");
+        }
 
-    [HttpGet("leaderboard")]
-    public async Task<IActionResult> GetLeaderboard([FromQuery] int top = 10)
-    {
-        var leaderboard = await _rankService.GetTopGreenUsersAsync(top);
-        return Ok(leaderboard);
+        [HttpGet("all")]
+        public async Task<IActionResult> GetAllRanks()
+        {
+            var ranks = await _rankService.GetAllRanksAsync();
+            return Ok(ranks);
+        }
+
+        [HttpGet("leaderboard")]
+        public async Task<IActionResult> GetLeaderboard([FromQuery] int top = 10)
+        {
+            var leaderboard = await _rankService.GetTopGreenUsersAsync(top);
+            return Ok(leaderboard);
+        }
     }
 }

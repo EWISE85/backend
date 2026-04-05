@@ -2,10 +2,12 @@
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [Route("api/[controller]")]
+	[Authorize]
+	[Route("api/[controller]")]
     [ApiController]
     public class RecyclingAssignController : ControllerBase
     {

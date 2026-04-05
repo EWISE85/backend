@@ -1,11 +1,13 @@
 ﻿using ElecWasteCollection.Application.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Org.BouncyCastle.Asn1.Ocsp;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [Route("api/holiday")]
+	[Authorize]
+	[Route("api/holiday")]
     [ApiController]
     public class PublicHolidayController : ControllerBase
     {

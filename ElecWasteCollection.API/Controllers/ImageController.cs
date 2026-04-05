@@ -2,9 +2,11 @@
 using ElecWasteCollection.Application.IServices;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.API.Controllers
 {
+	[Authorize]
 	[Route("api/image")]
 	[ApiController]
 	public class ImageController : ControllerBase

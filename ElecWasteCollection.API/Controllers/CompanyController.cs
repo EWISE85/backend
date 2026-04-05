@@ -2,11 +2,13 @@
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
+	[Authorize]
 	[Route("api/company")]
 	[ApiController]
 	public class CompanyController : ControllerBase

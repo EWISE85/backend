@@ -2,10 +2,12 @@
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.IServices.ElecWasteCollection.Application.IServices;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.Api.Controllers
 {
-    [ApiController]
+	[Authorize]
+	[ApiController]
     [Route("api/[controller]")]
     public class CollectionOffDayController : ControllerBase
     {

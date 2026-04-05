@@ -4,9 +4,11 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.API.Controllers
 {
+	[Authorize]
 	[Route("api/packages/")]
 	[ApiController]
 	public class PackageController : ControllerBase

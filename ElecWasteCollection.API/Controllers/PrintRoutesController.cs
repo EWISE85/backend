@@ -1,29 +1,34 @@
 ﻿using ElecWasteCollection.Application.IServices;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
-[ApiController]
-[Route("api/[controller]")]
-public class PrintRoutesController : ControllerBase
+namespace ElecWasteCollection.API.Controllers
 {
-    private readonly IPrintService _printService;
-
-    public PrintRoutesController(IPrintService printService)
+    [Authorize]
+    [ApiController]
+    [Route("api/[controller]")]
+    public class PrintRoutesController : ControllerBase
     {
-        _printService = printService;
-    }
+        private readonly IPrintService _printService;
 
-    [HttpGet("export-pdf/{groupId}")]
-    public async Task<IActionResult> ExportPdf(int groupId)
-    {
-        try
+        public PrintRoutesController(IPrintService printService)
         {
-            var pdfBytes = await _printService.GenerateCollectionPdfByGroupIdAsync(groupId);
-
-            return File(pdfBytes, "application/pdf", $"Danh_Sach_Thu_Gom_So_{groupId}.pdf");
+            _printService = printService;
         }
-        catch (Exception ex)
+
+        [HttpGet("export-pdf/{groupId}")]
+        public async Task<IActionResult> ExportPdf(int groupId)
         {
-            return NotFound(new { message = ex.Message });
+            try
+            {
+                var pdfBytes = await _printService.GenerateCollectionPdfByGroupIdAsync(groupId);
+
+                return File(pdfBytes, "application/pdf", $"Danh_Sach_Thu_Gom_So_{groupId}.pdf");
+            }
+            catch (Exception ex)
+            {
+                return NotFound(new { message = ex.Message });
+            }
         }
     }
 }

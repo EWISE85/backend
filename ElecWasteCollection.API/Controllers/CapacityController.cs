@@ -1,42 +1,47 @@
 ﻿using ElecWasteCollection.Application.IServices;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-
-[ApiController]
-[Route("api/[controller]")]
-public class CapacityController : ControllerBase
+namespace ElecWasteCollection.API.Controllers
 {
-    private readonly ICapacityService _capacityService;
 
-    public CapacityController(ICapacityService capacityService)
+    [Authorize]
+    [ApiController]
+    [Route("api/[controller]")]
+    public class CapacityController : ControllerBase
     {
-        _capacityService = capacityService;
-    }
+        private readonly ICapacityService _capacityService;
 
-    [HttpGet("points")]
-    public async Task<IActionResult> GetAll()
-        => Ok(await _capacityService.GetAllSCPCapacityAsync());
-
-    [HttpGet("company/{companyId}")]
-    public async Task<IActionResult> GetByCompany(string companyId)
-        => Ok(await _capacityService.GetCompanyCapacitySummaryAsync(companyId));
-
-    [HttpGet("company/Date/{companyId}")]
-    public async Task<IActionResult> GetCompanyCapacityByDate(string companyId, [FromQuery] DateOnly date)
-    {
-        try
+        public CapacityController(ICapacityService capacityService)
         {
-            var result = await _capacityService.GetCompanyCapacityByDateAsync(companyId, date);
-
-            if (result == null)
-            {
-                return NotFound(new { message = "Không tìm thấy dữ liệu cho công ty này." });
-            }
-
-            return Ok(result);
+            _capacityService = capacityService;
         }
-        catch (Exception ex)
+
+        [HttpGet("points")]
+        public async Task<IActionResult> GetAll()
+            => Ok(await _capacityService.GetAllSCPCapacityAsync());
+
+        [HttpGet("company/{companyId}")]
+        public async Task<IActionResult> GetByCompany(string companyId)
+            => Ok(await _capacityService.GetCompanyCapacitySummaryAsync(companyId));
+
+        [HttpGet("company/Date/{companyId}")]
+        public async Task<IActionResult> GetCompanyCapacityByDate(string companyId, [FromQuery] DateOnly date)
         {
-            return StatusCode(500, new { message = "Đã xảy ra lỗi hệ thống.", detail = ex.Message });
+            try
+            {
+                var result = await _capacityService.GetCompanyCapacityByDateAsync(companyId, date);
+
+                if (result == null)
+                {
+                    return NotFound(new { message = "Không tìm thấy dữ liệu cho công ty này." });
+                }
+
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Đã xảy ra lỗi hệ thống.", detail = ex.Message });
+            }
         }
     }
 }

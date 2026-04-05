@@ -4,10 +4,13 @@ using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [Route("api/collectionUnit")]
+
+	[Authorize]
+	[Route("api/collectionUnit")]
     [ApiController]
     public class CollectionUnitController : ControllerBase
     {

@@ -3,10 +3,12 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 
 namespace ElecWasteCollection.API.Controllers
 {
-    [Route("api/")]
+	[Authorize]
+	[Route("api/")]
     [ApiController]
     public class PointController : ControllerBase
     {
