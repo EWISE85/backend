@@ -130,6 +130,7 @@ public class RankService : IRankService
 		await _notificationService.NotifyCustomerCO2SavedAsync(
 			user.UserId,
 			co2Saved,
+			user.TotalCo2Saved,
 			isRankUp ? oldRankName : null,
 			isRankUp ? newRankName : null
 		);
