@@ -49,7 +49,7 @@ namespace ElecWasteCollection.Application.Services
 			var tokenDescriptor = new SecurityTokenDescriptor
 			{
 				Subject = new ClaimsIdentity(claims),
-				Expires = DateTime.UtcNow.AddMinutes(1),
+				Expires = DateTime.UtcNow.AddHours(2),
 				SigningCredentials = new SigningCredentials(
 					new SymmetricSecurityKey(keyBytes),
 					SecurityAlgorithms.HmacSha256Signature

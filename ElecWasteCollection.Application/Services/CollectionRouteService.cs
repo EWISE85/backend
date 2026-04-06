@@ -419,7 +419,8 @@ namespace ElecWasteCollection.Application.Services
 			var routesToProcess = await _unitOfWork.CollecctionRoutes.GetsAsync(r =>
 				(r.Status == CollectionRouteStatus.CHUA_BAT_DAU.ToString() ||
 				 r.Status == CollectionRouteStatus.DANG_TIEN_HANH.ToString()) &&
-				r.CollectionDate <= today);
+				r.CollectionDate <= today,
+				includeProperties: "Product");
 
 			if (routesToProcess.Any())
 			{
@@ -428,6 +429,7 @@ namespace ElecWasteCollection.Application.Services
 					if (route.CollectionDate < today)
 					{
 						route.Status = CollectionRouteStatus.THAT_BAI.ToString();
+						route.Product.Status = ProductStatus.THAT_BAI.ToString();
 						route.RejectMessage = "Hệ thống tự động đóng do quá ngày thu gom.";
 					}
 
