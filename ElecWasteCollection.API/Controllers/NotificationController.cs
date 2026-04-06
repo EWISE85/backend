@@ -86,5 +86,20 @@ namespace ElecWasteCollection.API.Controllers
 			var notifications = await _notificationService.GetNotificationTypeEvent();
 			return Ok(notifications);
 		}
+
+		[HttpGet("user/{userId}/paged")]
+		public async Task<IActionResult> GetPagedUserNotifications([FromRoute] Guid userId, [FromQuery] int page = 1, [FromQuery] int limit = 10)
+		{
+			var result = await _notificationService.GetPagedUserNotification(userId, page, limit);
+			return Ok(result);
+		}
+		[HttpGet("user/{userId}/unread-count")]
+		public async Task<IActionResult> GetUnreadNotificationCount([FromRoute] Guid userId)
+		{
+			var count = await _notificationService.GetUnreadNotificationByUser(userId);
+			return Ok(new { unreadCount = count });
+		}
+
+
 	}
 }

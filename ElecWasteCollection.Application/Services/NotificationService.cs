@@ -18,11 +18,13 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IFirebaseService _firebaseService;
 		private readonly IServiceScopeFactory _scopeFactory;
 		private readonly IUnitOfWork _unitOfWork;
-		public NotificationService(IFirebaseService firebaseService, IUnitOfWork unitOfWork, IServiceScopeFactory serviceScopeFactory)
+		private readonly INotificationRepository _notificationRepository;
+		public NotificationService(IFirebaseService firebaseService, IUnitOfWork unitOfWork, IServiceScopeFactory serviceScopeFactory, INotificationRepository notificationRepository)
 		{
 			_firebaseService = firebaseService;
 			_unitOfWork = unitOfWork;
 			_scopeFactory = serviceScopeFactory;
+			_notificationRepository = notificationRepository;
 		}
 
 		public async Task<List<NotificationModel>> GetNotificationByUserIdAsync(Guid userId)
@@ -298,7 +300,7 @@ namespace ElecWasteCollection.Application.Services
 		}
 
 		// Thêm tham số optional cho oldRankName và newRankName
-		public async Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved, string oldRankName = null, string newRankName = null)
+		public async Task NotifyCustomerCO2SavedAsync(Guid userId, double co2Saved, double totalCo2, string oldRankName = null, string newRankName = null)
 		{
 			var title = "Bạn đã tiết kiệm được CO2!";
 			var body = $"Bạn đã tiết kiệm được {co2Saved:F2} kg CO2 từ việc tái chế rác điện tử. Cảm ơn bạn đã góp phần bảo vệ môi trường!";
@@ -314,6 +316,7 @@ namespace ElecWasteCollection.Application.Services
 				dataPayload.Add("isRankUp", "true");
 				dataPayload.Add("oldRankName", oldRankName);
 				dataPayload.Add("newRankName", newRankName);
+				dataPayload.Add("totalCo2", $"Bạn đã tiết kiệm được tổng cộng {totalCo2} cho đến hiện tại");
 			}
 
 			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
@@ -425,6 +428,30 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 			await _unitOfWork.SaveAsync();
+		}
+
+		public async Task<PagedResultModel<NotificationModel>> GetPagedUserNotification(Guid userId, int page, int limit)
+		{
+			var (items, totalCount) = await _notificationRepository.GetPagedNotificationForUser(userId,page,limit);
+			var resultItems = items
+				.OrderByDescending(n => n.CreatedAt)
+				.Select(n => new NotificationModel
+			{
+				NotificationId = n.NotificationId,
+				Title = n.Title,
+				Message = n.Body,
+				IsRead = n.IsRead,
+				CreatedAt = n.CreatedAt,
+				UserId = n.UserId
+			}).ToList();
+			return new PagedResultModel<NotificationModel>(resultItems, page, limit, totalCount);
+
+		}
+
+		public async Task<int> GetUnreadNotificationByUser(Guid userId)
+		{
+			var unreadCount = await _unitOfWork.Notifications.GetsAsync(n => n.UserId == userId && !n.IsRead);
+			return unreadCount?.Count() ?? 0;
 		}
 	}
 }

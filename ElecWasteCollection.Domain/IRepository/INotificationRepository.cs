@@ -9,5 +9,6 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface INotificationRepository :IGenericRepository<Notifications>
 	{
+		Task<(List<Notifications> Items, int TotalCount)> GetPagedNotificationForUser(Guid userId, int page, int limit);
 	}
 }
