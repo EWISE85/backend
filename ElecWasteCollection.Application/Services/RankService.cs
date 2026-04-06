@@ -107,7 +107,7 @@ public class RankService : IRankService
 		var allRanks = await _unitOfWork.Ranks.GetAllAsync();
 
 		var oldRank = allRanks.FirstOrDefault(r => r.RankId == user.CurrentRankId);
-		string oldRankName = oldRank != null ? oldRank.RankName : "Thành viên mới"; // Xử lý trường hợp user chưa có rank
+		string oldRankName = oldRank != null ? oldRank.RankName : "Thành viên mới";
 		string newRankName = null;
 		bool isRankUp = false;
 

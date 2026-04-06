@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ElecWasteCollection.API.Controllers
 {
-	[Authorize]
+	//[Authorize]
 	[Route("api/voucher")]
 	[ApiController]
 	public class VoucherController : ControllerBase
