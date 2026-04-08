@@ -135,9 +135,20 @@ namespace ElecWasteCollection.Application.Services
 			};
 		}
 
-		public async Task<List<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId)
+		public async Task<PagedResultModel<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId, int page, int limit, string? status)
 		{
-			var collectores = await _collectorRepository.GetsAsync(c => c.CollectionUnitId == wareHouseId && c.Role == UserRole.Collector.ToString(), "CollectionUnits");
+			string statusEnumValue = null;
+            if (!string.IsNullOrEmpty(status))
+			{
+				statusEnumValue = StatusEnumHelper.GetValueFromDescription<UserStatus>(status).ToString();
+			}
+            var (collectores, totalItems) = await _collectorRepository.GetPagedCollectorsAsync(
+				status: statusEnumValue,
+				companyId: null,
+				smallCollectionPointId: wareHouseId,
+				page: page,
+				limit: limit
+			);
 			var response = collectores.Select(c => new CollectorResponse
 			{
 				CollectorId = c.UserId,
@@ -148,7 +159,12 @@ namespace ElecWasteCollection.Application.Services
 				SmallCollectionPointId = c.CollectionUnitId,
 				SmallCollectionPointName = c.CollectionUnits != null ? c.CollectionUnits.Name : null
 			}).ToList();
-			return response;
+			return new PagedResultModel<CollectorResponse>(
+				response,
+				page,
+				limit,
+				totalItems
+			);
 		}
 
 		public async Task<bool> UpdateCollector(User collector)

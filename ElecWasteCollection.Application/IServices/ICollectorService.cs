@@ -19,7 +19,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<CollectorResponse> GetById(Guid id);
 
 		Task<List<CollectorResponse>> GetAll();
-		Task<List<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId);
+		Task<PagedResultModel<CollectorResponse>> GetCollectorByWareHouseId(string wareHouseId, int page, int limit, string? status);
 
 		Task<ImportResult> CheckAndUpdateCollectorAsync(User collector, string collectorUsername, string password);
 

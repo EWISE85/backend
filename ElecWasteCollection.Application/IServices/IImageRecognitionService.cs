@@ -9,6 +9,7 @@ namespace ElecWasteCollection.Application.IServices
 {
 	public interface IImageRecognitionService
 	{
-		Task<ImaggaCheckResult> AnalyzeImageCategoryAsync(string imageUrl, string category);
+		//Task<ImaggaCheckResult> AnalyzeImageCategoryAsync(string imageUrl, string category);
+		Task<ImaggaCheckResult> AnalyzeImageCategoryAsync(string imageUrl, string? aiTags);
 	}
 }
