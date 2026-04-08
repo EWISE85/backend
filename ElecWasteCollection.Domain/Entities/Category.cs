@@ -23,6 +23,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public Guid? ParentCategoryId { get; set; }
 		public double DefaultWeight { get; set; } = 0.0;
 		public double EmissionFactor { get; set; } = 0.0;
+		public string? AiRecognitionTags { get; set; }
 		public  Category ParentCategory { get; set; }
 
 		public string Status { get; set; } = CategoryStatus.HOAT_DONG.ToString();

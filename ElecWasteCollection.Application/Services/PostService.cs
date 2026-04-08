@@ -57,69 +57,69 @@ namespace ElecWasteCollection.Application.Services
 			_notificationService = notificationService;
 		}
 
-        public async Task<bool> AddPost(CreatePostModel createPostRequest)
-        {
-            if (createPostRequest.Product == null) throw new AppException("Product đang trống", 400);
+		public async Task<bool> AddPost(CreatePostModel createPostRequest)
+		{
+			if (createPostRequest.Product == null) throw new AppException("Product đang trống", 400);
 
-            var userLocation = await _userAddressRepository.GetAsync(
-                a => a.UserId == createPostRequest.SenderId && a.Address == createPostRequest.Address);
+			var userLocation = await _userAddressRepository.GetAsync(
+				a => a.UserId == createPostRequest.SenderId && a.Address == createPostRequest.Address);
 
-            if (userLocation == null || !userLocation.Iat.HasValue || !userLocation.Ing.HasValue)
-            {
-                throw new AppException("Địa chỉ không hợp lệ hoặc chưa được định vị trên bản đồ.", 400);
-            }
+			if (userLocation == null || !userLocation.Iat.HasValue || !userLocation.Ing.HasValue)
+			{
+				throw new AppException("Địa chỉ không hợp lệ hoặc chưa được định vị trên bản đồ.", 400);
+			}
 
-            bool isServiceable = await CheckIfLocationAndCategoryAreServiceable(
-                createPostRequest.Product.SubCategoryId,
-                userLocation.Iat.Value,
-                userLocation.Ing.Value);
+			bool isServiceable = await CheckIfLocationAndCategoryAreServiceable(
+				createPostRequest.Product.SubCategoryId,
+				userLocation.Iat.Value,
+				userLocation.Ing.Value);
 
-            if (!isServiceable)
-            {
-                throw new AppException("Rất tiếc, loại hàng này hiện chưa được hỗ trợ thu gom tại khu vực của bạn.", 400);
-            }
+			if (!isServiceable)
+			{
+				throw new AppException("Rất tiếc, loại hàng này hiện chưa được hỗ trợ thu gom tại khu vực của bạn.", 400);
+			}
 
-            DateTime transactionTimeUtc = DateTime.UtcNow;
-            try
-            {
-                var validationRules = await _categoryAttributeRepsitory.GetsAsync(
-                                        x => x.CategoryId == createPostRequest.Product.SubCategoryId,
-                                        includeProperties: "Attribute");
+			DateTime transactionTimeUtc = DateTime.UtcNow;
+			try
+			{
+				var validationRules = await _categoryAttributeRepsitory.GetsAsync(
+										x => x.CategoryId == createPostRequest.Product.SubCategoryId,
+										includeProperties: "Attribute");
 
-                string currentStatus = PostStatus.CHO_DUYET.ToString();
-                string currentProductStatus = ProductStatus.CHO_DUYET.ToString();
-                string statusDescription = "Yêu cầu đã được gửi";
-                Guid newProductId = Guid.NewGuid();
+				string currentStatus = PostStatus.CHO_DUYET.ToString();
+				string currentProductStatus = ProductStatus.CHO_DUYET.ToString();
+				string statusDescription = "Yêu cầu đã được gửi";
+				Guid newProductId = Guid.NewGuid();
 
-                var newProduct = new Products
-                {
-                    ProductId = newProductId,
-                    CategoryId = createPostRequest.Product.SubCategoryId,
-                    BrandId = createPostRequest.Product.BrandId,
-                    Description = createPostRequest.Description,
-                    CreateAt = DateOnly.FromDateTime(transactionTimeUtc),
-                    UserId = createPostRequest.SenderId,
-                    isChecked = false,
-                    Status = currentProductStatus
-                };
+				var newProduct = new Products
+				{
+					ProductId = newProductId,
+					CategoryId = createPostRequest.Product.SubCategoryId,
+					BrandId = createPostRequest.Product.BrandId,
+					Description = createPostRequest.Description,
+					CreateAt = DateOnly.FromDateTime(transactionTimeUtc),
+					UserId = createPostRequest.SenderId,
+					isChecked = false,
+					Status = currentProductStatus
+				};
 
-                if (createPostRequest.Product.Attributes != null)
-                {
-                    foreach (var attr in createPostRequest.Product.Attributes)
-                    {
-                        var rule = validationRules.FirstOrDefault(x => x.AttributeId == attr.AttributeId);
+				if (createPostRequest.Product.Attributes != null)
+				{
+					foreach (var attr in createPostRequest.Product.Attributes)
+					{
+						var rule = validationRules.FirstOrDefault(x => x.AttributeId == attr.AttributeId);
 						if (rule == null)
 						{
 							throw new AppException($"Thuộc tính với ID '{attr.AttributeId}' không hợp lệ cho danh mục này.", 400);
 						}
 						var attributeName = rule?.Attribute?.Name ?? "Unknown Attribute";
 						if (attr.OptionId == null && attr.Value.HasValue && rule != null)
-                        {
-                            if (rule.MinValue.HasValue && attr.Value.Value < rule.MinValue.Value)
-                            {
-                                throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá nhỏ. Tối thiểu phải là {rule.MinValue} {rule.Unit}.", 400);
-                            }
-                        }
+						{
+							if (rule.MinValue.HasValue && attr.Value.Value < rule.MinValue.Value)
+							{
+								throw new AppException($"Giá trị của '{rule.Attribute.Name}' quá nhỏ. Tối thiểu phải là {rule.MinValue} {rule.Unit}.", 400);
+							}
+						}
 						if (attributeName == "Trọng lượng (kg)")
 						{
 							if (attr.OptionId.HasValue)
@@ -135,85 +135,88 @@ namespace ElecWasteCollection.Application.Services
 								}
 							}
 						}
-									var newProductValue = new ProductValues
-                        {
-                            ProductValuesId = Guid.NewGuid(),
-                            ProductId = newProductId,
-                            AttributeId = attr.AttributeId,
-                            AttributeOptionId = attr.OptionId,
-                            Value = attr.Value
-                        };
-                        await _unitOfWork.ProductValues.AddAsync(newProductValue);
-                    }
-                }
+						var newProductValue = new ProductValues
+						{
+							ProductValuesId = Guid.NewGuid(),
+							ProductId = newProductId,
+							AttributeId = attr.AttributeId,
+							AttributeOptionId = attr.OptionId,
+							Value = attr.Value
+						};
+						await _unitOfWork.ProductValues.AddAsync(newProductValue);
+					}
+				}
 
-                if (createPostRequest.Images != null && createPostRequest.Images.Any())
-                {
-                    var category = await _categoryRepository.GetByIdAsync(createPostRequest.Product.SubCategoryId);
-                    var categoryName = category?.Name ?? "unknown";
-                    bool allImagesMatch = true;
+				if (createPostRequest.Images != null && createPostRequest.Images.Any())
+				{
+					var category = await _categoryRepository.GetByIdAsync(createPostRequest.Product.SubCategoryId);
 
-                    foreach (var imgUrl in createPostRequest.Images)
-                    {
-                        var aiResult = await _imageRecognitionService.AnalyzeImageCategoryAsync(imgUrl, categoryName);
-                        if (aiResult == null || !aiResult.IsMatch) allImagesMatch = false;
+					var aiTags = category?.AiRecognitionTags;
+					bool allImagesMatch = true;
 
-                        var productImg = new ProductImages
-                        {
-                            ProductImagesId = Guid.NewGuid(),
-                            ProductId = newProductId,
-                            ImageUrl = imgUrl,
-                            AiDetectedLabelsJson = aiResult?.DetectedTagsJson ?? "[]"
-                        };
-                        await _unitOfWork.ProductImages.AddAsync(productImg);
-                    }
+					foreach (var imgUrl in createPostRequest.Images)
+					{
+						var aiResult = await _imageRecognitionService.AnalyzeImageCategoryAsync(imgUrl, aiTags);
+						if (aiResult == null || !aiResult.IsMatch) allImagesMatch = false;
 
-                    if (allImagesMatch)
-                    {
-                        currentStatus = PostStatus.DA_DUYET.ToString();
-                        newProduct.Status = ProductStatus.CHO_PHAN_KHO.ToString();
-                        statusDescription = "Yêu cầu được duyệt tự động, chờ phân về kho tương ứng";
-                    }
-                }
+						var productImg = new ProductImages
+						{
+							ProductImagesId = Guid.NewGuid(),
+							ProductId = newProductId,
+							ImageUrl = imgUrl,
+							AiDetectedLabelsJson = aiResult?.DetectedTagsJson ?? "[]"
+						};
+						await _unitOfWork.ProductImages.AddAsync(productImg);
+					}
 
-                var history = new ProductStatusHistory
-                {
-                    ProductId = newProductId,
-                    ChangedAt = DateTime.UtcNow,
-                    Status = newProduct.Status,
-                    StatusDescription = statusDescription
-                };
+					if (allImagesMatch)
+					{
+						currentStatus = PostStatus.DA_DUYET.ToString();
+						newProduct.Status = ProductStatus.CHO_PHAN_KHO.ToString();
+						statusDescription = "Yêu cầu được duyệt tự động, chờ phân về kho tương ứng";
+					}
+				}
+
+				var history = new ProductStatusHistory
+				{
+					ProductId = newProductId,
+					ChangedAt = DateTime.UtcNow,
+					Status = newProduct.Status,
+					StatusDescription = statusDescription
+				};
+
 				var brandCategoryPoint = await _brandCategoryRepository.GetAsync(bc => bc.BrandId == createPostRequest.Product.BrandId && bc.CategoryId == createPostRequest.Product.SubCategoryId);
 				var basePoint = brandCategoryPoint != null ? brandCategoryPoint.Points : 50;
+
 				var newPost = new Post
-                {
-                    PostId = Guid.NewGuid(),
-                    SenderId = createPostRequest.SenderId,
-                    Date = DateTime.UtcNow,
-                    Description = createPostRequest.Description,
-                    Address = createPostRequest.Address,
-                    ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
-                    Status = currentStatus,
-                    ProductId = newProductId,
-                    EstimatePoint = basePoint,
-                    CheckMessage = new List<string>()
-                };
+				{
+					PostId = Guid.NewGuid(),
+					SenderId = createPostRequest.SenderId,
+					Date = DateTime.UtcNow,
+					Description = createPostRequest.Description,
+					Address = createPostRequest.Address,
+					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
+					Status = currentStatus,
+					ProductId = newProductId,
+					EstimatePoint = basePoint,
+					CheckMessage = new List<string>()
+				};
 
-                await _unitOfWork.Products.AddAsync(newProduct);
-                await _unitOfWork.ProductStatusHistory.AddAsync(history);
-                await _unitOfWork.Posts.AddAsync(newPost);
+				await _unitOfWork.Products.AddAsync(newProduct);
+				await _unitOfWork.ProductStatusHistory.AddAsync(history);
+				await _unitOfWork.Posts.AddAsync(newPost);
 
-                await _unitOfWork.SaveAsync();
-                return true;
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[FATAL ERROR] AddPost: {ex}");
-                throw;
-            }
-        }
+				await _unitOfWork.SaveAsync();
+				return true;
+			}
+			catch (Exception ex)
+			{
+				Console.WriteLine($"[FATAL ERROR] AddPost: {ex}");
+				throw;
+			}
+		}
 
-        private async Task<bool> CheckIfLocationAndCategoryAreServiceable(Guid subCategoryId, double userLat, double userLng)
+		private async Task<bool> CheckIfLocationAndCategoryAreServiceable(Guid subCategoryId, double userLat, double userLng)
         {
             var allCategories = await _unitOfWork.Categories.GetAllAsync();
             var category = allCategories.FirstOrDefault(c => c.CategoryId == subCategoryId);
