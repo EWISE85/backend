@@ -741,7 +741,8 @@ Ban Quản Trị Hệ Thống";
 				{
 					Name = name,
 					ParentName = worksheet.Cell(row, 3).Value.ToString().Trim(),
-					EmissionFactor = double.TryParse(worksheet.Cell(row, 4).Value.ToString(), out var ef) ? ef : 0
+					EmissionFactor = double.TryParse(worksheet.Cell(row, 4).Value.ToString(), out var ef) ? ef : 0,
+					AiRecognitionTags = worksheet.Cell(row, 5).Value.ToString().Trim()
 				});
 			}
 
