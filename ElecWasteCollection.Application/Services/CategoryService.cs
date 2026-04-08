@@ -195,6 +195,7 @@ namespace ElecWasteCollection.Application.Services
 					// Cập nhật thông số tính toán
 					existing.DefaultWeight = excelCat.DefaultWeight;
 					existing.EmissionFactor = excelCat.EmissionFactor;
+					existing.AiRecognitionTags = excelCat.AiRecognitionTags;
 					_unitOfWork.Categories.Update(existing);
 				}
 				else
@@ -206,6 +207,7 @@ namespace ElecWasteCollection.Application.Services
 						Name = excelCat.Name.Trim(),
 						DefaultWeight = excelCat.DefaultWeight,
 						EmissionFactor = excelCat.EmissionFactor,
+						AiRecognitionTags = excelCat.AiRecognitionTags,
 						Status = CategoryStatus.HOAT_DONG.ToString()
 					};
 					await _unitOfWork.Categories.AddAsync(newCat);

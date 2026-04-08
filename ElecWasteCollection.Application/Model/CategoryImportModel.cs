@@ -12,5 +12,7 @@ namespace ElecWasteCollection.Application.Model
 		public string ParentName { get; set; } // Cái này chỉ dùng để "dò" ID
 		public double DefaultWeight { get; set; }
 		public double EmissionFactor { get; set; }
+
+		public string? AiRecognitionTags { get; set; }
 	}
 }
