@@ -15,7 +15,7 @@ namespace ElecWasteCollection.Domain.Entities
 		Admin,
 		AdminCompany,
 		Shipper,
-		Recycler
+		RecyclingCompany
 	}
     public enum UserStatus
     {

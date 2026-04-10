@@ -21,8 +21,9 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IUnitOfWork _unitOfWork;
         private readonly CapacityHelper _capacityHelper;
 		private readonly IRankService _rankService;
+		private readonly IWebNotificationService _notificationService;
 
-        public PackageService(IProductService productService, IPackageRepository packageRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IUnitOfWork unitOfWork, CapacityHelper capacityHelper,IRankService rankService)
+		public PackageService(IProductService productService, IPackageRepository packageRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IUnitOfWork unitOfWork, CapacityHelper capacityHelper,IRankService rankService, IWebNotificationService notificationService)
 		{
 			_productService = productService;
 			_packageRepository = packageRepository;
@@ -30,7 +31,8 @@ namespace ElecWasteCollection.Application.Services
 			_unitOfWork = unitOfWork;
             _capacityHelper = capacityHelper;
 			_rankService = rankService;
-        }
+			_notificationService = notificationService;
+		}
 
 		public async Task<string> CreatePackageAsync(CreatePackageModel model)
 		{
@@ -349,8 +351,10 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UpdatePackageStatus(string packageId, string status)
 		{
-			var package = await _packageRepository.GetAsync(p => p.PackageId == packageId);
-
+			var package = await _unitOfWork.Packages.GetAsync(
+					p => p.PackageId == packageId,
+					includeProperties: "CollectionUnits" // Để lấy được CompanyId
+				);
 			if (package == null) throw new AppException("Không tìm thấy package", 404);
 			var products = await _productService.GetProductsByPackageIdAsync(packageId);
 			if (products.Count == 0 ) throw new AppException("Package không có sản phẩm nào", 400);
@@ -365,12 +369,56 @@ namespace ElecWasteCollection.Application.Services
 				StatusDescription = status == "Đã đóng thùng" ? "Kiện hàng đã được đóng gói hoàn tất" : "Chưa rõ",
 				Status = statusEnum.ToString()
 			};
+
 			_unitOfWork.Packages.Update(package);
 			await _unitOfWork.PackageStatusHistory.AddAsync(newPackageStatusHistory);
 			await _unitOfWork.SaveAsync();
+			if (statusEnum == PackageStatus.DA_DONG_THUNG)
+			{
+				await SendNotifyToCompanyAdmin(package);
+			}
 			return true;
 		}
+		private async Task SendNotifyToCompanyAdmin(Packages package)
+		{
+			// Tìm các Admin thuộc Công ty của cái kho này
+			// Giả sử Role của Admin công ty là "AdminCompany" (bạn check lại enum UserRole của mình)
+			var companyId = package.CollectionUnits.CompanyId;
 
+			var adminCompanies = await _unitOfWork.Users.GetAllAsync(u =>
+				u.CollectionCompanyId == companyId &&
+				u.Role == UserRole.RecyclingCompany.ToString() // Thay bằng UserRole.AdminCompany.ToString() nếu có enum
+			);
+
+			foreach (var admin in adminCompanies)
+			{
+				await _notificationService.SendNotificationAsync(
+					userId: admin.UserId.ToString(),
+					title: "Kiện hàng đã sẵn sàng",
+					message: $"Kiện hàng {package.PackageId} tại kho {package.CollectionUnits.Name} đã đóng thùng. Vui lòng sắp xếp lấy hàng.",
+					type: "success",
+					data: new
+					{
+						PackageId = package.PackageId,
+						CollectionUnitName = package.CollectionUnits.Name,
+						Action = "PACKAGE_CLOSED"
+					}
+				);
+
+				var notificationDb = new Notifications
+				{
+					NotificationId = Guid.NewGuid(),
+					UserId = admin.UserId,
+					Title = "Kiện hàng đã sẵn sàng",
+					Body = $"Kiện hàng {package.PackageId} tại kho {package.CollectionUnits.Name} đã đóng thùng.",
+					Type = "System",
+					CreatedAt = DateTime.UtcNow,
+					IsRead = false
+				};
+				await _unitOfWork.Notifications.AddAsync(notificationDb);
+			}
+			await _unitOfWork.SaveAsync();
+		}
 		public async Task<bool> UpdatePackageStatusDelivery(string deliveryQrCode, List<string> packageIds, string status)
 		{
 			if (packageIds == null || !packageIds.Any()) return false;
