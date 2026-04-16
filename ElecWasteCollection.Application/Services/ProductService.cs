@@ -436,7 +436,6 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit)
 		{
-			// Gọi Repo lấy dữ liệu đã phân trang và tổng số item
 			var (products, totalItems) = await _productRepository.GetProductsBySenderIdWithDetailsAsync(search, createAt, userId, page, limit);
 
 			if (products == null || !products.Any())

@@ -18,16 +18,21 @@ namespace ElecWasteCollection.Application.Services
 		{
 			_unitOfWork = unitOfWork;
 		}
-		public async Task<bool> RegisterDeviceAsync(RegisterDeviceModel registerDeviceModel)
+		public async Task<bool> RegisterDeviceAsync(RegisterDeviceModel model)
 		{
-			var existingDevice = await _unitOfWork.UserDeviceTokens.GetAsync(x => x.FCMToken == registerDeviceModel.FcmToken);
+			var existingDevice = await _unitOfWork.UserDeviceTokens
+				.GetAsync(x => x.UserId == model.UserId && x.Platform == model.Platform);
+
 			if (existingDevice != null)
 			{
-				if (existingDevice.UserId != registerDeviceModel.UserId)
+				if (!string.IsNullOrEmpty(model.FcmToken))
 				{
-					existingDevice.UserId = registerDeviceModel.UserId;
+					existingDevice.FCMToken = model.FcmToken;
 				}
-				existingDevice.Platform = registerDeviceModel.Platform ?? existingDevice.Platform;
+				if (!string.IsNullOrEmpty(model.VoipToken))
+				{
+					existingDevice.VoipToken = model.VoipToken;
+				}
 
 				_unitOfWork.UserDeviceTokens.Update(existingDevice);
 			}
@@ -36,14 +41,16 @@ namespace ElecWasteCollection.Application.Services
 				var newDevice = new UserDeviceToken
 				{
 					UserDeviceTokenId = Guid.NewGuid(),
-					UserId = registerDeviceModel.UserId,
-					FCMToken = registerDeviceModel.FcmToken,
-					Platform = registerDeviceModel.Platform,
-					CreatedAt = DateTime.UtcNow,
+					UserId = model.UserId,
+					FCMToken = model.FcmToken,
+					VoipToken = model.VoipToken, 
+					Platform = model.Platform ?? DevicePlatform.Android.ToString(),
+					CreatedAt = DateTime.UtcNow
 				};
 
 				await _unitOfWork.UserDeviceTokens.AddAsync(newDevice);
 			}
+
 			await _unitOfWork.SaveAsync();
 			return true;
 		}

@@ -25,6 +25,9 @@
 		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.5" />
 		<PackageReference Include="APIVerve.API.ProfanityFilter" Version="1.1.9" />
 		<PackageReference Include="MailKit" Version="4.13.0" />
+		<PackageReference Include="StackExchange.Redis" Version="2.12.14" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR" Version="1.2.0" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Core" Version="1.2.0" />
 	</ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\ElecWasteCollection.Application\ElecWasteCollection.Application.csproj" />
