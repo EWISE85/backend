@@ -14,35 +14,32 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 
 		public ApnsVoipService()
 		{
-			var handler = new HttpClientHandler();
 			var certPath = Path.Combine(AppContext.BaseDirectory, "Resources", "cert.pem");
+			if (!File.Exists(certPath)) throw new FileNotFoundException($"Cert missing: {certPath}");
 
-			if (!File.Exists(certPath))
+			// Sử dụng SocketsHttpHandler để tối ưu HTTP/2 trên Linux
+			var handler = new SocketsHttpHandler
 			{
-				throw new FileNotFoundException($"Không tìm thấy cert tại: {certPath}");
-			}
+				SslOptions = { ClientCertificates = new X509CertificateCollection() }
+			};
 
 			try
 			{
-				// Cách load bền bỉ nhất cho .NET trên Linux/Docker
 				var certPem = File.ReadAllText(certPath);
+				// Load đồng thời Cert và Key
+				using var x509 = X509Certificate2.CreateFromPem(certPem, certPem);
 
-				// Nếu file .pem chứa cả Cert và Key, hàm này sẽ tự hốt cả hai
-				var x509Cert = X509Certificate2.CreateFromPem(certPem);
-
-				// Thủ thuật để .NET trên Linux nhận diện được Private Key cho Client Auth
-				var certWithKey = new X509Certificate2(x509Cert.Export(X509ContentType.Pkcs12));
-
-				handler.ClientCertificates.Add(certWithKey);
+				// Chuyển đổi sang Pfx trong bộ nhớ để HttpClient dùng được Private Key
+				var certWithKey = new X509Certificate2(x509.Export(X509ContentType.Pkcs12));
+				handler.SslOptions.ClientCertificates.Add(certWithKey);
 			}
 			catch (Exception ex)
 			{
-				throw new Exception($"Lỗi load chứng chỉ APNs: {ex.Message}");
+				throw new Exception($"APNs Cert Error: {ex.Message}");
 			}
 
 			_httpClient = new HttpClient(handler)
 			{
-				// APNs BẮT BUỘC HTTP/2
 				DefaultRequestVersion = HttpVersion.Version20,
 				DefaultVersionPolicy = HttpVersionPolicy.RequestVersionExact
 			};
