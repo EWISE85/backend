@@ -103,4 +103,8 @@ publish/
 
 *.sln.docstates 
 
- 
+ # Security: Ignore certificates and private keys
+*.pem
+*.p12
+*.pfx
+**/Resources/*.pem

@@ -1,12 +1,9 @@
-﻿
-using ElecWasteCollection.API.Helper;
+﻿using ElecWasteCollection.API.Helper;
 using ElecWasteCollection.API.Hubs;
 using ElecWasteCollection.API.MiddlewareCustom;
 using ElecWasteCollection.Application.BackgroundWorkers;
 using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.Interfaces;
-
-//using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.IServices.ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.IServices.IAssignPost;
@@ -32,7 +29,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
-
+using StackExchange.Redis;
+using ElecWasteCollection.Infrastructure.ExternalService.Redis;
+using ElecWasteCollection.Infrastructure.ExternalService.CallApp;
+using ElecWasteCollection.Infrastructure.Hubs;
 namespace ElecWasteCollection.API
 {
 	public class Program
@@ -40,9 +40,34 @@ namespace ElecWasteCollection.API
 		public static void Main(string[] args)
 		{
 			var builder = WebApplication.CreateBuilder(args);
+			var redisSection = builder.Configuration.GetSection("RedisConfig");
+			var redisHost = redisSection["Host"];
+			var redisPort = redisSection["Port"];
+			var redisPassword = redisSection["Password"];
+			var redisDatabase = redisSection["Database"];
 
-			// Add services to the container.
-			builder.Services.AddSignalR();
+			var redisConfig = new ConfigurationOptions
+			{
+				EndPoints = { $"{redisHost}:{redisPort}" },
+				Password = redisPassword,
+				DefaultDatabase = !string.IsNullOrEmpty(redisDatabase) ? int.Parse(redisDatabase) : 0,
+				AbortOnConnectFail = false, 
+				ConnectRetry = 3,
+				ConnectTimeout = 5000,
+				Ssl = false 
+			};
+
+			// Add connection multiplexer (Dùng cho ConnectionManager)
+			var redisConnection = ConnectionMultiplexer.Connect(redisConfig);
+			builder.Services.AddSingleton<IConnectionMultiplexer>(redisConnection);
+
+			// Cấu hình SignalR sử dụng Redis làm Backplane
+			builder.Services.AddSignalR()
+				.AddStackExchangeRedis(o =>
+				{
+					o.Configuration = redisConfig;
+					o.Configuration.ChannelPrefix = "EwiseApp";
+				});
 			builder.Services.AddControllers()
 				.AddJsonOptions(options =>
 				{
@@ -196,7 +221,11 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IAttributeService, AttributeService>();
             builder.Services.AddScoped<ICollectionOffDayService, CollectionOffDayService>();
 			builder.Services.AddScoped<IUserTokenRepository, UserTokenRepository>();
-            builder.Services.AddMemoryCache();
+			builder.Services.AddSingleton<IConnectionManager, RedisConnectionManager>();
+			builder.Services.AddSingleton<IApnsService, ApnsVoipService>();
+			builder.Services.AddScoped<CallService>();
+			builder.Services.AddScoped<ICallNotificationService, SignalRNotificationService>();
+			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
@@ -271,6 +300,7 @@ namespace ElecWasteCollection.API
 			app.UseAuthorization();
 
 			app.MapHub<ShippingHub>("/shippingHub");
+			app.MapHub<CallHub>("/hubs/call"); 
 			app.MapHub<WebNotificationHub>("/notificationHub");
 			app.MapControllers();
 

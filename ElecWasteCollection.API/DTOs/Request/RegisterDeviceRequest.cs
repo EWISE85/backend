@@ -4,7 +4,8 @@
 	{
 		public Guid UserId { get; set; }
 
-		public string FcmToken { get; set; }
+		public string? FcmToken { get; set; }
+		public string? VoipToken { get; set; }
 		public string Platform { get; set; }
 	}
 }
