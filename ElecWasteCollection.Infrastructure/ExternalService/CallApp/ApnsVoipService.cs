@@ -60,11 +60,10 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 				Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
 			};
 
-			// VOIP Push BẮT BUỘC phải có đuôi .voip ở topic
 			request.Headers.Add("apns-topic", $"{BundleId}.voip");
 			request.Headers.Add("apns-push-type", "voip");
-			request.Headers.Add("apns-priority", "10"); // High priority cho cuộc gọi
-			request.Headers.Add("apns-expiration", "0"); // Hết hạn ngay nếu không gửi được
+			request.Headers.Add("apns-priority", "10"); 
+			request.Headers.Add("apns-expiration", "0"); 
 
 			try
 			{
@@ -82,7 +81,6 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 			}
 			catch (Exception ex)
 			{
-				// In ra lỗi chi tiết nhất để debug trong Docker
 				Console.WriteLine($"Lỗi kết nối APNs: {ex.Message}");
 				if (ex.InnerException != null)
 				{
