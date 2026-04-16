@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Application.IServices
 	public interface IConnectionManager
 	{
 		void AddConnection(Guid userId, string connectionId);
-		void RemoveConnection(Guid userId);
+		void RemoveConnection(string userId);
 		bool IsUserOnline(Guid userId);
 		string? GetConnectionId(Guid userId);
 	}
