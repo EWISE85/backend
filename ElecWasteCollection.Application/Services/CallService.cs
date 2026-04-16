@@ -66,7 +66,7 @@ namespace ElecWasteCollection.Application.Services
 				caller_id = callerId.ToString(),
 				caller_name = callerName,
 				room_id = roomId,
-				type = "video_call"
+				type = "call"
 			};
 			var isSent = await _apnsService.SendVoipPushAsync(device.VoipToken, payload);
 			return isSent ? "voip_pushed" : "push_failed";
