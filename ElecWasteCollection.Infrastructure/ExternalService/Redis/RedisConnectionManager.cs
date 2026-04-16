@@ -16,14 +16,24 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Redis
 
 		public void AddConnection(Guid userId, string connectionId)
 		{
-			var key = $"{Prefix}{userId}";
-			_db.StringSet(key, connectionId, TimeSpan.FromHours(24));
+			// 1. Lưu để tìm: UserId -> ConnectionId (Dùng để gọi điện)
+			_db.StringSet($"{Prefix}{userId}", connectionId, TimeSpan.FromHours(24));
+
+			// 2. Lưu ngược để tìm: ConnectionId -> UserId (Dùng để xóa khi ngắt kết nối)
+			_db.StringSet($"conn:{connectionId}", userId.ToString(), TimeSpan.FromHours(24));
 		}
 
-		public void RemoveConnection(Guid userId)
+		public void RemoveConnection(string connectionId)
 		{
-			var key = $"{Prefix}{userId}";
-			_db.KeyDelete(key);
+			// Tìm UserId từ ConnectionId trước khi xóa
+			var userIdString = _db.StringGet($"conn:{connectionId}");
+
+			if (!userIdString.IsNull)
+			{
+				// Xóa cả 2 key cho sạch Redis
+				_db.KeyDelete($"{Prefix}{userIdString}");
+				_db.KeyDelete($"conn:{connectionId}");
+			}
 		}
 
 		public bool IsUserOnline(Guid userId)

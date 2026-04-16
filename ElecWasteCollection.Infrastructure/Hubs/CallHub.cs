@@ -12,17 +12,19 @@ namespace ElecWasteCollection.Infrastructure.Hubs
 			_connectionManager = connectionManager;
 		}
 
-		public async Task RegisterUser(string userIdString)
+		public async Task RegisterUser(string userIdString) 
 		{
-			if (Guid.TryParse(userIdString, out Guid userId))
+			if (Guid.TryParse(userIdString, out Guid userId)) 
 			{
 				_connectionManager.AddConnection(userId, Context.ConnectionId);
+
 				await Clients.Caller.SendAsync("Registered", "Online status updated");
 			}
 		}
 		public override async Task OnDisconnectedAsync(Exception? exception)
 		{
 			_connectionManager.RemoveConnection(Context.ConnectionId);
+
 			await base.OnDisconnectedAsync(exception);
 		}
 	}
