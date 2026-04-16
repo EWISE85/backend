@@ -22,25 +22,21 @@ FROM mcr.microsoft.com/dotnet/aspnet:8.0-jammy AS runtime
 
 # Cài đặt thư viện
 RUN apt-get update && apt-get install -y --no-install-recommends \
+    # Quan trọng nhất cho .NET Image processing
     libgdiplus \
+    # Các thư viện đồ họa cơ bản mà OpenCV (Emgu) cần để xử lý bitmap
     libgl1 \
-    libgtk-3-0 \
-    libgeotiff5 \
-    libdc1394-25 \
-    ffmpeg \
-    libgstreamer1.0-0 \
-    libgstreamer-plugins-base1.0-0 \
-    libopenjp2-7 \
-    libhdf5-103 \
-    libvtk9.1 \
-    liblapack3 \
-    libopenblas-base \
-    libatlas-base-dev \
+    libglib2.0-0 \
     libsm6 \
     libxext6 \
     libxrender1 \
+    # Hỗ trợ font và xử lý hệ thống
     libfontconfig1 \
     libice6 \
+    # Tối ưu toán học (giúp so sánh ảnh nhanh hơn)
+    libopenblas-base \
+    liblapack3 \
+    # Runtime cần thiết
     libc6-dev \
     && rm -rf /var/lib/apt/lists/*
 

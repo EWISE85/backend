@@ -12,7 +12,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 	public class ApnsVoipService : IApnsService
 	{
 		private readonly HttpClient _httpClient;
-		private const string BundleId = "com.ngocthb.ewise.voip";
+		private const string BundleId = "com.ngocthb.ewise";
 
 		// Môi trường Sandbox để test (Thay bằng api.push.apple.com khi lên Production)
 		private const string ApnsUrl = "https://api.sandbox.push.apple.com/3/device/";
@@ -32,7 +32,6 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 
 			try
 			{
-				// Đọc file .pem và tạo chứng chỉ (Yêu cầu .NET 6.0 trở lên)
 				var certPem = File.ReadAllText(certPath);
 				var x509Cert = X509Certificate2.CreateFromPem(certPem);
 
@@ -43,7 +42,6 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 				throw new Exception($"Lỗi khi load chứng chỉ APNs: {ex.Message}");
 			}
 
-			// 2. Cấu hình HttpClient bắt buộc dùng giao thức HTTP/2 cho Apple APNs
 			_httpClient = new HttpClient(handler)
 			{
 				DefaultRequestVersion = new Version(2, 0),
@@ -55,7 +53,6 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 		{
 			if (string.IsNullOrEmpty(deviceToken)) return false;
 
-			// Tạo request POST tới Apple
 			var url = $"{ApnsUrl}{deviceToken}";
 			var jsonPayload = JsonSerializer.Serialize(payload);
 
@@ -64,11 +61,10 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 				Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json")
 			};
 
-			// 3. Thêm các Header bắt buộc cho VoIP Push
-			request.Headers.Add("apns-topic", BundleId);      // App ID của bạn
-			request.Headers.Add("apns-push-type", "voip");    // Loại push là voip (để kích hoạt CallKit)
-			request.Headers.Add("apns-priority", "10");       // Ưu tiên cao nhất (đổ chuông ngay lập tức)
-			request.Headers.Add("apns-expiration", "0");      // 0 = hết hạn ngay nếu không gửi được (tránh đổ chuông trễ)
+			request.Headers.Add("apns-topic", BundleId);      
+			request.Headers.Add("apns-push-type", "voip");    
+			request.Headers.Add("apns-priority", "10");       
+			request.Headers.Add("apns-expiration", "0");    
 
 			try
 			{
@@ -79,7 +75,6 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 					return true;
 				}
 
-				// Log lỗi từ Apple nếu gửi thất bại (Ví dụ: Token hết hạn, sai Bundle ID...)
 				var errorReason = await response.Content.ReadAsStringAsync();
 				Console.WriteLine($"Apple APNs rejected push: {response.StatusCode} - {errorReason}");
 				return false;
