@@ -78,8 +78,8 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 				using var detector = new AKAZE();
 				using var descriptors1 = new Mat();
 				using var descriptors2 = new Mat();
-				VectorOfKeyPoint keypoints1 = new VectorOfKeyPoint();
-				VectorOfKeyPoint keypoints2 = new VectorOfKeyPoint();
+				using VectorOfKeyPoint keypoints1 = new VectorOfKeyPoint();
+				using VectorOfKeyPoint keypoints2 = new VectorOfKeyPoint();
 
 				detector.DetectAndCompute(img1, null, keypoints1, descriptors1, false);
 				detector.DetectAndCompute(img2, null, keypoints2, descriptors2, false);
@@ -91,7 +91,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 				}
 
 				using var matcher = new BFMatcher(DistanceType.Hamming, false);
-				var matches = new VectorOfVectorOfDMatch();
+				using var matches = new VectorOfVectorOfDMatch();
 				matcher.KnnMatch(descriptors1, descriptors2, matches, 2);
 
 				var goodMatches = new List<MDMatch>();
