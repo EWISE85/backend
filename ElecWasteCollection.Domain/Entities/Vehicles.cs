@@ -22,7 +22,7 @@ namespace ElecWasteCollection.Domain.Entities
         public double Width_M { get; set; }
         public double Height_M { get; set; }
         public string Status { get; set; } = null!;
-        public string Small_Collection_Point { get; set; }
+        public string CollectionUnit { get; set; }
         [JsonIgnore]
         public CollectionUnit CollectionUnits { get; set; } = null!;
         [JsonIgnore]

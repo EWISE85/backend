@@ -32,7 +32,7 @@ namespace ElecWasteCollection.Application.Services
                 existingVehicle.Width_M = vehicle.Width_M;
                 existingVehicle.Height_M = vehicle.Height_M; 
 				existingVehicle.Status = statusEnum.ToString();
-				existingVehicle.Small_Collection_Point = vehicle.Small_Collection_Point;
+				existingVehicle.CollectionUnit = vehicle.Small_Collection_Point;
 				 _unitOfWork.Vehicles.Update(existingVehicle);
 			}
 			else
@@ -47,7 +47,7 @@ namespace ElecWasteCollection.Application.Services
                     Width_M = vehicle.Width_M,
                     Height_M = vehicle.Height_M,
                     Status = vehicle.Status,
-					Small_Collection_Point = vehicle.Small_Collection_Point
+					CollectionUnit = vehicle.Small_Collection_Point
 				};
 				await _unitOfWork.Vehicles.AddAsync(newVehicle);
 
@@ -63,7 +63,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Xe không tồn tại", 404);
 			}
-			var smallCollectionPoint = await _smallCollectionRepository.GetAsync(scp => scp.CollectionUnitId == vehicle.Small_Collection_Point);
+			var smallCollectionPoint = await _smallCollectionRepository.GetAsync(scp => scp.CollectionUnitId == vehicle.CollectionUnit);
 			return new VehicleModel
 			{
 				VehicleId = vehicle.VehicleId,
@@ -74,7 +74,7 @@ namespace ElecWasteCollection.Application.Services
                 WidthM = vehicle.Width_M,
                 HeightM = vehicle.Height_M,
                 Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VehicleStatus>(vehicle.Status),
-                SmallCollectionPointId = vehicle.Small_Collection_Point,
+                SmallCollectionPointId = vehicle.CollectionUnit,
 				SmallCollectionPointName = smallCollectionPoint?.Name ?? "Chưa gán điểm thu gom"
 			};
 
@@ -97,8 +97,8 @@ namespace ElecWasteCollection.Application.Services
 
 
 			var scpIds = vehicles
-				.Where(v => v.Small_Collection_Point != null)
-				.Select(v => v.Small_Collection_Point)
+				.Where(v => v.CollectionUnit != null)
+				.Select(v => v.CollectionUnit)
 				.Distinct()
 				.ToList();
 
@@ -113,9 +113,9 @@ namespace ElecWasteCollection.Application.Services
 			var resultList = vehicles.Select(v =>
 			{
 				string scpName = "Chưa gán điểm thu gom";
-				if (v.Small_Collection_Point != null && scpDict.ContainsKey(v.Small_Collection_Point))
+				if (v.CollectionUnit != null && scpDict.ContainsKey(v.CollectionUnit))
 				{
-					scpName = scpDict[v.Small_Collection_Point];
+					scpName = scpDict[v.CollectionUnit];
 				}
 
 				return new VehicleModel
@@ -128,7 +128,7 @@ namespace ElecWasteCollection.Application.Services
                     WidthM = v.Width_M,
                     HeightM = v.Height_M,
                     Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VehicleStatus>(v.Status),
-                    SmallCollectionPointId = v.Small_Collection_Point,
+                    SmallCollectionPointId = v.CollectionUnit,
 					SmallCollectionPointName = scpName
 				};
 			}).ToList();

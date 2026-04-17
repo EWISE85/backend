@@ -404,7 +404,7 @@ namespace ElecWasteCollection.Application.Services
 					Avatar = avatar,
 					CollectorCode = code,
                     CollectionUnitId = smallCollectionPointId,
-					CollectionCompanyId = companyId,
+					CompanyId = companyId,
 					Role = UserRole.Collector.ToString(),
 					Status = statusToSave, 
 				};

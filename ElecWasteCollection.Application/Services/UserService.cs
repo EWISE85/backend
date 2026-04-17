@@ -80,7 +80,7 @@ namespace ElecWasteCollection.Application.Services
 				Avatar = user.Avatar,
 				Role = user.Role,
 				SmallCollectionPointId = user.CollectionUnitId,
-				CollectionCompanyId = user.CollectionCompanyId,
+				CollectionCompanyId = user.CompanyId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
 			return userResponse;
@@ -103,7 +103,7 @@ namespace ElecWasteCollection.Application.Services
 			var user = await _userRepository.GetAsync(u => u.UserId == userId);
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var smallCollectionPointName = await _unitOfWork.CollectionUnits.GetAsync(s => s.CollectionUnitId == user.CollectionUnitId);
-			var collectionCompanyName = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == user.CollectionCompanyId);
+			var collectionCompanyName = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == user.CompanyId);
 			//UserSettingsModel settingsObj;
 			//if (string.IsNullOrEmpty(user.Preferences))
 			//{
@@ -129,7 +129,7 @@ namespace ElecWasteCollection.Application.Services
 				Avatar = user.Avatar,
 				Role = user.Role,
 				Points = user.Points,
-				CollectionCompanyId = user.CollectionCompanyId,
+				CollectionCompanyId = user.CompanyId,
 				SmallCollectionPointId = user.CollectionUnitId,
 				SmallCollectionName = smallCollectionPointName?.Name,
 				CompanyName = collectionCompanyName?.Name,

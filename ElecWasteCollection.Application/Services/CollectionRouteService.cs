@@ -286,7 +286,7 @@ namespace ElecWasteCollection.Application.Services
 
 			
 			var relatedPost = senderUser?.Posts?
-				.FirstOrDefault(p => p.ProductId == route.ProductId);
+				.FirstOrDefault(p => p.Product.ProductId == route.ProductId);
 
 			var shifts = route.CollectionGroup?.Shifts;
 			var collectorUser = shifts?.Collector;

@@ -426,7 +426,7 @@ namespace ElecWasteCollection.Application.Services
 
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync(v =>
                 request.VehicleIds.Contains(v.VehicleId) &&
-                v.Small_Collection_Point == request.CollectionPointId &&
+                v.CollectionUnit == request.CollectionPointId &&
                 v.Status == VehicleStatus.DANG_HOAT_DONG.ToString())).OrderBy(v => v.Capacity_Kg).ToList();
 
             if (vehicles.Count != request.VehicleIds.Count)
@@ -507,9 +507,12 @@ namespace ElecWasteCollection.Application.Services
 
             // 5. LẤY DỮ LIỆU SẢN PHẨM VÀ GOM NHÓM (POOL)
             var attIdMap = await GetAttributeIdMapAsync();
-            var rawPosts = await _unitOfWork.Posts.GetAllAsync(p =>
-                p.AssignedCollectionUnitId == request.CollectionPointId && request.ProductIds.Contains(p.ProductId),
-                includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions");
+            var rawPosts = await _unitOfWork.Posts.GetAllAsync(
+       p => p.AssignedCollectionUnitId == request.CollectionPointId
+            && p.Product != null
+            && request.ProductIds.Contains(p.Product.ProductId),
+       includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions"
+   );
 
             var groupedPosts = rawPosts
                 .Where(x => x.Product?.Status == ProductStatus.CHO_GOM_NHOM.ToString())
@@ -610,7 +613,7 @@ namespace ElecWasteCollection.Application.Services
                         {
                             b.Products.Add(new PreAssignProduct
                             {
-                                ProductId = detail.Post.ProductId.ToString(),
+                                ProductId = detail.Post.Product.ProductId.ToString(),
                                 PostId = detail.Post.PostId.ToString(),
                                 UserName = item.UserName,
                                 Address = item.FullAddress,
@@ -634,7 +637,7 @@ namespace ElecWasteCollection.Application.Services
                     {
                         unAssigned.Add(new UnAssignProductPreview
                         {
-                            ProductId = detail.Post.ProductId.ToString(),
+                            ProductId = detail.Post.Product.ProductId.ToString(),
                             PostId = detail.Post.PostId.ToString(),
                             Name = item.UserName,
                             Address = item.FullAddress,
@@ -748,7 +751,7 @@ namespace ElecWasteCollection.Application.Services
             CriticalGapSuggestion? suggestion = null;
             if (criticalUnassigned.Any())
             {
-                var available = (await _unitOfWork.Vehicles.GetAllAsync(v => v.Small_Collection_Point == request.CollectionPointId && !request.VehicleIds.Contains(v.VehicleId) && v.Status == VehicleStatus.DANG_HOAT_DONG.ToString())).OrderByDescending(v => v.Capacity_Kg).ToList();
+                var available = (await _unitOfWork.Vehicles.GetAllAsync(v => v.CollectionUnit == request.CollectionPointId && !request.VehicleIds.Contains(v.VehicleId) && v.Status == VehicleStatus.DANG_HOAT_DONG.ToString())).OrderByDescending(v => v.Capacity_Kg).ToList();
                 var simPool = pool.Where(p => unAssigned.Any(ua => ua.PostId == p.GroupedDetails[0].Post.PostId.ToString() && ua.Reason.Contains("HẠN CHÓT"))).ToList();
                 var recVehicles = new List<dynamic>();
                 foreach (var v in available)
@@ -826,7 +829,7 @@ namespace ElecWasteCollection.Application.Services
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(item.VehicleId)
                     ?? throw new Exception($"Xe {item.VehicleId} không tồn tại trong hệ thống.");
 
-                if (vehicle.Small_Collection_Point != request.CollectionPointId)
+                if (vehicle.CollectionUnit != request.CollectionPointId)
                     throw new Exception($"Xe {vehicle.Plate_Number} không thuộc quyền quản lý của trạm này.");
 
                 var existingGroup = await _unitOfWork.CollectionGroupGeneric.GetAsync(
@@ -969,7 +972,8 @@ namespace ElecWasteCollection.Application.Services
                 {
                     var detail = stage.ProductDetails[i];
                     var prod = await _unitOfWork.Products.GetAsync(p => p.ProductId == detail.ProductId, includeProperties: "User,Category,Brand");
-                    var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == detail.ProductId);
+                    var post = await _unitOfWork.Posts
+                        .GetAsync(p => p.Product != null && p.Product.ProductId == detail.ProductId);
                     var metrics = await GetProductMetricsInternalAsync(detail.ProductId, attIdMap);
 
                     totalWeight += metrics.weight;
@@ -977,7 +981,7 @@ namespace ElecWasteCollection.Application.Services
 
                     groupSummary.Routes.Add(new RouteDetail
                     {
-                        PickupOrder = i + 1, 
+                        PickupOrder = i + 1,
                         ProductId = detail.ProductId,
                         UserName = prod?.User?.Name ?? "N/A",
                         Address = post?.Address ?? "N/A",
@@ -1054,7 +1058,7 @@ namespace ElecWasteCollection.Application.Services
             }
 
             var allVehiclesAtPoint = await _unitOfWork.Vehicles.GetAllAsync(v =>
-                v.Small_Collection_Point == request.PointId &&
+                v.CollectionUnit == request.PointId &&
                 v.Status == VehicleStatus.DANG_HOAT_DONG.ToString()
             );
 
@@ -1335,7 +1339,7 @@ namespace ElecWasteCollection.Application.Services
 
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(shift.Vehicle_Id);
             var collector = await _unitOfWork.Users.GetByIdAsync(shift.CollectorId);
-            string pointId = vehicle?.Small_Collection_Point ?? collector?.CollectionUnitId;
+            string pointId = vehicle?.CollectionUnit ?? collector?.CollectionUnitId;
             var point = await _unitOfWork.CollectionUnits.GetByIdAsync(pointId);
 
             int order = (page - 1) * limit + 1;
@@ -1343,7 +1347,8 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var r in pagedRoutes)
             {
-                var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == r.ProductId);
+                var post = await _unitOfWork.Posts
+                    .GetAsync(p => p.Product != null && p.Product.ProductId == r.ProductId);
                 if (post == null) continue;
 
                 var user = await _unitOfWork.Users.GetByIdAsync(post.SenderId);
@@ -1351,12 +1356,12 @@ namespace ElecWasteCollection.Application.Services
                 var category = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
 
-                var metrics = await GetProductMetricsInternalAsync(post.ProductId, attMap);
+                var metrics = await GetProductMetricsInternalAsync(post.Product!.ProductId, attMap);
 
                 routeList.Add(new
                 {
                     pickupOrder = order++,
-                    productId = post.ProductId,
+                    productId = post.Product!.ProductId,
                     postId = post.PostId,
                     userName = user?.Name ?? "N/A",
                     address = post.Address ?? "Không có",
@@ -1400,8 +1405,8 @@ namespace ElecWasteCollection.Application.Services
         {
             var list = await _unitOfWork.Vehicles.GetAllAsync(v =>
             v.Status == VehicleStatus.DANG_HOAT_DONG.ToString()
-            && v.Small_Collection_Point == smallPointId);
-            return list.OrderBy(v => v.VehicleId).ToList();
+            && v.CollectionUnit == smallPointId);
+            return list.OrderByDescending(v => v.Capacity_Kg).ToList();
         }
         public async Task<List<PendingPostModel>> GetPendingPostsAsync()
         {
@@ -1415,12 +1420,12 @@ namespace ElecWasteCollection.Application.Services
                 var product = p.Product;
                 var brand = await _unitOfWork.Brands.GetByIdAsync(product.BrandId);
                 var cat = await _unitOfWork.Categories.GetByIdAsync(product.CategoryId);
-                var att = await GetProductAttributesAsync(p.ProductId);
+                var att = await GetProductAttributesAsync(p.Product!.ProductId);
 
                 result.Add(new PendingPostModel
                 {
                     PostId = p.PostId,
-                    ProductId = p.ProductId,
+                    ProductId = p.Product!.ProductId,
                     UserName = user.Name,
                     Address = !string.IsNullOrEmpty(p.Address) ? p.Address : "Không có",
                     ProductName = $"{brand?.Name} {cat?.Name}",
@@ -1610,7 +1615,7 @@ namespace ElecWasteCollection.Application.Services
                         b.LastLng = (double)item.Lng;
                         var newProducts = ((IEnumerable<dynamic>)item.GroupedDetails).Select(detail => new PreAssignProduct
                         {
-                            ProductId = detail.Post.ProductId.ToString(),
+                            ProductId = detail.Post.Product.ProductId.ToString(),
                             PostId = detail.Post.PostId.ToString(),
                             UserName = (string)item.UserName,
                             Address = (string)item.FullAddress,

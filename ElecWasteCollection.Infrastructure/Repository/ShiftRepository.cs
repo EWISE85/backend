@@ -23,7 +23,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.AsQueryable();
 			if (collectionCompanyId != null)
 			{
-				query = query.Where(s => s.Collector.CollectionCompanyId == collectionCompanyId);
+				query = query.Where(s => s.Collector.CompanyId == collectionCompanyId);
 			}
 			if (smallCollectionPointId != null)
 			{

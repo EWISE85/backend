@@ -197,7 +197,6 @@ namespace ElecWasteCollection.Application.Services
 					Address = createPostRequest.Address,
 					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
 					Status = currentStatus,
-					ProductId = newProductId,
 					EstimatePoint = basePoint,
 					CheckMessage = new List<string>()
 				};
@@ -641,9 +640,9 @@ namespace ElecWasteCollection.Application.Services
 				post.Status = PostStatus.DA_DUYET.ToString();
 				_unitOfWork.Posts.Update(post);
 
-				if (post.ProductId != Guid.Empty && post.ProductId != null)
+				if (post.Product.ProductId != Guid.Empty && post.Product.ProductId != null)
 				{
-					var product = await _unitOfWork.Products.GetByIdAsync(post.ProductId);
+					var product = await _unitOfWork.Products.GetByIdAsync(post.Product.ProductId);
 
 					if (product != null)
 					{
@@ -652,7 +651,7 @@ namespace ElecWasteCollection.Application.Services
 
 						var history = new ProductStatusHistory
 						{
-							ProductId = post.ProductId,
+							ProductId = post.Product.ProductId,
 							ChangedAt = DateTime.UtcNow,
 							Status = ProductStatus.CHO_PHAN_KHO.ToString(),
 							StatusDescription = "Yêu cầu được duyệt và chờ phân kho"
@@ -695,9 +694,9 @@ namespace ElecWasteCollection.Application.Services
 				post.RejectMessage = rejectMessage;
 				_unitOfWork.Posts.Update(post);
 
-				if (post.ProductId != null && post.ProductId != Guid.Empty)
+				if (post.Product.ProductId != null && post.Product.ProductId != Guid.Empty)
 				{
-					var product = await _unitOfWork.Products.GetByIdAsync(post.ProductId);
+					var product = await _unitOfWork.Products.GetByIdAsync(post.Product.ProductId);
 
 					if (product != null)
 					{
@@ -706,7 +705,7 @@ namespace ElecWasteCollection.Application.Services
 
 						var history = new ProductStatusHistory
 						{
-							ProductId = post.ProductId,
+							ProductId = post.Product.ProductId,
 							ChangedAt = DateTime.UtcNow,
 							Status = ProductStatus.DA_TU_CHOI.ToString(),
 							StatusDescription = $"Bài đăng bị từ chối. Lý do: {rejectMessage}"

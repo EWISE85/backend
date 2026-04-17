@@ -63,7 +63,7 @@ namespace ElecWasteCollection.Application.Services
 					Name = "Admin " + smallCollectionPoints.Name,
 					Role = UserRole.AdminCompany.ToString(),
 					Status = UserStatus.DANG_HOAT_DONG.ToString(),
-					CollectionCompanyId = smallCollectionPoints.CompanyId,
+					CompanyId = smallCollectionPoints.CompanyId,
                     CollectionUnitId = smallCollectionPoints.CollectionUnitId,
 				};
 				await _unitOfWork.Users.AddAsync(newAdminWarehouse);

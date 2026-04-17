@@ -30,7 +30,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			if (companyId != null)
 			{
-				query = query.Where(u => u.CollectionCompanyId == companyId);
+				query = query.Where(u => u.CompanyId == companyId);
 			}
 
 			if (smallCollectionPointId != null)
