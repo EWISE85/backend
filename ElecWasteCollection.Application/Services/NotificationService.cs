@@ -4,6 +4,7 @@ using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
+using Google.Api.Gax;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -418,6 +419,53 @@ namespace ElecWasteCollection.Application.Services
 				{
 					NotificationId = Guid.NewGuid(),
 					UserId = userId,
+					Title = title,
+					Body = body,
+					IsRead = false,
+					CreatedAt = DateTime.UtcNow,
+					Type = NotificationType.System.ToString()
+				};
+				await _unitOfWork.Notifications.AddAsync(notification);
+			}
+
+			await _unitOfWork.SaveAsync();
+		}
+
+		public async Task NotifyCollectorsScheduleConfirmedAsync(IEnumerable<(Guid CollectorId, DateOnly Date, string GroupCode, string VehiclePlate)> collectorSchedules)
+		{
+			if (collectorSchedules == null || !collectorSchedules.Any()) return;
+
+			string title = "Tuyến thu gom mới được phân công!";
+
+			foreach (var schedule in collectorSchedules)
+			{
+				var collectorId = schedule.CollectorId;
+				var dateStr = schedule.Date.ToString("dd/MM/yyyy");
+				var groupCode = schedule.GroupCode;
+				var vehicle = schedule.VehiclePlate;
+
+				// ĐƯA VÀO TRONG VÒNG LẶP: Truyền thêm date và groupCode vào payload cho App điều hướng
+				var dataPayload = new Dictionary<string, string>
+		{
+			{ "type", "NEW_COLLECTION_ROUTE" },
+			{ "date", schedule.Date.ToString("yyyy-MM-dd") },
+		};
+
+				string body = $"Bạn đã được phân công tuyến thu gom [{groupCode}] vào ngày {dateStr}. Phương tiện sử dụng: {vehicle}. Vui lòng kiểm tra lịch trình.";
+
+				// 1. Gửi Firebase
+				var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == collectorId);
+				if (userTokens != null && userTokens.Any())
+				{
+					var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+					await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+				}
+
+				// 2. Lưu log DB
+				var notification = new Notifications
+				{
+					NotificationId = Guid.NewGuid(),
+					UserId = collectorId,
 					Title = title,
 					Body = body,
 					IsRead = false,
