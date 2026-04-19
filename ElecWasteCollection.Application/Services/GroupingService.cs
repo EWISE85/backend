@@ -910,9 +910,9 @@ namespace ElecWasteCollection.Application.Services
             var attIdMap = await GetAttributeIdMapAsync();
             string companyCode = GetCompanyInitials(point.Company?.Name ?? "CORP");
 			var userSchedules = new Dictionary<Guid, (DateOnly Date, string Time)>();
+			var collectorSchedules = new HashSet<(Guid CollectorId, DateOnly Date, string GroupCode, string VehiclePlate)>();
 
-
-            foreach (var stage in stagingData)
+			foreach (var stage in stagingData)
             {
                 var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(stage.VehicleId);
                 var shift = await FindAndAssignUniqueShiftAsync(stage.VehicleId.ToString(), stage.Date, request.CollectionPointId);
@@ -950,8 +950,11 @@ namespace ElecWasteCollection.Application.Services
                         await _unitOfWork.SaveAsync();
                     }
                 }
-
-                var groupSummary = new GroupSummary
+				if (request.SaveResult)
+				{
+					collectorSchedules.Add((shift.CollectorId, stage.Date, group.Group_Code, vehicle.Plate_Number));
+				}
+				var groupSummary = new GroupSummary
                 {
                     GroupCode = group.Group_Code,
                     Vehicle = vehicle.Plate_Number,
@@ -1029,6 +1032,10 @@ namespace ElecWasteCollection.Application.Services
 				if (userSchedules.Any())
 				{
 					await _notificationService.NotifyScheduleConfirmedAsync(userSchedules);
+				}
+				if (collectorSchedules.Any())
+				{
+					await _notificationService.NotifyCollectorsScheduleConfirmedAsync(collectorSchedules);
 				}
 			}
             return response;
