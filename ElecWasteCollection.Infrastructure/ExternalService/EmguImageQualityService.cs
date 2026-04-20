@@ -19,12 +19,13 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 	{
 		private readonly ILogger<EmguImageQualityService> _logger;
 		private readonly HttpClient _httpClient;
-
-		public EmguImageQualityService(ILogger<EmguImageQualityService> logger)
+		private readonly ISystemConfigService _configService;
+		public EmguImageQualityService(ILogger<EmguImageQualityService> logger, ISystemConfigService configService)
 		{
 			_logger = logger;
 			_httpClient = new HttpClient();
 			_httpClient.DefaultRequestHeaders.Add("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+			_configService = configService;
 		}
 
 		private async Task<Mat> LoadImageFromUrlOrPath(string input)
@@ -144,14 +145,14 @@ namespace ElecWasteCollection.Infrastructure.ExternalService
 			{
 				return false;
 			}
-
+			double threshold = await _configService.GetImageSimilarityThresholdAsync();
 			foreach (var urlA in urls1)
 			{
 				foreach (var urlB in urls2)
 				{
 					double similarity = await ComputeSimilarityAsync(urlA, urlB);
 
-					if (similarity > 80)
+					if (similarity > threshold)
 					{
 						_logger.LogInformation($"Match found between {urlA} and {urlB} with score {similarity}");
 						return true;
