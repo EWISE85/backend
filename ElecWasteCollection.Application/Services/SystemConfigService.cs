@@ -392,5 +392,15 @@ namespace ElecWasteCollection.Application.Services
             // Lưu vào database thông qua UnitOfWork
             return await _unitOfWork.SaveAsync() > 0;
         }
-    }
+
+		public async Task<double> GetImageSimilarityThresholdAsync()
+		{
+            var config = await _unitOfWork.SystemConfig.GetAsync(c => c.Key.ToLower() == SystemConfigKey.IMAGE_SIMILARITY_THRESHOLD.ToString().ToLower());
+            if (config  == null)
+            {
+				throw new AppException("Không tìm thấy cấu hình ngưỡng tương đồng hình ảnh", 404);
+			}
+			return double.TryParse(config.Value, out var threshold) ? threshold : 0.8;
+		}
+	}
 }
