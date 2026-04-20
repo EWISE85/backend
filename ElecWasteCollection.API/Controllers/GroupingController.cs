@@ -136,9 +136,11 @@ namespace ElecWasteCollection.API.Controllers
         }
 
         [HttpGet("vehicles/{SmallCollectionPointId}")]
-        public async Task<IActionResult> GetVehiclesBySmallPointAsync(string SmallCollectionPointId)
+        public async Task<IActionResult> GetVehiclesBySmallPointAsync(
+        string SmallCollectionPointId,
+        [FromQuery] DateOnly workDate)
         {
-            var result = await _groupingService.GetVehiclesBySmallPointAsync(SmallCollectionPointId);
+            var result = await _groupingService.GetVehiclesBySmallPointAsync(SmallCollectionPointId, workDate);
             return Ok(result);
         }
 
