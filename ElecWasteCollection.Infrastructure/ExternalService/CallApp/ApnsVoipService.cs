@@ -10,7 +10,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.CallApp
 	{
 		private readonly HttpClient _httpClient;
 		private const string BundleId = "com.ngocthb.ewise";
-		private const string ApnsUrl = "https://api.sandbox.push.apple.com/3/device/";
+		private const string ApnsUrl = "https://api.push.apple.com/3/device/";
 
 		public ApnsVoipService()
 		{

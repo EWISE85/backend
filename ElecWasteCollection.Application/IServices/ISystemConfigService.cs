@@ -29,5 +29,6 @@ namespace ElecWasteCollection.Application.IServices
         Task<bool> UpdateAutoAssignSettingsAsync(UpdateAutoAssignRequest model);
 		Task<WarehouseLoadThresholdSettings> GetWarehouseLoadThresholdAsync();
 		Task<bool> UpdateWarehouseLoadThresholdAsync(UpdateThresholdRequest model);
-    }
+		Task<double> GetImageSimilarityThresholdAsync();
+	}
 }

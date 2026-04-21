@@ -11,7 +11,7 @@ namespace ElecWasteCollection.Application.Interfaces
         Task<GroupingByPointResponse> GroupByCollectionPointAsync(GroupingByPointRequest request);
         Task<List<Vehicles>> GetVehiclesAsync();
         Task<List<PendingPostModel>> GetPendingPostsAsync();
-        Task<List<Vehicles>> GetVehiclesBySmallPointAsync(string smallPointId);
+        Task<List<Vehicles>> GetVehiclesBySmallPointAsync(string smallPointId, DateOnly workDate);
         Task<SinglePointSettingResponse> GetPointSettingAsync(string pointId);
         Task<bool> UpdatePointSettingAsync(UpdatePointSettingRequest request);
         Task<object> GetPreviewVehiclesAsync(string collectionPointId, DateOnly workDate);
