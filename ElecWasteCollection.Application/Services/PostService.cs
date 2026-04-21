@@ -625,7 +625,7 @@ namespace ElecWasteCollection.Application.Services
 		}
 		public async Task<bool> ApprovePost(List<Guid> postIds)
 		{
-			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId));
+			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId), includeProperties : "Product");
 
 			if (posts == null || !posts.Any())
 			{
@@ -681,7 +681,7 @@ namespace ElecWasteCollection.Application.Services
 			//var checkBadWord = await _profanityChecker.ContainsProfanityAsync(rejectMessage);
 			//if (checkBadWord) throw new AppException("Lý do từ chối chứa từ ngữ không phù hợp.", 400);
 
-			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId));
+			var posts = await _unitOfWork.Posts.GetsAsync(p => postIds.Contains(p.PostId), includeProperties: "Product");
 
 			if (posts == null || !posts.Any()) throw new AppException("Không tìm thấy bài viết nào hợp lệ.", 404);
 
