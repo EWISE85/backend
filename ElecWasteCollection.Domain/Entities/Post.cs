@@ -24,7 +24,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public Guid SenderId { get; set; }
 
-		public Guid ProductId { get; set; }
+		//public Guid ProductId { get; set; }
 
 		public string Description { get; set; }
 		public DateTime Date { get; set; }
@@ -40,11 +40,11 @@ namespace ElecWasteCollection.Domain.Entities
         public string? AssignedCollectionUnitId { get; set; }
         public double? DistanceToPointKm { get; set; }
 
-		public Products Product { get; set; }
+        public Products Product { get; set; }
 
-		public User Sender { get; set; }
+        public User Sender { get; set; }
 
-		public Company? CollectionCompany { get; set; }
+		public Company? Company { get; set; }
 
 		public CollectionUnit? AssignedCollectionUnit { get; set; }
 	}

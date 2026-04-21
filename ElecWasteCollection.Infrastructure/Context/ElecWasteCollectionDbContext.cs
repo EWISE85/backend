@@ -107,14 +107,14 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.ToTable("User");
 				entity.HasKey(e => e.UserId);
 				entity.Property(e => e.UserId).ValueGeneratedOnAdd();
-				entity.Property(e => e.CollectionCompanyId).IsRequired(false);
+				entity.Property(e => e.CompanyId).IsRequired(false);
 				entity.Property(e => e.CollectionUnitId).IsRequired(false);
 				entity.HasIndex(e => e.CreateAt);
 
-				entity.HasOne(e => e.CollectionCompany)
+				entity.HasOne(e => e.Company)
 					  .WithMany(c => c.Users)
-					  .HasForeignKey(e => e.CollectionCompanyId)
-					  .HasConstraintName("FK_User_CollectionCompany");
+					  .HasForeignKey(e => e.CompanyId)
+					  .HasConstraintName("FK_User_Company");
 
 				entity.HasOne(e => e.CollectionUnits)
 				.WithMany(s => s.Users)
@@ -328,15 +328,16 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasForeignKey(e => e.SenderId)
 					  .HasConstraintName("FK_Post_User");
 
-				entity.HasOne(e => e.Product)
-					  .WithMany(p => p.Posts)
-					  .HasForeignKey(e => e.ProductId)
-					  .HasConstraintName("FK_Post_Products");
+                entity.HasOne(e => e.Product)
+                      .WithOne(p => p.Post)
+                      .HasForeignKey<Products>(p => p.PostId)
+                      .OnDelete(DeleteBehavior.Cascade)
+                      .HasConstraintName("FK_Product_Post");
 
-				entity.HasOne(e => e.CollectionCompany)
+                entity.HasOne(e => e.Company)
 				.WithMany(c => c.Posts)
 					  .HasForeignKey(e => e.CompanyId)
-					  .HasConstraintName("FK_Post_CollectionCompany");
+					  .HasConstraintName("FK_Post_Company");
 
 				entity.HasOne(e => e.AssignedCollectionUnit)
 				.WithMany(s => s.Posts)
@@ -349,10 +350,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 				entity.ToTable("Vehicles");
 				entity.HasKey(e => e.VehicleId);
 				entity.Property(e => e.VehicleId).ValueGeneratedOnAdd();
-				entity.Property(e => e.Small_Collection_Point).IsRequired();
+				entity.Property(e => e.CollectionUnit).IsRequired();
 				entity.HasOne(e => e.CollectionUnits)
 					  .WithMany(s => s.Vehicles)
-					  .HasForeignKey(e => e.Small_Collection_Point)
+					  .HasForeignKey(e => e.CollectionUnit)
 					  .HasConstraintName("FK_Vehicles_CollectionUnits");
 			});
 

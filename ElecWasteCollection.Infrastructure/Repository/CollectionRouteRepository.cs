@@ -38,7 +38,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					r.CollectionGroup != null &&
 					r.CollectionGroup.Shifts != null &&
 					r.CollectionGroup.Shifts.Vehicle != null &&
-					r.CollectionGroup.Shifts.Vehicle.Small_Collection_Point == collectionPointId
+					r.CollectionGroup.Shifts.Vehicle.CollectionUnit == collectionPointId
 				);
 			}
 			if (pickUpDate.HasValue)
@@ -118,7 +118,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				r.CollectionGroup != null &&
 				r.CollectionGroup.Shifts != null &&
 				r.CollectionGroup.Shifts.Vehicle != null &&
-				r.CollectionGroup.Shifts.Vehicle.Small_Collection_Point == collectionPointId
+				r.CollectionGroup.Shifts.Vehicle.CollectionUnit == collectionPointId
 			);
 
 			return await query

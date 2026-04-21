@@ -316,7 +316,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             }
 
             var products = await unitOfWork.Products.GetAllAsync(p => productIds.Contains(p.ProductId));
-            var posts = await unitOfWork.Posts.GetAllAsync(p => productIds.Contains(p.ProductId));
+            var posts = await unitOfWork.Posts.GetAllAsync(
+                p => p.Product != null && productIds.Contains(p.Product.ProductId),
+                includeProperties: "Product"
+            );
             var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => posts.Select(x => x.SenderId).Contains(a.UserId));
 
             var userGroups = posts.GroupBy(p => new { p.SenderId, p.Address });
@@ -328,7 +331,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             // Vòng lặp phân bổ theo Nhóm User + Địa chỉ
             foreach (var group in userGroups)
             {
-                var groupProds = products.Where(p => group.Select(g => g.ProductId).Contains(p.ProductId)).ToList();
+                var productIdsInGroup = group.Select(g => g.Product.ProductId).ToHashSet();
+                var groupProds = products
+                    .Where(p => productIdsInGroup.Contains(p.ProductId))
+                    .ToList();
+
                 var addr = addresses.FirstOrDefault(a => a.UserId == group.Key.SenderId && a.Address == group.Key.Address);
                 if (addr?.Iat == null || addr?.Ing == null) continue;
 
@@ -471,7 +478,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     foreach (var product in groupProds)
                     {
-                        var post = group.First(p => p.ProductId == product.ProductId);
+                        var post = group.First(p => p.Product.ProductId == product.ProductId);
                         chosenCandidate.RoadKm = chosenCandidate.HaversineKm;
                         AssignSuccess(product, post, chosenCandidate, assignNote, historyBag, detailsBag, ref totalAssigned, workDate);
                         trackingBag.Add(new AssignmentTracker { ProductId = product.ProductId, SmallCollectionPointId = chosenCandidate.SmallPointId });
@@ -553,9 +560,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var mapboxClient = scope.ServiceProvider.GetRequiredService<MapboxDirectionsClient>();
 
             var posts = await unitOfWork.Posts.GetAllAsync(
-                p => productIds.Contains(p.ProductId) && !string.IsNullOrEmpty(p.AssignedCollectionUnitId),
-                includeProperties: "AssignedCollectionUnit"
-            );
+          p => productIds.Contains(p.Product.ProductId) && !string.IsNullOrEmpty(p.AssignedCollectionUnitId),
+          includeProperties: "AssignedCollectionUnit,Product"
+          );
 
             var senderIds = posts.Select(p => p.SenderId).Distinct().ToList();
             var addresses = await unitOfWork.UserAddresses.GetAllAsync(a => senderIds.Contains(a.UserId));

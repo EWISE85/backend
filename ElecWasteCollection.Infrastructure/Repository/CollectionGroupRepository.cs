@@ -30,7 +30,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
                     .ThenInclude(s => s.Collector)
                 .Where(g =>
                     (g.Shifts.Vehicle != null &&
-                     g.Shifts.Vehicle.Small_Collection_Point == collectionPointId)
+                     g.Shifts.Vehicle.CollectionUnit == collectionPointId)
                     ||
                     (g.Shifts.Collector != null &&
                      g.Shifts.Collector.CollectionUnitId == collectionPointId)
@@ -63,7 +63,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
                     .ThenInclude(s => s.Collector)
                 .Where(g =>
                     (g.Shifts.Vehicle != null &&
-                     g.Shifts.Vehicle.Small_Collection_Point == collectionPointId)
+                     g.Shifts.Vehicle.CollectionUnit == collectionPointId)
                     ||
                     (g.Shifts.Collector != null &&
                      g.Shifts.Collector.CollectionUnitId == collectionPointId)

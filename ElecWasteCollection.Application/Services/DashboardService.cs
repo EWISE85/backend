@@ -263,97 +263,152 @@ namespace ElecWasteCollection.Application.Services
             }
             return result;
         }
+        public async Task<BrandDashboardResponse> GetBrandDashboardStats(string scpId, DateOnly from, DateOnly to)
+        {
+            var cleanId = scpId.Trim();
+            DateOnly prevFromDate = from.AddMonths(-1);
+            DateOnly prevToDate = to.AddMonths(-1);
+
+            var currTotal = await _dashboardRepository.CountProductsByScpIdAsync(cleanId, from, to);
+            var prevTotal = await _dashboardRepository.CountProductsByScpIdAsync(cleanId, prevFromDate, prevToDate);
+
+            var currBrandDict = await _dashboardRepository.GetProductCountsByBrandByScpIdAsync(cleanId, from, to);
+            var prevBrandDict = await _dashboardRepository.GetProductCountsByBrandByScpIdAsync(cleanId, prevFromDate, prevToDate);
+
+            return new BrandDashboardResponse
+            {
+                SmallCollectionPointId = cleanId,
+                FromDate = from,
+                ToDate = to,
+                TotalProducts = CalculateMetric(currTotal, prevTotal),
+                Brands = ProcessBrandStats(currBrandDict, prevBrandDict)
+            };
+        }
+
+        public async Task<BrandDashboardResponse> GetBrandDashboardStatsByDay(string scpId, DateOnly date)
+        {
+            var cleanId = scpId.Trim();
+            DateOnly prevDate = date.AddDays(-1);
+
+            var currTotal = await _dashboardRepository.CountProductsByScpIdAsync(cleanId, date, date);
+            var prevTotal = await _dashboardRepository.CountProductsByScpIdAsync(cleanId, prevDate, prevDate);
+
+            var currBrandDict = await _dashboardRepository.GetProductCountsByBrandByScpIdAsync(cleanId, date, date);
+            var prevBrandDict = await _dashboardRepository.GetProductCountsByBrandByScpIdAsync(cleanId, prevDate, prevDate);
+
+            return new BrandDashboardResponse
+            {
+                SmallCollectionPointId = cleanId,
+                FromDate = date,
+                ToDate = date,
+                TotalProducts = CalculateMetric(currTotal, prevTotal),
+                Brands = ProcessBrandStats(currBrandDict, prevBrandDict)
+            };
+        }
+
+        private List<BrandStatisticExtendedModel> ProcessBrandStats(Dictionary<string, int> currDict, Dictionary<string, int> prevDict)
+        {
+            var allBrands = currDict.Keys.Union(prevDict.Keys).Distinct();
+            var results = new List<BrandStatisticExtendedModel>();
+
+            foreach (var name in allBrands)
+            {
+                int currVal = currDict.GetValueOrDefault(name, 0);
+                int prevVal = prevDict.GetValueOrDefault(name, 0);
+
+                var metric = CalculateMetric(currVal, prevVal);
+
+                results.Add(new BrandStatisticExtendedModel
+                {
+                    BrandName = name,
+                    CurrentValue = metric.CurrentValue,
+                    PreviousValue = metric.PreviousValue,
+                    AbsoluteChange = metric.AbsoluteChange,
+                    PercentChange = metric.PercentChange,
+                    Trend = metric.Trend
+                });
+            }
+            return results.OrderByDescending(x => x.CurrentValue).ToList();
+        }
+        public async Task<BrandDashboardResponse> GetGlobalBrandDashboardStats(DateOnly from, DateOnly to)
+        {
+            DateOnly prevFromDate = from.AddMonths(-1);
+            DateOnly prevToDate = to.AddMonths(-1);
+
+            var currTotal = await _dashboardRepository.CountProductsAsync(from, to);
+            var prevTotal = await _dashboardRepository.CountProductsAsync(prevFromDate, prevToDate);
+
+            var currBrandDict = await _dashboardRepository.GetProductCountsByBrandAsync(from, to);
+            var prevBrandDict = await _dashboardRepository.GetProductCountsByBrandAsync(prevFromDate, prevToDate);
+
+            return new BrandDashboardResponse
+            {
+                SmallCollectionPointId = "ALL",
+                FromDate = from,
+                ToDate = to,
+                TotalProducts = CalculateMetric(currTotal, prevTotal),
+                Brands = ProcessBrandStats(currBrandDict, prevBrandDict)
+            };
+        }
+
+        public async Task<BrandDashboardResponse> GetGlobalBrandDashboardStatsByDay(DateOnly date)
+        {
+            DateOnly prevDate = date.AddDays(-1);
+
+            var currTotal = await _dashboardRepository.CountProductsAsync(date, date);
+            var prevTotal = await _dashboardRepository.CountProductsAsync(prevDate, prevDate);
+
+            var currBrandDict = await _dashboardRepository.GetProductCountsByBrandAsync(date, date);
+            var prevBrandDict = await _dashboardRepository.GetProductCountsByBrandAsync(prevDate, prevDate);
+
+            return new BrandDashboardResponse
+            {
+                SmallCollectionPointId = "ALL",
+                FromDate = date,
+                ToDate = date,
+                TotalProducts = CalculateMetric(currTotal, prevTotal),
+                Brands = ProcessBrandStats(currBrandDict, prevBrandDict)
+            };
+        }
+
+        public async Task<List<TopUserContributionModel>> GetTopUsers(string scpId, int top, DateOnly from, DateOnly to)
+        {
+            var raw = await _dashboardRepository.GetTopUserStatsRawAsync(scpId, top, from, to);
+            return raw.Select(x => new TopUserContributionModel
+            {
+                UserId = x.UserId,
+                Name = x.Name,
+                Email = x.Email,
+                TotalProducts = x.ProductCount,
+                TotalPoints = x.TotalPoints
+            }).ToList();
+        }
+        public async Task<List<TopUserContributionModel>> GetGlobalTopUsers(int top, DateOnly from, DateOnly to)
+        {
+            var raw = await _dashboardRepository.GetGlobalTopUserStatsRawAsync(top, from, to);
+
+            return raw.Select(x => new TopUserContributionModel
+            {
+                UserId = x.UserId,
+                Name = x.Name,
+                Email = x.Email,
+                TotalProducts = x.ProductCount,
+                TotalPoints = x.TotalPoints
+            }).ToList();
+        }
+
+        public async Task<List<UserProductDetailModel>> GetUserProductDetails(Guid userId)
+        {
+            var raw = await _dashboardRepository.GetUserProductDetailsRawAsync(userId);
+            return raw.Select(x => new UserProductDetailModel
+            {
+                ProductId = x.ProductId,
+                ProductName = x.CategoryName,
+                BrandName = x.BrandName,
+                Status = x.Status,
+                Point = x.Point,
+                CreateAt = x.CreateAt
+            }).ToList();
+        }
     }
-
-    //public async Task<DashboardSummaryModel> GetDashboardSummary(DateOnly from, DateOnly to)
-    //{
-    //	DateTime fromDate = DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
-
-    //	DateTime toDate = DateTime.SpecifyKind(to.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Utc);
-
-    //	var totalUsers = await _unitOfWork.Users.CountAsync(u => u.CreateAt >= fromDate && u.CreateAt <= toDate);
-
-    //	var totalCompanies = await _unitOfWork.Companies.CountAsync(c => c.Created_At >= fromDate && c.Created_At <= toDate);
-
-    //	var totalProducts = await _unitOfWork.Products.CountAsync(p => p.CreateAt >= from && p.CreateAt <= to);
-
-    //	var statsDict = await _productRepository.GetProductCountsByCategoryAsync(fromDate, toDate);
-
-    //	var productByCategory = statsDict.Select(kvp => new CategoryStatisticModel
-    //	{
-    //		CategoryName = kvp.Key,
-    //		Count = kvp.Value
-    //	}).ToList();
-
-    //	return new DashboardSummaryModel
-    //	{
-    //		FromDate = from, 
-    //		ToDate = to,
-    //		TotalUsers = totalUsers,
-    //		TotalCompanies = totalCompanies,
-    //		TotalProducts = totalProducts,
-    //		ProductCategories = productByCategory
-    //	};
-    //}
-
-    //public async Task<PackageDashboardResponse> GetPackageDashboardStats(string smallCollectionPointId, DateOnly from, DateOnly to)
-    //{
-    //    int timezoneOffset = 7; 
-
-    //    DateTime fromDateVN = from.ToDateTime(TimeOnly.MinValue); 
-    //    DateTime toDateVN = to.ToDateTime(new TimeOnly(23, 59, 59)); 
-    //    DateTime fromDateUtc = DateTime.SpecifyKind(fromDateVN.AddHours(-timezoneOffset), DateTimeKind.Utc);
-    //    DateTime toDateUtc = DateTime.SpecifyKind(toDateVN.AddHours(-timezoneOffset), DateTimeKind.Utc);
-
-    //    var query = _unitOfWork.Packages.GetQueryable()
-    //        .Where(p => p.SmallCollectionPointsId.Trim() == smallCollectionPointId.Trim()
-    //                    && p.CreateAt >= fromDateUtc
-    //                    && p.CreateAt <= toDateUtc); 
-
-    //    var data = await query.Select(p => p.CreateAt).ToListAsync();
-
-    //    var totalPackages = data.Count;
-
-    //    var dailyStats = data
-    //        .Select(d => d.AddHours(timezoneOffset)) 
-    //        .GroupBy(d => DateOnly.FromDateTime(d))
-    //        .Select(g => new PackageDailyStat
-    //        {
-    //            Date = g.Key,
-    //            Count = g.Count()
-    //        })
-    //        .OrderBy(x => x.Date)
-    //        .ToList();
-
-    //    for (int i = 0; i < dailyStats.Count; i++)
-    //    {
-    //        if (i == 0)
-    //        {
-    //            dailyStats[i].PercentChange = null;
-    //            continue;
-    //        }
-
-    //        var previousCount = dailyStats[i - 1].Count;
-    //        var currentCount = dailyStats[i].Count;
-
-    //        if (previousCount == 0)
-    //        {
-    //            dailyStats[i].PercentChange = null;
-    //        }
-    //        else
-    //        {
-    //            var percent = ((double)(currentCount - previousCount) / previousCount) * 100;
-    //            dailyStats[i].PercentChange = Math.Round(percent, 1);
-    //        }
-    //    }
-
-    //    return new PackageDashboardResponse
-    //    {
-    //        SmallCollectionPointId = smallCollectionPointId,
-    //        FromDate = from,
-    //        ToDate = to,
-    //        TotalPackages = totalPackages,
-    //        DailyStats = dailyStats
-    //    };
-    //}
 }

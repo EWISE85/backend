@@ -28,7 +28,7 @@ namespace ElecWasteCollection.Application.Services
 
             var vehicle = await _unitOfWork.Vehicles.GetByIdAsync(shift.Vehicle_Id);
             var collector = await _unitOfWork.Users.GetByIdAsync(shift.CollectorId);
-            var pointId = vehicle?.Small_Collection_Point ?? collector?.CollectionUnitId;
+            var pointId = vehicle?.CollectionUnit ?? collector?.CollectionUnitId;
             var point = await _unitOfWork.CollectionUnits.GetByIdAsync(pointId);
 
             var routeDtos = new List<RouteDto>();
@@ -36,7 +36,7 @@ namespace ElecWasteCollection.Application.Services
 
             foreach (var r in allRoutes.OrderBy(x => x.EstimatedTime))
             {
-                var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == r.ProductId);
+                var post = await _unitOfWork.Posts.GetAsync(p => p.Product!.ProductId == r.ProductId);
                 if (post == null) continue;
 
                 var product = post.Product ?? await _unitOfWork.Products.GetByIdAsync(r.ProductId);

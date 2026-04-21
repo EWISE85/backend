@@ -37,7 +37,7 @@ namespace ElecWasteCollection.Application.Services
 				throw new AppException("Không tìm thấy sản phẩm", 404);
 			}
 
-			var post = await _postRepository.GetAsync(p => p.ProductId == productId);
+			var post = await _postRepository.GetAsync(p => p.Product.ProductId == productId);
 
 			var pointTransactions = await _unitOfWork.PointTransactions.GetsAsync(t => t.ProductId == productId);
 

@@ -162,7 +162,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 CompanyId = companyId,
                 CompanyName = companyEntity.Name,
                 WorkDate = workDate.ToString("yyyy-MM-dd"),
-                TotalProducts = posts.Select(p => p.ProductId).Distinct().Count()
+                TotalProducts = posts
+                .Where(p => p.Product != null)
+                .Select(p => p.PostId)
+                .Distinct()
+                .Count()
             };
 
             double totalWeight = 0, totalVolume = 0;
@@ -418,7 +422,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 if (dates.Contains(workDate))
                 {
-                    listIds.Add(post.ProductId.ToString());
+                    listIds.Add(post.Product.ProductId.ToString());
                 }
             }
 
@@ -459,7 +463,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 {
                     CompanyId = company.CompanyId,
                     CompanyName = company.Name,
-                    TotalCompanyProducts = companyPosts.Select(p => p.ProductId).Distinct().Count()
+                    TotalCompanyProducts = companyPosts.Select(p => p.PostId).Distinct().Count()
                 };
 
                 var pointGroups = companyPosts.GroupBy(p => p.AssignedCollectionUnitId);
@@ -476,7 +480,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     {
                         SmallCollectionId = spId,
                         Name = spName,
-                        TotalProduct = grp.Select(p => p.ProductId).Distinct().Count()
+                        TotalProduct = grp.Select(p => p.PostId).Distinct().Count()
                     });
                 }
 
@@ -565,7 +569,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             );
 
             int totalCount = allPosts.Count();
-            var allProductIds = allPosts.Select(p => p.ProductId).ToList();
+            var allProductIds = allPosts
+                .Where(p => p.Product != null)
+                .Select(p => p.Product.ProductId)
+                .ToList();
             var allProductValues = await _unitOfWork.ProductValues.GetAllAsync(pv => allProductIds.Contains(pv.ProductId));
             var allOptions = await _unitOfWork.AttributeOptions.GetAllAsync();
             var attMap = await GetAttributeIdMapAsync();

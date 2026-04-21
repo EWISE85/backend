@@ -28,7 +28,7 @@ namespace ElecWasteCollection.Application.Services
 
             if (vehicle == null) throw new AppException("Xe không tồn tại", 404);
 
-            var parentPoint = await _smallCollectionRepository.GetAsync(p => p.CollectionUnitId == vehicle.Small_Collection_Point);
+            var parentPoint = await _smallCollectionRepository.GetAsync(p => p.CollectionUnitId == vehicle.CollectionUnit);
             if (parentPoint == null)
                 throw new AppException("Không thể duyệt xe vì chưa gán điểm thu gom hợp lệ.", 400);
 

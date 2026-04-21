@@ -24,7 +24,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Category)
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Posts);
+				.Include(p => p.Post);
 
 			return await query.FirstOrDefaultAsync(p => p.QRCode == qrcode);
 		}
@@ -52,7 +52,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Category)
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Posts) 
+				.Include(p => p.Post) 
 				.AsQueryable();
 
 			query = query.Where(p =>
@@ -62,7 +62,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					r.CollectionGroup != null &&
 					r.CollectionGroup.Shifts != null &&
 					r.CollectionGroup.Shifts.Vehicle != null &&
-					r.CollectionGroup.Shifts.Vehicle.Small_Collection_Point == smallCollectionPointId
+					r.CollectionGroup.Shifts.Vehicle.CollectionUnit == smallCollectionPointId
 				)
 			);
 
@@ -77,7 +77,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Category)
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Posts)
+				.Include(p => p.Post)
 				.AsQueryable();
 
 			query = query.Where(p =>
@@ -99,7 +99,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
 				.Include(p => p.ProductImages)
-				.Include(p => p.Posts)
+				.Include(p => p.Post)
 				.Include(p => p.CollectionRoutes);
 
 			query = query.Where(p => p.ProductId == productId);
@@ -114,7 +114,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Category)
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Posts)
+				.Include(p => p.Post)
 				.Include(p => p.CollectionRoutes)
 				.Where(p => p.UserId == senderId);
 			if (!string.IsNullOrEmpty(search))
@@ -148,7 +148,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
 
-				.Include(p => p.Posts).ThenInclude(pst => pst.Sender) 
+				.Include(p => p.Post).ThenInclude(pst => pst.Sender) 
 				.Include(p => p.ProductValues).ThenInclude(pv => pv.Attribute) 
 
 			
@@ -175,7 +175,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Brand)
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Posts).ThenInclude(pst => pst.Sender).ThenInclude(s => s.UserAddresses) 
+				.Include(p => p.Post).ThenInclude(pst => pst.Sender).ThenInclude(s => s.UserAddresses) 
 				.Include(p => p.CollectionRoutes).ThenInclude(r => r.CollectionGroup)
 					.ThenInclude(g => g.Shifts)
 						.ThenInclude(s => s.Collector);			

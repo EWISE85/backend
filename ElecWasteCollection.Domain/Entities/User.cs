@@ -45,7 +45,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string? CollectionUnitId { get; set; }
 
-		public string? CollectionCompanyId { get; set; }
+		public string? CompanyId { get; set; }
 
 		public string? CollectorCode { get; set; }
 
@@ -58,7 +58,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string Status { get; set; }
 
-		public Company? CollectionCompany { get; set; }
+		public Company? Company { get; set; }
 
 		public CollectionUnit? CollectionUnits { get; set; }
 

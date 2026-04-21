@@ -176,7 +176,7 @@ namespace ElecWasteCollection.Application.Services
 			collectorToUpdate.Email = collector.Email;
 			collectorToUpdate.Phone = collector.Phone;
 			collectorToUpdate.Avatar = collector.Avatar;
-			collectorToUpdate.CollectionCompanyId = collector.CollectionCompanyId;
+			collectorToUpdate.CompanyId = collector.CompanyId;
 			collectorToUpdate.CollectionUnitId = collector.CollectionUnitId;
 			collectorToUpdate.Status = status.ToString();
 			_unitOfWork.Users.Update(collectorToUpdate);

@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Domain.IRepository;
+﻿using ElecWasteCollection.Domain.Entities;
+using ElecWasteCollection.Domain.IRepository;
 using ElecWasteCollection.Infrastructure.Context;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -57,6 +58,103 @@ namespace ElecWasteCollection.Infrastructure.Repository
                 .GroupBy(p => p.Category.Name)
                 .Select(g => new { Name = g.Key, Count = g.Count() })
                 .ToDictionaryAsync(k => k.Name, v => v.Count);
+        }
+        public async Task<Dictionary<string, int>> GetProductCountsByBrandByScpIdAsync(string scpId, DateOnly from, DateOnly to)
+        {
+            return await _context.Products
+                .Where(p => p.CollectionUnitId == scpId && p.CreateAt >= from && p.CreateAt <= to)
+                .GroupBy(p => p.Brand.Name)
+                .Select(g => new {
+                    BrandName = g.Key ?? "N/A",
+                    Count = g.Count()
+                })
+                .ToDictionaryAsync(k => k.BrandName, v => v.Count);
+        }
+        public async Task<Dictionary<string, int>> GetProductCountsByBrandAsync(DateOnly from, DateOnly to)
+        {
+            return await _context.Products
+                .Where(p => p.CreateAt >= from && p.CreateAt <= to)
+                .GroupBy(p => p.Brand.Name)
+                .Select(g => new {
+                    Name = g.Key ?? "N/A",
+                    Count = g.Count()
+                })
+                .ToDictionaryAsync(k => k.Name, v => v.Count);
+        }
+
+        public async Task<List<(Guid UserId, string Name, string Email, int ProductCount, double TotalPoints)>> GetTopUserStatsRawAsync(string scpId, int top, DateOnly from, DateOnly to)
+        {
+            var cleanId = scpId.Trim();
+
+            var data = await _context.Users
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.Name,
+                    u.Email,
+                    ProductCount = u.Products
+                        .Count(p => p.CollectionUnitId == cleanId &&
+                                    p.CreateAt >= from && p.CreateAt <= to),
+
+                    TotalPoints = u.PointTransactions
+                        .Where(t => t.TransactionType == PointTransactionType.TICH_DIEM.ToString() &&
+                                    t.Product.CollectionUnitId == cleanId &&
+                                    t.Product.CreateAt >= from &&
+                                    t.Product.CreateAt <= to)
+                        .Sum(t => (double?)t.Point) ?? 0
+                })
+                .Where(x => x.ProductCount > 0)
+                .OrderByDescending(x => x.TotalPoints)
+                .Take(top)
+                .ToListAsync();
+
+            return data.Select(x => (x.UserId, x.Name ?? "N/A", x.Email ?? "N/A", x.ProductCount, x.TotalPoints)).ToList();
+        }
+
+        public async Task<List<(Guid ProductId, string CategoryName, string BrandName, string Status, double Point, DateOnly? CreateAt)>> GetUserProductDetailsRawAsync(Guid userId)
+        {
+            var data = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.UserId == userId)
+                .Select(p => new
+                {
+                    p.ProductId,
+                    CategoryName = p.Category.Name,
+                    BrandName = p.Brand.Name,
+                    p.Status,
+                    Point = p.PointTransactions
+                        .Where(t => t.TransactionType == PointTransactionType.TICH_DIEM.ToString())
+                        .Sum(t => (double?)t.Point) ?? 0,
+                    p.CreateAt
+                })
+                .OrderByDescending(p => p.CreateAt)
+                .ToListAsync();
+
+            return data.Select(x => (x.ProductId, x.CategoryName, x.BrandName, x.Status, x.Point, x.CreateAt)).ToList();
+        }
+        public async Task<List<(Guid UserId, string Name, string Email, int ProductCount, double TotalPoints)>> GetGlobalTopUserStatsRawAsync(int top, DateOnly from, DateOnly to)
+        {
+            var data = await _context.Users
+                .Select(u => new
+                {
+                    u.UserId,
+                    u.Name,
+                    u.Email,
+                    ProductCount = u.Products
+                        .Count(p => p.CreateAt >= from && p.CreateAt <= to),
+
+                    TotalPoints = u.PointTransactions
+                        .Where(t => t.TransactionType == PointTransactionType.TICH_DIEM.ToString() &&
+                                    t.Product.CreateAt >= from &&
+                                    t.Product.CreateAt <= to)
+                        .Sum(t => (double?)t.Point) ?? 0
+                })
+                .Where(x => x.ProductCount > 0)
+                .OrderByDescending(x => x.TotalPoints)
+                .Take(top)
+                .ToListAsync();
+
+            return data.Select(x => (x.UserId, x.Name ?? "N/A", x.Email ?? "N/A", x.ProductCount, x.TotalPoints)).ToList();
         }
     }
 }

@@ -30,14 +30,14 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			{
 				// Giả sử logic là check bảng SmallCollectionPoints
 				query = query.Where(v => _context.Set<CollectionUnit>()
-					.Any(scp => scp.CollectionUnitId == v.Small_Collection_Point &&
+					.Any(scp => scp.CollectionUnitId == v.CollectionUnit &&
 								scp.CompanyId == collectionCompanyId));
 			}
 
 			// 2. Lọc theo SmallCollectionPointId
 			if (!string.IsNullOrEmpty(smallCollectionPointId))
 			{
-				query = query.Where(v => v.Small_Collection_Point == smallCollectionPointId);
+				query = query.Where(v => v.CollectionUnit == smallCollectionPointId);
 			}
 
 			// 3. Lọc theo Biển số

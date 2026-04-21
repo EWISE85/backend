@@ -146,10 +146,9 @@ namespace ElecWasteCollection.Application.Services
 
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với mã QR đã cho", 404);
 
-			var post = product.Posts?.FirstOrDefault();
+            var post = product.Post;
 
-			
-			var imageUrls = product.ProductImages?.Select(img => img.ImageUrl).ToList() ?? new List<string>();
+            var imageUrls = product.ProductImages?.Select(img => img.ImageUrl).ToList() ?? new List<string>();
 			return new ProductComeWarehouseDetailModel
 			{
 				ProductId = product.ProductId,
@@ -243,7 +242,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var combinedList = combinedProducts.Select(product =>
 			{
-				var post = product.Posts?.FirstOrDefault();
+				var post = product.Post;
 				return MapToDetailModel(product, post);
 			})
 			.Where(x => x != null)
@@ -393,8 +392,9 @@ namespace ElecWasteCollection.Application.Services
                     pointIdsToSync.Add(product.CollectionUnitId);
                 }
 
-                var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
-                if (post == null) throw new AppException($"Không tìm thấy bài đăng liên quan đến sản phẩm mã QR: {model.QRCode}", 404);
+                var post = await _unitOfWork.Posts
+                    .GetAsync(p => p.Product != null && p.Product.ProductId == product.ProductId);
+				if (post == null) throw new AppException($"Không tìm thấy bài đăng liên quan đến sản phẩm mã QR: {model.QRCode}", 404);
 
                 double pointToSave = model.Point ?? post.EstimatePoint;
                 string descriptionToSave = !string.IsNullOrEmpty(model.Description) ? model.Description : "Sản phẩm đã về đến kho";
@@ -446,8 +446,10 @@ namespace ElecWasteCollection.Application.Services
 			// Mapping sang DetailModel
 			var productDetails = products.Select(product =>
 			{
-				// Lấy post liên quan đến user này (nếu có logic đặc thù)
-				var post = product.Posts?.FirstOrDefault(p => p.SenderId == userId);
+                // Lấy post liên quan đến user này (nếu có logic đặc thù)
+                var post = product.Post?.SenderId == userId
+                    ? product.Post
+                    : null; 
 				return MapToDetailModel(product, post);
 			})
 			.Where(x => x != null)
@@ -462,7 +464,7 @@ namespace ElecWasteCollection.Application.Services
 			var product = await _productRepository.GetProductDetailWithAllRelationsAsync(productId);
 			if (product == null) return null;
 
-			var post = product.Posts?.FirstOrDefault();
+			var post = product.Post;
 
 			List<ProductValueDetailModel> productAttributes = new List<ProductValueDetailModel>();
 			if (product.ProductValues != null)
@@ -615,7 +617,7 @@ namespace ElecWasteCollection.Application.Services
 			var productDetails = productsPaged.Select(product =>
 			{
 				
-				var post = product.Posts?.FirstOrDefault();
+				var post = product.Post;
 				var route = product.CollectionRoutes?.FirstOrDefault();
 				var shifts = route?.CollectionGroup?.Shifts;
 				var sender = post?.Sender;
@@ -670,7 +672,8 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var product = await _productRepository.GetAsync(p => p.ProductId == productId);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với Id đã cho", 404);
-			var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == productId);
+            var post = await _unitOfWork.Posts
+                .GetAsync(p => p.Product != null && p.Product.ProductId == productId); 
 			if (post == null) throw new AppException("Không tìm thấy bài đăng liên quan đến sản phẩm", 404);
 			post.RejectMessage = rejectMessage;
 			post.Status = PostStatus.DA_HUY.ToString();
@@ -724,7 +727,7 @@ namespace ElecWasteCollection.Application.Services
 			var products = await _productRepository.GetProductsNeedToPickUpAsync(userId, pickUpDate);
 			var productDetails = products.Select(product =>
 			{
-				var post = product.Posts?.FirstOrDefault();
+				var post = product.Post;
 				return MapToDetailModel(product, post);
 			});
 			return productDetails.ToList();
