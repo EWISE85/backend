@@ -188,7 +188,7 @@ namespace ElecWasteCollection.Application.Services
 
 					if (allImagesMatch)
 					{
-						currentStatus = PostStatus.DA_DUYET.ToString();
+						newPost.Status = PostStatus.DA_DUYET.ToString();
 						newProduct.Status = ProductStatus.CHO_PHAN_KHO.ToString();
 						statusDescription = "Yêu cầu được duyệt tự động, chờ phân về kho tương ứng";
 					}
