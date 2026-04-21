@@ -91,6 +91,22 @@ namespace ElecWasteCollection.Application.Services
 				string statusDescription = "Yêu cầu đã được gửi";
 				Guid newProductId = Guid.NewGuid();
 
+				var brandCategoryPoint = await _brandCategoryRepository.GetAsync(bc => bc.BrandId == createPostRequest.Product.BrandId && bc.CategoryId == createPostRequest.Product.SubCategoryId);
+				var basePoint = brandCategoryPoint != null ? brandCategoryPoint.Points : 50;
+
+				var newPost = new Post
+				{
+					PostId = Guid.NewGuid(),
+					SenderId = createPostRequest.SenderId,
+					Date = DateTime.UtcNow,
+					Description = createPostRequest.Description,
+					Address = createPostRequest.Address,
+					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
+					Status = currentStatus,
+					EstimatePoint = basePoint,
+					CheckMessage = new List<string>()
+				};
+
 				var newProduct = new Products
 				{
 					ProductId = newProductId,
@@ -100,6 +116,7 @@ namespace ElecWasteCollection.Application.Services
 					CreateAt = DateOnly.FromDateTime(transactionTimeUtc),
 					UserId = createPostRequest.SenderId,
 					isChecked = false,
+					PostId = newPost.PostId,
 					Status = currentProductStatus
 				};
 
@@ -183,22 +200,6 @@ namespace ElecWasteCollection.Application.Services
 					ChangedAt = DateTime.UtcNow,
 					Status = newProduct.Status,
 					StatusDescription = statusDescription
-				};
-
-				var brandCategoryPoint = await _brandCategoryRepository.GetAsync(bc => bc.BrandId == createPostRequest.Product.BrandId && bc.CategoryId == createPostRequest.Product.SubCategoryId);
-				var basePoint = brandCategoryPoint != null ? brandCategoryPoint.Points : 50;
-
-				var newPost = new Post
-				{
-					PostId = Guid.NewGuid(),
-					SenderId = createPostRequest.SenderId,
-					Date = DateTime.UtcNow,
-					Description = createPostRequest.Description,
-					Address = createPostRequest.Address,
-					ScheduleJson = JsonSerializer.Serialize(createPostRequest.CollectionSchedule),
-					Status = currentStatus,
-					EstimatePoint = basePoint,
-					CheckMessage = new List<string>()
 				};
 
 				await _unitOfWork.Products.AddAsync(newProduct);
