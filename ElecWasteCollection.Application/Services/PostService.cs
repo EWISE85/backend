@@ -378,7 +378,10 @@ namespace ElecWasteCollection.Application.Services
 				}
 				else
 				{
-					var childCategory = await _categoryRepository.GetByIdAsync(createPostRequest.Product.SubCategoryId);
+					var childCategory = await _categoryRepository.GetAsync(
+	c => c.CategoryId == createPostRequest.Product.SubCategoryId,
+	includeProperties: "ParentCategory"
+);
 
 					// Giả sử category có thuộc tính ParentCategory, nếu không bạn query riêng
 					string parentCategoryName = childCategory?.ParentCategory?.Name ?? childCategory?.Name ?? "Không rõ";
@@ -1413,7 +1416,7 @@ namespace ElecWasteCollection.Application.Services
 				Date = post.Date,
 				Address = post.Address ?? string.Empty,
 				SenderName = post.Sender?.Name ?? "Không rõ",
-				Status = post.Status,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
 				EstimatePoint = post.EstimatePoint
 			};
 
