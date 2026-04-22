@@ -501,60 +501,58 @@ namespace ElecWasteCollection.Application.Services
 			// 2. DUYỆT QUA TỪNG POST ĐỂ ÁNH XẠ SANG MODEL
 			foreach (var post in allPosts)
 			{
-				// NHÁNH 1: BÀI ĐÃ DUYỆT -> CÓ PRODUCT TRONG SQL
-				if (post.Status == PostStatus.DA_DUYET.ToString())
+				// =============================================================
+				// CÁCH CHIA NHÁNH CHUẨN: DỰA VÀO VIỆC PRODUCT ĐÃ TẠO TRONG SQL CHƯA
+				// =============================================================
+
+				if (post.Product != null)
 				{
-					if (post.Product != null)
+					// NHÁNH 1: DỮ LIỆU ĐÃ CÓ TRONG SQL (Bao gồm Đã Duyệt, Đã Hủy sau khi duyệt, Chờ phân kho...)
+					if (!string.IsNullOrEmpty(search))
 					{
-						// Thêm dấu ? vào ToLower() để an toàn tuyệt đối
-						if (!string.IsNullOrEmpty(search))
-						{
-							string s = search.ToLower();
-							bool isMatch = (post.Product.Category?.Name?.ToLower()?.Contains(s) == true) ||
-										   (post.Product.Brand?.Name?.ToLower()?.Contains(s) == true) ||
-										   (post.Description?.ToLower()?.Contains(s) == true);
-							if (!isMatch) continue;
-						}
-
-						var sqlModel = MapToDetailModel(post.Product, post);
-						if (sqlModel != null) allProductDetails.Add(sqlModel);
+						string s = search.ToLower();
+						bool isMatch = (post.Product.Category?.Name?.ToLower()?.Contains(s) == true) ||
+									   (post.Product.Brand?.Name?.ToLower()?.Contains(s) == true) ||
+									   (post.Description?.ToLower()?.Contains(s) == true);
+						if (!isMatch) continue;
 					}
-					continue;
-				}
 
-				// NHÁNH 2: BÀI CHỜ DUYỆT / TỪ CHỐI -> LẤY JSON
-				string draftJson = null;
-
-				if (post.Status == PostStatus.CHO_DUYET.ToString())
-				{
-					var redisKey = $"ewise:draft_product:{post.PostId}";
-					draftJson = await _redisCacheService.GetStringAsync(redisKey);
+					var sqlModel = MapToDetailModel(post.Product, post);
+					if (sqlModel != null) allProductDetails.Add(sqlModel);
 				}
-				else if (post.Status == PostStatus.DA_TU_CHOI.ToString() && post.CheckMessage != null)
+				else
 				{
-					var trickString = post.CheckMessage.FirstOrDefault(x => x.StartsWith("[REJECTED_PRODUCT_DATA]"));
-					if (trickString != null) draftJson = trickString.Split('|')[1];
-				}
+					// NHÁNH 2: DỮ LIỆU NẰM TRÊN REDIS HOẶC CHECKMESSAGE (Chờ duyệt, Từ chối, Hủy khi chưa duyệt)
+					string draftJson = null;
 
-				ProductDraftModel? draftData = null;
-				if (!string.IsNullOrEmpty(draftJson))
-				{
-					draftData = JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions);
-				}
+					if (post.Status == PostStatus.CHO_DUYET.ToString())
+					{
+						var redisKey = $"ewise:draft_product:{post.PostId}";
+						draftJson = await _redisCacheService.GetStringAsync(redisKey);
+					}
+					else if (post.CheckMessage != null) // Bao gồm cả DA_TU_CHOI và DA_HUY (nếu có lưu nháp)
+					{
+						var trickString = post.CheckMessage.FirstOrDefault(x => x.StartsWith("[REJECTED_PRODUCT_DATA]"));
+						if (trickString != null) draftJson = trickString.Split('|')[1];
+					}
 
-				if (!string.IsNullOrEmpty(search))
-				{
-					string s = search.ToLower();
-					bool isMatch = (draftData?.CategoryName?.ToLower()?.Contains(s) == true) ||
-								   (draftData?.BrandName?.ToLower()?.Contains(s) == true) ||
-								   (post.Description?.ToLower()?.Contains(s) == true);
-					if (!isMatch) continue;
-				}
+					ProductDraftModel? draftData = null;
+					if (!string.IsNullOrEmpty(draftJson))
+					{
+						draftData = JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions);
+					}
 
-				var draftModel = MapDraftToWarehouseDetailModel(post, draftData);
-				if (draftModel != null)
-				{
-					allProductDetails.Add(draftModel);
+					if (!string.IsNullOrEmpty(search))
+					{
+						string s = search.ToLower();
+						bool isMatch = (draftData?.CategoryName?.ToLower()?.Contains(s) == true) ||
+									   (draftData?.BrandName?.ToLower()?.Contains(s) == true) ||
+									   (post.Description?.ToLower()?.Contains(s) == true);
+						if (!isMatch) continue;
+					}
+
+					var draftModel = MapDraftToWarehouseDetailModel(post, draftData);
+					if (draftModel != null) allProductDetails.Add(draftModel);
 				}
 			}
 
