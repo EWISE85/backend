@@ -28,7 +28,54 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.ToListAsync();
 		}
 
-		public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(string? status,string? search,string? order,int page,int limit)
+		//public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(string? status,string? search,string? order,int page,int limit)
+		//{
+		//	var query = _dbSet.AsNoTracking()
+		//		.Include(p => p.Sender)
+		//		.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)
+		//		.Include(p => p.Product).ThenInclude(pr => pr.ProductImages)
+		//		.Include(p => p.Product).ThenInclude(pr => pr.Brand)
+		//		.AsQueryable();
+
+		//	if (!string.IsNullOrEmpty(status))
+		//	{
+		//		var trimmedStatus = status.Trim().ToLower();
+		//		query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
+		//	}
+
+		//	if (!string.IsNullOrEmpty(search))
+		//	{
+		//		string searchLower = search.ToLower();
+		//		query = query.Where(p =>
+		//			p.Product.Category.Name.ToLower().Contains(searchLower));
+		//	}
+
+		//	if (status == "Chờ Duyệt")
+		//	{
+		//		query = query.OrderBy(p => p.Date);
+		//	}
+		//	else if (status == "Đã Duyệt" || status == "Đã Từ Chối")
+		//	{
+		//		query = query.OrderByDescending(p => p.Date);
+		//	}
+		//	else
+		//	{
+		//		if (order?.ToUpper() == "ASC")
+		//			query = query.OrderBy(p => p.Date);
+		//		else
+		//			query = query.OrderByDescending(p => p.Date);
+		//	}
+
+		//	int totalCount = await query.CountAsync();
+
+		//	var items = await query
+		//		.Skip((page - 1) * limit)
+		//		.Take(limit)
+		//		.ToListAsync();
+
+		//	return (items, totalCount);
+		//}
+		public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(string? status, string? search, string? order, int page, int limit)
 		{
 			var query = _dbSet.AsNoTracking()
 				.Include(p => p.Sender)
@@ -46,15 +93,24 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			if (!string.IsNullOrEmpty(search))
 			{
 				string searchLower = search.ToLower();
+
 				query = query.Where(p =>
-					p.Product.Category.Name.ToLower().Contains(searchLower));
+					(p.Product != null && p.Product.Category != null && p.Product.Category.Name.ToLower().Contains(searchLower)) ||
+					(p.Description != null && p.Description.ToLower().Contains(searchLower)) ||
+					(p.Address != null && p.Address.ToLower().Contains(searchLower)));
 			}
 
-			if (status == "Chờ Duyệt")
+			var choDuyetStatus = PostStatus.CHO_DUYET.ToString().ToLower();
+			var daDuyetStatus = PostStatus.DA_DUYET.ToString().ToLower();
+			var tuChoiStatus = PostStatus.DA_TU_CHOI.ToString().ToLower();
+
+			var currentStatus = status?.Trim().ToLower();
+
+			if (currentStatus == choDuyetStatus)
 			{
 				query = query.OrderBy(p => p.Date);
 			}
-			else if (status == "Đã Duyệt" || status == "Đã Từ Chối")
+			else if (currentStatus == daDuyetStatus || currentStatus == tuChoiStatus)
 			{
 				query = query.OrderByDescending(p => p.Date);
 			}

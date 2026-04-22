@@ -226,5 +226,25 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.SaveAsync();
 			return true;
 		}
+
+		public async Task<bool> UnActiveCollectionUnit(string collectionUnitId)
+		{
+			var collectionUnit = await _unitOfWork.CollectionUnits.GetAsync(s => s.CollectionUnitId == collectionUnitId);
+			if (collectionUnit == null) throw new AppException("Không tìm thấy kho", 404);
+			collectionUnit.Status = CollectionUnitStatus.KHONG_HOAT_DONG.ToString();
+			_unitOfWork.CollectionUnits.Update(collectionUnit);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
+
+		public async Task<bool> ActiveCollectionUnit(string collectionUnitId)
+		{
+			var collectionUnit = await _unitOfWork.CollectionUnits.GetAsync(s => s.CollectionUnitId == collectionUnitId);
+			if (collectionUnit == null) throw new AppException("Không tìm thấy kho", 404);
+			collectionUnit.Status = CollectionUnitStatus.DANG_HOAT_DONG.ToString();
+			_unitOfWork.CollectionUnits.Update(collectionUnit);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
 	}
 }

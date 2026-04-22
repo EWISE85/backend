@@ -30,5 +30,8 @@ namespace ElecWasteCollection.Application.IServices
             int limit);
 		Task<CollectorStatisticsResponseModel> GetStatisticsAsync(CollectorStatisticModel request);
 
+		Task<bool> UnActiveCollector(Guid collectorId);
+		Task<bool> ActiveCollector(Guid collectorId);
+
 	}
 }

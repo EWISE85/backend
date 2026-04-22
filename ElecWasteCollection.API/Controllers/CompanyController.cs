@@ -83,5 +83,25 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(result);
 		}
+		[HttpPatch("un-active/{companyId}")]
+		public async Task<IActionResult> UnActiveCollectionCompany([FromRoute] string companyId)
+		{
+			var result = await _collectionCompanyService.UnActiveCompany(companyId);
+			if (!result)
+			{
+				return NotFound();
+			}
+			return Ok(new { message = "Collection company has been marked as inactive." });
+		}
+		[HttpPatch("active/{companyId}")]
+		public async Task<IActionResult> ActiveCollectionCompany([FromRoute] string companyId)
+		{
+			var result = await _collectionCompanyService.ActiveCompany(companyId);
+			if (!result)
+			{
+				return NotFound();
+			}
+			return Ok(new { message = "Collection company has been marked as active." });
+		}
 	}
 }

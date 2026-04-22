@@ -23,6 +23,16 @@ namespace ElecWasteCollection.Application.Services
 			_userRepository = userRepository;
 		}
 
+		public async Task<bool> ActiveCompany(string companyId)
+		{
+			var company = await _unitOfWork.Companies.GetAsync(t => t.CompanyId == companyId);
+			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
+			company.Status = CompanyStatus.DANG_HOAT_DONG.ToString();
+			_unitOfWork.Companies.Update(company);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
+
 		public async Task<bool> AddNewCompany(Company collectionTeams)
 		{
 			await _unitOfWork.Companies.AddAsync(collectionTeams);
@@ -242,6 +252,15 @@ namespace ElecWasteCollection.Application.Services
 			);
 		}
 
+		public async Task<bool> UnActiveCompany(string companyId)
+		{
+			var company = await _unitOfWork.Companies.GetAsync(t => t.CompanyId == companyId);
+			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
+			company.Status = CompanyStatus.KHONG_HOAT_DONG.ToString();
+			_unitOfWork.Companies.Update(company);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
 
 		public async Task<bool> UpdateCompany(Company collectionTeams)
 		{

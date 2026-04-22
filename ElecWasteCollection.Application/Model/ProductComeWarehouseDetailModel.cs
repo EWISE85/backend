@@ -27,6 +27,7 @@ namespace ElecWasteCollection.Application.Model
 		public double? EstimatePoint { get; set; } 
 		public double? RealPoint { get; set; } 
 
-		public DateOnly? PickUpDate { get; set; } 
+		public DateOnly? PickUpDate { get; set; }
+		public DateTime CreateAt { get; set; }
 	}
 }

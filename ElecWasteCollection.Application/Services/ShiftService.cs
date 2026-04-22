@@ -23,6 +23,16 @@ namespace ElecWasteCollection.Application.Services
 			_unitOfWork = unitOfWork;
 		}
 
+		public async Task<bool> ActiveShift(string shiftId)
+		{
+			var shift = await _unitOfWork.Shifts.GetAsync(s => s.ShiftId == shiftId);
+			if (shift == null) throw new AppException("Không tìm thấy ca làm việc", 404);
+			shift.Status = ShiftStatus.DA_HUY.ToString();
+			_unitOfWork.Shifts.Update(shift);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
+
 		public async Task<ImportResult> CheckAndUpdateShiftAsync(CreateShiftModel shift)
 		{
 			var result = new ImportResult();
@@ -143,6 +153,16 @@ namespace ElecWasteCollection.Application.Services
 				Shift_End_Time = shift.Shift_End_Time,
 				Status = shift.Status
 			};
+		}
+
+		public async Task<bool> UnActiveShift(string shiftId)
+		{
+			var shift = await _unitOfWork.Shifts.GetAsync(s => s.ShiftId == shiftId);
+			if (shift == null) throw new AppException("Không tìm thấy ca làm việc", 404);
+			shift.Status = ShiftStatus.CO_SAN.ToString();
+			_unitOfWork.Shifts.Update(shift);
+			await _unitOfWork.SaveAsync();
+			return true;
 		}
 
 		public async Task<bool> UpdateShiftAsync(CreateShiftModel updateShift)

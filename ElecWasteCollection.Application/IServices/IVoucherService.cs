@@ -22,5 +22,7 @@ namespace ElecWasteCollection.Application.IServices
         Task UpdateFormatExcel(Guid systemConfigId, IFormFile formFile);
 
         Task<ImportResult> CheckAndUpdateVoucherAsync(CreateVoucherModel model);
+        Task<bool> UnActiveVoucher(Guid voucherId);
+		Task<bool> ActiveVoucher(Guid voucherId);
 	}
 }

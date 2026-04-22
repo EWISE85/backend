@@ -31,6 +31,16 @@ namespace ElecWasteCollection.Application.Services
 			_cloudinaryService = cloudinaryService;
 		}
 
+		public async Task<bool> ActiveVoucher(Guid voucherId)
+		{
+			var voucher = await _unitOfWork.Vouchers.GetAsync(v => v.VoucherId == voucherId);
+			if (voucher == null) throw new AppException("Không tìm thấy voucher", 404);
+			voucher.Status = VoucherStatus.HOAT_DONG.ToString();
+			_unitOfWork.Vouchers.Update(voucher);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
+
 		public async Task<ImportResult> CheckAndUpdateVoucherAsync(CreateVoucherModel model)
 		{
 			var result = new ImportResult();
@@ -206,6 +216,16 @@ namespace ElecWasteCollection.Application.Services
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<VoucherStatus>(voucher.Status)
 			};
 
+		}
+
+		public async Task<bool> UnActiveVoucher(Guid voucherId)
+		{
+			var voucher = await _unitOfWork.Vouchers.GetAsync(v => v.VoucherId == voucherId);
+			if (voucher == null) throw new AppException("Không tìm thấy voucher", 404);
+			voucher.Status = VoucherStatus.KHONG_HOAT_DONG.ToString();
+			_unitOfWork.Vouchers.Update(voucher);
+			await _unitOfWork.SaveAsync();
+			return true;
 		}
 
 		public async Task UpdateFormatExcel(Guid systemConfigId, IFormFile formFile)
