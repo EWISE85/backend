@@ -127,23 +127,30 @@ namespace ElecWasteCollection.Application.Services
 					_unitOfWork.UserTokens.Delete(oldToken);
 				}
 			}
+			var oldDeviceTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(t => t.UserId == user.UserId);
+			if (oldDeviceTokens != null && oldDeviceTokens.Any())
+			{
+				foreach (var oldDevice in oldDeviceTokens)
+				{
+					_unitOfWork.UserDeviceTokens.Delete(oldDevice);
+				}
+			}
 
 			var accessToken = await _tokenService.GenerateToken(user);
 			var refreshTokenString = _tokenService.GenerateRefreshTokenString();
 
 			var newUserToken = new UserToken
 			{
-				UserTokenId = Guid.NewGuid(), 
+				UserTokenId = Guid.NewGuid(),
 				Token = refreshTokenString,
 				AccessToken = accessToken,
 				UserId = user.UserId,
-				ExpiryDate = DateTime.UtcNow.AddDays(7), 
+				ExpiryDate = DateTime.UtcNow.AddDays(7),
 				CreatedAt = DateTime.UtcNow
 			};
 
 			await _unitOfWork.UserTokens.AddAsync(newUserToken);
 			await _unitOfWork.SaveAsync();
-
 
 			var loginResponse = new LoginResponseModel
 			{
@@ -187,21 +194,21 @@ namespace ElecWasteCollection.Application.Services
 				throw new AppException("Apple Token không hợp lệ!", 400);
 			}
 
-
 			var user = await _userRepository.GetAsync(u => u.AppleId == appleUser.AppleId && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
 
 			if (user == null)
 			{
-				
 				if (!string.IsNullOrEmpty(appleUser.Email))
 				{
 					user = await _userRepository.GetAsync(u => u.Email == appleUser.Email && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
-					if (user.Role != UserRole.User.ToString()) { throw new AppException("Email của appleId này đã tồn tại với một tài khoản khác!", 400); }
+					if (user != null && user.Role != UserRole.User.ToString())
+					{
+						throw new AppException("Email của appleId này đã tồn tại với một tài khoản khác!", 400);
+					}
 				}
 
 				if (user != null)
 				{
-					
 					user.AppleId = appleUser.AppleId;
 					_unitOfWork.Users.Update(user);
 				}
@@ -215,7 +222,7 @@ namespace ElecWasteCollection.Application.Services
 					{
 						UserId = Guid.NewGuid(),
 						AppleId = appleUser.AppleId,
-						Email = appleUser.Email, 
+						Email = appleUser.Email,
 						Phone = null,
 						Name = displayName,
 						Avatar = null,
@@ -225,13 +232,15 @@ namespace ElecWasteCollection.Application.Services
 						Status = UserStatus.DANG_HOAT_DONG.ToString()
 					};
 
-					
-
 					await _unitOfWork.Users.AddAsync(user);
 				}
 			}
+
 			var oldTokens = await _unitOfWork.UserTokens.GetsAsync(t => t.UserId == user.UserId);
 			foreach (var ot in oldTokens) _unitOfWork.UserTokens.Delete(ot);
+
+			var oldDeviceTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(t => t.UserId == user.UserId);
+			foreach (var odt in oldDeviceTokens) _unitOfWork.UserDeviceTokens.Delete(odt);
 
 			var accessToken = await _tokenService.GenerateToken(user);
 			var refreshTokenString = _tokenService.GenerateRefreshTokenString();
@@ -245,6 +254,7 @@ namespace ElecWasteCollection.Application.Services
 				ExpiryDate = DateTime.UtcNow.AddDays(7),
 				CreatedAt = DateTime.UtcNow
 			});
+
 			await _unitOfWork.SaveAsync();
 
 			var loginResponse = new LoginResponseModel
@@ -297,6 +307,31 @@ namespace ElecWasteCollection.Application.Services
 				RefreshToken = newRefreshToken,
 				IsFirstLogin = false
 			};
+		}
+		public async Task<bool> LogoutAsync(Guid userId)
+		{
+			var userTokens = await _unitOfWork.UserTokens.GetsAsync(x => x.UserId == userId);
+			if (userTokens != null && userTokens.Any())
+			{
+				foreach (var token in userTokens)
+				{
+					_unitOfWork.UserTokens.Delete(token);
+				}
+			}
+
+			var deviceTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(x => x.UserId == userId);
+			if (deviceTokens != null && deviceTokens.Any())
+			{
+				foreach (var device in deviceTokens)
+				{
+					_unitOfWork.UserDeviceTokens.Delete(device);
+				}
+			}
+
+			// Lưu tất cả thay đổi xuống Database
+			await _unitOfWork.SaveAsync();
+
+			return true;
 		}
 	}
 }

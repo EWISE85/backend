@@ -61,6 +61,19 @@ namespace ElecWasteCollection.API.Controllers
 
 			return Ok(result);
 		}
+		[HttpPost("logout")]
+		public async Task<IActionResult> Logout([FromBody] string userId)
+		{
+			var result = await _accountService.LogoutAsync(Guid.Parse(userId));
+			if (!result)
+			{
+				return BadRequest("Đăng xuất thất bại.");
+			}
+			return Ok(new
+			{
+				message = "Đăng xuất thành công."
+			});
+		}
 
 	}
 }

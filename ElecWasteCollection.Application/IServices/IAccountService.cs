@@ -17,5 +17,6 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<LoginResponseModel> LoginWithAppleAsync(string identityToken, string? firstName, string? lastName);
 		Task<LoginResponseModel?> RefreshTokenAsync(RefreshTokenModel request);
+		Task<bool> LogoutAsync(Guid userId);
 	}
 }
