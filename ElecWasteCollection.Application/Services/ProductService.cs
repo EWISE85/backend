@@ -471,49 +471,58 @@ namespace ElecWasteCollection.Application.Services
 			var allProductDetails = new List<ProductComeWarehouseDetailModel>();
 			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-			// 1. LẤY TẤT CẢ POST CỦA USER LÀM GỐC (Bao gồm cả Đã duyệt, Chờ duyệt, Từ chối)
-			// Dùng include chuỗi để kéo luôn các bảng con của Product lên (né lỗi Inner Join của Repo cũ)
+			// 1. LẤY TẤT CẢ POST CỦA USER
 			var allPosts = await _unitOfWork.Posts.GetsAsync(
 				p => p.SenderId == userId,
 				includeProperties: "Sender,Product,Product.Category,Product.Brand,Product.ProductImages"
 			);
 
+			// ========================================================
+			// FIX LỖI: Thêm check NULL ở đây. 
+			// Nếu User chưa có bài nào hoặc DB trả về null thì thoát luôn, trả về List rỗng
+			// ========================================================
+			if (allPosts == null || !allPosts.Any())
+			{
+				return new PagedResultModel<ProductComeWarehouseDetailModel>(new List<ProductComeWarehouseDetailModel>(), page, limit, 0);
+			}
+
 			// Lọc theo ngày (nếu có)
 			if (createAt.HasValue)
 			{
 				allPosts = allPosts.Where(p => DateOnly.FromDateTime(p.Date) == createAt.Value).ToList();
+
+				// Đề phòng lọc xong không còn bài nào
+				if (!allPosts.Any())
+				{
+					return new PagedResultModel<ProductComeWarehouseDetailModel>(new List<ProductComeWarehouseDetailModel>(), page, limit, 0);
+				}
 			}
 
 			// 2. DUYỆT QUA TỪNG POST ĐỂ ÁNH XẠ SANG MODEL
 			foreach (var post in allPosts)
 			{
-				// ============================================
 				// NHÁNH 1: BÀI ĐÃ DUYỆT -> CÓ PRODUCT TRONG SQL
-				// ============================================
 				if (post.Status == PostStatus.DA_DUYET.ToString())
 				{
 					if (post.Product != null)
 					{
-						// Lọc Search cho bài SQL
+						// Thêm dấu ? vào ToLower() để an toàn tuyệt đối
 						if (!string.IsNullOrEmpty(search))
 						{
 							string s = search.ToLower();
-							bool isMatch = (post.Product.Category?.Name?.ToLower().Contains(s) == true) ||
-										   (post.Product.Brand?.Name?.ToLower().Contains(s) == true) ||
-										   (post.Description?.ToLower().Contains(s) == true);
+							bool isMatch = (post.Product.Category?.Name?.ToLower()?.Contains(s) == true) ||
+										   (post.Product.Brand?.Name?.ToLower()?.Contains(s) == true) ||
+										   (post.Description?.ToLower()?.Contains(s) == true);
 							if (!isMatch) continue;
 						}
 
-						// Map dữ liệu bằng hàm cũ của bạn
 						var sqlModel = MapToDetailModel(post.Product, post);
 						if (sqlModel != null) allProductDetails.Add(sqlModel);
 					}
-					continue; // Xong bài này thì nhảy sang bài tiếp theo
+					continue;
 				}
 
-				// ============================================
 				// NHÁNH 2: BÀI CHỜ DUYỆT / TỪ CHỐI -> LẤY JSON
-				// ============================================
 				string draftJson = null;
 
 				if (post.Status == PostStatus.CHO_DUYET.ToString())
@@ -533,17 +542,15 @@ namespace ElecWasteCollection.Application.Services
 					draftData = JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions);
 				}
 
-				// Lọc Search cho bài Draft
 				if (!string.IsNullOrEmpty(search))
 				{
 					string s = search.ToLower();
-					bool isMatch = (draftData?.CategoryName?.ToLower().Contains(s) == true) ||
-								   (draftData?.BrandName?.ToLower().Contains(s) == true) ||
-								   (post.Description?.ToLower().Contains(s) == true);
+					bool isMatch = (draftData?.CategoryName?.ToLower()?.Contains(s) == true) ||
+								   (draftData?.BrandName?.ToLower()?.Contains(s) == true) ||
+								   (post.Description?.ToLower()?.Contains(s) == true);
 					if (!isMatch) continue;
 				}
 
-				// Map dữ liệu bằng hàm Redis 
 				var draftModel = MapDraftToWarehouseDetailModel(post, draftData);
 				if (draftModel != null)
 				{
@@ -561,31 +568,36 @@ namespace ElecWasteCollection.Application.Services
 
 			return new PagedResultModel<ProductComeWarehouseDetailModel>(pagedResult, page, limit, totalItems);
 		}
-		private ProductComeWarehouseDetailModel MapDraftToWarehouseDetailModel(Post post, ProductDraftModel draft)
+		private ProductComeWarehouseDetailModel MapDraftToWarehouseDetailModel(Post post, ProductDraftModel? draft)
 		{
-
+			// Không dùng return null ở đây để đảm bảo bài Post vẫn hiện lên danh sách
 			return new ProductComeWarehouseDetailModel
 			{
-				ProductId = draft.Product.ProductId,
-				CategoryId = draft.Product.CategoryId,
-				BrandId = draft.Product.BrandId,
+				// Sử dụng toán tử ?. để nếu draft null thì trả về giá trị mặc định, không gây crash
+				ProductId = draft?.Product?.ProductId ?? Guid.Empty,
+				CategoryId = draft?.Product?.CategoryId ?? Guid.Empty,
+				BrandId = draft?.Product?.BrandId ?? Guid.Empty,
 
-				// Các Name lấy từ DTO (Nhờ cách 2 lúc nãy ta đã đóng gói lên Redis)
-				CategoryName = draft.ChildCategoryName ?? "Không rõ",
-				BrandName = draft.BrandName ?? "Không rõ",
+				// Các Name lấy từ DTO, nếu null thì hiện "Không rõ"
+				CategoryName = draft?.ChildCategoryName ?? "Dữ liệu đang chờ cập nhật",
+				BrandName = draft?.BrandName ?? "Không rõ",
 
-				Description = post.Description ?? draft.Product.Description ?? string.Empty,
+				Description = post.Description ?? draft?.Product?.Description ?? string.Empty,
 
-				ProductImages = draft.ProductImages?.Select(x => x.ImageUrl).ToList() ?? new List<string>(),
+				// Hình ảnh
+				ProductImages = draft?.ProductImages?.Select(x => x.ImageUrl).ToList() ?? new List<string>(),
 
+				// Trạng thái tiếng Việt
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status) ?? post.Status,
 
 				EstimatePoint = post.EstimatePoint,
-				
-				QrCode = null,           
-				SizeTierName = null,      
-				RealPoint = null,         
-				PickUpDate = null        
+				CreateAt = post.Date, // Quan trọng để sắp xếp không bị lỗi
+
+				// Các thông tin thu gom (Chưa có khi chưa duyệt)
+				QrCode = null,
+				SizeTierName = null,
+				RealPoint = null,
+				PickUpDate = null
 			};
 		}
 		public async Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId)
