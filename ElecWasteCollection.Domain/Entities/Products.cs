@@ -45,7 +45,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public Guid UserId { get; set; }
 
 		public string? PackageId { get; set; }
-		public Guid PostId { get; set; }
+		public Guid? PostId { get; set; }
 
 
 		public string Description { get; set; }
@@ -69,7 +69,7 @@ namespace ElecWasteCollection.Domain.Entities
 		public User User { get; set; }
 
 		public CollectionUnit? CollectionUnits { get; set; }
-        public Post Post { get; set; }
+        public Post? Post { get; set; }
         public virtual ICollection<ProductImages> ProductImages { get; set; } = new List<ProductImages>();
 		public virtual ICollection<ProductValues> ProductValues { get; set; } = new List<ProductValues>();
 		public virtual ICollection<ProductStatusHistory> ProductStatusHistories { get; set; } = new List<ProductStatusHistory>();
