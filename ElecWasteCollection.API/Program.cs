@@ -225,6 +225,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddSingleton<IApnsService, ApnsVoipService>();
 			builder.Services.AddScoped<CallService>();
 			builder.Services.AddScoped<ICallNotificationService, SignalRNotificationService>();
+			builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
 			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{

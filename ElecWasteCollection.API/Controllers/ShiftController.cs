@@ -64,6 +64,26 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(shift);
 		}
+		[HttpPatch("un-active/{shiftId}")]
+		public async Task<IActionResult> UnActiveShift([FromRoute] string shiftId)
+		{
+			var result = await _shiftService.UnActiveShift(shiftId);
+			if (!result)
+			{
+				return NotFound();
+			}
+			return Ok(new { message = "Shift has been marked as inactive." });
+		}
 
-	}
+		[HttpPatch("active/{shiftId}")]
+		public async Task<IActionResult> ActiveShift([FromRoute] string shiftId)
+		{
+			var result = await _shiftService.ActiveShift(shiftId);
+			if (!result)
+			{
+				return NotFound();
+			}
+			return Ok(new { message = "Shift has been marked as active." });
+		}
+		}
 }

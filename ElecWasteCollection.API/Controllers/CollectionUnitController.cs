@@ -78,6 +78,27 @@ namespace ElecWasteCollection.API.Controllers
 			var result = await _smallCollectionService.GetSmallCollectionPointActive();
 			return Ok(result);
 		}
+		[HttpPatch("un-active/{collectionUnitId}")]
+		public async Task<IActionResult> UnActiveSmallCollectionPoint([FromRoute] string collectionUnitId)
+		{
+			var result = await _smallCollectionService.UnActiveCollectionUnit(collectionUnitId);
+			if (!result)
+			{
+				return NotFound();
+			}
+			return Ok(new { message = "Small collection point has been marked as inactive." });
+		}
+		[HttpPatch("active/{collectionUnitId}")]
+		public async Task<IActionResult> ActiveSmallCollectionPoint([FromRoute] string collectionUnitId)
+		{
+			var result = await _smallCollectionService.ActiveCollectionUnit(collectionUnitId);
+			if (!result)
+			{
+				return NotFound();
+			}
+			return Ok(new { message = "Small collection point has been marked as active." });
+		}
+
 
 	}
 

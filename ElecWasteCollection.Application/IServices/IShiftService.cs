@@ -18,5 +18,8 @@ namespace ElecWasteCollection.Application.IServices
 		Task<PagedResultModel<ShiftModel>> GetPagedShiftAsync(ShiftSearchModel model);
 		Task<ImportResult> CheckAndUpdateShiftAsync(CreateShiftModel shift);
 
+		Task<bool> UnActiveShift(string shiftId);
+		Task<bool> ActiveShift(string shiftId);
+
 	}
 }

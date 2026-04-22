@@ -28,7 +28,8 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IAttributeOptionRepository _attributeOptionRepository;
 		private readonly IPackageRepository _packageRepository;
         private readonly CapacityHelper _capacityHelper;
-        public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper)
+		private readonly IRedisCacheService _redisCacheService;
+		public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper, IRedisCacheService redisCacheService)
 		{
 			_productRepository = productRepository;
 			_unitOfWork = unitOfWork;
@@ -40,8 +41,8 @@ namespace ElecWasteCollection.Application.Services
 			_attributeOptionRepository = attributeOptionRepository;
 			_packageRepository = packageRepository;
 			_capacityHelper = capacityHelper;
-
-        }
+			_redisCacheService = redisCacheService;
+		}
 
 
 
@@ -278,7 +279,13 @@ namespace ElecWasteCollection.Application.Services
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				EstimatePoint = post?.EstimatePoint,
 				RealPoint = realPoint,
-				PickUpDate = product.CollectionRoutes?.FirstOrDefault()?.CollectionDate
+				PickUpDate = product.CollectionRoutes?.FirstOrDefault()?.CollectionDate,
+				CreateAt = post != null
+	? post.Date
+	: (product.CreateAt.HasValue
+		? product.CreateAt.Value.ToDateTime(TimeOnly.MinValue)
+		: DateTime.MinValue)
+
 			};
 		}
 
@@ -434,31 +441,153 @@ namespace ElecWasteCollection.Application.Services
         }
 
 
-        public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit)
-		{
-			var (products, totalItems) = await _productRepository.GetProductsBySenderIdWithDetailsAsync(search, createAt, userId, page, limit);
+		//      public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit)
+		//{
+		//	var (products, totalItems) = await _productRepository.GetProductsBySenderIdWithDetailsAsync(search, createAt, userId, page, limit);
 
-			if (products == null || !products.Any())
+		//	if (products == null || !products.Any())
+		//	{
+		//		return new PagedResultModel<ProductComeWarehouseDetailModel>(new List<ProductComeWarehouseDetailModel>(), page, limit, 0);
+		//	}
+
+		//	// Mapping sang DetailModel
+		//	var productDetails = products.Select(product =>
+		//	{
+		//              // Lấy post liên quan đến user này (nếu có logic đặc thù)
+		//              var post = product.Post?.SenderId == userId
+		//                  ? product.Post
+		//                  : null; 
+		//		return MapToDetailModel(product, post);
+		//	})
+		//	.Where(x => x != null)
+		//	.ToList();
+
+		//	// Trả về kết quả bọc trong PagedResultModel
+		//	return new PagedResultModel<ProductComeWarehouseDetailModel>(productDetails, page, limit, totalItems);
+		//}
+
+		public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit)
+		{
+			var allProductDetails = new List<ProductComeWarehouseDetailModel>();
+			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+			// 1. LẤY TẤT CẢ POST CỦA USER LÀM GỐC (Bao gồm cả Đã duyệt, Chờ duyệt, Từ chối)
+			// Dùng include chuỗi để kéo luôn các bảng con của Product lên (né lỗi Inner Join của Repo cũ)
+			var allPosts = await _unitOfWork.Posts.GetsAsync(
+				p => p.SenderId == userId,
+				includeProperties: "Sender,Product,Product.Category,Product.Brand,Product.ProductImages"
+			);
+
+			// Lọc theo ngày (nếu có)
+			if (createAt.HasValue)
 			{
-				return new PagedResultModel<ProductComeWarehouseDetailModel>(new List<ProductComeWarehouseDetailModel>(), page, limit, 0);
+				allPosts = allPosts.Where(p => DateOnly.FromDateTime(p.Date) == createAt.Value).ToList();
 			}
 
-			// Mapping sang DetailModel
-			var productDetails = products.Select(product =>
+			// 2. DUYỆT QUA TỪNG POST ĐỂ ÁNH XẠ SANG MODEL
+			foreach (var post in allPosts)
 			{
-                // Lấy post liên quan đến user này (nếu có logic đặc thù)
-                var post = product.Post?.SenderId == userId
-                    ? product.Post
-                    : null; 
-				return MapToDetailModel(product, post);
-			})
-			.Where(x => x != null)
-			.ToList();
+				// ============================================
+				// NHÁNH 1: BÀI ĐÃ DUYỆT -> CÓ PRODUCT TRONG SQL
+				// ============================================
+				if (post.Status == PostStatus.DA_DUYET.ToString())
+				{
+					if (post.Product != null)
+					{
+						// Lọc Search cho bài SQL
+						if (!string.IsNullOrEmpty(search))
+						{
+							string s = search.ToLower();
+							bool isMatch = (post.Product.Category?.Name?.ToLower().Contains(s) == true) ||
+										   (post.Product.Brand?.Name?.ToLower().Contains(s) == true) ||
+										   (post.Description?.ToLower().Contains(s) == true);
+							if (!isMatch) continue;
+						}
 
-			// Trả về kết quả bọc trong PagedResultModel
-			return new PagedResultModel<ProductComeWarehouseDetailModel>(productDetails, page, limit, totalItems);
+						// Map dữ liệu bằng hàm cũ của bạn
+						var sqlModel = MapToDetailModel(post.Product, post);
+						if (sqlModel != null) allProductDetails.Add(sqlModel);
+					}
+					continue; // Xong bài này thì nhảy sang bài tiếp theo
+				}
+
+				// ============================================
+				// NHÁNH 2: BÀI CHỜ DUYỆT / TỪ CHỐI -> LẤY JSON
+				// ============================================
+				string draftJson = null;
+
+				if (post.Status == PostStatus.CHO_DUYET.ToString())
+				{
+					var redisKey = $"ewise:draft_product:{post.PostId}";
+					draftJson = await _redisCacheService.GetStringAsync(redisKey);
+				}
+				else if (post.Status == PostStatus.DA_TU_CHOI.ToString() && post.CheckMessage != null)
+				{
+					var trickString = post.CheckMessage.FirstOrDefault(x => x.StartsWith("[REJECTED_PRODUCT_DATA]"));
+					if (trickString != null) draftJson = trickString.Split('|')[1];
+				}
+
+				ProductDraftModel? draftData = null;
+				if (!string.IsNullOrEmpty(draftJson))
+				{
+					draftData = JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions);
+				}
+
+				// Lọc Search cho bài Draft
+				if (!string.IsNullOrEmpty(search))
+				{
+					string s = search.ToLower();
+					bool isMatch = (draftData?.CategoryName?.ToLower().Contains(s) == true) ||
+								   (draftData?.BrandName?.ToLower().Contains(s) == true) ||
+								   (post.Description?.ToLower().Contains(s) == true);
+					if (!isMatch) continue;
+				}
+
+				// Map dữ liệu bằng hàm Redis 
+				var draftModel = MapDraftToWarehouseDetailModel(post, draftData);
+				if (draftModel != null)
+				{
+					allProductDetails.Add(draftModel);
+				}
+			}
+
+			// 3. SẮP XẾP VÀ PHÂN TRANG
+			var totalItems = allProductDetails.Count;
+			var pagedResult = allProductDetails
+				.OrderByDescending(x => x.CreateAt)
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToList();
+
+			return new PagedResultModel<ProductComeWarehouseDetailModel>(pagedResult, page, limit, totalItems);
 		}
+		private ProductComeWarehouseDetailModel MapDraftToWarehouseDetailModel(Post post, ProductDraftModel draft)
+		{
 
+			return new ProductComeWarehouseDetailModel
+			{
+				ProductId = draft.Product.ProductId,
+				CategoryId = draft.Product.CategoryId,
+				BrandId = draft.Product.BrandId,
+
+				// Các Name lấy từ DTO (Nhờ cách 2 lúc nãy ta đã đóng gói lên Redis)
+				CategoryName = draft.ChildCategoryName ?? "Không rõ",
+				BrandName = draft.BrandName ?? "Không rõ",
+
+				Description = post.Description ?? draft.Product.Description ?? string.Empty,
+
+				ProductImages = draft.ProductImages?.Select(x => x.ImageUrl).ToList() ?? new List<string>(),
+
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status) ?? post.Status,
+
+				EstimatePoint = post.EstimatePoint,
+				
+				QrCode = null,           
+				SizeTierName = null,      
+				RealPoint = null,         
+				PickUpDate = null        
+			};
+		}
 		public async Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId)
 		{
 			var product = await _productRepository.GetProductDetailWithAllRelationsAsync(productId);

@@ -114,5 +114,26 @@ namespace ElecWasteCollection.API.Controllers
 				});
 			}
 		}
-	}
+		[HttpPatch("un-active/{collectorId}")]
+		public async Task<IActionResult> UnActiveCollector(Guid collectorId)
+		{
+			var result = await _collectorService.UnActiveCollector(collectorId);
+			if (!result)
+			{
+				return BadRequest("Failed to un-active collector.");
+			}
+			return Ok(new { message = "Collector un-active successfully." });
+		}
+		[HttpPatch("active/{collectorId}")]
+		public async Task<IActionResult> ActiveCollector(Guid collectorId)
+		{
+			var result = await _collectorService.ActiveCollector(collectorId);
+			if (!result)
+			{
+				return BadRequest("Failed to active collector.");
+			}
+			return Ok(new { message = "Collector active successfully." });
+		}
+
+		}
 }

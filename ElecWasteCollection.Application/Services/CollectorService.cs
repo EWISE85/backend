@@ -325,5 +325,25 @@ namespace ElecWasteCollection.Application.Services
 				return dateTime.ToString("M/yy");
 			}
 		}
+
+		public async Task<bool> UnActiveCollector(Guid collectorId)
+		{
+			var collector = await _unitOfWork.Users.GetAsync(c => c.UserId == collectorId);
+			if (collector == null) throw new AppException("Không tìm thấy người thu gom", 404);
+			collector.Status = UserStatus.KHONG_HOAT_DONG.ToString();
+			_unitOfWork.Users.Update(collector);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
+
+		public async Task<bool> ActiveCollector(Guid collectorId)
+		{
+			var collector = await _unitOfWork.Users.GetAsync(c => c.UserId == collectorId);
+			if (collector == null) throw new AppException("Không tìm thấy người thu gom", 404);
+			collector.Status = UserStatus.DANG_HOAT_DONG.ToString();
+			_unitOfWork.Users.Update(collector);
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
 	}
 }

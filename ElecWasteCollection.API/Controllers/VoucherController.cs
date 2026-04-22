@@ -141,5 +141,31 @@ namespace ElecWasteCollection.API.Controllers
 				return StatusCode(500, new { Message = "Lỗi khi import vouchers từ Excel.", Error = ex.Message });
 			}
 		}
+		[HttpPatch("un-active/{voucherId}")]
+		public async Task<IActionResult> UnActiveVoucher([FromRoute] Guid voucherId)
+		{
+			var result = await _voucherService.UnActiveVoucher(voucherId);
+			if (result)
+			{
+				return Ok(new { Message = "Hủy kích hoạt voucher thành công" });
+			}
+			else
+			{
+				return BadRequest(new { Message = "Hủy kích hoạt voucher thất bại" });
+			}
+		}
+		[HttpPatch("active/{voucherId}")]
+		public async Task<IActionResult> ActiveVoucher([FromRoute] Guid voucherId)
+		{
+			var result = await _voucherService.ActiveVoucher(voucherId);
+			if (result)
+			{
+				return Ok(new { Message = "Kích hoạt voucher thành công" });
+			}
+			else
+			{
+				return BadRequest(new { Message = "Kích hoạt voucher thất bại" });
+			}
+		}
 	}
 }
