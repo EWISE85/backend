@@ -21,5 +21,6 @@ namespace ElecWasteCollection.Domain.IRepository
         Task<List<(Guid ProductId, string CategoryName, string BrandName, string Status, double Point, DateOnly? CreateAt)>> GetUserProductDetailsRawAsync(Guid userId);
         Task<List<(Guid UserId, string Name, string Email, int ProductCount, double TotalPoints)>> GetGlobalTopUserStatsRawAsync(int top, DateOnly from, DateOnly to);
         Task<(List<(string UserName, string CategoryName, double Point, DateOnly? CollectedDate, string ScpName, string Status)> Data, int TotalCount)> GetProductDetailsByBrandPagedRawAsync(string? scpId, string brandName, DateOnly from, DateOnly to, int page, int limit);
+        Task<List<(string BrandName, string CategoryName, string UserName, string UserEmail, double Point, DateOnly? CollectedDate, string ScpName, string Status)>> GetExportDataRawAsync(DateOnly from, DateOnly to);
     }
 }

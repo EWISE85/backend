@@ -202,5 +202,43 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
             return (result, totalCount);
         }
+        public async Task<List<(string BrandName, string CategoryName, string UserName, string UserEmail, double Point, DateOnly? CollectedDate, string ScpName, string Status)>> GetExportDataRawAsync(DateOnly from, DateOnly to)
+        {
+            var rawData = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.CreateAt >= from && p.CreateAt <= to)
+                .Select(p => new
+                {
+                    BrandName = p.Brand.Name,
+                    CategoryName = p.Category.Name,
+                    UserName = p.User.Name,
+                    UserEmail = p.User.Email,
+                    TotalActualPoint = p.PointTransactions
+                                .Where(t => t.TransactionType == PointTransactionType.TICH_DIEM.ToString()
+                                         || t.TransactionType == PointTransactionType.DIEU_CHINH.ToString())
+                                .Sum(t => (double?)t.Point) ?? 0,
+
+                    EstimatePoint = p.Post != null ? p.Post.EstimatePoint : 0,
+
+
+                    CollectedDate = p.CreateAt,
+                    ScpName = p.CollectionUnits != null ? p.CollectionUnits.Name : null,
+                    p.Status
+                })
+                .OrderBy(x => x.BrandName)
+                .ThenByDescending(x => x.CollectedDate)
+                .ToListAsync();
+
+            return rawData.Select(x => (
+                x.BrandName ?? "N/A",
+                x.CategoryName ?? "N/A",
+                x.UserName ?? "N/A",
+                x.UserEmail ?? "N/A",
+                x.TotalActualPoint > 0 ? x.TotalActualPoint : x.EstimatePoint,
+                x.CollectedDate,
+                x.ScpName ?? "Hiện chưa có điểm thu gom",
+                x.Status
+            )).ToList();
+        }
     } 
 }
