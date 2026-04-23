@@ -501,5 +501,40 @@ namespace ElecWasteCollection.Application.Services
 			var unreadCount = await _unitOfWork.Notifications.GetsAsync(n => n.UserId == userId && !n.IsRead);
 			return unreadCount?.Count() ?? 0;
 		}
+		public async Task NotifyPointAdjustmentAsync(Guid userId, double delta, double newPointValue, string reason)
+		{
+			string title = "Thông báo điều chỉnh điểm";
+			string body = $"Số điểm sản phẩm của bạn đã thay đổi. Chênh lệch: {(delta > 0 ? "+" : "")}{delta} điểm. Lý do: {reason}.";
+
+			var dataPayload = new Dictionary<string, string>
+	{
+		{ "type", "POINT_ADJUSTMENT" },
+		{ "delta", delta.ToString() },
+		{ "newPointValue", newPointValue.ToString() }
+	};
+
+			// 1. Gửi Firebase Push Notification
+			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
+			if (userTokens != null && userTokens.Any())
+			{
+				var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+				// Gọi Firebase service để đẩy tin nhắn về điện thoại
+				await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+			}
+
+			// 2. Lưu vào DB để người dùng xem lại trong app (Notification History)
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = userId,
+				Title = title,
+				Body = body,
+				IsRead = false,
+				CreatedAt = DateTime.UtcNow,
+				Type = NotificationType.System.ToString()
+			};
+
+			await _unitOfWork.Notifications.AddAsync(notification);
+		}
 	}
 }

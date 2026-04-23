@@ -86,7 +86,7 @@ namespace ElecWasteCollection.API.Controllers
 		[HttpGet("user/filter")]
 		public async Task<IActionResult> GetAllProductsByUserId([FromQuery] FilterProductByUserRequest request)
 		{
-			var products = await _productService.GetAllProductsByUserId(request.Search, request.CreateAt,request.UserId,request.Page,request.Limit);
+			var products = await _productService.GetAllProductsByUserId(request.Search, request.CreateAt, request.UserId, request.Page, request.Limit);
 			return Ok(products);
 		}
 		[HttpPost("notify-arrival/{productId}")]
@@ -142,7 +142,7 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(result);
 		}
 		[HttpPut("cancel/{productId}")]
-		public async Task<IActionResult> CancelProduct([FromRoute] Guid productId,[FromBody] CancelProductRequest request)
+		public async Task<IActionResult> CancelProduct([FromRoute] Guid productId, [FromBody] CancelProductRequest request)
 		{
 			var result = await _productService.CancelProduct(productId, request.Reason);
 			if (!result)
@@ -180,5 +180,13 @@ namespace ElecWasteCollection.API.Controllers
 
 			return Ok(new { message = "Hoàn tác thành công" });
 		}
+		[HttpGet("check/{qrCode}")]
+		public async Task<IActionResult> CheckExistingQRCode(string qrCode)
+		{
+			var exists = await _productService.CheckExistingQRCode(qrCode);
+			return Ok(new { exists });
+		}
 	}
+
+
 }

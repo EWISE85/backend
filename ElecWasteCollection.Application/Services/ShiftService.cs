@@ -27,7 +27,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var shift = await _unitOfWork.Shifts.GetAsync(s => s.ShiftId == shiftId);
 			if (shift == null) throw new AppException("Không tìm thấy ca làm việc", 404);
-			shift.Status = ShiftStatus.DA_HUY.ToString();
+			shift.Status = ShiftStatus.CO_SAN.ToString();
 			_unitOfWork.Shifts.Update(shift);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -159,7 +159,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var shift = await _unitOfWork.Shifts.GetAsync(s => s.ShiftId == shiftId);
 			if (shift == null) throw new AppException("Không tìm thấy ca làm việc", 404);
-			shift.Status = ShiftStatus.CO_SAN.ToString();
+			shift.Status = ShiftStatus.DA_HUY.ToString();
 			_unitOfWork.Shifts.Update(shift);
 			await _unitOfWork.SaveAsync();
 			return true;
