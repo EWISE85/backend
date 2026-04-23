@@ -46,5 +46,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> SeederQrCodeInProduct(List<Guid> productIds, List<string> QrCode);
 		Task<bool> RevertProductStatusByQrCodeAndMinusUserPoint(string productQrCode);
 		Task<bool> CheckExistingQRCode(string qrCode);
+
+		//Task<bool> UpdateProduct(string categoryId, string brandId, List<string> Image);
 	}
 }
