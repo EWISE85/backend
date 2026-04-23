@@ -17,13 +17,14 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IProductImageRepository _productImageRepository;
 		private readonly IUserService _userService;
-
-		public PointTransactionService(IPointTransactionRepository pointTransactionRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IUserService userService)
+		private readonly INotificationService _notificationService;
+		public PointTransactionService(IPointTransactionRepository pointTransactionRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IUserService userService, INotificationService notificationService)
 		{
 			_pointTransactionRepository = pointTransactionRepository;
 			_unitOfWork = unitOfWork;
 			_productImageRepository = productImageRepository;
 			_userService = userService;
+			_notificationService = notificationService;
 		}
 
 		public async Task<List<PointTransactionModel>> GetAllPointHistoryByUserId(Guid id)
@@ -107,20 +108,9 @@ namespace ElecWasteCollection.Application.Services
 
 			await _userService.UpdatePointForUser(originalTrans.UserId, delta);
 
-			var notification = new Notifications
-			{
-				NotificationId = Guid.NewGuid(),
-				UserId = originalTrans.UserId,
-				Title = "Thông báo điều chỉnh điểm",
-				Body = $"Số điểm cho sản phẩm của bạn đã được thay đổi. Lý do: {reason}. Chênh lệch: {(delta > 0 ? "+" : "")}{delta} điểm.",
-				Type = NotificationType.System.ToString(),
-				CreatedAt = DateTime.UtcNow,
-				IsRead = false,
-				EventId = Guid.Empty
-			};
-			await _unitOfWork.Notifications.AddAsync(notification);
+			await _notificationService.NotifyPointAdjustmentAsync(originalTrans.UserId, delta, newPointValue, reason);
 
-			 await _unitOfWork.SaveAsync() ;
+			await _unitOfWork.SaveAsync() ;
 			return true;
 		}
 		public async Task<bool> RevertPointFromCollectionPoint(Guid productId, Guid userId, bool saveChanges = true)

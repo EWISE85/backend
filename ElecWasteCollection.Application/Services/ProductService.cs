@@ -940,5 +940,11 @@ namespace ElecWasteCollection.Application.Services
 
 			return true;
 		}
+
+		public async Task<bool> CheckExistingQRCode(string qrCode)
+		{
+			var exists = await _productRepository.GetAsync(p => p.QRCode == qrCode);
+			return exists != null;
+		}
 	}
 }
