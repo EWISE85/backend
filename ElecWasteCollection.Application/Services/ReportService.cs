@@ -50,6 +50,7 @@ namespace ElecWasteCollection.Application.Services
 				Description = createReportModel.Description,
 				ReportType = StatusEnumHelper.GetValueFromDescription<ReportType>(createReportModel.ReportType).ToString(),
 				CreatedAt = DateTime.UtcNow,
+				Images = createReportModel.Images,
 				Status = ReportStatus.DANG_XU_LY.ToString()
 			};
 			await _unitOfWork.UserReports.AddAsync(newReport);
@@ -80,6 +81,7 @@ namespace ElecWasteCollection.Application.Services
 				ResolvedAt = r.ResolvedAt,
 				AnswerMessage = r.ResolveMessage,
 				ReportUserName = r.User.Name,
+				ReportImages = r.Images,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportStatus>(r.Status)
 			}).ToList();
 			return new PagedResultModel<ReportModel>(
@@ -117,6 +119,7 @@ namespace ElecWasteCollection.Application.Services
 					ResolvedAt = r.ResolvedAt,
 					AnswerMessage = r.ResolveMessage,
 					ReportUserName = r.User.Name,
+					ReportImages = r.Images,
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportStatus>(r.Status)
 				}).ToList();
 				return new PagedResultModel<ReportModel>(
@@ -162,6 +165,7 @@ namespace ElecWasteCollection.Application.Services
 				ResolvedAt = report.ResolvedAt,
 				AnswerMessage = report.ResolveMessage,
 				ReportUserName = report.User?.Name,
+				ReportImages = report.Images,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportStatus>(report.Status),
 
 				SmallCollectionPointName = smallCollectionPointName,

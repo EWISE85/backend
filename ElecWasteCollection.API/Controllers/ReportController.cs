@@ -26,7 +26,8 @@ namespace ElecWasteCollection.API.Controllers
 				UserId = request.UserId,
 				CollectionRouteId = request.CollectionRouteId,
 				Description = request.Description,
-				ReportType = request.ReportType
+				ReportType = request.ReportType,
+				Images = request.Images
 			};
 			var result = await _reportService.CreateReport(createReportModel);
 			if (result)
