@@ -793,7 +793,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException($"Mã kiện hàng {packageId} đã tồn tại. Vui lòng sử dụng mã khác.", 400);
 			}
-			return true;
+			return false;
 		}
 	}
 }
