@@ -411,11 +411,46 @@ namespace ElecWasteCollection.Application.Services
 			);
 		}
 
+		//public async Task AutoStartCollectionRoutesAsync()
+		//{
+		//	var today = DateOnly.FromDateTime(DateTime.Now);
+
+
+		//	var routesToProcess = await _unitOfWork.CollecctionRoutes.GetsAsync(r =>
+		//		(r.Status == CollectionRouteStatus.CHUA_BAT_DAU.ToString() ||
+		//		 r.Status == CollectionRouteStatus.DANG_TIEN_HANH.ToString()) &&
+		//		r.CollectionDate <= today,
+		//		includeProperties: "Product");
+
+		//	if (routesToProcess.Any())
+		//	{
+		//		foreach (var route in routesToProcess)
+		//		{
+		//			if (route.CollectionDate < today)
+		//			{
+		//				route.Status = CollectionRouteStatus.THAT_BAI.ToString();
+		//				route.Product.Status = ProductStatus.THAT_BAI.ToString();
+		//				route.RejectMessage = "Hệ thống tự động đóng do quá ngày thu gom.";
+		//			}
+
+		//			if (route.CollectionDate == today)
+		//			{
+		//				if (route.Status == CollectionRouteStatus.CHUA_BAT_DAU.ToString())
+		//				{
+		//					route.Status = CollectionRouteStatus.DANG_TIEN_HANH.ToString();
+		//				}
+		//			}
+
+		//			_unitOfWork.CollecctionRoutes.Update(route);
+		//		}
+
+		//		await _unitOfWork.SaveAsync();
+		//	}
+		//}
 		public async Task AutoStartCollectionRoutesAsync()
 		{
 			var today = DateOnly.FromDateTime(DateTime.Now);
 
-			
 			var routesToProcess = await _unitOfWork.CollecctionRoutes.GetsAsync(r =>
 				(r.Status == CollectionRouteStatus.CHUA_BAT_DAU.ToString() ||
 				 r.Status == CollectionRouteStatus.DANG_TIEN_HANH.ToString()) &&
@@ -429,8 +464,25 @@ namespace ElecWasteCollection.Application.Services
 					if (route.CollectionDate < today)
 					{
 						route.Status = CollectionRouteStatus.THAT_BAI.ToString();
-						route.Product.Status = ProductStatus.THAT_BAI.ToString();
 						route.RejectMessage = "Hệ thống tự động đóng do quá ngày thu gom.";
+
+						// Thêm logic cập nhật Product và tạo History
+						if (route.Product != null)
+						{
+							route.Product.Status = ProductStatus.THAT_BAI.ToString();
+
+							var history = new ProductStatusHistory
+							{
+								ProductStatusHistoryId = Guid.NewGuid(),
+								ProductId = route.Product.ProductId,
+								ChangedAt = DateTime.UtcNow,
+								Status = ProductStatus.THAT_BAI.ToString(),
+								StatusDescription = $"Hủy thu gom tự động: {route.RejectMessage}"
+							};
+
+							await _unitOfWork.ProductStatusHistory.AddAsync(history);
+							_unitOfWork.Products.Update(route.Product); // Nên update tường minh Product
+						}
 					}
 
 					if (route.CollectionDate == today)
