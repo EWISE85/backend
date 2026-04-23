@@ -188,5 +188,11 @@ namespace ElecWasteCollection.API.Controllers
 
 			return Ok(result);
 		}
+		[HttpGet("check/{packageId}")]
+		public async Task<IActionResult> CheckExistingPackageQR([FromRoute] string packageId)
+		{
+			var exists = await _packageService.CheckExistingPackageQR(packageId);
+			return Ok(new { exists });
 		}
+	}
 }

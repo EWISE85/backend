@@ -785,5 +785,15 @@ namespace ElecWasteCollection.Application.Services
 
 			return new PagedResultModel<PackageDetailModel>(resultItems, page, limit, totalCount);
 		}
+
+		public async Task<bool> CheckExistingPackageQR(string packageId)
+		{
+			var exists = await _packageRepository.GetAsync(p => p.PackageId == packageId);
+			if (exists != null)
+			{
+				throw new AppException($"Mã kiện hàng {packageId} đã tồn tại. Vui lòng sử dụng mã khác.", 400);
+			}
+			return true;
+		}
 	}
 }

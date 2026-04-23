@@ -25,6 +25,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<PagedResultModel<PackageDetailModel>> GetTrackingPackage(string? recyclerId, DateOnly? fromDate, DateOnly? toDate, string? smallCollectionPointId,
  string? packageId, string? status, int page, int limit);
+		Task<bool> CheckExistingPackageQR(string packageId);
 
 	}
 }
