@@ -330,6 +330,46 @@ namespace ElecWasteCollection.Application.Services
             }
             return results.OrderByDescending(x => x.CurrentValue).ToList();
         }
+
+        public async Task<List<TopUserContributionModel>> GetTopUsers(string scpId, int top, DateOnly from, DateOnly to)
+        {
+            var raw = await _dashboardRepository.GetTopUserStatsRawAsync(scpId, top, from, to);
+            return raw.Select(x => new TopUserContributionModel
+            {
+                UserId = x.UserId,
+                Name = x.Name,
+                Email = x.Email,
+                TotalProducts = x.ProductCount,
+                TotalPoints = x.TotalPoints
+            }).ToList();
+        }
+        public async Task<List<TopUserContributionModel>> GetGlobalTopUsers(int top, DateOnly from, DateOnly to)
+        {
+            var raw = await _dashboardRepository.GetGlobalTopUserStatsRawAsync(top, from, to);
+
+            return raw.Select(x => new TopUserContributionModel
+            {
+                UserId = x.UserId,
+                Name = x.Name,
+                Email = x.Email,
+                TotalProducts = x.ProductCount,
+                TotalPoints = x.TotalPoints
+            }).ToList();
+        }
+
+        public async Task<List<UserProductDetailModel>> GetUserProductDetails(Guid userId)
+        {
+            var raw = await _dashboardRepository.GetUserProductDetailsRawAsync(userId);
+            return raw.Select(x => new UserProductDetailModel
+            {
+                ProductId = x.ProductId,
+                ProductName = x.CategoryName,
+                BrandName = x.BrandName,
+                Status = x.Status,
+                Point = x.Point,
+                CreateAt = x.CreateAt
+            }).ToList();
+        }
         public async Task<BrandDashboardResponse> GetGlobalBrandDashboardStats(DateOnly from, DateOnly to)
         {
             DateOnly prevFromDate = from.AddMonths(-1);
@@ -370,45 +410,20 @@ namespace ElecWasteCollection.Application.Services
                 Brands = ProcessBrandStats(currBrandDict, prevBrandDict)
             };
         }
-
-        public async Task<List<TopUserContributionModel>> GetTopUsers(string scpId, int top, DateOnly from, DateOnly to)
+        public async Task<PagedResultModel<BrandDetailItemResponse>> GetBrandDetailsAsync(string? scpId, string brandName, DateOnly from, DateOnly to, int page, int limit)
         {
-            var raw = await _dashboardRepository.GetTopUserStatsRawAsync(scpId, top, from, to);
-            return raw.Select(x => new TopUserContributionModel
-            {
-                UserId = x.UserId,
-                Name = x.Name,
-                Email = x.Email,
-                TotalProducts = x.ProductCount,
-                TotalPoints = x.TotalPoints
-            }).ToList();
-        }
-        public async Task<List<TopUserContributionModel>> GetGlobalTopUsers(int top, DateOnly from, DateOnly to)
-        {
-            var raw = await _dashboardRepository.GetGlobalTopUserStatsRawAsync(top, from, to);
+            var (rawData, totalItems) = await _dashboardRepository.GetProductDetailsByBrandPagedRawAsync(scpId, brandName, from, to, page, limit);
 
-            return raw.Select(x => new TopUserContributionModel
+            var data = rawData.Select(x => new BrandDetailItemResponse
             {
-                UserId = x.UserId,
-                Name = x.Name,
-                Email = x.Email,
-                TotalProducts = x.ProductCount,
-                TotalPoints = x.TotalPoints
+                UserName = x.Item1,
+                CategoryName = x.Item2,
+                Point = x.Item3,
+                CollectedDate = x.Item4,
+                ScpName = x.Item5
             }).ToList();
-        }
 
-        public async Task<List<UserProductDetailModel>> GetUserProductDetails(Guid userId)
-        {
-            var raw = await _dashboardRepository.GetUserProductDetailsRawAsync(userId);
-            return raw.Select(x => new UserProductDetailModel
-            {
-                ProductId = x.ProductId,
-                ProductName = x.CategoryName,
-                BrandName = x.BrandName,
-                Status = x.Status,
-                Point = x.Point,
-                CreateAt = x.CreateAt
-            }).ToList();
+            return new PagedResultModel<BrandDetailItemResponse>(data, page, limit, totalItems);
         }
     }
 }
