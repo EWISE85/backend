@@ -43,6 +43,8 @@ namespace ElecWasteCollection.Domain.Entities
 		public DateTime? ResolvedAt { get; set; }
 
 		public string? ResolveMessage { get; set; }
+		public List<string>? Images { get; set; }
+
 
 		public string Status { get; set; }
 

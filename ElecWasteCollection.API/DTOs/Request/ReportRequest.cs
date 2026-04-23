@@ -10,5 +10,7 @@
 
 		public string ReportType { get; set; } = string.Empty;
 
+		public List<string>? Images { get; set; }
+
 	}
 }

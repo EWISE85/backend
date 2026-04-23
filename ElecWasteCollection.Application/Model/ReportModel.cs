@@ -30,6 +30,8 @@ namespace ElecWasteCollection.Application.Model
 
 		public string SmallCollectionPointName { get; set; }
 
+		public List<string>? ReportImages { get; set; }
+
 		public string Status { get; set; }
 
 	}
