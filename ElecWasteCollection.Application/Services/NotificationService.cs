@@ -508,7 +508,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var dataPayload = new Dictionary<string, string>
 	{
-		{ "type", "POINT_ADJUSTMENT" },
+		{ "type", "NOTIFICATION" },
 		{ "delta", delta.ToString() },
 		{ "newPointValue", newPointValue.ToString() }
 	};
