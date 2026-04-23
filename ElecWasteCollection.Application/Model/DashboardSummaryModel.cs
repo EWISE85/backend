@@ -96,4 +96,12 @@ namespace ElecWasteCollection.Application.Model
         public double Point { get; set; }
         public DateOnly? CreateAt { get; set; }
     }
+    public class BrandDetailItemResponse
+    {
+        public string UserName { get; set; }
+        public string CategoryName { get; set; }
+        public double Point { get; set; }
+        public DateOnly? CollectedDate { get; set; }
+        public string ScpName { get; set; }
+    }
 }

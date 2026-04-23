@@ -150,5 +150,17 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _dashboardService.GetUserProductDetails(userId);
             return Ok(result);
         }
+        [HttpGet("admin/brand-details")]
+        public async Task<IActionResult> GetAdminBrandDetails(
+    [FromQuery] string? scpId,
+    [FromQuery] string brandName,
+    [FromQuery] DateOnly from,
+    [FromQuery] DateOnly to,
+    [FromQuery] int page = 1,
+    [FromQuery] int limit = 10)
+        {
+            var result = await _dashboardService.GetBrandDetailsAsync(scpId, brandName, from, to, page, limit);
+            return Ok(result);
+        }
     }
 }
