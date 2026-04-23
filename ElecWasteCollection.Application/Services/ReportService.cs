@@ -135,7 +135,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var report = await _unitOfWork.UserReports.GetAsync(
 				r => r.UserReportId == reportId,
-				"User,CollectionRoute.Product.SmallCollectionPoint.CollectionCompany"
+				"User,CollectionRoute.Product.CollectionUnits.Company"
 			);
 
 			if (report == null) throw new AppException("Không tìm thấy khiếu nại", 404);

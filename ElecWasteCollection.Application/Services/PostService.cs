@@ -323,7 +323,8 @@ namespace ElecWasteCollection.Application.Services
 							ProductId = newProductId,
 							AttributeId = attr.AttributeId,
 							AttributeOptionId = attr.OptionId,
-							Value = attr.Value
+							Value = attr.Value,
+
 						};
 						productValuesList.Add(newProductValue);
 					}
@@ -405,6 +406,14 @@ namespace ElecWasteCollection.Application.Services
 					var draftJson = JsonSerializer.Serialize(draftData, jsonOptions);
 
 					await _redisCacheService.SetStringAsync(redisKey, draftJson, TimeSpan.FromDays(7));
+					var productId = draftData.Product.ProductId; 
+					var postId = newPost.PostId;
+
+					await _redisCacheService.SetStringAsync(
+						$"ewise:product_map:{productId}",
+						postId.ToString(),
+						TimeSpan.FromDays(30) 
+					);
 				}
 
 				await _unitOfWork.SaveAsync();
