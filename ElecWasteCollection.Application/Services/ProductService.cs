@@ -1,8 +1,10 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.Helper;
+using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.GroupModel;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using Microsoft.AspNetCore.Routing;
@@ -29,7 +31,8 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IPackageRepository _packageRepository;
         private readonly CapacityHelper _capacityHelper;
 		private readonly IRedisCacheService _redisCacheService;
-		public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper, IRedisCacheService redisCacheService)
+		private readonly IGroupingService _groupingService;
+        public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper, IRedisCacheService redisCacheService, IGroupingService groupingService)
 		{
 			_productRepository = productRepository;
 			_unitOfWork = unitOfWork;
@@ -42,7 +45,8 @@ namespace ElecWasteCollection.Application.Services
 			_packageRepository = packageRepository;
 			_capacityHelper = capacityHelper;
 			_redisCacheService = redisCacheService;
-		}
+            _groupingService = groupingService;
+        }
 
 
 
@@ -1119,5 +1123,63 @@ namespace ElecWasteCollection.Application.Services
 
 			return result > 0;
 		}
-	}
+        public async Task<bool> ProcessForceReceiveOverdueAsync(ForceReceiveOverdueProductRequest request)
+        {
+            // 1. Kiểm tra mã QR mới nhập có bị trùng trong hệ thống không
+            var isQrExisted = await _unitOfWork.Products.GetAsync(p => p.QRCode == request.QRCode && p.ProductId != request.ProductId);
+            if (isQrExisted != null)
+            {
+                throw new Exception("Mã QR này đã được sử dụng. Vui lòng kiểm tra lại nhãn dán.");
+            }
+
+            // 2. Lấy sản phẩm và kiểm tra trạng thái kẹt (Overdue)
+            var product = await _unitOfWork.Products.GetAsync(p => p.ProductId == request.ProductId);
+            if (product == null) throw new Exception("Không tìm thấy sản phẩm.");
+
+            // 3. Lấy thông tin Post để lấy điểm (EstimatePoint) tự động
+            var post = await _unitOfWork.Posts.GetAsync(p => p.Product != null && p.Product.ProductId == product.ProductId);
+            if (post == null) throw new Exception("Không tìm thấy bài đăng liên quan để lấy điểm thưởng.");
+
+            // Mặc định lấy điểm từ Post
+            double pointToSave = post.EstimatePoint;
+            string note = !string.IsNullOrEmpty(request.Description) ? request.Description : "Xử lý đơn trễ tại trạm";
+
+            // 4. CẬP NHẬT DỮ LIỆU
+            product.QRCode = request.QRCode;
+            product.Status = ProductStatus.NHAP_KHO.ToString();
+            _unitOfWork.Products.Update(product);
+
+            // Lưu lịch sử trạng thái
+            await _unitOfWork.ProductStatusHistory.AddAsync(new ProductStatusHistory
+            {
+                ProductStatusHistoryId = Guid.NewGuid(),
+                ProductId = product.ProductId,
+                ChangedAt = DateTime.UtcNow.AddHours(7),
+                StatusDescription = note,
+                Status = ProductStatus.NHAP_KHO.ToString()
+            });
+
+            // 5. THỰC HIỆN CỘNG ĐIỂM (Transaction)
+            var pointTransaction = new CreatePointTransactionModel
+            {
+                UserId = product.UserId,
+                ProductId = product.ProductId,
+                Point = pointToSave, 
+                Desciption = note
+            };
+            await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
+
+            // 6. LƯU TẤT CẢ VÀ ĐỒNG BỘ CAPACITY
+            await _unitOfWork.SaveAsync();
+
+            if (!string.IsNullOrEmpty(product.CollectionUnitId))
+            {
+                await _capacityHelper.SyncRealtimeCapacityAsync(product.CollectionUnitId);
+            }
+
+            _groupingService.RemoveProductFromCache(request.ProductId);
+
+            return true;
+        }
+    }
 }

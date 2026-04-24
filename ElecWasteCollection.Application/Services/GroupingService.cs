@@ -205,6 +205,7 @@ namespace ElecWasteCollection.Application.Services
                     CustStart = custStart,
                     CustEnd = custEnd,
                     UserName = representative.Product?.User?.Name ?? "N/A",
+                    UserPhone = representative.Product?.User?.Phone ?? "N/A",
                     FullAddress = group.Key.Address ?? "N/A",
                     CategoryName = group.Count() > 1 ? $"{representative.Product?.Category?.Name} (+{group.Count() - 1})" : representative.Product?.Category?.Name,
                     BrandName = representative.Product?.Brand?.Name ?? "N/A",
@@ -276,6 +277,7 @@ namespace ElecWasteCollection.Application.Services
                             ProductId = detail.Post.Product.ProductId.ToString(),
                             PostId = detail.Post.PostId.ToString(),
                             Name = item.UserName,
+                            PhoneNumber = item.UserPhone,
                             Address = item.FullAddress,
                             Weight = Math.Round((double)detail.Weight, 2),
                             Volume = Math.Round((double)detail.Volume, 4),
@@ -318,29 +320,6 @@ namespace ElecWasteCollection.Application.Services
                 var newOrderedProducts = new List<PreAssignProduct>();
                 double timeAcc = 0; double curLat = point.Latitude; double curLng = point.Longitude;
 
-                //foreach (var i in optimizedOrder)
-                //{
-                //    var node = nodesForVRP[i];
-                //    var originalItem = pool.FirstOrDefault(x => x.Lat == node.Lat && x.Lng == node.Lng && x.UserName == node.Tag[0].UserName);
-                //    double dist = CalculateHaversine(curLat, curLng, node.Lat, node.Lng) * DETOUR_FACTOR;
-                //    double travel = (dist / avgSpeedKmH) * 60;
-                //    TimeOnly arrival = shiftStart.AddMinutes(timeAcc + travel);
-                //    if (arrival < node.Start) arrival = node.Start;
-
-                //    bool isFirst = true;
-                //    foreach (var p in (List<PreAssignProduct>)node.Tag)
-                //    {
-                //        var detailInfo = ((IEnumerable<dynamic>)originalItem.GroupedDetails).FirstOrDefault(d => d.Post.PostId.ToString() == p.PostId);
-                //        p.DistanceKm = isFirst ? Math.Round(dist, 2) : 0;
-                //        p.EstimatedArrival = arrival.ToString("HH:mm");
-                //        p.CategoryName = detailInfo?.Post.Product?.Category?.Name ?? "N/A";
-                //        p.BrandName = detailInfo?.Post.Product?.Brand?.Name ?? "N/A";
-                //        p.DimensionText = detailInfo?.DimText ?? "";
-                //        newOrderedProducts.Add(p); isFirst = false;
-                //    }
-                //    timeAcc = (arrival.ToTimeSpan() - shiftStart.ToTimeSpan()).TotalMinutes + serviceTimeMin;
-                //    curLat = node.Lat; curLng = node.Lng;
-                //}
                 foreach (var i in optimizedOrder)
                 {
                     var node = nodesForVRP[i];
@@ -852,13 +831,7 @@ namespace ElecWasteCollection.Application.Services
 
                 if (cache == null)
                 {
-                    return Task.FromResult<object>(new
-                    {
-                        Total = 0,
-                        Page = page,
-                        PageSize = pageSize,
-                        Items = new List<UnAssignProductPreview>()
-                    });
+                    return Task.FromResult<object>(new { Total = 0, Page = page, PageSize = pageSize, Items = new List<object>() });
                 }
 
                 var query = cache.Response.UnassignedProducts.AsEnumerable();
@@ -875,6 +848,21 @@ namespace ElecWasteCollection.Application.Services
                 var items = filteredList
                     .Skip((page - 1) * pageSize)
                     .Take(pageSize)
+                    .Select(x => new {
+                        x.PostId,
+                        x.ProductId,
+                        x.Name,
+                        PhoneNumber = (x.Reason != null && x.Reason.Contains("HẠN CHÓT", StringComparison.OrdinalIgnoreCase))
+                                      ? x.PhoneNumber
+                                      : "********",
+                        x.Address,
+                        x.Weight,
+                        x.Volume,
+                        x.DimensionText,
+                        x.CategoryName,
+                        x.BrandName,
+                        x.Reason
+                    })
                     .ToList();
 
                 return Task.FromResult<object>(new
@@ -1239,55 +1227,6 @@ namespace ElecWasteCollection.Application.Services
             return (dists, times);
         }
 
-        private bool TryAssignToBucket(dynamic item, Dictionary<string, VehicleBucket> buckets, double speed, double service)
-        {
-            var sortedBuckets = buckets.Values
-                .Select(b => new {
-                    Bucket = b,
-                    Distance = CalculateHaversine(b.LastLat, b.LastLng, (double)item.Lat, (double)item.Lng)
-                })
-                .OrderByDescending(x => x.Bucket.CurrentKg) 
-                .ThenBy(x => x.Distance)                 
-                .ToList();
-
-            foreach (var entry in sortedBuckets)
-            {
-                var b = entry.Bucket;
-
-                if (b.CurrentKg + (double)item.Weight <= b.MaxKg && b.CurrentM3 + (double)item.Volume <= b.MaxM3)
-                {
-                    double travelMin = (entry.Distance * 1.3 / speed) * 60;
-
-                    if (b.CurrentTimeMin + travelMin + service <= b.MaxShiftMinutes)
-                    {
-                        b.CurrentKg += (double)item.Weight;
-                        b.CurrentM3 += (double)item.Volume;
-                        b.CurrentTimeMin += (travelMin + service);
-                        b.LastLat = (double)item.Lat;
-                        b.LastLng = (double)item.Lng;
-                        var newProducts = ((IEnumerable<dynamic>)item.GroupedDetails).Select(detail => new PreAssignProduct
-                        {
-                            ProductId = detail.Post.Product.ProductId.ToString(),
-                            PostId = detail.Post.PostId.ToString(),
-                            UserName = (string)item.UserName,
-                            Address = (string)item.FullAddress,
-                            Weight = (double)detail.Weight,
-                            Volume = (double)detail.Volume,
-                            Lat = (double)item.Lat,
-                            Lng = (double)item.Lng,
-                            CategoryName = (string)detail.Post.Product?.Category?.Name ?? "N/A",
-                            BrandName = (string)detail.Post.Product?.Brand?.Name ?? "N/A",
-                            DimensionText = (string)detail.DimText
-                        });
-
-                        b.Products.AddRange(newProducts);
-                        return true; 
-                    }
-                }
-            }
-            return false;
-        }
-
         private double CalculateHaversine(double lat1, double lon1, double lat2, double lon2)
         {
             double R = 6371;
@@ -1574,6 +1513,26 @@ namespace ElecWasteCollection.Application.Services
                     GroupName = pointId != null ? "PointConfig" : "CompanyConfig"
                 };
                 await _unitOfWork.SystemConfig.AddAsync(newConfig);
+            }
+        }
+        public void RemoveProductFromCache(Guid productId)
+        {
+            string pidString = productId.ToString();
+            lock (_previewLock)
+            {
+                int count = 0;
+                foreach (var cache in _preAssignPreviewCache)
+                {
+                    count += cache.Response.UnassignedProducts.RemoveAll(p =>
+                        string.Equals(p.ProductId, pidString, StringComparison.OrdinalIgnoreCase));
+
+                    foreach (var day in cache.Response.Days)
+                    {
+                        day.Products.RemoveAll(p =>
+                            string.Equals(p.ProductId, pidString, StringComparison.OrdinalIgnoreCase));
+                    }
+                }
+                Console.WriteLine($"[CACHE DEBUG] Đã tìm và xóa {count} sản phẩm {pidString} khỏi RAM.");
             }
         }
         private sealed class TimeSlotDetailDto

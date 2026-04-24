@@ -13,58 +13,6 @@ public class RankService : IRankService
 		_notificationService = notificationService;
 	}
 
-	//public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
-	//{
-	//    var product = await _unitOfWork.Products.GetAsync(
-	//        filter: p => p.ProductId == productId,
-	//        includeProperties: "Category,Category.ParentCategory,ProductValues.Attribute"
-	//    );
-
-	//    if (product == null || user == null) return 0;
-
-	//    double actualWeight = 0;
-
-	//    if (product.ProductValues != null && product.ProductValues.Any())
-	//    {
-
-	//        var weightAttr = product.ProductValues.FirstOrDefault(v =>
-	//            v.Attribute != null && (
-	//                v.Attribute.Name.Contains("Trọng lượng", StringComparison.OrdinalIgnoreCase) ||
-	//                v.Attribute.Name.Contains("Khối lượng", StringComparison.OrdinalIgnoreCase)));
-
-	//        if (weightAttr != null && weightAttr.Value.HasValue)
-	//        {
-	//            actualWeight = weightAttr.Value.Value; 
-	//        }
-	//    }
-
-	//    if (actualWeight <= 0)
-	//    {
-	//        actualWeight = product.Category.DefaultWeight > 0 ? product.Category.DefaultWeight : 1.0;
-	//    }
-
-	//    double factor = product.Category.ParentCategory?.EmissionFactor ?? product.Category.EmissionFactor;
-	//    if (factor <= 0) factor = 0.5;
-
-	//    double co2Saved = actualWeight * factor;
-
-	//    user.TotalCo2Saved += co2Saved;
-
-	//    // 6. Check Rank
-	//    var allRanks = await _unitOfWork.Ranks.GetAllAsync();
-	//    var applicableRank = allRanks
-	//        .Where(r => r.MinCo2 <= user.TotalCo2Saved)
-	//        .OrderByDescending(r => r.MinCo2)
-	//        .FirstOrDefault();
-
-	//    if (applicableRank != null)
-	//    {
-	//        user.CurrentRankId = applicableRank.RankId;
-	//    }
-
-	//    return co2Saved;
-	//}
-
 	public async Task<double> UpdateUserRankImpactAsync(User user, Guid productId)
 	{
 		var product = await _unitOfWork.Products.GetAsync(
