@@ -240,5 +240,38 @@ namespace ElecWasteCollection.Infrastructure.Repository
                 x.Status
             )).ToList();
         }
+        public async Task<List<(string ScpId, string ScpName, string ScheduleJson)>> GetOverdueRawDataAsync()
+        {
+            var data = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Status == ProductStatus.CHO_GOM_NHOM.ToString() && p.CollectionUnitId != null)
+                .Select(p => new {
+                    p.CollectionUnitId,
+                    ScpName = p.CollectionUnits != null ? p.CollectionUnits.Name : "N/A",
+                    Schedule = p.Post != null ? p.Post.ScheduleJson : null
+                })
+                .ToListAsync();
+
+            return data.Select(x => (x.CollectionUnitId, x.ScpName, x.Schedule)).ToList();
+        }
+
+        public async Task<List<(Guid ProductId, string BrandName, string CategoryName, string UserName, string ScheduleJson, string Status)>>
+            GetOverdueDetailRawAsync(string scpId)
+        {
+            var data = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Status == ProductStatus.CHO_GOM_NHOM.ToString() && p.CollectionUnitId == scpId)
+                .Select(p => new {
+                    p.ProductId,
+                    BrandName = p.Brand.Name,
+                    CategoryName = p.Category.Name,
+                    UserName = p.User.Name,
+                    Schedule = p.Post != null ? p.Post.ScheduleJson : null,
+                    p.Status
+                })
+                .ToListAsync();
+
+            return data.Select(x => (x.ProductId, x.BrandName, x.CategoryName, x.UserName, x.Schedule, x.Status)).ToList();
+        }
     } 
 }

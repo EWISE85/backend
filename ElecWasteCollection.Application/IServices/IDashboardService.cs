@@ -22,5 +22,7 @@ namespace ElecWasteCollection.Application.IServices
         Task<List<TopUserContributionModel>> GetGlobalTopUsers(int top, DateOnly from, DateOnly to);
         Task<List<UserProductDetailModel>> GetUserProductDetails(Guid userId);
         Task<PagedResultModel<BrandDetailItemResponse>> GetBrandDetailsAsync(string? scpId, string brandName, DateOnly from, DateOnly to, int page, int limit);
+        Task<List<ScpOverdueSummaryResponse>> GetOverdueSummariesAsync();
+        Task<PagedResultModel<OverdueProductItemResponse>> GetOverdueProductsPagedAsync(string scpId, int page, int limit);
     }
 }
