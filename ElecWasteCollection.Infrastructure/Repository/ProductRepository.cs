@@ -53,6 +53,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Post) 
+				.Include(p => p.User)
 				.AsQueryable();
 
 			query = query.Where(p =>
@@ -78,6 +79,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.ProductImages)
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Post)
+				.Include(p => p.User)
 				.AsQueryable();
 
 			query = query.Where(p =>

@@ -186,6 +186,16 @@ namespace ElecWasteCollection.API.Controllers
 			var exists = await _productService.CheckExistingQRCode(qrCode);
 			return Ok(new { exists });
 		}
+		[HttpPut("update-info/{productId}")]
+		public async Task<IActionResult> UpdateProductInformation(Guid productId, [FromBody] UpdateProductInfoRequest request)
+		{
+			var result = await _productService.UpdateProductInformation(request.CategoryId, request.BrandId, request.Image, productId);
+			if (!result)
+			{
+				return BadRequest("Failed to update product information.");
+			}
+			return Ok(new { message = "Product information updated successfully." });
+		}
 	}
 
 

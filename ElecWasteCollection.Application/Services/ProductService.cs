@@ -264,7 +264,8 @@ namespace ElecWasteCollection.Application.Services
 				Description = product.Description,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				CreateAt = post?.Date ?? product.CreateAt?.ToDateTime(TimeOnly.MinValue) ?? DateTime.MinValue,
-				ProductImages = product.ProductImages?.Select(i => i.ImageUrl).ToList() ?? new List<string>()
+				ProductImages = product.ProductImages?.Select(i => i.ImageUrl).ToList() ?? new List<string>(),
+				UserName = product.User?.Name ?? "N/A"
 			};
 		}
 
@@ -1079,6 +1080,44 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var exists = await _productRepository.GetAsync(p => p.QRCode == qrCode);
 			return exists != null;
+		}
+		public async Task<bool> UpdateProductInformation(Guid categoryId, Guid brandId, List<string> images, Guid productId)
+		{
+			var product = await _unitOfWork.Products.GetAsync(p => p.ProductId == productId);
+			if (product == null) throw new AppException("Không tìm thấy sản phẩm với Id đã cho", 404);
+			var category = await _unitOfWork.Categories.GetAsync(c => c.CategoryId == categoryId);
+			if (category == null) throw new AppException("Không tìm thấy danh mục với Id đã cho", 404);
+			var brand = await _unitOfWork.Brands.GetAsync(b => b.BrandId == brandId);
+			if (brand == null) throw new AppException("Không tìm thấy thương hiệu với Id đã cho", 404);
+
+			product.CategoryId = categoryId;
+			product.BrandId = brandId;
+			_unitOfWork.Products.Update(product);
+			var existingImages = await _unitOfWork.ProductImages.GetsAsync(pi => pi.ProductId == productId);
+			if (existingImages != null && existingImages.Any())
+			{
+				foreach (var img in existingImages)
+				{
+					_unitOfWork.ProductImages.Delete(img);
+				}
+			}
+
+			if (images != null && images.Any())
+			{
+				foreach (var imageUrl in images)
+				{
+					var newImage = new ProductImages
+					{
+						ProductId = productId,
+						ImageUrl = imageUrl
+					};
+					_unitOfWork.ProductImages.Add(newImage);
+				}
+			}
+
+			var result = await _unitOfWork.SaveAsync();
+
+			return result > 0;
 		}
 	}
 }
