@@ -24,7 +24,7 @@ namespace ElecWasteCollection.API.Controllers
 			var createReportModel = new CreateReportModel
 			{
 				UserId = request.UserId,
-				CollectionRouteId = request.CollectionRouteId,
+				ProductId = request.ProductId,
 				Description = request.Description,
 				ReportType = request.ReportType,
 				Images = request.Images

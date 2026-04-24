@@ -46,7 +46,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				UserReportId = Guid.NewGuid(),
 				UserId = createReportModel.UserId,
-				CollectionRouteId = createReportModel.CollectionRouteId,
+				ProductId = createReportModel.ProductId,
 				Description = createReportModel.Description,
 				ReportType = StatusEnumHelper.GetValueFromDescription<ReportType>(createReportModel.ReportType).ToString(),
 				CreatedAt = DateTime.UtcNow,
@@ -74,7 +74,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				ReportId = r.UserReportId,
 				ReportUserId = r.UserId,
-				ReportRouteId = r.CollectionRouteId,
+				ReportProductId = r.ProductId,
 				ReportDescription = r.Description,
 				ReportType = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportType>(r.ReportType),
 				CreatedAt = r.CreatedAt,
@@ -112,7 +112,7 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ReportId = r.UserReportId,
 					ReportUserId = r.UserId,
-					ReportRouteId = r.CollectionRouteId,
+					ReportProductId = r.ProductId,
 					ReportDescription = r.Description,
 					ReportType = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportType>(r.ReportType),
 					CreatedAt = r.CreatedAt,
@@ -133,9 +133,10 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<ReportModel> GetReport(Guid reportId)
 		{
+			// 1. Cập nhật lại chuỗi Include: Đi trực tiếp từ Product -> CollectionUnits -> Company
 			var report = await _unitOfWork.UserReports.GetAsync(
 				r => r.UserReportId == reportId,
-				"User,CollectionRoute.Product.CollectionUnits.Company"
+				"User,Product.CollectionUnits.Company"
 			);
 
 			if (report == null) throw new AppException("Không tìm thấy khiếu nại", 404);
@@ -143,14 +144,17 @@ namespace ElecWasteCollection.Application.Services
 			string smallCollectionPointName = null;
 			string companyName = null;
 
-			if (report.CollectionRouteId.HasValue)
+			// 2. Đổi điều kiện kiểm tra từ CollectionRouteId sang ProductId
+			if (report.ProductId.HasValue)
 			{
-				var smallCollectionPoint = report.CollectionRoute?.Product?.CollectionUnits;
+				var collectionUnit = report.Product?.CollectionUnits;
 
-				if (smallCollectionPoint != null)
+				if (collectionUnit != null)
 				{
-					smallCollectionPointName = smallCollectionPoint.Name;
-					companyName = smallCollectionPoint.Company?.Name;
+					smallCollectionPointName = collectionUnit.Name;
+
+					// Giả định CollectionUnit của bạn có property Company
+					companyName = collectionUnit.Company?.Name;
 				}
 			}
 
@@ -158,7 +162,10 @@ namespace ElecWasteCollection.Application.Services
 			{
 				ReportId = report.UserReportId,
 				ReportUserId = report.UserId,
-				ReportRouteId = report.CollectionRouteId,
+
+				// 3. Đổi thuộc tính mapping (Bạn cần cập nhật lại ReportModel để có thuộc tính ReportProductId thay vì RouteId)
+				ReportProductId = report.ProductId,
+
 				ReportDescription = report.Description,
 				ReportType = StatusEnumHelper.ConvertDbCodeToVietnameseName<ReportType>(report.ReportType),
 				CreatedAt = report.CreatedAt,

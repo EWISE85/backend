@@ -32,8 +32,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public Guid UserId { get; set; }
 
-		public Guid? CollectionRouteId { get; set; }
-
+		//public Guid? CollectionRouteId { get; set; }
+		public Guid? ProductId { get; set; }
 		public string Description { get; set; } = string.Empty;
 
 		public string ReportType { get; set; } = string.Empty; // VD: SYSTEM_BUG, COLLECTION_ISSUE, ILLEGAL_DUMP
@@ -50,6 +50,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public User User { get; set; }
 
-		public CollectionRoutes? CollectionRoute { get; set; }
+		public Products? Product { get; set; }
+
+		//public CollectionRoutes? CollectionRoute { get; set; }
 	}
 }

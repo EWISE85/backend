@@ -75,5 +75,6 @@ namespace ElecWasteCollection.Domain.Entities
 		public virtual ICollection<ProductStatusHistory> ProductStatusHistories { get; set; } = new List<ProductStatusHistory>();
 		public virtual ICollection<CollectionRoutes> CollectionRoutes { get; set; } = new List<CollectionRoutes>();
         public virtual ICollection<PointTransactions> PointTransactions { get; set; } = new List<PointTransactions>();
+		public virtual ICollection<UserReport> UserReports { get; set; } = new List<UserReport>();
 	}
 }

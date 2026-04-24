@@ -10,7 +10,8 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Guid UserId { get; set; }
 
-		public Guid? CollectionRouteId { get; set; }
+		//public Guid? CollectionRouteId { get; set; }
+		public Guid? ProductId { get; set; }
 
 		public string Description { get; set; } = string.Empty;
 
