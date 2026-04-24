@@ -42,6 +42,6 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public CollectionGroups CollectionGroup { get; set; }
 
-		public virtual ICollection<UserReport> UserReports { get; set; } = new List<UserReport>();
+		//public virtual ICollection<UserReport> UserReports { get; set; } = new List<UserReport>();
 	}
 }

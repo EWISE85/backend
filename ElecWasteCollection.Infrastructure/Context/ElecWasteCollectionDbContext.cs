@@ -570,10 +570,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasForeignKey(e => e.UserId)
 					  .HasConstraintName("FK_UserReport_User");
 
-				entity.HasOne(e => e.CollectionRoute)
+				entity.HasOne(e => e.Product)
 				.WithMany(u => u.UserReports)
-					  .HasForeignKey(e => e.CollectionRouteId)
-					  .HasConstraintName("FK_UserReport_Route");
+					  .HasForeignKey(e => e.ProductId)
+					  .HasConstraintName("FK_UserReport_Product");
 			});
             modelBuilder.Entity<CollectionOffDay>(entity =>
             {
