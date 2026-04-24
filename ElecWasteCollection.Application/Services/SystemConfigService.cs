@@ -393,14 +393,66 @@ namespace ElecWasteCollection.Application.Services
             return await _unitOfWork.SaveAsync() > 0;
         }
 
-		public async Task<double> GetImageSimilarityThresholdAsync()
-		{
+        public async Task<double> GetImageSimilarityThresholdAsync()
+        {
             var config = await _unitOfWork.SystemConfig.GetAsync(c => c.Key.ToLower() == SystemConfigKey.IMAGE_SIMILARITY_THRESHOLD.ToString().ToLower());
-            if (config  == null)
+            if (config == null)
             {
-				throw new AppException("Không tìm thấy cấu hình ngưỡng tương đồng hình ảnh", 404);
-			}
-			return double.TryParse(config.Value, out var threshold) ? threshold : 0.8;
-		}
-	}
+                throw new AppException("Không tìm thấy cấu hình ngưỡng tương đồng hình ảnh", 404);
+            }
+            return double.TryParse(config.Value, out var threshold) ? threshold : 0.8;
+        }
+
+        public async Task<AutoGroupingSettingResponse> GetAutoGroupingSettingAsync(string scpId)
+        {
+            var configs = await _systemConfigRepository.GetsAsync(c =>
+                c.CollectionUnitId == scpId && c.GroupName == "AutoGrouping");
+
+            var point = await _unitOfWork.CollectionUnits.GetByIdAsync(scpId);
+
+            return new AutoGroupingSettingResponse
+            {
+                CollectionUnitId = scpId,
+                CollectionUnitName = point?.Name ?? "N/A",
+                IsEnabled = configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_GROUP_ENABLED.ToString())?.Value.ToLower() == "true",
+                ScheduleTime = configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_GROUP_TIME.ToString())?.Value ?? "07:00"
+            };
+        }
+
+        public async Task<bool> UpdateAutoGroupingSettingAsync(AutoGroupingSettingModel model)
+        {
+            var keysToUpdate = new Dictionary<string, string>
+    {
+        { SystemConfigKey.AUTO_GROUP_ENABLED.ToString(), model.IsEnabled.ToString().ToLower() },
+        { SystemConfigKey.AUTO_GROUP_TIME.ToString(), model.ScheduleTime },
+        { SystemConfigKey.AUTO_GROUP_LOAD_THRESHOLD.ToString(), model.LoadThresholdPercent.ToString() }
+    };
+
+            foreach (var item in keysToUpdate)
+            {
+                var config = await _unitOfWork.SystemConfig.GetAsync(c =>
+                    c.Key == item.Key && c.CollectionUnitId == model.CollectionUnitId);
+
+                if (config != null)
+                {
+                    config.Value = item.Value;
+                    _unitOfWork.SystemConfig.Update(config);
+                }
+                else
+                {
+                    await _unitOfWork.SystemConfig.AddAsync(new SystemConfig
+                    {
+                        SystemConfigId = Guid.NewGuid(),
+                        Key = item.Key,
+                        Value = item.Value,
+                        DisplayName = item.Key,
+                        GroupName = "AutoGrouping",
+                        Status = SystemConfigStatus.DANG_HOAT_DONG.ToString(),
+                        CollectionUnitId = model.CollectionUnitId
+                    });
+                }
+            }
+            return await _unitOfWork.SaveAsync() > 0;
+        }
+    }
 }
