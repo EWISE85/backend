@@ -32,4 +32,10 @@ namespace ElecWasteCollection.Application.Model
 
 		public string? UserName { get; set; }
 	}
+    public class ForceReceiveOverdueProductRequest
+    {
+        public Guid ProductId { get; set; }
+        public string QRCode { get; set; }
+        public string? Description { get; set; }
+    }
 }
