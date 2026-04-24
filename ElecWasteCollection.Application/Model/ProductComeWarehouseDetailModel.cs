@@ -29,5 +29,7 @@ namespace ElecWasteCollection.Application.Model
 
 		public DateOnly? PickUpDate { get; set; }
 		public DateTime CreateAt { get; set; }
+
+		public string? UserName { get; set; }
 	}
 }
