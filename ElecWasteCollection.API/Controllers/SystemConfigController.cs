@@ -234,5 +234,38 @@ namespace ElecWasteCollection.API.Controllers
             return Ok(new { success = true, message = "Không có thay đổi nào được thực hiện." });
         }
 
+
+        [HttpGet("auto-grouping/{scpId}")]
+        public async Task<IActionResult> GetAutoGroupingSetting(string scpId)
+        {
+            try
+            {
+                var result = await _systemConfigService.GetAutoGroupingSettingAsync(scpId);
+                return Ok(new { Data = result, Success = true });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message, Success = false });
+            }
+        }
+
+        [HttpPut("auto-grouping")]
+        public async Task<IActionResult> UpdateAutoGroupingSetting([FromBody] AutoGroupingSettingModel model)
+        {
+            try
+            {
+                var result = await _systemConfigService.UpdateAutoGroupingSettingAsync(model);
+                if (result)
+                {
+                    return Ok(new { Message = "Cập nhật cấu hình tự động gom nhóm thành công.", Success = true });
+                }
+                return BadRequest(new { Message = "Cập nhật thất bại.", Success = false });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message, Success = false });
+            }
+        }
+
     }
 }
