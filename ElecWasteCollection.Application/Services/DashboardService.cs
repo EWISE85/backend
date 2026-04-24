@@ -4,6 +4,7 @@ using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -12,6 +13,7 @@ namespace ElecWasteCollection.Application.Services
     {
         private readonly IDashboardRepository _dashboardRepository;
         private readonly IProductRepository _productRepository;
+        private readonly DateOnly _today = DateOnly.FromDateTime(DateTime.Now);
 
         public DashboardService(IDashboardRepository dashboardRepository, IProductRepository productRepository)
         {
@@ -424,6 +426,60 @@ namespace ElecWasteCollection.Application.Services
             }).ToList();
 
             return new PagedResultModel<BrandDetailItemResponse>(data, page, limit, totalItems);
+        }
+        public async Task<List<ScpOverdueSummaryResponse>> GetOverdueSummariesAsync()
+        {
+            var rawData = await _dashboardRepository.GetOverdueRawDataAsync();
+
+            return rawData
+                .Select(x => new { x.ScpId, x.ScpName, Deadline = GetMaxDate(x.ScheduleJson) })
+                .Where(x => x.Deadline.HasValue && x.Deadline < _today)
+                .GroupBy(x => new { x.ScpId, x.ScpName })
+                .Select(g => new ScpOverdueSummaryResponse
+                {
+                    ScpId = g.Key.ScpId,
+                    ScpName = g.Key.ScpName,
+                    TotalOverdueCount = g.Count()
+                })
+                .OrderByDescending(x => x.TotalOverdueCount)
+                .ToList();
+        }
+
+        public async Task<PagedResultModel<OverdueProductItemResponse>> GetOverdueProductsPagedAsync(string scpId, int page, int limit)
+        {
+            var rawData = await _dashboardRepository.GetOverdueDetailRawAsync(scpId);
+
+            var allOverdue = rawData
+                .Select(x => {
+                    var deadline = GetMaxDate(x.ScheduleJson);
+                    return new OverdueProductItemResponse
+                    {
+                        ProductId = x.ProductId,
+                        BrandName = x.BrandName,
+                        CategoryName = x.CategoryName,
+                        UserName = x.UserName,
+                        DeadlineDate = deadline,
+                        DaysDelayed = deadline.HasValue ? _today.DayNumber - deadline.Value.DayNumber : 0,
+                        Status = x.Status
+                    };
+                })
+                .Where(x => x.DeadlineDate.HasValue && x.DeadlineDate < _today)
+                .OrderByDescending(x => x.DaysDelayed)
+                .ToList();
+
+            var pagedData = allOverdue.Skip((page - 1) * limit).Take(limit).ToList();
+            return new PagedResultModel<OverdueProductItemResponse>(pagedData, page, limit, allOverdue.Count);
+        }
+
+        private DateOnly? GetMaxDate(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return null;
+            try
+            {
+                var slots = JsonSerializer.Deserialize<List<ScheduleSlot>>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                return slots?.Max(s => s.PickUpDate);
+            }
+            catch { return null; }
         }
     }
 }

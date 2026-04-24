@@ -104,4 +104,24 @@ namespace ElecWasteCollection.Application.Model
         public DateOnly? CollectedDate { get; set; }
         public string ScpName { get; set; }
     }
+    public class ScpOverdueSummaryResponse
+    {
+        public string ScpId { get; set; }
+        public string ScpName { get; set; }
+        public int TotalOverdueCount { get; set; }
+    }
+    public class OverdueProductItemResponse
+    {
+        public Guid ProductId { get; set; }
+        public string BrandName { get; set; }
+        public string CategoryName { get; set; }
+        public string UserName { get; set; }
+        public DateOnly? DeadlineDate { get; set; }
+        public int DaysDelayed { get; set; }
+        public string Status { get; set; }
+    }
+    public class ScheduleSlot
+    {
+        public DateOnly PickUpDate { get; set; }
+    }
 }
