@@ -360,6 +360,18 @@ namespace ElecWasteCollection.Application.Services
                 b.Products = newOrderedProducts;
                 b.CurrentKg = b.Products.Sum(p => p.Weight); b.CurrentM3 = b.Products.Sum(p => p.Volume);
             }
+            var usedBuckets = buckets.Values.Where(b => b.Products.Any()).ToList();
+
+            string autoSuggestionMessage = "";
+            if (usedBuckets.Any())
+            {
+                var plateNumbers = usedBuckets.Select(b => b.Vehicle.Plate_Number).ToList();
+                autoSuggestionMessage = $"Hệ thống tính toán: Cần {usedBuckets.Count} xe là đủ để thu gom toàn bộ hàng ({string.Join(", ", plateNumbers)}).";
+            }
+            else
+            {
+                autoSuggestionMessage = "Không có sản phẩm nào phù hợp để gán vào xe.";
+            }
 
             // 8. LOGIC GỢI Ý THÔNG MINH (GIỮ NGUYÊN)
             var criticalUnassigned = unAssigned.Where(x => x.Reason.Contains("HẠN CHÓT")).ToList();
@@ -402,6 +414,7 @@ namespace ElecWasteCollection.Application.Services
                 LoadThresholdPercent = request.LoadThresholdPercent,
                 UnassignedProducts = unAssigned,
                 CriticalGapSuggestion = suggestion,
+                AutoRecommendationMessage = autoSuggestionMessage,
                 Days = buckets.Values.Where(b => b.Products.Any()).Select(b => new PreAssignDay
                 {
                     WorkDate = request.WorkDate,

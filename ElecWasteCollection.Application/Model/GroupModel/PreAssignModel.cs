@@ -44,6 +44,7 @@ namespace ElecWasteCollection.Application.Model.GroupModel
         public string CollectionPoint { get; set; }
         public DateOnly WorkDate { get; set; }
         public double LoadThresholdPercent { get; set; }
+        public string? AutoRecommendationMessage { get; set; }
         public List<PreAssignDay> Days { get; set; } = new List<PreAssignDay>();
         public List<UnAssignProductPreview> UnassignedProducts { get; set; }
         public CriticalGapSuggestion? CriticalGapSuggestion { get; set; }
