@@ -229,19 +229,68 @@ namespace ElecWasteCollection.Application.Services
 			return results;
 		}
 
+		//public async Task<bool> IsUserConfirm(Guid collectionRouteId, bool isConfirm, bool isSkip)
+		//{
+		//	const string includeProps = "CollectionGroup.Shifts";
+		//	var route = await _collectionRouteRepository.GetAsync(
+		//		r => r.CollectionRouteId == collectionRouteId,
+		//		includeProperties: includeProps
+		//	);
+		//	if (route == null) return false;
+		//	var shifts = route.CollectionGroup?.Shifts;
+		//	if (shifts == null) return false;
+
+		//	Guid collectorId = shifts.CollectorId;
+		//	string newStatus;
+		//	if (isSkip)
+		//	{
+		//		newStatus = "User_Skip";
+		//	}
+		//	else if (isConfirm)
+		//	{
+		//		newStatus = "User_Confirm";
+		//	}
+		//	else
+		//	{
+		//		newStatus = "User_Reject";
+		//	}
+		//	route.Status = newStatus;
+		//	_unitOfWork.CollecctionRoutes.Update(route);
+		//	await _unitOfWork.SaveAsync();
+
+		//	try
+		//	{
+		//		await _notifierService.NotifyShipperOfConfirmation(
+		//			collectorId.ToString(),
+		//			collectionRouteId,
+		//			newStatus);
+
+		//		return true;
+		//	}
+		//	catch (Exception ex)
+		//	{
+
+
+		//		Console.WriteLine($"Error notifying shipper: {ex.Message}");
+		//		return true;
+		//	}
+		//}
 		public async Task<bool> IsUserConfirm(Guid collectionRouteId, bool isConfirm, bool isSkip)
 		{
-			const string includeProps = "CollectionGroup.Shifts";
+			const string includeProps = "CollectionGroup.Shifts,Product";
 			var route = await _collectionRouteRepository.GetAsync(
 				r => r.CollectionRouteId == collectionRouteId,
 				includeProperties: includeProps
 			);
+
 			if (route == null) return false;
+
 			var shifts = route.CollectionGroup?.Shifts;
 			if (shifts == null) return false;
 
 			Guid collectorId = shifts.CollectorId;
 			string newStatus;
+
 			if (isSkip)
 			{
 				newStatus = "User_Skip";
@@ -252,10 +301,25 @@ namespace ElecWasteCollection.Application.Services
 			}
 			else
 			{
-				newStatus = "User_Reject";
+				newStatus = ProductStatus.THAT_BAI.ToString();
+
+				if (route.Product != null)
+				{
+					route.Product.Status = ProductStatus.THAT_BAI.ToString();
+					var history = new ProductStatusHistory
+					{
+						ProductId = route.Product.ProductId,
+						ChangedAt = DateTime.UtcNow,
+						Status = ProductStatus.THAT_BAI.ToString(),
+						StatusDescription = "Người dùng từ chối thu gom tại nhà."
+					};
+					await _unitOfWork.ProductStatusHistory.AddAsync(history);
+				}
 			}
+
 			route.Status = newStatus;
 			_unitOfWork.CollecctionRoutes.Update(route);
+
 			await _unitOfWork.SaveAsync();
 
 			try
@@ -269,13 +333,10 @@ namespace ElecWasteCollection.Application.Services
 			}
 			catch (Exception ex)
 			{
-				
-
 				Console.WriteLine($"Error notifying shipper: {ex.Message}");
 				return true;
 			}
 		}
-
 		private async Task<CollectionRouteModel> BuildCollectionRouteModel(CollectionRoutes route)
 		{
 			if (route == null) return null;
