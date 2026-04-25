@@ -949,7 +949,7 @@ namespace ElecWasteCollection.Application.Services
 					ProductStatusHistoryId = Guid.NewGuid(),
 					ProductId = product.ProductId,
 					ChangedAt = DateTime.UtcNow,
-					StatusDescription = "Người dùng đã hủy sản phẩm: " + rejectMessage,
+					StatusDescription = "Người dùng đã hủy sản phẩm",
 					Status = ProductStatus.DA_HUY.ToString()
 				};
 
