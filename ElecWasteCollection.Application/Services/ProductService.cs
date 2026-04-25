@@ -260,6 +260,10 @@ namespace ElecWasteCollection.Application.Services
 
 		private ProductComeWarehouseDetailModel MapToDetailModel(Products product, Post? post)
 		{
+			var allImages = new List<string>();
+			if (post?.Images != null) allImages.AddRange(post.Images.Select(i => i.ImageUrl));
+			if (product?.Images != null) allImages.AddRange(product.Images.Select(i => i.ImageUrl));
+
 			return new ProductComeWarehouseDetailModel
 			{
 				ProductId = product.ProductId,
@@ -268,9 +272,9 @@ namespace ElecWasteCollection.Application.Services
 				Description = product.Description,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				CreateAt = post?.Date ?? product.CreateAt?.ToDateTime(TimeOnly.MinValue) ?? DateTime.MinValue,
-				ProductImages = post?.Images?.Select(i => i.ImageUrl).ToList()
-					 ?? product.Images?.Select(i => i.ImageUrl).ToList()
-					 ?? new List<string>(),
+
+				ProductImages = allImages.Distinct().ToList(),
+
 				UserName = product.User?.Name ?? "N/A"
 			};
 		}
@@ -459,7 +463,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var allPosts = await _unitOfWork.Posts.GetsAsync(
 	p => p.SenderId == userId,
-	includeProperties: "Sender,Product,Product.Category,Product.Brand,Images"
+	includeProperties: "Sender,Product,Product.Category,Product.Brand,Images,Product.Images"
 );
 
 			if (allPosts == null || !allPosts.Any())
@@ -491,6 +495,14 @@ namespace ElecWasteCollection.Application.Services
 					}
 
 					var draftData = !string.IsNullOrEmpty(draftJson) ? JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions) : null;
+					if (!string.IsNullOrEmpty(search) && draftData != null)
+					{
+						string s = search.ToLower();
+						bool matchCategory = draftData.ChildCategoryName?.ToLower()?.Contains(s) == true;
+						bool matchDescription = post.Description?.ToLower()?.Contains(s) == true;
+
+						if (!matchCategory && !matchDescription) continue;
+					}
 					allProductDetails.Add(MapDraftToWarehouseDetailModel(post, draftData));
 				}
 			}
@@ -506,7 +518,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				ProductId = draft?.Product?.ProductId ?? post.PostId,
 
-				CategoryName = draft?.CategoryName ?? "Dữ liệu đang chờ cập nhật",
+				CategoryName = draft?.ChildCategoryName ?? "Dữ liệu đang chờ cập nhật",
 				BrandName = draft?.BrandName ?? "Không rõ",
 				Description = post.Description ?? "Không có mô tả",
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
@@ -774,7 +786,7 @@ namespace ElecWasteCollection.Application.Services
 			{
 				// GIỮ NGUYÊN PRODUCT ID THẬT ĐỂ TRACKING
 				ProductId = draft?.Product?.ProductId ?? Guid.Empty,
-				CategoryName = draft?.CategoryName ?? "Dữ liệu đang chờ duyệt",
+				CategoryName = draft?.ChildCategoryName ?? "Dữ liệu đang chờ duyệt",
 				BrandName = draft?.BrandName ?? "Không rõ",
 				Description = post.Description ?? draft?.Product?.Description ?? string.Empty,
 				ProductImages = post.Images?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
