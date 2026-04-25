@@ -38,7 +38,8 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IBrandCategoryRepository _brandCategoryRepository;
 		private readonly INotificationService _notificationService;
 		private readonly IRedisCacheService _redisCacheService;
-		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache, IUserAddressRepository userAddressRepository, ICategoryAttributeRepsitory categoryAttributeRepsitory, IBrandCategoryRepository brandCategoryRepository, INotificationService notificationService, IRedisCacheService redisCacheService )
+		private readonly IWebNotificationService _WebnotificationService;
+		public PostService(IProfanityChecker profanityChecker, IProductService productService, IImageRecognitionService imageRecognitionService, IProductImageRepository productImageRepository, IProductRepository productRepository, IProductValuesRepository productValuesRepository, IUnitOfWork unitOfWork, IPostRepository postRepository, IProductStatusHistoryRepository productStatusHistoryRepository, ICategoryRepository categoryRepository, IAttributeRepository attributeRepository, IAttributeOptionRepository attributeOptionRepository, IMapboxDistanceCacheService distanceCache, IUserAddressRepository userAddressRepository, ICategoryAttributeRepsitory categoryAttributeRepsitory, IBrandCategoryRepository brandCategoryRepository, INotificationService notificationService, IRedisCacheService redisCacheService, IWebNotificationService webnotificationService)
 		{
 			_profanityChecker = profanityChecker;
 			_productService = productService;
@@ -52,12 +53,13 @@ namespace ElecWasteCollection.Application.Services
 			_categoryRepository = categoryRepository;
 			_attributeRepository = attributeRepository;
 			_attributeOptionRepository = attributeOptionRepository;
-            _distanceCache = distanceCache;
+			_distanceCache = distanceCache;
 			_userAddressRepository = userAddressRepository;
 			_categoryAttributeRepsitory = categoryAttributeRepsitory;
 			_brandCategoryRepository = brandCategoryRepository;
 			_notificationService = notificationService;
 			_redisCacheService = redisCacheService;
+			_WebnotificationService = webnotificationService;
 		}
 
 		//public async Task<bool> AddPost(CreatePostModel createPostRequest)
@@ -422,6 +424,25 @@ namespace ElecWasteCollection.Application.Services
 						postId.ToString(),
 						TimeSpan.FromDays(30) 
 					);
+					var adminSystem = await _unitOfWork.Users.GetAsync(u => u.Role == UserRole.Admin.ToString());
+					await _WebnotificationService.SendNotificationAsync(
+	userId: adminSystem.UserId.ToString(), 
+	title: "Yêu cầu mới",
+	message: "Có một bài đăng mới đang chờ được duyệt.",
+	type: "PENDING_POST",
+	data: new { PostId = newPost.PostId } // Gửi kèm ID để Admin nhấn vào là mở đúng bài đó
+);
+					var notification = new Notifications
+					{
+						NotificationId = Guid.NewGuid(),
+						UserId = adminSystem.UserId,
+						Title = "Yêu cầu mới",
+						Body = "Có một bài đăng mới đang chờ được duyệt.",
+						Type = NotificationType.System.ToString(),
+						CreatedAt = DateTime.UtcNow,
+						IsRead = false
+					};
+					await _unitOfWork.Notifications.AddAsync(notification);
 				}
 
 				await _unitOfWork.SaveAsync();
