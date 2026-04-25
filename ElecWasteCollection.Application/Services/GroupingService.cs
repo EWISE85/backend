@@ -8,6 +8,7 @@ using ElecWasteCollection.Domain.IRepository;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json;
 
 namespace ElecWasteCollection.Application.Services
@@ -50,6 +51,21 @@ namespace ElecWasteCollection.Application.Services
                 oldCache = _preAssignPreviewCache.FirstOrDefault(x =>
                     x.SmallCollectionPointId == request.CollectionPointId &&
                     x.WorkDate == request.WorkDate);
+                if (oldCache != null)
+                {
+                    var cachedIds = oldCache.Response.Days
+                        .SelectMany(d => d.Products.Select(p => p.ProductId))
+                        .ToHashSet();
+
+                    bool isDifferent = request.ProductIds.Count != cachedIds.Count ||
+                                       request.ProductIds.Any(id => !cachedIds.Contains(id.ToString()));
+
+                    if (isDifferent)
+                    {
+                        _preAssignPreviewCache.Remove(oldCache);
+                        oldCache = null;
+                    }
+                }
             }
 
             var point = await _unitOfWork.CollectionUnits.GetByIdAsync(request.CollectionPointId)
@@ -143,12 +159,16 @@ namespace ElecWasteCollection.Application.Services
 
             // 5. LẤY DỮ LIỆU SẢN PHẨM VÀ GOM NHÓM (POOL)
             var attIdMap = await GetAttributeIdMapAsync();
+            //var rawPosts = await _unitOfWork.Posts.GetAllAsync(
+            //    p => p.AssignedCollectionUnitId == request.CollectionPointId
+            //    && p.Product != null
+            //    && request.ProductIds.Contains(p.Product.ProductId),
             var rawPosts = await _unitOfWork.Posts.GetAllAsync(
-       p => p.AssignedCollectionUnitId == request.CollectionPointId
-            && p.Product != null
-            && request.ProductIds.Contains(p.Product.ProductId),
-       includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions"
-   );
+                p => p.AssignedCollectionUnitId == request.CollectionPointId
+                && p.Product != null
+                && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
+                includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions"
+                );
 
             var groupedPosts = rawPosts
                 .Where(x => x.Product?.Status == ProductStatus.CHO_GOM_NHOM.ToString())
@@ -220,6 +240,14 @@ namespace ElecWasteCollection.Application.Services
             foreach (var item in sortedPool)
             {
                 bool assigned = false;
+                var firstDetail = item.GroupedDetails[0];
+                bool isRequested = request.ProductIds.Contains(firstDetail.Post.Product.ProductId);
+
+                if (!isRequested)
+                {
+                    AddToUnassigned(unAssigned, item, "Hàng chờ xử lý - Chưa được chọn trong danh sách ưu tiên.");
+                    continue;
+                }
                 // Sắp xếp Bucket ưu tiên xe có hàng trước để lấp đầy, sau đó ưu tiên xe gần điểm này nhất
                 var checkOrder = buckets.Values
                     .Select(b => new { Bucket = b, Dist = CalculateHaversine(b.LastLat, b.LastLng, (double)item.Lat, (double)item.Lng) })
@@ -289,6 +317,17 @@ namespace ElecWasteCollection.Application.Services
                     }
                 }
             }
+
+            // Lấy ID của các xe đã được gán sản phẩm yêu cầu
+            var assignedVehicleIds = buckets.Values
+                .Where(b => b.Products.Any())
+                .Select(b => b.Vehicle.VehicleId.ToString())
+                .ToHashSet();
+
+            // Danh sách xe "Thừa" (có trong Request nhưng chưa dùng đến)
+            var idleVehicles = vehicles
+                .Where(v => !assignedVehicleIds.Contains(v.VehicleId.ToString()))
+                .ToList();
 
             // 7. CHẠY VRP (CHỈ CHẠY CHO XE CÓ THAY ĐỔI HÀNG HÓA ĐỂ TỐI ƯU LỘ TRÌNH)
             const double DETOUR_FACTOR = 1.3;
@@ -378,10 +417,12 @@ namespace ElecWasteCollection.Application.Services
             CriticalGapSuggestion? suggestion = null;
             if (criticalUnassigned.Any())
             {
-                var available = (await _unitOfWork.Vehicles.GetAllAsync(v => v.CollectionUnit == request.CollectionPointId && !request.VehicleIds.Contains(v.VehicleId) && v.Status == VehicleStatus.DANG_HOAT_DONG.ToString())).OrderByDescending(v => v.Capacity_Kg).ToList();
+                //var available = (await _unitOfWork.Vehicles.GetAllAsync(v => v.CollectionUnit == request.CollectionPointId && !request.VehicleIds.Contains(v.VehicleId) && v.Status == VehicleStatus.DANG_HOAT_DONG.ToString())).OrderByDescending(v => v.Capacity_Kg).ToList();
+                var availableToSuggest = idleVehicles.OrderByDescending(v => v.Capacity_Kg).ToList();
+
                 var simPool = pool.Where(p => unAssigned.Any(ua => ua.PostId == p.GroupedDetails[0].Post.PostId.ToString() && ua.Reason.Contains("HẠN CHÓT"))).ToList();
                 var recVehicles = new List<dynamic>();
-                foreach (var v in available)
+                foreach (var v in availableToSuggest)
                 {
                     if (!simPool.Any()) break;
                     double vMaxKg = v.Capacity_Kg * loadFactor * 0.9; double vMaxM3 = (v.Length_M * v.Width_M * v.Height_M) * loadFactor * 0.9;
@@ -1564,6 +1605,26 @@ namespace ElecWasteCollection.Application.Services
             public DateOnly MinDate { get; set; }
             public DateOnly MaxDate { get; set; }
             public List<DateOnly> SpecificDates { get; set; } = new();
+        }
+        private void AddToUnassigned(List<UnAssignProductPreview> list, dynamic item, string reason)
+        {
+            foreach (var detail in item.GroupedDetails)
+            {
+                list.Add(new UnAssignProductPreview
+                {
+                    ProductId = detail.Post.Product.ProductId.ToString(),
+                    PostId = detail.Post.PostId.ToString(),
+                    Name = item.UserName,
+                    PhoneNumber = item.UserPhone,
+                    Address = item.FullAddress,
+                    Weight = Math.Round((double)detail.Weight, 2),
+                    Volume = Math.Round((double)detail.Volume, 4),
+                    CategoryName = detail.Post.Product?.Category?.Name ?? "N/A",
+                    BrandName = detail.Post.Product?.Brand?.Name ?? "N/A",
+                    DimensionText = detail.DimText,
+                    Reason = item.IsCritical ? "HẠN CHÓT - Cần thu gom gấp nhưng chưa có xe phù hợp." : "Xe đã đầy, sẽ thu gom vào ngày sau."
+                });
+            }
         }
     }
 }
