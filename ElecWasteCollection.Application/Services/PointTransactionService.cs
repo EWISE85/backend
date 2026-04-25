@@ -38,7 +38,7 @@ namespace ElecWasteCollection.Application.Services
 
 			var result = pointTransactions.Select(pt =>
 			{
-				var images = pt.Product?.ProductImages?
+				var images = pt.Product?.Images?
 					.Select(pi => pi.ImageUrl)
 					.ToList() ?? new List<string>();
 

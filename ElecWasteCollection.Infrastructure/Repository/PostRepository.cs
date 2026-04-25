@@ -19,11 +19,12 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 			return await _dbSet
 				.Include(p => p.Sender)
+				.Include(p => p.Images)
 				.Include(p => p.Product)
 					.ThenInclude(pr => pr.Category)
 						.ThenInclude(c => c.ParentCategory)
-				.Include(p => p.Product)
-					.ThenInclude(pr => pr.ProductImages)
+				//.Include(p => p.Product)
+				//	.ThenInclude(pr => pr.Images)
 				.AsNoTracking()
 				.ToListAsync();
 		}
@@ -79,8 +80,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 			var query = _dbSet.AsNoTracking()
 				.Include(p => p.Sender)
+				.Include(p => p.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)
-				.Include(p => p.Product).ThenInclude(pr => pr.ProductImages)
+				//.Include(p => p.Product).ThenInclude(pr => pr.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.Brand)
 				.AsQueryable();
 
@@ -137,9 +139,10 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			return await _dbSet
 				.Where(p => p.SenderId == senderId)
 				.Include(p => p.Sender)
+				.Include(p => p.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.Brand)
 				.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)
-				.Include(p => p.Product).ThenInclude(pr => pr.ProductImages)
+				//.Include(p => p.Product).ThenInclude(pr => pr.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.ProductValues)
 				.AsNoTracking()
 				.ToListAsync();
@@ -150,7 +153,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			return _dbSet
 				.Include(p => p.Sender)
 				.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)
-				.Include(p => p.Product).ThenInclude(pr => pr.ProductImages)
+				.Include(p => p.Product).ThenInclude(pr => pr.Images)
 				.AsNoTracking();
 		}
 
@@ -159,9 +162,10 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			return await _dbSet
 				.Where(p => p.PostId == id)
 				.Include(p => p.Sender)
+				.Include(p => p.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.Brand)
 				.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)
-				.Include(p => p.Product).ThenInclude(pr => pr.ProductImages)
+				//.Include(p => p.Product).ThenInclude(pr => pr.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.ProductValues)
 				.AsNoTracking()
 				.FirstOrDefaultAsync();

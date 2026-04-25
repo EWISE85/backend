@@ -16,7 +16,7 @@ namespace ElecWasteCollection.Infrastructure.Context
 		public DbSet<User> Users { get; set; }
 		public DbSet<Account> Accounts { get; set; }
 		public DbSet<Products> Products { get; set; }
-		public DbSet<ProductImages> ProductImages { get; set; }
+		public DbSet<Image> Images { get; set; }
 		public DbSet<Category> Categories { get; set; }
 		public DbSet<Brand> Brands { get; set; }
 		public DbSet<Attributes> Attributes { get; set; }
@@ -250,16 +250,21 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .HasConstraintName("FK_Products_Packages");
 			});
 
-			modelBuilder.Entity<ProductImages>(entity =>
+			modelBuilder.Entity<Image>(entity =>
 			{
-				entity.ToTable("ProductImages");
-				entity.HasKey(e => e.ProductImagesId);
-				entity.Property(e => e.ProductImagesId).ValueGeneratedOnAdd();
-				entity.Property(e => e.ProductId).IsRequired();
+				modelBuilder.Entity<Image>().ToTable("Images");
+				entity.HasKey(e => e.Id);
+				entity.Property(e => e.Id).ValueGeneratedOnAdd();
 				entity.HasOne(e => e.Product)
-					  .WithMany(p => p.ProductImages)
+					  .WithMany(p => p.Images)
 					  .HasForeignKey(e => e.ProductId)
-					  .HasConstraintName("FK_ProductImages_Products");
+					  .HasConstraintName("FK_Images_Products");
+				entity.HasOne(e => e.Post)
+				.WithMany(p => p.Images)
+					  .HasForeignKey(e => e.PostId)
+					  .HasConstraintName("FK_Images_Post");
+
+
 			});
 
 			modelBuilder.Entity<ProductStatusHistory>(entity =>

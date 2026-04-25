@@ -176,7 +176,8 @@ namespace ElecWasteCollection.Application.Services
 				var endAtStr = worksheet.Cell(row, 7).Value.ToString()?.Trim();
 				var valueStr = worksheet.Cell(row, 8).Value.ToString()?.Trim();
 				var pointsToRedeemStr = worksheet.Cell(row, 9).Value.ToString()?.Trim();
-				var rawStatus = worksheet.Cell(row, 10).Value.ToString();
+				var quantityStr = worksheet.Cell(row, 10).Value.ToString()?.Trim();
+				var rawStatus = worksheet.Cell(row, 11).Value.ToString();
 				string dateFormat = "dd/MM/yyyy";
 
 				DateOnly startAt = DateOnly.TryParseExact(startAtStr?.Trim(), dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tempStart)
@@ -186,6 +187,11 @@ namespace ElecWasteCollection.Application.Services
 				DateOnly endAt = DateOnly.TryParseExact(endAtStr?.Trim(), dateFormat, CultureInfo.InvariantCulture, DateTimeStyles.None, out var tempEnd)
 					? tempEnd
 					: DateOnly.MinValue;
+				if (endAt < startAt)
+				{
+					result.Messages.Add($"Lỗi dòng {row}: Ngày kết thúc ({endAtStr}) không được nhỏ hơn ngày bắt đầu ({startAtStr}).");
+					throw new AppException($"Lỗi dòng {row}: Ngày kết thúc không được nhỏ hơn ngày bắt đầu.", 400);
+				}
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 				string statusToSave;
 
@@ -207,6 +213,7 @@ namespace ElecWasteCollection.Application.Services
 					EndAt = endAt,
 					Value = double.TryParse(valueStr, out var tempValue) ? tempValue : 0,
 					PointsToRedeem = double.TryParse(pointsToRedeemStr, out var tempPoints) ? tempPoints : 0,
+					Quantity = int.TryParse(quantityStr, out var tempQuantity) ? tempQuantity : 0,
 					Status = statusToSave
 				};
 				var importResult = await _voucherService.CheckAndUpdateVoucherAsync(voucherModel);

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.IRepository
 {
-	public interface IProductImageRepository : IGenericRepository<ProductImages>
+	public interface IProductImageRepository : IGenericRepository<Image>
 	{
 	}
 }

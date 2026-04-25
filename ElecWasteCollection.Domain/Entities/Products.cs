@@ -70,7 +70,7 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public CollectionUnit? CollectionUnits { get; set; }
         public Post? Post { get; set; }
-        public virtual ICollection<ProductImages> ProductImages { get; set; } = new List<ProductImages>();
+        public virtual ICollection<Image> Images { get; set; } = new List<Image>();
 		public virtual ICollection<ProductValues> ProductValues { get; set; } = new List<ProductValues>();
 		public virtual ICollection<ProductStatusHistory> ProductStatusHistories { get; set; } = new List<ProductStatusHistory>();
 		public virtual ICollection<CollectionRoutes> CollectionRoutes { get; set; } = new List<CollectionRoutes>();

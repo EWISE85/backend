@@ -83,17 +83,17 @@ namespace ElecWasteCollection.Application.Services
 			};
 			await _unitOfWork.Products.AddAsync(newProduct);
 
-			var productImages = new List<ProductImages>();
+			var productImages = new List<Image>();
 			for (int i = 0; i < createProductRequest.Images.Count; i++)
 			{
-				var newProductImage = new ProductImages
+				var newProductImage = new Image
 				{
 					ImageUrl = createProductRequest.Images[i],
 					ProductId = newProduct.ProductId,
-					ProductImagesId = Guid.NewGuid()
+					Id = Guid.NewGuid()
 				};
 				productImages.Add(newProductImage);
-				await _unitOfWork.ProductImages.AddAsync(newProductImage);
+				await _unitOfWork.Images.AddAsync(newProductImage);
 			}
 			
 			if (createProductRequest.SenderId.HasValue)
@@ -153,7 +153,7 @@ namespace ElecWasteCollection.Application.Services
 
             var post = product.Post;
 
-            var imageUrls = product.ProductImages?.Select(img => img.ImageUrl).ToList() ?? new List<string>();
+            var imageUrls = product.Images?.Select(img => img.ImageUrl).ToList() ?? new List<string>();
 			return new ProductComeWarehouseDetailModel
 			{
 				ProductId = product.ProductId,
@@ -268,7 +268,9 @@ namespace ElecWasteCollection.Application.Services
 				Description = product.Description,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				CreateAt = post?.Date ?? product.CreateAt?.ToDateTime(TimeOnly.MinValue) ?? DateTime.MinValue,
-				ProductImages = product.ProductImages?.Select(i => i.ImageUrl).ToList() ?? new List<string>(),
+				ProductImages = post?.Images?.Select(i => i.ImageUrl).ToList()
+					 ?? product.Images?.Select(i => i.ImageUrl).ToList()
+					 ?? new List<string>(),
 				UserName = product.User?.Name ?? "N/A"
 			};
 		}
@@ -456,9 +458,9 @@ namespace ElecWasteCollection.Application.Services
 			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
 			var allPosts = await _unitOfWork.Posts.GetsAsync(
-				p => p.SenderId == userId,
-				includeProperties: "Sender,Product,Product.Category,Product.Brand,Product.ProductImages"
-			);
+	p => p.SenderId == userId,
+	includeProperties: "Sender,Product,Product.Category,Product.Brand,Images"
+);
 
 			if (allPosts == null || !allPosts.Any())
 				return new PagedResultModel<ProductComeWarehouseDetailModel>(new List<ProductComeWarehouseDetailModel>(), page, limit, 0);
@@ -509,7 +511,7 @@ namespace ElecWasteCollection.Application.Services
 				Description = post.Description ?? "Không có mô tả",
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
 				CreateAt = post.Date,
-				ProductImages = draft?.ProductImages?.Select(i => i.ImageUrl).ToList() ?? new List<string>(),
+				ProductImages = post.Images?.Select(i => i.ImageUrl).ToList() ?? new List<string>(),
 				EstimatePoint = post.EstimatePoint
 			};
 		}
@@ -623,18 +625,19 @@ namespace ElecWasteCollection.Application.Services
 			// BƯỚC 1: Tìm Post (Thử tìm theo PostId hoặc ProductId đã có trong SQL)
 			var post = await _unitOfWork.Posts.GetAsync(
 				p => p.PostId == id || (p.Product != null && p.Product.ProductId == id),
-				includeProperties: "Sender,Product,Product.Category,Product.Brand,Product.ProductImages,Product.PointTransactions,Product.ProductValues,Product.ProductValues.Attribute"
+				includeProperties: "Sender,Images,Product,Product.Category,Product.Brand,Product.PointTransactions,Product.ProductValues,Product.ProductValues.Attribute"
 			);
 
-			// BƯỚC 2: Nếu không thấy (Có thể là ProductId của bài nháp trên Redis) -> Tra từ điển Redis
+			// BƯỚC 2: Tra từ điển Redis nếu không thấy trong SQL
 			if (post == null)
 			{
 				var mappedPostIdStr = await _redisCacheService.GetStringAsync($"ewise:product_map:{id}");
 				if (!string.IsNullOrEmpty(mappedPostIdStr) && Guid.TryParse(mappedPostIdStr, out var mappedPostId))
 				{
+					// [ĐÃ SỬA] Dùng mappedPostId để tìm bài Post gốc
 					post = await _unitOfWork.Posts.GetAsync(
 						p => p.PostId == mappedPostId,
-						includeProperties: "Sender,Product,Product.Category,Product.Brand,Product.ProductImages,Product.PointTransactions,Product.ProductValues,Product.ProductValues.Attribute"
+						includeProperties: "Sender,Images,Product,Product.Category,Product.Brand,Product.PointTransactions,Product.ProductValues,Product.ProductValues.Attribute"
 					);
 				}
 			}
@@ -649,9 +652,9 @@ namespace ElecWasteCollection.Application.Services
 				}
 				else
 				{
+					// Nhánh Draft (Chờ duyệt / Bị từ chối)
 					string? draftJson = null;
 
-					// Nếu vẫn đang chờ duyệt thì ưu tiên lấy trên Redis cho mới
 					if (post.Status == PostStatus.CHO_DUYET.ToString())
 					{
 						draftJson = await _redisCacheService.GetStringAsync($"ewise:draft_product:{post.PostId}");
@@ -729,7 +732,9 @@ namespace ElecWasteCollection.Application.Services
 				CategoryName = product.Category?.Name ?? "Không rõ",
 				BrandName = product.Brand?.Name ?? "Không rõ",
 				Description = product.Description,
-				ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
+				ProductImages = post?.Images?.Select(i => i.ImageUrl).ToList()
+					 ?? product?.Images?.Select(i => i.ImageUrl).ToList()
+					 ?? new List<string>(),
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 				EstimatePoint = post?.EstimatePoint,
 				Sender = userResponse,
@@ -772,7 +777,7 @@ namespace ElecWasteCollection.Application.Services
 				CategoryName = draft?.CategoryName ?? "Dữ liệu đang chờ duyệt",
 				BrandName = draft?.BrandName ?? "Không rõ",
 				Description = post.Description ?? draft?.Product?.Description ?? string.Empty,
-				ProductImages = draft?.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
+				ProductImages = post.Images?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
 				EstimatePoint = post.EstimatePoint,
 				Address = post.Address,
@@ -876,7 +881,7 @@ namespace ElecWasteCollection.Application.Services
 					CategoryName = product.Category?.Name ?? "Không rõ",
 					Description = product.Description,
 					BrandName = product.Brand?.Name ?? "Không rõ",
-					ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
+					ProductImages = product.Images?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 					Sender = userResponse,
 					Address = userAddress?.Address ?? post?.Address ?? "N/A",
@@ -1097,12 +1102,12 @@ namespace ElecWasteCollection.Application.Services
 			product.CategoryId = categoryId;
 			product.BrandId = brandId;
 			_unitOfWork.Products.Update(product);
-			var existingImages = await _unitOfWork.ProductImages.GetsAsync(pi => pi.ProductId == productId);
+			var existingImages = await _unitOfWork.Images.GetsAsync(pi => pi.ProductId == productId);
 			if (existingImages != null && existingImages.Any())
 			{
 				foreach (var img in existingImages)
 				{
-					_unitOfWork.ProductImages.Delete(img);
+					_unitOfWork.Images.Delete(img);
 				}
 			}
 
@@ -1110,12 +1115,12 @@ namespace ElecWasteCollection.Application.Services
 			{
 				foreach (var imageUrl in images)
 				{
-					var newImage = new ProductImages
+					var newImage = new Image
 					{
 						ProductId = productId,
 						ImageUrl = imageUrl
 					};
-					_unitOfWork.ProductImages.Add(newImage);
+					_unitOfWork.Images.Add(newImage);
 				}
 			}
 

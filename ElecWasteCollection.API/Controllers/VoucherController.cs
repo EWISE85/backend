@@ -33,6 +33,7 @@ namespace ElecWasteCollection.API.Controllers
 				StartAt = request.StartAt,
 				EndAt = request.EndAt,
 				Value = request.Value,
+				Quantity = request.Quantity,
 				PointsToRedeem = request.PointsToRedeem
 			};
 			var result = await _voucherService.CreateVoucher(model);
@@ -45,7 +46,32 @@ namespace ElecWasteCollection.API.Controllers
 				return BadRequest(new { Message = "Tạo voucher thất bại" });
 			}
 		}
-
+		[HttpPut("{voucherId}")]
+		public async Task<IActionResult> UpdateVoucher([FromBody] CreateVoucherRequest request, [FromRoute] Guid voucherId)
+		{
+			var model = new CreateVoucherModel
+			{
+				Code = request.Code,
+				Name = request.Name,
+				Description = request.Description,
+				ImageUrl = request.ImageUrl,
+				StartAt = request.StartAt,
+				EndAt = request.EndAt,
+				Value = request.Value,
+				Quantity = request.Quantity,
+				PointsToRedeem = request.PointsToRedeem,
+				Status = request.Status
+			};
+			var result = await _voucherService.UpdateVoucher(model, voucherId);
+			if (result)
+			{
+				return Ok(new { Message = "Cập nhật voucher thành công" });
+			}
+			else
+			{
+				return BadRequest(new { Message = "Cập nhật voucher thất bại" });
+			}
+		}
 		[HttpGet("{id}")]
 		public async Task<IActionResult> GetVoucherById([FromRoute] Guid id)
 		{
@@ -57,8 +83,21 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(result);
 		}
 
-		[HttpGet("paged")]
-		public async Task<IActionResult> GetPagedVouchers([FromQuery] VoucherQueryRequest request)
+		[HttpGet("{userId}/paged")]
+		public async Task<IActionResult> GetPagedVouchers([FromQuery] VoucherQueryRequest request, [FromRoute] Guid userId)
+		{
+			var model = new VoucherQueryModel
+			{
+				Name = request.Name,
+				Status = request.Status,
+				PageNumber = request.Page,
+				Limit = request.Limit
+			};
+			var result = await _voucherService.GetPagedVouchersForUser(model, userId);
+			return Ok(result);
+		}
+		[HttpGet("admin/paged")]
+		public async Task<IActionResult> GetPagedVouchersForAdmin([FromQuery] VoucherQueryRequest request)
 		{
 			var model = new VoucherQueryModel
 			{
@@ -70,7 +109,6 @@ namespace ElecWasteCollection.API.Controllers
 			var result = await _voucherService.GetPagedVouchers(model);
 			return Ok(result);
 		}
-
 		[HttpGet("user/{userId}/paged")]
 		public async Task<IActionResult> GetPagedVouchersByUser([FromRoute] Guid userId, [FromQuery] VoucherQueryRequest request)
 		{
@@ -141,8 +179,8 @@ namespace ElecWasteCollection.API.Controllers
 				return StatusCode(500, new { Message = "Lỗi khi import vouchers từ Excel.", Error = ex.Message });
 			}
 		}
-		[HttpPatch("un-active/{voucherId}")]
-		public async Task<IActionResult> UnActiveVoucher([FromRoute] Guid voucherId)
+		[HttpPatch("unactive/{voucherId}")]
+		public async Task<IActionResult> UnactiveVoucher([FromRoute] Guid voucherId)
 		{
 			var result = await _voucherService.UnActiveVoucher(voucherId);
 			if (result)
@@ -167,5 +205,6 @@ namespace ElecWasteCollection.API.Controllers
 				return BadRequest(new { Message = "Kích hoạt voucher thất bại" });
 			}
 		}
+
 	}
 }

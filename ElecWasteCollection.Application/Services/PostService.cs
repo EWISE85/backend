@@ -283,7 +283,7 @@ namespace ElecWasteCollection.Application.Services
 				};
 
 				var productValuesList = new List<ProductValues>();
-				var productImagesList = new List<ProductImages>();
+				var productImagesList = new List<Image>();
 
 				if (createPostRequest.Product.Attributes != null)
 				{
@@ -342,11 +342,12 @@ namespace ElecWasteCollection.Application.Services
 						var aiResult = await _imageRecognitionService.AnalyzeImageCategoryAsync(imgUrl, aiTags);
 						if (aiResult == null || !aiResult.IsMatch) allImagesMatch = false;
 
-						var productImg = new ProductImages
+						var productImg = new Image
 						{
-							ProductImagesId = Guid.NewGuid(),
-							ProductId = newProductId,
+							Id = Guid.NewGuid(),
+							ProductId = null,
 							ImageUrl = imgUrl,
+							PostId = newPost.PostId,
 							AiDetectedLabelsJson = aiResult?.DetectedTagsJson ?? "[]"
 						};
 						productImagesList.Add(productImg);
@@ -357,6 +358,10 @@ namespace ElecWasteCollection.Application.Services
 						newPost.Status = PostStatus.DA_DUYET.ToString();
 						newProduct.Status = ProductStatus.CHO_PHAN_KHO.ToString();
 						statusDescription = "Yêu cầu được duyệt tự động, chờ phân về kho tương ứng";
+						foreach (var img in productImagesList)
+						{
+							img.ProductId = newProductId;
+						}
 					}
 				}
 
@@ -368,13 +373,16 @@ namespace ElecWasteCollection.Application.Services
 					StatusDescription = statusDescription
 				};
 
-				await _unitOfWork.Posts.AddAsync(newPost); 
-
+				await _unitOfWork.Posts.AddAsync(newPost);
+				foreach (var pi in productImagesList)
+				{
+					await _unitOfWork.Images.AddAsync(pi);
+				}
 				if (newPost.Status == PostStatus.DA_DUYET.ToString())
 				{
 					await _unitOfWork.Products.AddAsync(newProduct);
 					foreach (var pv in productValuesList) await _unitOfWork.ProductValues.AddAsync(pv);
-					foreach (var pi in productImagesList) await _unitOfWork.ProductImages.AddAsync(pi);
+					//foreach (var pi in productImagesList) await _unitOfWork.ProductImages.AddAsync(pi);
 					await _unitOfWork.ProductStatusHistory.AddAsync(history);
 				}
 				else
@@ -393,7 +401,7 @@ namespace ElecWasteCollection.Application.Services
 					{
 						Product = newProduct,
 						ProductValues = productValuesList,
-						ProductImages = productImagesList,
+						//ProductImages = productImagesList,
 						History = history,
 						CategoryName = parentCategoryName,
 						ChildCategoryName = childCategory?.Name ?? "Không rõ",
@@ -760,21 +768,21 @@ namespace ElecWasteCollection.Application.Services
 					}).ToList();
 				}
 
-				if (draft.ProductImages != null)
-				{
-					imageUrls = draft.ProductImages.Select(x => x.ImageUrl).ToList();
-					var allLabels = new List<LabelModel>();
-					foreach (var img in draft.ProductImages)
-					{
-						if (!string.IsNullOrEmpty(img.AiDetectedLabelsJson))
-						{
-							try { allLabels.AddRange(JsonSerializer.Deserialize<List<LabelModel>>(img.AiDetectedLabelsJson, options)); } catch { }
-						}
-					}
-					aggregatedLabels = allLabels.GroupBy(l => l.Tag)
-						.Select(g => new LabelModel { Tag = g.Key, Confidence = g.Max(x => x.Confidence), Status = g.First().Status })
-						.OrderByDescending(x => x.Confidence).Take(5).ToList();
-				}
+				//if (draft.ProductImages != null)
+				//{
+				//	imageUrls = draft.ProductImages.Select(x => x.ImageUrl).ToList();
+				//	var allLabels = new List<LabelModel>();
+				//	foreach (var img in draft.ProductImages)
+				//	{
+				//		if (!string.IsNullOrEmpty(img.AiDetectedLabelsJson))
+				//		{
+				//			try { allLabels.AddRange(JsonSerializer.Deserialize<List<LabelModel>>(img.AiDetectedLabelsJson, options)); } catch { }
+				//		}
+				//	}
+				//	aggregatedLabels = allLabels.GroupBy(l => l.Tag)
+				//		.Select(g => new LabelModel { Tag = g.Key, Confidence = g.Max(x => x.Confidence), Status = g.First().Status })
+				//		.OrderByDescending(x => x.Confidence).Take(5).ToList();
+				//}
 			}
 			else if (post.Product != null)
 			{
@@ -801,23 +809,37 @@ namespace ElecWasteCollection.Application.Services
 					}).ToList();
 				}
 
-				if (post.Product.ProductImages != null)
-				{
-					imageUrls = post.Product.ProductImages.Select(x => x.ImageUrl).ToList();
-					var allLabels = new List<LabelModel>();
-					foreach (var img in post.Product.ProductImages)
-					{
-						if (!string.IsNullOrEmpty(img.AiDetectedLabelsJson))
-						{
-							try { allLabels.AddRange(JsonSerializer.Deserialize<List<LabelModel>>(img.AiDetectedLabelsJson, options)); } catch { }
-						}
-					}
-					aggregatedLabels = allLabels.GroupBy(l => l.Tag)
-						.Select(g => new LabelModel { Tag = g.Key, Confidence = g.Max(x => x.Confidence), Status = g.First().Status })
-						.OrderByDescending(x => x.Confidence).Take(5).ToList();
-				}
+				//if (post.Product.Images != null)
+				//{
+				//	imageUrls = post.Product.Images.Select(x => x.ImageUrl).ToList();
+				//	var allLabels = new List<LabelModel>();
+				//	foreach (var img in post.Product.Images)
+				//	{
+				//		if (!string.IsNullOrEmpty(img.AiDetectedLabelsJson))
+				//		{
+				//			try { allLabels.AddRange(JsonSerializer.Deserialize<List<LabelModel>>(img.AiDetectedLabelsJson, options)); } catch { }
+				//		}
+				//	}
+				//	aggregatedLabels = allLabels.GroupBy(l => l.Tag)
+				//		.Select(g => new LabelModel { Tag = g.Key, Confidence = g.Max(x => x.Confidence), Status = g.First().Status })
+				//		.OrderByDescending(x => x.Confidence).Take(5).ToList();
+				//}
 			}
-
+			if (post.Images != null && post.Images.Any())
+			{
+				imageUrls = post.Images.Select(x => x.ImageUrl).ToList();
+				var allLabels = new List<LabelModel>();
+				foreach (var img in post.Images)
+				{
+					if (!string.IsNullOrEmpty(img.AiDetectedLabelsJson))
+					{
+						try { allLabels.AddRange(JsonSerializer.Deserialize<List<LabelModel>>(img.AiDetectedLabelsJson, options)); } catch { }
+					}
+				}
+				aggregatedLabels = allLabels.GroupBy(l => l.Tag)
+					.Select(g => new LabelModel { Tag = g.Key, Confidence = g.Max(x => x.Confidence), Status = g.First().Status })
+					.OrderByDescending(x => x.Confidence).Take(5).ToList();
+			}
 			List<DailyTimeSlots> schedule = null;
 			if (!string.IsNullOrEmpty(post.ScheduleJson))
 			{
@@ -997,9 +1019,9 @@ namespace ElecWasteCollection.Application.Services
 			}
 
 			string thumbnailUrl = null;
-			if (post.Product.ProductImages != null && post.Product.ProductImages.Any())
+			if (post.Product.Images != null && post.Product.Images.Any())
 			{
-				thumbnailUrl = post.Product.ProductImages.FirstOrDefault()?.ImageUrl;
+				thumbnailUrl = post.Product.Images.FirstOrDefault()?.ImageUrl;
 			}
 
 			return new PostSummaryModel
@@ -1198,7 +1220,6 @@ namespace ElecWasteCollection.Application.Services
 					{
 						var product = draftData.Product;
 						var productValues = draftData.ProductValues ?? new List<ProductValues>();
-						var productImages = draftData.ProductImages ?? new List<ProductImages>();
 						var history = draftData.History;
 
 						product.Status = ProductStatus.CHO_PHAN_KHO.ToString();
@@ -1211,9 +1232,13 @@ namespace ElecWasteCollection.Application.Services
 
 						await _unitOfWork.Products.AddAsync(product);
 						foreach (var pv in productValues) await _unitOfWork.ProductValues.AddAsync(pv);
-						foreach (var pi in productImages) await _unitOfWork.ProductImages.AddAsync(pi);
 						if (history != null) await _unitOfWork.ProductStatusHistory.AddAsync(history);
-
+						var existingImages = await _unitOfWork.Images.GetsAsync(i => i.PostId == post.PostId);
+						foreach (var img in existingImages)
+						{
+							img.ProductId = product.ProductId; 
+							_unitOfWork.Images.Update(img); 
+						}
 						await _redisCacheService.RemoveAsync(redisKey);
 					}
 				}
@@ -1426,13 +1451,12 @@ namespace ElecWasteCollection.Application.Services
 				Address = post.Address ?? string.Empty,
 				SenderName = post.Sender?.Name ?? "Không rõ",
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
-				EstimatePoint = post.EstimatePoint
+				EstimatePoint = post.EstimatePoint,
+				ThumbnailUrl = post.Images?.FirstOrDefault()?.ImageUrl ?? string.Empty
 			};
 
 			if (draft != null)
 			{
-				summary.ThumbnailUrl = draft.ProductImages?.FirstOrDefault()?.ImageUrl ?? string.Empty;
-
 				// Gán thẳng tên đã lưu trên Redis vào Model
 				summary.Category = draft.CategoryName ?? "Không rõ";
 				summary.ChildCategoryName = draft.ChildCategoryName ?? "Không rõ";

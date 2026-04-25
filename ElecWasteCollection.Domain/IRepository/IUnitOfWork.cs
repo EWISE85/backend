@@ -26,7 +26,7 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<CollectionRoutes> CollecctionRoutes { get; }
         IGenericRepository<Packages> Packages { get; }
         IGenericRepository<PointTransactions> PointTransactions { get; }
-        IGenericRepository<ProductImages> ProductImages { get; }
+        IGenericRepository<Image> Images { get; }
         IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
         IGenericRepository<Shifts> Shifts { get; }
         IGenericRepository<CollectionUnit> CollectionUnits { get; }

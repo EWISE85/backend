@@ -11,7 +11,7 @@ namespace ElecWasteCollection.Application.Model
 	{
 		public Products Product { get; set; }
 		public List<ProductValues> ProductValues { get; set; }
-		public List<ProductImages> ProductImages { get; set; }
+		public List<Image> ProductImages { get; set; }
 		public ProductStatusHistory History { get; set; }
 
 		public string CategoryName { get; set; }
