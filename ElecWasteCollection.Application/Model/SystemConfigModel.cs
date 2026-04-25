@@ -47,5 +47,7 @@ namespace ElecWasteCollection.Application.Model
         public string CollectionUnitName { get; set; }
         public bool IsEnabled { get; set; }
         public string ScheduleTime { get; set; }
+        public double LoadThresholdPercent { get; set; }
+
     }
 }

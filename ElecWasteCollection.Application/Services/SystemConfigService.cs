@@ -408,7 +408,8 @@ namespace ElecWasteCollection.Application.Services
                 CollectionUnitId = scpId,
                 CollectionUnitName = point?.Name ?? "N/A",
                 IsEnabled = configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_GROUP_ENABLED.ToString())?.Value.ToLower() == "true",
-                ScheduleTime = configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_GROUP_TIME.ToString())?.Value ?? "07:00"
+                ScheduleTime = configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_GROUP_TIME.ToString())?.Value ?? "07:00",
+                LoadThresholdPercent = double.TryParse( configs.FirstOrDefault(c => c.Key == SystemConfigKey.AUTO_GROUP_LOAD_THRESHOLD.ToString())?.Value, out var percent) ? percent : 80
             };
         }
 
