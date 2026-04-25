@@ -331,14 +331,12 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<WarehouseLoadThresholdSettings> GetWarehouseLoadThresholdAsync()
         {
-            // Tìm cấu hình dựa trên Key
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == SystemConfigKey.WAREHOUSE_LOAD_THRESHOLD.ToString() &&
                 c.Status == SystemConfigStatus.DANG_HOAT_DONG.ToString());
 
             return new WarehouseLoadThresholdSettings
             {
-                // Nếu config null, trả về 0.7 làm mặc định
                 Threshold = double.TryParse(config?.Value, out var val) ? val : 0.7,
                 SystemConfigId = config?.SystemConfigId ?? Guid.Empty,
                 DisplayName = config?.DisplayName ?? "Ngưỡng tải trọng kho hàng (Load Balancing)",
@@ -349,7 +347,6 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<bool> UpdateWarehouseLoadThresholdAsync(UpdateThresholdRequest model)
         {
-            // Chuẩn hóa giá trị (Ví dụ nhập 70 thì hiểu là 0.7)
             double standardizedValue = model.Threshold > 1 ? model.Threshold / 100 : model.Threshold;
 
             if (standardizedValue < 0 || standardizedValue > 1)
@@ -357,7 +354,6 @@ namespace ElecWasteCollection.Application.Services
                 throw new AppException("Giá trị ngưỡng không hợp lệ (Ví dụ: 70 cho 70% hoặc 0.7)", 400);
             }
 
-            // Tìm cấu hình tốc độ dựa trên Key và ID kho cụ thể
             var key = SystemConfigKey.WAREHOUSE_LOAD_THRESHOLD.ToString();
             var config = await _systemConfigRepository.GetAsync(c =>
                 c.Key == key &&
@@ -365,7 +361,6 @@ namespace ElecWasteCollection.Application.Services
 
             if (config != null)
             {
-                // Cập nhật cấu hình hiện có cho kho này
                 config.Value = standardizedValue.ToString();
                 config.Status = SystemConfigStatus.DANG_HOAT_DONG.ToString();
                 config.DisplayName = "Ngưỡng tải trọng kho hàng";
@@ -375,7 +370,6 @@ namespace ElecWasteCollection.Application.Services
             }
             else
             {
-                // Tạo mới cấu hình riêng cho kho này nếu chưa tồn tại
                 var newConfig = new SystemConfig
                 {
                     SystemConfigId = Guid.NewGuid(),
@@ -389,7 +383,6 @@ namespace ElecWasteCollection.Application.Services
                 await _unitOfWork.SystemConfig.AddAsync(newConfig);
             }
 
-            // Lưu vào database thông qua UnitOfWork
             return await _unitOfWork.SaveAsync() > 0;
         }
 
@@ -421,21 +414,32 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<bool> UpdateAutoGroupingSettingAsync(AutoGroupingSettingModel model)
         {
-            var keysToUpdate = new Dictionary<string, string>
-    {
-        { SystemConfigKey.AUTO_GROUP_ENABLED.ToString(), model.IsEnabled.ToString().ToLower() },
-        { SystemConfigKey.AUTO_GROUP_TIME.ToString(), model.ScheduleTime },
-        { SystemConfigKey.AUTO_GROUP_LOAD_THRESHOLD.ToString(), model.LoadThresholdPercent.ToString() }
-    };
+            var configsToProcess = new Dictionary<string, (string Value, string DisplayName)>
+            {
+                {
+                    SystemConfigKey.AUTO_GROUP_ENABLED.ToString(),
+                    (model.IsEnabled.ToString().ToLower(), "Bật/Tắt tự động gom nhóm và phân xe")
+                },
+                {
+                    SystemConfigKey.AUTO_GROUP_TIME.ToString(),
+                    (model.ScheduleTime, "Thời gian thực hiện gom nhóm tự động")
+                },
+                {
+                    SystemConfigKey.AUTO_GROUP_LOAD_THRESHOLD.ToString(),
+                    (model.LoadThresholdPercent.ToString(), "Ngưỡng tải trọng tối đa khi phân xe tự động (%)")
+                }
+            };
 
-            foreach (var item in keysToUpdate)
+            foreach (var item in configsToProcess)
             {
                 var config = await _unitOfWork.SystemConfig.GetAsync(c =>
                     c.Key == item.Key && c.CollectionUnitId == model.CollectionUnitId);
 
                 if (config != null)
                 {
-                    config.Value = item.Value;
+                    config.Value = item.Value.Value;
+                    config.DisplayName = item.Value.DisplayName; 
+                    config.Status = SystemConfigStatus.DANG_HOAT_DONG.ToString();
                     _unitOfWork.SystemConfig.Update(config);
                 }
                 else
@@ -444,8 +448,8 @@ namespace ElecWasteCollection.Application.Services
                     {
                         SystemConfigId = Guid.NewGuid(),
                         Key = item.Key,
-                        Value = item.Value,
-                        DisplayName = item.Key,
+                        Value = item.Value.Value,
+                        DisplayName = item.Value.DisplayName, 
                         GroupName = "AutoGrouping",
                         Status = SystemConfigStatus.DANG_HOAT_DONG.ToString(),
                         CollectionUnitId = model.CollectionUnitId
