@@ -15,7 +15,8 @@
 		public DateOnly EndAt { get; set; }
 
 		public double Value { get; set; }
-
+		public int Quantity { get; set; }
+		public string? Status { get; set; }
 		public double PointsToRedeem { get; set; }
 	}
 }

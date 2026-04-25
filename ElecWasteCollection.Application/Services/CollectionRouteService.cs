@@ -323,9 +323,9 @@ namespace ElecWasteCollection.Application.Services
 
 			// 3. Map Hình ảnh sản phẩm
 			var productImages = new List<string>();
-			if (product?.ProductImages != null)
+			if (product?.Images != null)
 			{
-				productImages = product.ProductImages.Select(x => x.ImageUrl).ToList();
+				productImages = product.Images.Select(x => x.ImageUrl).ToList();
 			}
 
 			string address = relatedPost?.Address ?? "Không tìm thấy địa chỉ";

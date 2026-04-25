@@ -36,6 +36,8 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public double PointsToRedeem { get; set; }
 
+		public int Quantity { get; set; }
+
 		public string Status { get; set; }
 
 		public virtual ICollection<UserVoucher> UserVouchers { get; set; } = new List<UserVoucher>();

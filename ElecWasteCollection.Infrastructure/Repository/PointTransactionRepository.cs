@@ -20,7 +20,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.AsSplitQuery() 
 
 				.Include(pt => pt.Product) 
-					.ThenInclude(p => p.ProductImages) 
+					.ThenInclude(p => p.Images) 
 
 				.Where(pt => pt.UserId == userId)
 

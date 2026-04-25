@@ -8,21 +8,26 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.IServices
 {
-    public interface  IVoucherService
-    {
-        Task<PagedResultModel<VoucherModel>> GetPagedVouchers(VoucherQueryModel model);
-        Task<bool> CreateVoucher(CreateVoucherModel model);
+	public interface IVoucherService
+	{
+		Task<PagedResultModel<VoucherModel>> GetPagedVouchers(VoucherQueryModel model);
+		Task<PagedResultModel<VoucherModel>> GetPagedVouchersForUser(VoucherQueryModel model, Guid userId);
 
-        Task<VoucherModel> GetVoucherById(Guid id);
+		Task<bool> CreateVoucher(CreateVoucherModel model);
 
-        Task<PagedResultModel<VoucherModel>> GetPagedVouchersByUser(UserVoucherQueryModel model);
+		Task<VoucherModel> GetVoucherById(Guid id);
 
-        Task<bool> UserReceiveVoucher(Guid userId, Guid voucherId);
+		Task<PagedResultModel<VoucherModel>> GetPagedVouchersByUser(UserVoucherQueryModel model);
 
-        Task UpdateFormatExcel(Guid systemConfigId, IFormFile formFile);
+		Task<bool> UserReceiveVoucher(Guid userId, Guid voucherId);
 
-        Task<ImportResult> CheckAndUpdateVoucherAsync(CreateVoucherModel model);
-        Task<bool> UnActiveVoucher(Guid voucherId);
+		Task UpdateFormatExcel(Guid systemConfigId, IFormFile formFile);
+
+		Task<ImportResult> CheckAndUpdateVoucherAsync(CreateVoucherModel model);
+
+		Task<bool> UpdateVoucher(CreateVoucherModel model, Guid voucherId);
+		Task<bool> UnActiveVoucher(Guid voucherId);
 		Task<bool> ActiveVoucher(Guid voucherId);
+		Task UpdateExpiredVouchersAsync();
 	}
 }

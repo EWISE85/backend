@@ -168,7 +168,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<IPackageRepository, PackageRepository>();
 			builder.Services.AddScoped<IPointTransactionRepository, PointTransactionRepository>();
 			builder.Services.AddScoped<IPostRepository, PostRepository>();
-			builder.Services.AddScoped<IProductImageRepository, ProductImageRepository>();
+			builder.Services.AddScoped<IProductImageRepository, ImagesRepository>();
 			builder.Services.AddScoped<IProductRepository, ProductRepository>();
 			builder.Services.AddScoped<IProductStatusHistoryRepository, ProductStatusHistoryRepository>();
 			builder.Services.AddScoped<IProductValuesRepository, ProductValuesRepository>();

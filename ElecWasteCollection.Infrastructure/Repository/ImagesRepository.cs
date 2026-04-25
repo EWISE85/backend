@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Infrastructure.Repository
 {
-	public class ProductImageRepository : GenericRepository<ProductImages>, IProductImageRepository
+	public class ImagesRepository : GenericRepository<Image>, IProductImageRepository
 	{
-		public ProductImageRepository(DbContext context) : base(context)
+		public ImagesRepository(DbContext context) : base(context)
 		{
 		}
 	}

@@ -22,7 +22,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Post);
 
@@ -50,9 +50,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.CollectionRoutes).ThenInclude(r => r.CollectionGroup).ThenInclude(g => g.Shifts).ThenInclude(s => s.Vehicle)
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Post) 
+				.Include(p => p.Post).ThenInclude(post => post.Images)
 				.Include(p => p.User)
 				.AsQueryable();
 
@@ -76,7 +76,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.AsSplitQuery()
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Post)
 				.Include(p => p.User)
@@ -100,7 +100,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.Post)
 				.Include(p => p.CollectionRoutes);
 
@@ -114,7 +114,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.AsSplitQuery()
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Post)
 				.Include(p => p.CollectionRoutes)
@@ -147,7 +147,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.PointTransactions)
 
 				.Include(p => p.Post).ThenInclude(pst => pst.Sender) 
@@ -175,7 +175,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(p => p.Category)
 				.Include(p => p.Brand)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.PointTransactions)
 				.Include(p => p.Post).ThenInclude(pst => pst.Sender).ThenInclude(s => s.UserAddresses) 
 				.Include(p => p.CollectionRoutes).ThenInclude(r => r.CollectionGroup)
@@ -269,7 +269,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.AsSplitQuery()
 				.Include(p => p.Category)
 				.Include(p => p.Brand)
-				.Include(p => p.ProductImages)
+				.Include(p => p.Images)
 				.Include(p => p.CollectionRoutes)
 					.ThenInclude(r => r.CollectionGroup)
 						.ThenInclude(g => g.Shifts)

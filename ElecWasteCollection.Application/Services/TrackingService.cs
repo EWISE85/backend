@@ -67,7 +67,7 @@ namespace ElecWasteCollection.Application.Services
 				CategoryName = product.Category.Name,
 				Description = product.Description,
 				BrandName = product.Brand.Name,
-				Images = product.ProductImages.Select(img => img.ImageUrl).ToList(),
+				Images = product.Images.Select(img => img.ImageUrl).ToList(),
 				Address = post != null ? post.Address : "Không có địa chỉ thu gom do người dùng tự mang đến kho",
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status).ToString(),
 				Points = realPoints ,

@@ -21,7 +21,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.AsSplitQuery()
 				 .Include(r => r.Product).ThenInclude(p => p.Brand)
 				 .Include(r => r.Product).ThenInclude(p => p.Category)
-				 .Include(r => r.Product).ThenInclude(p => p.ProductImages)
+				 .Include(r => r.Product).ThenInclude(p => p.Images)
 				 .Include(r => r.Product).ThenInclude(p => p.User).ThenInclude(a => a.Posts)
 				.Include(r => r.CollectionGroup)
 					.ThenInclude(g => g.Shifts)
@@ -74,7 +74,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(r => r.Product).ThenInclude(p => p.Brand)
 				.Include(r => r.Product).ThenInclude(p => p.Category)
-				.Include(r => r.Product).ThenInclude(p => p.ProductImages)
+				.Include(r => r.Product).ThenInclude(p => p.Images)
 				.Include(r => r.Product).ThenInclude(p => p.User).ThenInclude(u => u.Posts)
 				.Include(r => r.Product).ThenInclude(p => p.User).ThenInclude(u => u.UserAddresses)
 
@@ -105,7 +105,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(r => r.Product).ThenInclude(p => p.Brand)
 				.Include(r => r.Product).ThenInclude(p => p.Category)
-				.Include(r => r.Product).ThenInclude(p => p.ProductImages)
+				.Include(r => r.Product).ThenInclude(p => p.Images)
 				.Include(r => r.Product).ThenInclude(p => p.User).ThenInclude(u => u.Posts)
 				.Include(r => r.CollectionGroup).ThenInclude(g => g.Shifts).ThenInclude(s => s.Vehicle)
 				.Include(r => r.CollectionGroup).ThenInclude(g => g.Shifts).ThenInclude(s => s.Collector);
@@ -140,7 +140,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(r => r.Product)
 					.ThenInclude(p => p.Category)
 				.Include(r => r.Product)
-					.ThenInclude(p => p.ProductImages)
+					.ThenInclude(p => p.Images)
 				.Include(r => r.Product)
 					.ThenInclude(p => p.User)
 						.ThenInclude(u => u.Posts);
@@ -166,7 +166,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			query = query
 				.Include(r => r.Product).ThenInclude(p => p.Brand)
 				.Include(r => r.Product).ThenInclude(p => p.Category)
-				.Include(r => r.Product).ThenInclude(p => p.ProductImages)
+				.Include(r => r.Product).ThenInclude(p => p.Images)
 				.Include(r => r.Product).ThenInclude(p => p.User).ThenInclude(u => u.Posts)
 
 				.Include(r => r.CollectionGroup).ThenInclude(g => g.Shifts).ThenInclude(s => s.Vehicle)

@@ -29,7 +29,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public IGenericRepository<CollectionRoutes> CollecctionRoutes { get; }
 		public IGenericRepository<Packages> Packages { get; }
 		public IGenericRepository<PointTransactions> PointTransactions { get; }
-		public IGenericRepository<ProductImages> ProductImages { get; }
+		public IGenericRepository<Image> Images { get; }
 		public IGenericRepository<ProductStatusHistory> ProductStatusHistory { get; }
 		public IGenericRepository<Shifts> Shifts { get; }
 		public IGenericRepository<Vehicles> Vehicles { get; }
@@ -75,7 +75,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			CollecctionRoutes = new GenericRepository<CollectionRoutes>(_context);
 			Packages = new GenericRepository<Packages>(_context);
 			PointTransactions = new GenericRepository<PointTransactions>(_context);
-			ProductImages = new GenericRepository<ProductImages>(_context);
+			Images = new GenericRepository<Image>(_context);
 			ProductStatusHistory = new GenericRepository<ProductStatusHistory>(_context);
 			Shifts = new GenericRepository<Shifts>(_context);
 			Vehicles = new GenericRepository<Vehicles>(_context);

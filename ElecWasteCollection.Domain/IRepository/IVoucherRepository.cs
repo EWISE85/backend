@@ -11,6 +11,11 @@ namespace ElecWasteCollection.Domain.IRepository
 	{
 		Task<(List<Voucher> Items, int TotalCount)> GetPagedVoucher(string? name, string? status, int page, int limit);
 		Task<(List<Voucher> Items, int TotalCount)> GetPagedVoucherByUser(Guid userId, string? name, string? status, int page, int limit);
-
+		Task<(List<Voucher> Items, int TotalCount)> GetPagedVoucherForUser(
+			Guid userId,
+			string? name,
+			string? status,
+			int page,
+			int limit);
 	}
 }
