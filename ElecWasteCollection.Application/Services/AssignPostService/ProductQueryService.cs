@@ -300,6 +300,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             {
                 var product = post.Product!;
                 var metrics = await GetProductMetricsAsync(product.ProductId, attMap);
+                var rawPhone = product.User?.Phone ?? post.Sender?.Phone ?? "N/A";
 
                 result.Products.Add(new ProductDetailDto
                 {
@@ -307,6 +308,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     SenderId = product.UserId,
                     UserName = product.User?.Name ?? post.Sender?.Name ?? "N/A",
                     Address = post.Address ?? "N/A",
+                    PhoneNumber = rawPhone,
                     CategoryName = product.Category?.Name ?? "",
                     BrandName = product.Brand?.Name ?? "",
                     WeightKg = metrics.weight,
