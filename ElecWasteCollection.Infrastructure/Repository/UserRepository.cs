@@ -19,6 +19,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public async Task<(List<User> Users, int TotalCount)> AdminFilterUser(int page, int limit, DateOnly? fromDate, DateOnly? toDate, string? email, string? status)
 		{
 			var query = _dbSet.AsNoTracking();
+			query = query.Include(u => u.Role).AsQueryable();
 
 			// --- 1. Áp dụng các bộ lọc (Filter) ---
 			if (!string.IsNullOrEmpty(email))

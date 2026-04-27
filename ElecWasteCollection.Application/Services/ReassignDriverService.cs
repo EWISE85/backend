@@ -39,9 +39,10 @@ namespace ElecWasteCollection.Application.Services
             var isToday = targetDate == DateOnly.FromDateTime(nowVn);
 
             var allCollectors = await _unitOfWork.Users.GetAllAsync(
-                u => u.Role == UserRole.Collector.ToString() &&
+                u => u.Role.Name == UserRole.Collector.ToString() &&
                      u.CollectionUnitId == smallCollectionPointId &&
-                     u.Status == UserStatus.DANG_HOAT_DONG.ToString()
+                     u.Status == UserStatus.DANG_HOAT_DONG.ToString(),
+                includeProperties:"Role"
             );
 
             var shiftsInDay = await _unitOfWork.Shifts.GetAllAsync(

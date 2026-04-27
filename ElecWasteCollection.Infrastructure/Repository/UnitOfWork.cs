@@ -56,7 +56,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
         public IGenericRepository<UserToken> UserTokens { get; }
 
-        public UnitOfWork(ElecWasteCollectionDbContext context)
+		public IGenericRepository<Role> Roles { get; }
+
+		public UnitOfWork(ElecWasteCollectionDbContext context)
         {
             _context = context;
 
@@ -97,7 +99,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			UserReports = new GenericRepository<UserReport>(_context);
             CollectionOffDays = new GenericRepository<CollectionOffDay>(_context);
             CollectionUnits = new GenericRepository<CollectionUnit>(_context);
-            UserTokens = new GenericRepository<UserToken>(_context); 
+            UserTokens = new GenericRepository<UserToken>(_context);
+			Roles = new GenericRepository<Role>(_context);
 
 		}
 

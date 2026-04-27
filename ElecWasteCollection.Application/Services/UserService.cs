@@ -33,7 +33,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<UserResponse>> GetAll()
 		{
-			var users = await _userRepository.GetsAsync(u => u.Role == UserRole.User.ToString());
+			var users = await _userRepository.GetsAsync(u => u.Role.Name == UserRole.User.ToString(), includeProperties:"Role");
 			if (users == null || users.Count == 0)
 			{
 				return new List<UserResponse>();
@@ -45,7 +45,7 @@ namespace ElecWasteCollection.Application.Services
 				Email = u.Email,
 				Phone = u.Phone,
 				Avatar = u.Avatar,
-				Role = u.Role,
+				Role = u.Role.Name,
 				SmallCollectionPointId = u.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
 
@@ -69,7 +69,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<UserResponse>? GetById(Guid id)
 		{
-			var user = await _userRepository.GetAsync(u => u.UserId == id);
+			var user = await _userRepository.GetAsync(u => u.UserId == id, includeProperties: "Role");
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var userResponse = new UserResponse
 			{
@@ -78,7 +78,7 @@ namespace ElecWasteCollection.Application.Services
 				Email = user.Email,
 				Phone = user.Phone,
 				Avatar = user.Avatar,
-				Role = user.Role,
+				Role = user.Role.Name,
 				SmallCollectionPointId = user.CollectionUnitId,
 				CollectionCompanyId = user.CompanyId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
@@ -100,7 +100,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<UserProfileResponse> Profile(Guid userId)
 		{
-			var user = await _userRepository.GetAsync(u => u.UserId == userId);
+			var user = await _userRepository.GetAsync(u => u.UserId == userId, includeProperties: "Role");
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var smallCollectionPointName = await _unitOfWork.CollectionUnits.GetAsync(s => s.CollectionUnitId == user.CollectionUnitId);
 			var collectionCompanyName = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == user.CompanyId);
@@ -127,7 +127,7 @@ namespace ElecWasteCollection.Application.Services
 				Email = user.Email,
 				Phone = user.Phone,
 				Avatar = user.Avatar,
-				Role = user.Role,
+				Role = user.Role.Name,
 				Points = user.Points,
 				CollectionCompanyId = user.CompanyId,
 				SmallCollectionPointId = user.CollectionUnitId,
@@ -140,7 +140,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<UserResponse?> GetByPhone(string phone)
 		{
-			var user = await _userRepository.GetAsync(u => u.Phone == phone);
+			var user = await _userRepository.GetAsync(u => u.Phone == phone, includeProperties: "Role");
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var userResponse = new UserResponse
 			{
@@ -149,7 +149,7 @@ namespace ElecWasteCollection.Application.Services
 				Email = user.Email,
 				Phone = user.Phone,
 				Avatar = user.Avatar,
-				Role = user.Role,
+				Role = user.Role.Name,
 				SmallCollectionPointId = user.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
@@ -183,7 +183,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<UserResponse?> GetByEmailOrPhone(string infomation)
 		{
-			var user = await _userRepository.GetAsync(u => u.Email == infomation || u.Phone == infomation);
+			var user = await _userRepository.GetAsync(u => u.Email == infomation || u.Phone == infomation, includeProperties: "Role");
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			var userResponse = new UserResponse
 			{
@@ -193,7 +193,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = user.Phone,
 				Points = user.Points,
 				Avatar = user.Avatar,
-				Role = user.Role,
+				Role = user.Role.Name,
 				SmallCollectionPointId = user.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(user.Status).ToString()
 			};
@@ -203,7 +203,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<UserResponse>> GetByEmail(string email)
 		{
-			var users = await _userRepository.GetsAsync(u => u.Email != null && u.Email.Contains(email));
+			var users = await _userRepository.GetsAsync(u => u.Email != null && u.Email.Contains(email), includeProperties: "Role");
 
 			if (users == null || users.Count == 0)
 			{
@@ -217,7 +217,7 @@ namespace ElecWasteCollection.Application.Services
 				Email = u.Email,
 				Phone = u.Phone,
 				Avatar = u.Avatar,
-				Role = u.Role,
+				Role = u.Role.Name,
 				SmallCollectionPointId = u.CollectionUnitId,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()
 			}).ToList();
@@ -263,7 +263,7 @@ namespace ElecWasteCollection.Application.Services
 				Email = u.Email,
 				Phone = u.Phone,
 				Avatar = u.Avatar,
-				Role = u.Role,
+				Role = u.Role.Name,
 				SmallCollectionPointId = u.CollectionUnitId,
 				CreateAt = u.CreateAt,
 				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<UserStatus>(u.Status).ToString()

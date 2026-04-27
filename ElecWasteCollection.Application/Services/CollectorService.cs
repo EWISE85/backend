@@ -69,7 +69,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<CollectorResponse>> GetAll()
 		{
-			var collectors = await _collectorRepository.GetAllAsync(c => c.Role == UserRole.Collector.ToString());
+			var collectors = await _collectorRepository.GetAllAsync(c => c.Role.Name == UserRole.Collector.ToString(), includeProperties:"Role");
 			var response = collectors.Select(c => new CollectorResponse
 			{
 				CollectorId = c.UserId,

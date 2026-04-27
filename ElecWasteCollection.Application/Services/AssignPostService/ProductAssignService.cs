@@ -501,8 +501,11 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 var assignedIds = trackingBag.Select(t => t.SmallCollectionPointId).Distinct().ToList();
                 var warehouses = await unitOfWork.CollectionUnits.GetAllAsync(p => assignedIds.Contains(p.CollectionUnitId));
                 var warehouseMap = warehouses.ToDictionary(w => w.CollectionUnitId, w => w.Name);
-                var adminUsers = await unitOfWork.Users.GetAllAsync(u => u.Role == UserRole.AdminWarehouse.ToString() && assignedIds.Contains(u.CollectionUnitId));
-                var adminDict = adminUsers.GroupBy(u => u.CollectionUnitId).ToDictionary(g => g.Key, g => g.First().UserId.ToString());
+				var adminUsers = await unitOfWork.Users.GetAllAsync(u =>
+	 u.Role.Name == UserRole.AdminWarehouse.ToString() &&
+	 assignedIds.Contains(u.CollectionUnitId),
+     includeProperties: "Role");
+				var adminDict = adminUsers.GroupBy(u => u.CollectionUnitId).ToDictionary(g => g.Key, g => g.First().UserId.ToString());
 
                 result.WarehouseAllocations = trackingBag.GroupBy(t => t.SmallCollectionPointId).Select(g => new WarehouseAllocationStats
                 {

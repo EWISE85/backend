@@ -74,6 +74,7 @@ namespace ElecWasteCollection.Application.Services
 					importData.Updated_At = DateTime.UtcNow;
 					await _unitOfWork.Companies.AddAsync(importData);
 					var newAdminId = Guid.NewGuid();
+					var role = await _unitOfWork.Roles.GetAsync(r => r.Name == UserRole.RecyclingCompany.ToString());
 					var newAdminUser = new User
 					{
 						UserId = newAdminId,
@@ -81,7 +82,7 @@ namespace ElecWasteCollection.Application.Services
 						Email = importData.CompanyEmail,
 						Phone = importData.Phone,
 						Avatar = null,
-						Role = UserRole.AdminCompany.ToString(),
+						RoleId = role.RoleId,
 						Status = UserStatus.DANG_HOAT_DONG.ToString(),
 						CompanyId = importData.CompanyId
 					};

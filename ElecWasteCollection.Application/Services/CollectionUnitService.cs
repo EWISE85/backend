@@ -55,13 +55,14 @@ namespace ElecWasteCollection.Application.Services
                 await UpsertPointConfigAsync(smallCollectionPoints.CompanyId, smallCollectionPoints.CollectionUnitId, SystemConfigKey.TRANSPORT_SPEED, "35");
                 await UpsertPointConfigAsync(smallCollectionPoints.CompanyId, smallCollectionPoints.CollectionUnitId, SystemConfigKey.SERVICE_TIME_MINUTES, "10");
                 await UpsertPointConfigAsync(smallCollectionPoints.CompanyId, smallCollectionPoints.CollectionUnitId, SystemConfigKey.WAREHOUSE_LOAD_THRESHOLD, "0.7");
-
-                var newAdminWarehouse = new User
+				var role = await _unitOfWork.Roles.GetAsync(r => r.Name == UserRole.AdminWarehouse.ToString());
+				if (role == null) throw new AppException("Không tìm thấy vai trò AdminWarehouse", 404);
+				var newAdminWarehouse = new User
 				{
 					UserId = Guid.NewGuid(),
 					Avatar = null,
 					Name = "Admin " + smallCollectionPoints.Name,
-					Role = UserRole.AdminCompany.ToString(),
+					RoleId = role.RoleId,
 					Status = UserStatus.DANG_HOAT_DONG.ToString(),
 					CompanyId = smallCollectionPoints.CompanyId,
                     CollectionUnitId = smallCollectionPoints.CollectionUnitId,

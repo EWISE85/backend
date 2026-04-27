@@ -424,7 +424,7 @@ namespace ElecWasteCollection.Application.Services
 						postId.ToString(),
 						TimeSpan.FromDays(30) 
 					);
-					var adminSystem = await _unitOfWork.Users.GetAsync(u => u.Role == UserRole.Admin.ToString());
+					var adminSystem = await _unitOfWork.Users.GetAsync(u => u.Role.Name == UserRole.Admin.ToString(), includeProperties:"Role");
 					await _WebnotificationService.SendNotificationAsync(
 	userId: adminSystem.UserId.ToString(), 
 	title: "Yêu cầu mới",
@@ -751,7 +751,7 @@ namespace ElecWasteCollection.Application.Services
 					Email = post.Sender.Email,
 					Name = post.Sender.Name,
 					Phone = post.Sender.Phone,
-					Role = post.Sender.Role,
+					Role = post.Sender.Role.Name,
 					SmallCollectionPointId = post.Sender.CollectionUnitId?.ToString()
 				};
 			}

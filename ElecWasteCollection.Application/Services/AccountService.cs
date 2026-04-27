@@ -56,13 +56,14 @@ namespace ElecWasteCollection.Application.Services
 				{
 					ShowMap = false
 				};
+				var role = await _unitOfWork.Roles.GetAsync(r => r.Name == UserRole.User.ToString());
 				user = new User
 				{
 					UserId = Guid.NewGuid(),
 					Email = email,
 					Name = name,
 					Avatar = picture,
-					Role = UserRole.User.ToString(),
+					RoleId = role.RoleId,
 					CreateAt = DateTime.UtcNow,
 					Points = 0,
 					Status = UserStatus.DANG_HOAT_DONG.ToString()
@@ -193,7 +194,8 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Apple Token không hợp lệ!", 400);
 			}
-
+			var roleUser = await _unitOfWork.Roles.GetAsync(r => r.Name == UserRole.User.ToString());
+			if (roleUser == null) throw new AppException("Hệ thống chưa cấu hình Role User!", 500);
 			var user = await _userRepository.GetAsync(u => u.AppleId == appleUser.AppleId && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
 
 			if (user == null)
@@ -201,7 +203,7 @@ namespace ElecWasteCollection.Application.Services
 				if (!string.IsNullOrEmpty(appleUser.Email))
 				{
 					user = await _userRepository.GetAsync(u => u.Email == appleUser.Email && u.Status == UserStatus.DANG_HOAT_DONG.ToString());
-					if (user != null && user.Role != UserRole.User.ToString())
+					if (user != null && user.RoleId != roleUser.RoleId)
 					{
 						throw new AppException("Email của appleId này đã tồn tại với một tài khoản khác!", 400);
 					}
@@ -227,7 +229,7 @@ namespace ElecWasteCollection.Application.Services
 						Name = displayName,
 						Avatar = null,
 						CreateAt = DateTime.UtcNow,
-						Role = UserRole.User.ToString(),
+						RoleId = roleUser.RoleId,
 						Points = 0,
 						Status = UserStatus.DANG_HOAT_DONG.ToString()
 					};

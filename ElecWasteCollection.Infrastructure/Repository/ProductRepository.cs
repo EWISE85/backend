@@ -177,7 +177,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.Include(p => p.Brand)
 				.Include(p => p.Images)
 				.Include(p => p.PointTransactions)
-				.Include(p => p.Post).ThenInclude(pst => pst.Sender).ThenInclude(s => s.UserAddresses) 
+				.Include(p => p.Post).ThenInclude(pst => pst.Sender).ThenInclude(s => s.UserAddresses)
+				.Include(p => p.Post).ThenInclude(pst => pst.Sender).ThenInclude(s => s.Role)
 				.Include(p => p.CollectionRoutes).ThenInclude(r => r.CollectionGroup)
 					.ThenInclude(g => g.Shifts)
 						.ThenInclude(s => s.Collector);			

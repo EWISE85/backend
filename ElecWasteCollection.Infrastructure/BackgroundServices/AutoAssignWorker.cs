@@ -67,8 +67,8 @@ namespace ElecWasteCollection.Application.BackgroundWorkers
                             {
            
                                 var adminUser = (await unitOfWork.Users.GetAllAsync(u =>
-                                    u.Role == UserRole.Admin.ToString() &&
-                                    u.Status == UserStatus.DANG_HOAT_DONG.ToString())).FirstOrDefault();
+                                    u.Role.Name == UserRole.Admin.ToString() &&
+                                    u.Status == UserStatus.DANG_HOAT_DONG.ToString(),includeProperties:"Role")).FirstOrDefault();
 
                                 if (adminUser != null)
                                 {
