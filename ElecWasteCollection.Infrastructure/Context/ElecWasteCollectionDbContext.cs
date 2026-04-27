@@ -62,7 +62,9 @@ namespace ElecWasteCollection.Infrastructure.Context
 
 		public DbSet<UserToken> UserTokens { get; set; }
 
-        protected override void OnModelCreating(ModelBuilder modelBuilder)
+		public DbSet<Role> Roles { get; set; }
+
+		protected override void OnModelCreating(ModelBuilder modelBuilder)
 		{
 			modelBuilder.Entity<Company>(entity =>
 			{
@@ -124,6 +126,10 @@ namespace ElecWasteCollection.Infrastructure.Context
 				.WithMany(r => r.User)
 					  .HasForeignKey(e => e.CurrentRankId)
 					  .HasConstraintName("FK_User_Rank");
+				entity.HasOne(e => e.Role)
+				.WithMany(r => r.Users)
+					  .HasForeignKey(e => e.RoleId)
+					  .HasConstraintName("FK_User_Role");
 			});
 
 			modelBuilder.Entity<Account>(entity =>
@@ -606,6 +612,13 @@ namespace ElecWasteCollection.Infrastructure.Context
 					  .WithOne(u => u.UserToken) 
 					  .HasForeignKey<UserToken>(e => e.UserId) 
 					  .HasConstraintName("FK_UserToken_User");
+			});
+			modelBuilder.Entity<Role>(entity =>
+			{
+				entity.ToTable("Role");
+				entity.HasKey(e => e.RoleId);
+				entity.Property(e => e.RoleId).ValueGeneratedOnAdd();
+				entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
 			});
 
 		}

@@ -685,7 +685,7 @@ namespace ElecWasteCollection.Application.Services
 			// BƯỚC 1: Tìm Post (Thử tìm theo PostId hoặc ProductId đã có trong SQL)
 			var post = await _unitOfWork.Posts.GetAsync(
 				p => p.PostId == id || (p.Product != null && p.Product.ProductId == id),
-				includeProperties: "Sender,Images,Product,Product.Category,Product.Brand,Product.PointTransactions,Product.ProductValues,Product.ProductValues.Attribute"
+				includeProperties: "Sender,Sender.Role,Images,Product,Product.Category,Product.Brand,Product.PointTransactions,Product.ProductValues,Product.ProductValues.Attribute"
 			);
 
 			// BƯỚC 2: Tra từ điển Redis nếu không thấy trong SQL
@@ -777,7 +777,7 @@ namespace ElecWasteCollection.Application.Services
 				Phone = sender?.Phone ?? "N/A",
 				Email = sender?.Email,
 				Avatar = sender?.Avatar,
-				Role = sender?.Role ?? "User"
+				Role = sender?.Role.Name ?? "User"
 			};
 
 			// Tính điểm thực nhận
@@ -923,7 +923,7 @@ namespace ElecWasteCollection.Application.Services
 					Phone = sender?.Phone,
 					Email = sender?.Email,
 					Avatar = sender?.Avatar,
-					Role = sender?.Role,
+					Role = sender?.Role.Name,
 					SmallCollectionPointId = sender?.CollectionUnitId
                 };
 

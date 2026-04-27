@@ -161,7 +161,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 			return await _dbSet
 				.Where(p => p.PostId == id)
-				.Include(p => p.Sender)
+				.Include(p => p.Sender).ThenInclude(s => s.Role)
 				.Include(p => p.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.Brand)
 				.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)

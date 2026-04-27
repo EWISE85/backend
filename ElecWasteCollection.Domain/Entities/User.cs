@@ -7,16 +7,16 @@ using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Domain.Entities
 {
-	public enum UserRole
-	{
-		AdminWarehouse,
-		Collector,
-		User,
-		Admin,
-		AdminCompany,
-		Shipper,
-		RecyclingCompany
-	}
+	//public enum UserRole
+	//{
+	//	AdminWarehouse,
+	//	Collector,
+	//	User,
+	//	Admin,
+	//	AdminCompany,
+	//	Shipper,
+	//	RecyclingCompany
+	//}
     public enum UserStatus
     {
         [Description("Đang hoạt động")]
@@ -41,7 +41,10 @@ namespace ElecWasteCollection.Domain.Entities
 
 		public string? Avatar { get; set; }
 
-		public string Role { get; set; }
+		//public string Role { get; set; }
+		public Guid RoleId { get; set; }
+
+		public Role Role { get; set; }
 
 		public string? CollectionUnitId { get; set; }
 

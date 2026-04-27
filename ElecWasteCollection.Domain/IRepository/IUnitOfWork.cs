@@ -51,6 +51,8 @@ namespace ElecWasteCollection.Domain.IRepository
         IGenericRepository<CollectionOffDay> CollectionOffDays { get; }
 
         IGenericRepository<UserToken> UserTokens { get; }
+
+        IGenericRepository<Role> Roles { get; }
 		Task<int> SaveAsync();
     }
 }

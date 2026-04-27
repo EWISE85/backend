@@ -18,8 +18,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		public async Task<(List<User> Items, int TotalCount)> GetPagedCollectorsAsync(string? status, string? companyId, string? smallCollectionPointId, int page, int limit)
 		{
 			var query = _dbSet.AsNoTracking();
-			string collectorRole = UserRole.Collector.ToString();
-			query = query.Where(u => u.Role == collectorRole);
+			query = query.Include(u => u.Role).AsQueryable();
+			query = query.Where(u => u.Role.Name == UserRole.Collector.ToString());
 			query = query.Include(u => u.CollectionUnits);
 
 			if (!string.IsNullOrEmpty(status))

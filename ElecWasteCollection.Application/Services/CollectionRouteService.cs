@@ -344,6 +344,7 @@ namespace ElecWasteCollection.Application.Services
 			var product = route.Product;
 			
 			var senderUser = product?.User;
+			var roleName = await _unitOfWork.Roles.GetAsync(r => r.RoleId == senderUser.RoleId);
 
 
 			var relatedPost = senderUser?.Posts?
@@ -363,7 +364,7 @@ namespace ElecWasteCollection.Application.Services
 					Email = senderUser.Email,
 					Phone = senderUser.Phone,
 					Avatar = senderUser.Avatar,
-					Role = senderUser.Role
+					Role = roleName.Name
 				};
 			}
 

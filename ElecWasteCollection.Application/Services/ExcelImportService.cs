@@ -33,9 +33,10 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ICategoryService _categoryService;
 		private readonly IBrandCategoryService _brandCategoryService;
 		private readonly ICategoryAttributeService _categoryAttributeService;
+		private readonly IUnitOfWork _unitOfWork;
 
 
-		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ICollectionUnitService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository, IPublicHolidayService publicHolidayService, IAttributeService attributeService, IBrandService brandService, ICategoryService categoryService, IBrandCategoryService brandCategoryService, ICategoryAttributeService categoryAttributeService)
+		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ICollectionUnitService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository, IPublicHolidayService publicHolidayService, IAttributeService attributeService, IBrandService brandService, ICategoryService categoryService, IBrandCategoryService brandCategoryService, ICategoryAttributeService categoryAttributeService, IUnitOfWork unitOfWork)
 		{
 			_companyService = CompanyService;
 			_accountService = accountService;
@@ -54,6 +55,7 @@ namespace ElecWasteCollection.Application.Services
 			_categoryService = categoryService;
 			_brandCategoryService = brandCategoryService;
 			_categoryAttributeService = categoryAttributeService;
+			_unitOfWork = unitOfWork;
 		}
 
 		public async Task<ImportResult> ImportAsync(Stream excelStream, string importType)
@@ -403,6 +405,7 @@ namespace ElecWasteCollection.Application.Services
 				};
 				var collectorUsername = string.IsNullOrEmpty(email) ? $"collector_{code}" : email;
 				var collectorPassword = GenerateRandomPassword(6);
+				var role = await _unitOfWork.Roles.GetAsync(r => r.Name == UserRole.Collector.ToString());
 				var collector = new User
 				{
 					Name = name,
@@ -412,7 +415,7 @@ namespace ElecWasteCollection.Application.Services
 					CollectorCode = code,
                     CollectionUnitId = smallCollectionPointId,
 					CompanyId = companyId,
-					Role = UserRole.Collector.ToString(),
+					RoleId = role.RoleId,
 					Status = statusToSave, 
 				};
 				var importResult = await _collectorService.CheckAndUpdateCollectorAsync(collector, collectorUsername, collectorPassword);

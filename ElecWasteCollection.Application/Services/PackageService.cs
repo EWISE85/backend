@@ -387,7 +387,8 @@ namespace ElecWasteCollection.Application.Services
 
 			var adminCompanies = await _unitOfWork.Users.GetAllAsync(u =>
 				u.CompanyId == companyId &&
-				u.Role == UserRole.RecyclingCompany.ToString() // Thay bằng UserRole.AdminCompany.ToString() nếu có enum
+				u.Role.Name == UserRole.RecyclingCompany.ToString(),
+				includeProperties: "Role"
 			);
 
 			foreach (var admin in adminCompanies)
@@ -512,7 +513,8 @@ namespace ElecWasteCollection.Application.Services
 				// Tìm các Admin thuộc Công ty tái chế này
 				var admins = await _unitOfWork.Users.GetAllAsync(u =>
 					u.CompanyId == companyId &&
-					u.Role == UserRole.RecyclingCompany.ToString()
+					u.Role.Name == UserRole.RecyclingCompany.ToString(),
+					includeProperties:"Role"
 				);
 
 				foreach (var admin in admins)
