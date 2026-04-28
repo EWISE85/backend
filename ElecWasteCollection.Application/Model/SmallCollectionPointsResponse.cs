@@ -21,5 +21,7 @@ namespace ElecWasteCollection.Application.Model
 		public string CompanyId { get; set; }
 
 		public string CompanyName { get; set; }
+
+		public List<CategoryModel> AcceptedCategories { get; set; } = new List<CategoryModel>();
 	}
 }

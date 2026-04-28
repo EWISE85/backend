@@ -180,7 +180,8 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointActive()
 		{
-			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString());
+			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString(),
+				includeProperties: "Company.CompanyRecyclingCategories.Category.SubCategories");
 			return smallPoints.Select(point => new SmallCollectionPointsResponse
 			{
 				Id = point.CollectionUnitId,
@@ -190,7 +191,17 @@ namespace ElecWasteCollection.Application.Services
 				Latitude = point.Latitude,
 				Longitude = point.Longitude,
 				OpenTime = point.OpenTime,
-				Status = point.Status
+				Status = point.Status,
+				CompanyName = point.Company?.Name,
+				AcceptedCategories = point.Company?.CompanyRecyclingCategories
+					.Where(crc => crc.Category.Status == CategoryStatus.HOAT_DONG.ToString())
+					.SelectMany(crc => crc.Category.SubCategories)
+					.Where(sub => sub.Status == CategoryStatus.HOAT_DONG.ToString())
+					.Select(sub => new CategoryModel
+					{
+						Id = sub.CategoryId,
+						Name = sub.Name
+					}).ToList() ?? new List<CategoryModel>()
 			}).ToList();
 		}
 
