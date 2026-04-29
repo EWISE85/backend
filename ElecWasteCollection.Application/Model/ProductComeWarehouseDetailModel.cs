@@ -35,7 +35,6 @@ namespace ElecWasteCollection.Application.Model
     public class ForceReceiveOverdueProductRequest
     {
         public Guid ProductId { get; set; }
-        public string QRCode { get; set; }
         public string? Description { get; set; }
     }
 }
