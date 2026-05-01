@@ -169,5 +169,25 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _dashboardService.GetOverdueProductsPagedAsync(scpId, page, limit);
             return Ok(result);
         }
+        [HttpGet("recycling-companies")]
+        public async Task<IActionResult> GetRecyclingCompanies([FromQuery] string? search, [FromQuery] DateOnly from, [FromQuery] DateOnly to, int page = 1, int limit = 10)
+        {
+            var result = await _dashboardService.GetRecyclingCompaniesAsync(search, from, to, page, limit);
+            return Ok(result);
+        }
+
+        [HttpGet("companies/{id}/units")]
+        public async Task<IActionResult> GetUnitsByCompany(string id, [FromQuery] string? search, int page = 1, int limit = 10)
+        {
+            var result = await _dashboardService.GetUnitsByCompanyAsync(id, search, page, limit);
+            return Ok(result);
+        }
+
+        [HttpGet("collection-units")]
+        public async Task<IActionResult> GetCollectionUnits([FromQuery] string? search, [FromQuery] DateOnly from, [FromQuery] DateOnly to, int page = 1, int limit = 10)
+        {
+            var result = await _dashboardService.GetCollectionUnitsAsync(search, from, to, page, limit);
+            return Ok(result);
+        }
     }
 }

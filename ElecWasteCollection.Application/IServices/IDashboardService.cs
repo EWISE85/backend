@@ -24,5 +24,8 @@ namespace ElecWasteCollection.Application.IServices
         Task<PagedResultModel<BrandDetailItemResponse>> GetBrandDetailsAsync(string? scpId, string brandName, DateOnly from, DateOnly to, int page, int limit);
         Task<List<ScpOverdueSummaryResponse>> GetOverdueSummariesAsync();
         Task<PagedResultModel<OverdueProductItemResponse>> GetOverdueProductsPagedAsync(string scpId, int page, int limit);
+        Task<PagedResultModel<CollectionUnitDashboardModel>> GetUnitsByCompanyAsync(string companyId, string? search, int page, int limit);
+        Task<PagedResultModel<CompanyDashboardModel>> GetRecyclingCompaniesAsync(string? search, DateOnly from, DateOnly to, int page, int limit);
+        Task<PagedResultModel<CollectionUnitDashboardModel>> GetCollectionUnitsAsync(string? search, DateOnly from, DateOnly to, int page, int limit);
     }
 }

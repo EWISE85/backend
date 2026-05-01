@@ -1,5 +1,7 @@
-﻿using ElecWasteCollection.Application.IServices;
+﻿using ElecWasteCollection.Application.Helper;
+using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using System;
 using System.Collections.Generic;
@@ -481,5 +483,54 @@ namespace ElecWasteCollection.Application.Services
             }
             catch { return null; }
         }
+
+        public async Task<PagedResultModel<CompanyDashboardModel>> GetRecyclingCompaniesAsync(string? search, DateOnly from, DateOnly to, int page, int limit)
+        {
+            var (rawData, totalItems) = await _dashboardRepository.GetPagedRecyclingCompaniesRawAsync(search, from, to, page, limit);
+
+            var data = rawData.Select(x => new CompanyDashboardModel
+            {
+                CompanyId = x.Id,
+                Name = x.Name,
+                Phone = x.Phone,
+                Address = x.Address,
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName <CompanyStatus>(x.Status),
+                Created_At = x.CreatedAt
+            }).ToList();
+
+            return new PagedResultModel<CompanyDashboardModel>(data, page, limit, totalItems);
+        }
+
+        public async Task<PagedResultModel<CollectionUnitDashboardModel>> GetUnitsByCompanyAsync(string companyId, string? search, int page, int limit)
+        {
+            var (rawData, totalItems) = await _dashboardRepository.GetUnitsByCompanyRawAsync(companyId, search, page, limit);
+
+            var data = rawData.Select(x => new CollectionUnitDashboardModel
+            {
+                CollectionUnitId = x.Id,
+                Name = x.Name,
+                Address = x.Address,
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName <CollectionUnitStatus>(x.Status)
+            }).ToList();
+
+            return new PagedResultModel<CollectionUnitDashboardModel>(data, page, limit, totalItems);
+        }
+
+        public async Task<PagedResultModel<CollectionUnitDashboardModel>> GetCollectionUnitsAsync(string? search, DateOnly from, DateOnly to, int page, int limit)
+        {
+            var (rawData, totalItems) = await _dashboardRepository.GetPagedCollectionUnitsRawAsync(search, from, to, page, limit);
+
+            var data = rawData.Select(x => new CollectionUnitDashboardModel
+            {
+                CollectionUnitId = x.Id,
+                Name = x.Name,
+                Address = x.Address,
+                Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CollectionUnitStatus>(x.Status),
+                Created_At = x.CreatedAt
+            }).ToList();
+
+            return new PagedResultModel<CollectionUnitDashboardModel>(data, page, limit, totalItems);
+        }
+
     }
 }
