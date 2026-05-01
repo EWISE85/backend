@@ -273,5 +273,76 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
             return data.Select(x => (x.ProductId, x.BrandName, x.CategoryName, x.UserName, x.Schedule, x.Status)).ToList();
         }
-    } 
+        public async Task<(List<(string Id, string Name, string Phone, string Address, string Status, DateTime CreatedAt)> Data, int TotalCount)> GetPagedRecyclingCompaniesRawAsync(string? search, DateOnly from, DateOnly to, int page, int limit)
+        {
+            var startUtc = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var endUtc = to.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+            var query = _context.Set<Company>()
+                .AsNoTracking()
+                .Where(c => c.Created_At >= startUtc && c.Created_At <= endUtc);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(c => c.Name.Contains(search) || c.CompanyEmail.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var itemsRaw = await query
+                .OrderBy(c => c.Status == CompanyStatus.DANG_HOAT_DONG.ToString() ? 0 : 1)
+                .ThenByDescending(c => c.Created_At)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(c => new { c.CompanyId, c.Name, c.Phone, c.Address, c.Status, c.Created_At })
+                .ToListAsync();
+
+            var data = itemsRaw.Select(x => (x.CompanyId, x.Name, x.Phone, x.Address, x.Status, x.Created_At)).ToList();
+            return (data, totalCount);
+        }
+
+        public async Task<(List<(string Id, string Name, string Address, string Status)> Data, int TotalCount)> GetUnitsByCompanyRawAsync(string companyId, string? search, int page, int limit)
+        {
+            var query = _context.Set<CollectionUnit>()
+                .AsNoTracking()
+                .Where(u => u.CompanyId == companyId);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(u => u.Name.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var itemsRaw = await query
+                .OrderBy(u => u.Status == CompanyStatus.DANG_HOAT_DONG.ToString() ? 0 : 1)
+                .ThenBy(u => u.Name)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(u => new { u.CollectionUnitId, u.Name, u.Address, u.Status })
+                .ToListAsync();
+
+            var data = itemsRaw.Select(x => (x.CollectionUnitId, x.Name, x.Address, x.Status)).ToList();
+            return (data, totalCount);
+        }
+
+        public async Task<(List<(string Id, string Name, string Address, string Status, DateTime CreatedAt)> Data, int TotalCount)> GetPagedCollectionUnitsRawAsync(string? search, DateOnly from, DateOnly to, int page, int limit)
+        {
+            var startUtc = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var endUtc = to.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+            var query = _context.Set<CollectionUnit>()
+                .AsNoTracking()
+                .Where(u => u.Created_At >= startUtc && u.Created_At <= endUtc);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(u => u.Name.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var itemsRaw = await query
+                .OrderBy(u => u.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString() ? 0 : 1)
+                .ThenByDescending(u => u.Created_At)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(u => new { u.CollectionUnitId, u.Name, u.Address, u.Status, u.Created_At })
+                .ToListAsync();
+
+            var data = itemsRaw.Select(x => (x.CollectionUnitId, x.Name, x.Address, x.Status, x.Created_At)).ToList();
+            return (data, totalCount);
+        }
+    }
 }

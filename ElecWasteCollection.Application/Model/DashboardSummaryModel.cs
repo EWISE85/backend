@@ -124,4 +124,22 @@ namespace ElecWasteCollection.Application.Model
     {
         public DateOnly PickUpDate { get; set; }
     }
+    public class CompanyDashboardModel
+    {
+        public string CompanyId { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string Phone { get; set; } = null!;
+        public string Address { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public DateTime Created_At { get; set; }
+    }
+
+    public class CollectionUnitDashboardModel
+    {
+        public string CollectionUnitId { get; set; } = null!;
+        public string Name { get; set; } = null!;
+        public string Address { get; set; } = null!;
+        public string Status { get; set; } = null!;
+        public DateTime Created_At { get; set; }
+    }
 }
