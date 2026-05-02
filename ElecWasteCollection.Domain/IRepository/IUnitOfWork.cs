@@ -54,5 +54,7 @@ namespace ElecWasteCollection.Domain.IRepository
 
         IGenericRepository<Role> Roles { get; }
 		Task<int> SaveAsync();
-    }
+		void ClearTracker();
+
+	}
 }

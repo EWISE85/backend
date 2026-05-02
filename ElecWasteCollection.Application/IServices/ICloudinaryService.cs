@@ -10,5 +10,6 @@ namespace ElecWasteCollection.Application.IServices
 	public interface ICloudinaryService
 	{
 		Task<string> UploadRawFileAsync(IFormFile file, string publicId);
+		Task<string> UploadRawStreamAsync(Stream stream, string fileName, string publicId);
 	}
 }

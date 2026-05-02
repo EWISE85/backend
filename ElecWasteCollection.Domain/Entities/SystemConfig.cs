@@ -44,7 +44,8 @@ namespace ElecWasteCollection.Domain.Entities
 		FORMAT_IMPORT_HOLIDAY,
         CONFIG_TIME_ABLE_TO_POST,
 		IMAGE_SIMILARITY_THRESHOLD,
-		TIME_ABLE_TO_POST
+		TIME_ABLE_TO_POST,
+		FORMAT_IMPORT_CATEGORY
 	}
 	public class SystemConfig
     {
