@@ -45,6 +45,9 @@ namespace ElecWasteCollection.Domain.Entities
         CONFIG_TIME_ABLE_TO_POST,
 		IMAGE_SIMILARITY_THRESHOLD,
 		TIME_ABLE_TO_POST,
+		FORMAT_IMPORT_CATEGORY
+	
+		
         AUTO_GROUP_ENABLED,       // "true" hoặc "false"
         AUTO_GROUP_TIME,          // Định dạng "HH:mm" (ví dụ: "07:00")
         AUTO_GROUP_LOAD_THRESHOLD

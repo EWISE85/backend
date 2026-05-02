@@ -101,6 +101,38 @@ namespace ElecWasteCollection.Application.Services
 			return response;
 		}
 
+		public async Task<List<CategoryModel>> GetParentCategoryWithCollectionUnit(string collectionUnitId)
+		{
+			// 1. Lấy thông tin CollectionUnit để xác định CompanyId
+			var unit = await _unitOfWork.CollectionUnits.GetAsync(x => x.CollectionUnitId == collectionUnitId);
+
+			if (unit == null)
+			{
+				return new List<CategoryModel>();
+			}
+
+			var companyId = unit.CompanyId;
+
+			var recyclingCategories = await _unitOfWork.CompanyRecyclingCategories.GetAllAsync(
+				filter: crc => crc.CompanyId == companyId
+							   && crc.Category.ParentCategoryId == null
+							   && crc.Category.Status == CategoryStatus.HOAT_DONG.ToString(),
+				includeProperties: "Category"
+			);
+
+			var result = recyclingCategories
+				.Select(crc => crc.Category) 
+				.Select(c => new CategoryModel
+				{
+					Id = c.CategoryId,
+					Name = c.Name,
+					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<CategoryStatus>(c.Status)
+				})
+				.ToList();
+
+			return result;
+		}
+
 		public async Task<List<CategoryModel>> GetSubCategoryByName(string name, Guid parentId)
 		{			
 			var categories = await _categoryRepository.GetsAsync(c => c.Name.ToLower().Contains(name.ToLower()) && c.ParentCategoryId == parentId && c.Status == CategoryStatus.HOAT_DONG.ToString());
@@ -161,46 +193,38 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task SyncCategoriesAsync(List<CategoryImportModel> excelCategories)
 		{
-			// 1. Lấy toàn bộ danh mục hiện có trong DB (bao gồm cả ẩn)
-			var dbCategories = await _unitOfWork.Categories.GetAllAsync();
+			var dbCategories = (await _unitOfWork.Categories.GetAllAsync()).ToList();
 
-			// Chuẩn hóa tên từ Excel để so sánh nhanh
 			var excelNamesLower = excelCategories
 				.Select(x => x.Name.Trim().ToLower())
 				.Distinct()
 				.ToList();
 
-			// 2. CẬP NHẬT TRẠNG THÁI (Dọn dẹp những cái không có trong file Excel mới)
 			foreach (var dbCat in dbCategories)
 			{
-				var targetStatus = excelNamesLower.Contains(dbCat.Name.Trim().ToLower())
-					? CategoryStatus.HOAT_DONG.ToString()
-					: CategoryStatus.KHONG_HOAT_DONG.ToString();
+				var excelMatch = excelCategories.FirstOrDefault(x => x.Name.Trim().ToLower() == dbCat.Name.Trim().ToLower());
 
-				if (dbCat.Status != targetStatus)
+				if (excelMatch != null)
 				{
-					dbCat.Status = targetStatus;
+					dbCat.Status = CategoryStatus.HOAT_DONG.ToString();
+					dbCat.DefaultWeight = excelMatch.DefaultWeight;
+					dbCat.EmissionFactor = excelMatch.EmissionFactor;
+					dbCat.AiRecognitionTags = excelMatch.AiRecognitionTags;
 					_unitOfWork.Categories.Update(dbCat);
-				}
-			}
-			await _unitOfWork.SaveAsync();
-
-			// 3. THÊM MỚI HOẶC CẬP NHẬT THÔNG TIN CƠ BẢN
-			foreach (var excelCat in excelCategories)
-			{
-				var existing = dbCategories.FirstOrDefault(c => c.Name.Trim().ToLower() == excelCat.Name.Trim().ToLower());
-
-				if (existing != null)
-				{
-					// Cập nhật thông số tính toán
-					existing.DefaultWeight = excelCat.DefaultWeight;
-					existing.EmissionFactor = excelCat.EmissionFactor;
-					existing.AiRecognitionTags = excelCat.AiRecognitionTags;
-					_unitOfWork.Categories.Update(existing);
 				}
 				else
 				{
-					// Tạo mới nếu tên chưa tồn tại
+					dbCat.Status = CategoryStatus.KHONG_HOAT_DONG.ToString();
+					_unitOfWork.Categories.Update(dbCat);
+				}
+			}
+
+			foreach (var excelCat in excelCategories)
+			{
+				var isExist = dbCategories.Any(c => c.Name.Trim().ToLower() == excelCat.Name.Trim().ToLower());
+
+				if (!isExist)
+				{
 					var newCat = new Category
 					{
 						CategoryId = Guid.NewGuid(),
@@ -211,39 +235,35 @@ namespace ElecWasteCollection.Application.Services
 						Status = CategoryStatus.HOAT_DONG.ToString()
 					};
 					await _unitOfWork.Categories.AddAsync(newCat);
+
+					dbCategories.Add(newCat);
 				}
 			}
-			await _unitOfWork.SaveAsync();
-
-			var updatedDbCategories = await _unitOfWork.Categories.GetAllAsync();
 
 			foreach (var excelCat in excelCategories)
 			{
-				var currentCat = updatedDbCategories.FirstOrDefault(c => c.Name.Trim().ToLower() == excelCat.Name.Trim().ToLower());
-
+				var currentCat = dbCategories.FirstOrDefault(c => c.Name.Trim().ToLower() == excelCat.Name.Trim().ToLower());
 				if (currentCat == null) continue;
 
 				var parentName = excelCat.ParentName?.Trim();
 				if (!string.IsNullOrEmpty(parentName))
 				{
-					var parentCat = updatedDbCategories.FirstOrDefault(c => c.Name.Trim().ToLower() == parentName.ToLower());
+					var parentCat = dbCategories.FirstOrDefault(c => c.Name.Trim().ToLower() == parentName.ToLower());
 
-					if (parentCat != null)
+					// Tránh tự tham chiếu chính mình và chỉ update khi có thay đổi
+					if (parentCat != null && currentCat.CategoryId != parentCat.CategoryId)
 					{
-						if (currentCat.CategoryId != parentCat.CategoryId)
+						if (currentCat.ParentCategoryId != parentCat.CategoryId)
 						{
 							currentCat.ParentCategoryId = parentCat.CategoryId;
 							_unitOfWork.Categories.Update(currentCat);
 						}
 					}
 				}
-				else
+				else if (currentCat.ParentCategoryId != null)
 				{
-					if (currentCat.ParentCategoryId != null)
-					{
-						currentCat.ParentCategoryId = null;
-						_unitOfWork.Categories.Update(currentCat);
-					}
+					currentCat.ParentCategoryId = null;
+					_unitOfWork.Categories.Update(currentCat);
 				}
 			}
 

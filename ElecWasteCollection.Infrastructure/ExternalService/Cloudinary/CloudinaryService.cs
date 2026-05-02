@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Cloudinary
 {
 	public class CloudinaryService : ICloudinaryService
 	{
-		private readonly Cld.Cloudinary _cloudinary; 
+		private readonly Cld.Cloudinary _cloudinary;
 		public CloudinaryService(IOptions<CloudinarySettings> config)
 		{
 			var acc = new Cld.Account(
@@ -25,7 +25,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Cloudinary
 			var uploadParams = new RawUploadParams
 			{
 				File = new FileDescription(file.FileName, stream),
-				PublicId = publicId, 
+				PublicId = publicId,
 				Folder = "excel_files",
 				Overwrite = true,
 				Invalidate = true
@@ -34,6 +34,22 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Cloudinary
 			var result = await _cloudinary.UploadAsync(uploadParams);
 			if (result.Error != null) throw new Exception(result.Error.Message);
 
+			return result.SecureUrl.ToString();
+		}
+		public async Task<string> UploadRawStreamAsync(Stream stream, string fileName, string publicId)
+		{
+			if (stream.CanSeek) stream.Position = 0;
+
+			var uploadParams = new RawUploadParams
+			{
+				File = new FileDescription(fileName, stream),
+				PublicId = publicId,
+				Folder = "excel_files",
+				Overwrite = true,
+				Invalidate = true
+			};
+			var result = await _cloudinary.UploadAsync(uploadParams);
+			if (result.Error != null) throw new Exception(result.Error.Message);
 			return result.SecureUrl.ToString();
 		}
 	}

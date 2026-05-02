@@ -113,5 +113,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
         {
             _context.Dispose();
         }
-    }
+		public void ClearTracker()
+		{
+			_context.ChangeTracker.Clear();
+		}
+	}
 }

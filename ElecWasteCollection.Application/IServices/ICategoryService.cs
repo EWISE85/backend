@@ -25,5 +25,7 @@ namespace ElecWasteCollection.Application.IServices
 
 		//Task<bool> ActiveParentCategory(Guid categoryId);
 		//Task<bool> ActiveChildCategory(Guid categoryId);
+		Task<List<CategoryModel>> GetParentCategoryWithCollectionUnit( string collectionUnitId);
+
 	}
 }

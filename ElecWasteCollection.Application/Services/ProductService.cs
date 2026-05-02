@@ -32,7 +32,8 @@ namespace ElecWasteCollection.Application.Services
         private readonly CapacityHelper _capacityHelper;
 		private readonly IRedisCacheService _redisCacheService;
 		private readonly INotificationService _notificationService;
-        public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper, IRedisCacheService redisCacheService, INotificationService notificationService)
+		private readonly IRankService _rankService;
+        public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper, IRedisCacheService redisCacheService, INotificationService notificationService, IRankService rankService)
 		{
 			_productRepository = productRepository;
 			_unitOfWork = unitOfWork;
@@ -46,6 +47,8 @@ namespace ElecWasteCollection.Application.Services
 			_capacityHelper = capacityHelper;
 			_redisCacheService = redisCacheService;
 			_notificationService = notificationService;
+			_rankService = rankService;
+			
         }
 
 
@@ -106,6 +109,11 @@ namespace ElecWasteCollection.Application.Services
 					Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
 				};
 				 await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction,false);
+				var user = await _unitOfWork.Users.GetAsync(u => u.UserId == createProductRequest.SenderId.Value);
+				if (user != null)
+				{
+					await _rankService.CalculateUserRankImpactAsync(user, newProduct);
+				}
 			}
 			var newHistory = new ProductStatusHistory
 			{
