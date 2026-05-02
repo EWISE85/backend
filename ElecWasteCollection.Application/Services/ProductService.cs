@@ -1,8 +1,10 @@
 ﻿using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.Helper;
+using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Model.GroupModel;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using Microsoft.AspNetCore.Routing;
@@ -29,8 +31,9 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IPackageRepository _packageRepository;
         private readonly CapacityHelper _capacityHelper;
 		private readonly IRedisCacheService _redisCacheService;
+		private readonly INotificationService _notificationService;
 		private readonly IRankService _rankService;
-		public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper, IRedisCacheService redisCacheService, IRankService rankService)
+        public ProductService(IProductRepository productRepository, IUnitOfWork unitOfWork, IProductImageRepository productImageRepository, IPointTransactionService pointTransactionService, IBrandRepository brandRepository, ICategoryRepository categoryRepository, IProductStatusHistoryRepository productStatusHistoryRepository, IAttributeOptionRepository attributeOptionRepository, IPackageRepository packageRepository, CapacityHelper capacityHelper, IRedisCacheService redisCacheService, INotificationService notificationService, IRankService rankService)
 		{
 			_productRepository = productRepository;
 			_unitOfWork = unitOfWork;
@@ -43,8 +46,10 @@ namespace ElecWasteCollection.Application.Services
 			_packageRepository = packageRepository;
 			_capacityHelper = capacityHelper;
 			_redisCacheService = redisCacheService;
+			_notificationService = notificationService;
 			_rankService = rankService;
-		}
+			
+        }
 
 
 
@@ -1191,5 +1196,94 @@ namespace ElecWasteCollection.Application.Services
 
 			return result > 0;
 		}
-	}
+        public async Task<bool> ProcessForceReceiveOverdueAsync(ForceReceiveOverdueProductRequest request)
+        {
+            var product = await _unitOfWork.Products.GetAsync(p => p.ProductId == request.ProductId, includeProperties: "User");
+            if (product == null) throw new Exception("Sản phẩm không tồn tại.");
+
+            var unitId = product.CollectionUnitId;
+            var nowVn = DateTime.UtcNow.AddHours(7);
+            string dateStr = nowVn.ToString("ddMMyy");
+            string emergencyEmail = $"emergency_{dateStr}@ewise.com";
+            var collector = await _unitOfWork.Users.GetAsync(u => u.Email == emergencyEmail);
+
+            var collectorRole = await _unitOfWork.Roles.GetAsync(r => r.Name == UserRole.Collector.ToString());
+            if (collectorRole == null) throw new Exception("Không tìm thấy Role Collector trong hệ thống.");
+
+            if (collector == null)
+            {
+                collector = new User
+                {
+                    UserId = Guid.NewGuid(),
+                    Email = emergencyEmail,
+                    Name = $"Nhân viên khẩn cấp - {nowVn:dd/MM}",
+                    RoleId = collectorRole.RoleId,
+                    Status = UserStatus.DANG_HOAT_DONG.ToString(),
+                    CollectionUnitId = unitId,
+                    CreateAt = nowVn
+                };
+                await _unitOfWork.Users.AddAsync(collector);
+                await _unitOfWork.SaveAsync();
+            }
+
+            string shiftId = $"Emergency_{dateStr}";
+            var shift = await _unitOfWork.Shifts.GetAsync(s => s.ShiftId == shiftId);
+
+            if (shift == null)
+            {
+                shift = new Shifts
+                {
+                    ShiftId = shiftId,
+                    CollectorId = collector.UserId,
+                    WorkDate = DateOnly.FromDateTime(nowVn),
+                    Shift_Start_Time = nowVn,
+                    Shift_End_Time = nowVn.AddHours(8),
+                    Status = ShiftStatus.CO_SAN.ToString(),
+                    Vehicle_Id = null
+                };
+                await _unitOfWork.Shifts.AddAsync(shift);
+                await _unitOfWork.SaveAsync();
+            }
+
+            var group = await _unitOfWork.CollectionGroupGeneric.GetAsync(g => g.Group_Code == shiftId);
+
+            if (group == null)
+            {
+                group = new CollectionGroups
+                {
+                    Group_Code = shiftId,
+                    Name = $"Xe khẩn cấp ngày {nowVn:dd/MM}",
+                    Created_At = nowVn,
+                    Shift_Id = shiftId
+                };
+                await _unitOfWork.CollectionGroupGeneric.AddAsync(group);
+                await _unitOfWork.SaveAsync();
+            }
+
+            var oldRoutes = await _unitOfWork.CollecctionRoutes.GetAllAsync(r => r.ProductId == product.ProductId);
+            foreach (var r in oldRoutes) _unitOfWork.CollecctionRoutes.Delete(r);
+
+            var newRoute = new CollectionRoutes
+            {
+                CollectionGroupId = group.CollectionGroupId,
+                ProductId = product.ProductId,
+                CollectionDate = DateOnly.FromDateTime(nowVn),
+                EstimatedTime = TimeOnly.FromDateTime(nowVn.AddHours(1)),
+                Status = CollectionRouteStatus.CHUA_BAT_DAU.ToString(),
+                DistanceKm = 0
+            };
+            await _unitOfWork.CollecctionRoutes.AddAsync(newRoute);
+
+            product.Status = ProductStatus.CHO_THU_GOM.ToString();
+            product.Description = $"[KHẨN CẤP] {request.Description}";
+
+            await _unitOfWork.SaveAsync();
+
+            await _notificationService.NotifyScheduleEmergencyConfirmedAsync(new Dictionary<Guid, (DateOnly, string)> {
+        { product.UserId, (newRoute.CollectionDate, newRoute.EstimatedTime.ToString("HH:mm")) }
+    });
+
+            return true;
+        }
+    }
 }

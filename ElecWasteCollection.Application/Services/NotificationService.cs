@@ -536,5 +536,45 @@ namespace ElecWasteCollection.Application.Services
 
 			await _unitOfWork.Notifications.AddAsync(notification);
 		}
-	}
+        public async Task NotifyScheduleEmergencyConfirmedAsync(Dictionary<Guid, (DateOnly Date, string Time)> userSchedules)
+        {
+            if (userSchedules == null || !userSchedules.Any()) return;
+
+            string title = "Lịch thu gom đã được xác nhận!";
+            var dataPayload = new Dictionary<string, string>
+			{
+				{ "type", "SHIPPER_ARRIVAL" }
+			};
+
+            foreach (var kvp in userSchedules)
+            {
+                var userId = kvp.Key;
+                var dateStr = kvp.Value.Date.ToString("dd/MM/yyyy");
+                var timeStr = kvp.Value.Time;
+
+                string body = $"Đơn thu gom của bạn đã được lên lịch. Vui lòng chuẩn bị rác điện tử nhé!";
+
+                var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
+                if (userTokens != null && userTokens.Any())
+                {
+                    var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+                    await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+                }
+
+                var notification = new Notifications
+                {
+                    NotificationId = Guid.NewGuid(),
+                    UserId = userId,
+                    Title = title,
+                    Body = body,
+                    IsRead = false,
+                    CreatedAt = DateTime.UtcNow,
+                    Type = NotificationType.System.ToString()
+                };
+                await _unitOfWork.Notifications.AddAsync(notification);
+            }
+
+            await _unitOfWork.SaveAsync();
+        }
+    }
 }

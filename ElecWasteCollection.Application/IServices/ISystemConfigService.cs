@@ -30,5 +30,8 @@ namespace ElecWasteCollection.Application.IServices
 		Task<WarehouseLoadThresholdSettings> GetWarehouseLoadThresholdAsync();
 		Task<bool> UpdateWarehouseLoadThresholdAsync(UpdateThresholdRequest model);
 		Task<double> GetImageSimilarityThresholdAsync();
-	}
+		Task<AutoGroupingSettingResponse> GetAutoGroupingSettingAsync(string scpId);
+		Task<bool> UpdateAutoGroupingSettingAsync(AutoGroupingSettingModel model);
+
+    }
 }

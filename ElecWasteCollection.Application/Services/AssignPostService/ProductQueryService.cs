@@ -271,12 +271,21 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.Product != null
                           && p.Product.CollectionUnitId == smallPointId
-                          && p.Product.AssignedAt == workDate
+                          && p.Product.AssignedAt <= workDate
                           && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
             );
 
-            var filteredPosts = allPosts.ToList();
+            //var filteredPosts = allPosts.ToList();
+
+            var filteredPosts = allPosts.Where(p =>
+            {
+                if (TryParseScheduleInfo(p.ScheduleJson, out var info)) 
+                {
+                    return info.SpecificDates.Contains(workDate);
+                }
+                return false;
+            }).ToList();
 
             int totalCount = filteredPosts.Count;
             var pagedPosts = filteredPosts
@@ -300,6 +309,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             {
                 var product = post.Product!;
                 var metrics = await GetProductMetricsAsync(product.ProductId, attMap);
+                var rawPhone = product.User?.Phone ?? post.Sender?.Phone ?? "N/A";
 
                 result.Products.Add(new ProductDetailDto
                 {
@@ -307,6 +317,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     SenderId = product.UserId,
                     UserName = product.User?.Name ?? post.Sender?.Name ?? "N/A",
                     Address = post.Address ?? "N/A",
+                    PhoneNumber = rawPhone,
                     CategoryName = product.Category?.Name ?? "",
                     BrandName = product.Brand?.Name ?? "",
                     WeightKg = metrics.weight,
@@ -736,5 +747,52 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         }
 
         private class ScheduleDayDto { public string? PickUpDate { get; set; } }
+        private static bool TryParseScheduleInfo(string raw, out PostScheduleInfo info)
+        {
+            info = new PostScheduleInfo();
+            if (string.IsNullOrWhiteSpace(raw)) return false;
+            try
+            {
+                var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+                var days = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
+
+                if (days == null || !days.Any()) return false;
+
+                var valid = new List<DateOnly>();
+                foreach (var d in days)
+                {
+                    if (DateOnly.TryParse(d.PickUpDate, out var date))
+                    {
+                        valid.Add(date);
+                    }
+                }
+
+                if (!valid.Any()) return false;
+                valid.Sort();
+
+                info.SpecificDates = valid;
+                info.MinDate = valid.First();
+                info.MaxDate = valid.Last();
+                return true;
+            }
+            catch { return false; }
+        }
+        private sealed class TimeSlotDetailDto
+        {
+            public string? StartTime { get; set; }
+            public string? EndTime { get; set; }
+        }
+        private sealed class DailyTimeSlotsDto
+        {
+            public string? DayName { get; set; }
+            public string? PickUpDate { get; set; }
+            public TimeSlotDetailDto? Slots { get; set; }
+        }
+        private class PostScheduleInfo
+        {
+            public DateOnly MinDate { get; set; }
+            public DateOnly MaxDate { get; set; }
+            public List<DateOnly> SpecificDates { get; set; } = new();
+        }
     }
 }

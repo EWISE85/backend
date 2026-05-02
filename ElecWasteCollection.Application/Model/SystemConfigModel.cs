@@ -33,4 +33,21 @@ namespace ElecWasteCollection.Application.Model
     {
         public string? SmallCollectionPointId { get; set; }
     }
+    public class AutoGroupingSettingModel
+    {
+        public string CollectionUnitId { get; set; }
+        public bool IsEnabled { get; set; }
+        public string ScheduleTime { get; set; }
+        public double LoadThresholdPercent { get; set; } 
+    }
+
+    public class AutoGroupingSettingResponse
+    {
+        public string CollectionUnitId { get; set; }
+        public string CollectionUnitName { get; set; }
+        public bool IsEnabled { get; set; }
+        public string ScheduleTime { get; set; }
+        public double LoadThresholdPercent { get; set; }
+
+    }
 }

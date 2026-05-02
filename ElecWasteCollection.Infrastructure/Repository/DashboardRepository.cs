@@ -202,5 +202,147 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
             return (result, totalCount);
         }
-    } 
+        public async Task<List<(string BrandName, string CategoryName, string UserName, string UserEmail, double Point, DateOnly? CollectedDate, string ScpName, string Status)>> GetExportDataRawAsync(DateOnly from, DateOnly to)
+        {
+            var rawData = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.CreateAt >= from && p.CreateAt <= to)
+                .Select(p => new
+                {
+                    BrandName = p.Brand.Name,
+                    CategoryName = p.Category.Name,
+                    UserName = p.User.Name,
+                    UserEmail = p.User.Email,
+                    TotalActualPoint = p.PointTransactions
+                                .Where(t => t.TransactionType == PointTransactionType.TICH_DIEM.ToString()
+                                         || t.TransactionType == PointTransactionType.DIEU_CHINH.ToString())
+                                .Sum(t => (double?)t.Point) ?? 0,
+
+                    EstimatePoint = p.Post != null ? p.Post.EstimatePoint : 0,
+
+
+                    CollectedDate = p.CreateAt,
+                    ScpName = p.CollectionUnits != null ? p.CollectionUnits.Name : null,
+                    p.Status
+                })
+                .OrderBy(x => x.BrandName)
+                .ThenByDescending(x => x.CollectedDate)
+                .ToListAsync();
+
+            return rawData.Select(x => (
+                x.BrandName ?? "N/A",
+                x.CategoryName ?? "N/A",
+                x.UserName ?? "N/A",
+                x.UserEmail ?? "N/A",
+                x.TotalActualPoint > 0 ? x.TotalActualPoint : x.EstimatePoint,
+                x.CollectedDate,
+                x.ScpName ?? "Hiện chưa có điểm thu gom",
+                x.Status
+            )).ToList();
+        }
+        public async Task<List<(string ScpId, string ScpName, string ScheduleJson)>> GetOverdueRawDataAsync()
+        {
+            var data = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Status == ProductStatus.CHO_GOM_NHOM.ToString() && p.CollectionUnitId != null)
+                .Select(p => new {
+                    p.CollectionUnitId,
+                    ScpName = p.CollectionUnits != null ? p.CollectionUnits.Name : "N/A",
+                    Schedule = p.Post != null ? p.Post.ScheduleJson : null
+                })
+                .ToListAsync();
+
+            return data.Select(x => (x.CollectionUnitId, x.ScpName, x.Schedule)).ToList();
+        }
+
+        public async Task<List<(Guid ProductId, string BrandName, string CategoryName, string UserName, string ScheduleJson, string Status)>>
+            GetOverdueDetailRawAsync(string scpId)
+        {
+            var data = await _context.Products
+                .AsNoTracking()
+                .Where(p => p.Status == ProductStatus.CHO_GOM_NHOM.ToString() && p.CollectionUnitId == scpId)
+                .Select(p => new {
+                    p.ProductId,
+                    BrandName = p.Brand.Name,
+                    CategoryName = p.Category.Name,
+                    UserName = p.User.Name,
+                    Schedule = p.Post != null ? p.Post.ScheduleJson : null,
+                    p.Status
+                })
+                .ToListAsync();
+
+            return data.Select(x => (x.ProductId, x.BrandName, x.CategoryName, x.UserName, x.Schedule, x.Status)).ToList();
+        }
+        public async Task<(List<(string Id, string Name, string Phone, string Address, string Status, DateTime CreatedAt)> Data, int TotalCount)> GetPagedRecyclingCompaniesRawAsync(string? search, DateOnly from, DateOnly to, int page, int limit)
+        {
+            var startUtc = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var endUtc = to.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+            var query = _context.Set<Company>()
+                .AsNoTracking()
+                .Where(c => c.Created_At >= startUtc && c.Created_At <= endUtc);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(c => c.Name.Contains(search) || c.CompanyEmail.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var itemsRaw = await query
+                .OrderBy(c => c.Status == CompanyStatus.DANG_HOAT_DONG.ToString() ? 0 : 1)
+                .ThenByDescending(c => c.Created_At)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(c => new { c.CompanyId, c.Name, c.Phone, c.Address, c.Status, c.Created_At })
+                .ToListAsync();
+
+            var data = itemsRaw.Select(x => (x.CompanyId, x.Name, x.Phone, x.Address, x.Status, x.Created_At)).ToList();
+            return (data, totalCount);
+        }
+
+        public async Task<(List<(string Id, string Name, string Address, string Status)> Data, int TotalCount)> GetUnitsByCompanyRawAsync(string companyId, string? search, int page, int limit)
+        {
+            var query = _context.Set<CollectionUnit>()
+                .AsNoTracking()
+                .Where(u => u.CompanyId == companyId);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(u => u.Name.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var itemsRaw = await query
+                .OrderBy(u => u.Status == CompanyStatus.DANG_HOAT_DONG.ToString() ? 0 : 1)
+                .ThenBy(u => u.Name)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(u => new { u.CollectionUnitId, u.Name, u.Address, u.Status })
+                .ToListAsync();
+
+            var data = itemsRaw.Select(x => (x.CollectionUnitId, x.Name, x.Address, x.Status)).ToList();
+            return (data, totalCount);
+        }
+
+        public async Task<(List<(string Id, string Name, string Address, string Status, DateTime CreatedAt)> Data, int TotalCount)> GetPagedCollectionUnitsRawAsync(string? search, DateOnly from, DateOnly to, int page, int limit)
+        {
+            var startUtc = from.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            var endUtc = to.ToDateTime(TimeOnly.MaxValue, DateTimeKind.Utc);
+
+            var query = _context.Set<CollectionUnit>()
+                .AsNoTracking()
+                .Where(u => u.Created_At >= startUtc && u.Created_At <= endUtc);
+
+            if (!string.IsNullOrEmpty(search))
+                query = query.Where(u => u.Name.Contains(search));
+
+            var totalCount = await query.CountAsync();
+
+            var itemsRaw = await query
+                .OrderBy(u => u.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString() ? 0 : 1)
+                .ThenByDescending(u => u.Created_At)
+                .Skip((page - 1) * limit).Take(limit)
+                .Select(u => new { u.CollectionUnitId, u.Name, u.Address, u.Status, u.Created_At })
+                .ToListAsync();
+
+            var data = itemsRaw.Select(x => (x.CollectionUnitId, x.Name, x.Address, x.Status, x.Created_At)).ToList();
+            return (data, totalCount);
+        }
+    }
 }

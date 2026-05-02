@@ -8,12 +8,6 @@ namespace ElecWasteCollection.Application.Helpers
 
     public class RouteOptimizer
     {
-        /// <summary>
-        /// Giải bài toán VRP với mục tiêu:
-        /// 1. BẮT BUỘC đi qua tất cả các điểm (Penalty cực lớn nếu bỏ).
-        /// 2. TỐI ƯU QUÃNG ĐƯỜNG (Tiết kiệm nhiên liệu) là mục tiêu chính.
-        /// 3. LINH HOẠT THỜI GIAN: Cố gắng đến đúng giờ, nhưng chấp nhận trễ nếu giúp đường đi ngắn hơn nhiều.
-        /// </summary>
         public static List<int> SolveVRP(
             long[,] matrixDist, long[,] matrixTime,
             List<OptimizationNode> nodes,
@@ -27,12 +21,10 @@ namespace ElecWasteCollection.Application.Helpers
 
             try
             {
-                // 1. Khởi tạo không gian bài toán
-                // Node 0 là Depot (Kho/Trạm), các node 1..n là điểm lấy hàng
                 RoutingIndexManager manager = new RoutingIndexManager(count, 1, 0);
                 RoutingModel routing = new RoutingModel(manager);
 
-                // Mục tiêu: Giảm thiểu tổng mét đường xe chạy -> Tiết kiệm xăng
+                // Giảm thiểu tổng mét đường xe chạy -> Tiết kiệm xăng
                 int transitCallbackIndex = routing.RegisterTransitCallback((long i, long j) =>
                 {
                     var from = manager.IndexToNode(i);
@@ -42,7 +34,7 @@ namespace ElecWasteCollection.Application.Helpers
                 routing.SetArcCostEvaluatorOfAllVehicles(transitCallbackIndex);
 
 
-                // --- CẤU HÌNH THỜI GIAN (TIME WINDOWS) ---
+                // TIME WINDOWS
                 int timeCallbackIndex = routing.RegisterTransitCallback((long i, long j) =>
                 {
                     int from = manager.IndexToNode(i);
@@ -51,17 +43,14 @@ namespace ElecWasteCollection.Application.Helpers
                     long service = (from == 0) ? 0 : 15;
                     return travel + service;
                 });
-
-                // Horizon: Tổng thời gian ca làm + 8 tiếng tăng ca (Overtime)
-                // Để đảm bảo dù kẹt xe hay quá tải thì xe vẫn chạy tiếp chứ không cắt ngang.
                 long shiftDuration = (long)(shiftEnd - shiftStart).TotalMinutes;
-                long horizon = shiftDuration + 480;
+                long horizon = shiftDuration;
 
                 routing.AddDimension(
                     timeCallbackIndex,
-                    10000,   // Slack (thời gian chờ tối đa tại 1 điểm)
-                    horizon, // Tổng thời gian tối đa của lộ trình
-                    false,   // Start cumul to zero
+                    10000,  
+                    horizon, 
+                    false,  
                     "Time");
 
                 var timeDim = routing.GetMutableDimension("Time");
@@ -76,16 +65,15 @@ namespace ElecWasteCollection.Application.Helpers
                     long startMin = Math.Max(0, (long)(node.Start - shiftStart).TotalMinutes);
                     long endMin = Math.Min(horizon, (long)(node.End - shiftStart).TotalMinutes);
 
-                    // Fix logic nếu dữ liệu lỗi
                     if (endMin <= startMin) { startMin = 0; endMin = horizon; }
 
-                    // 1. Ràng buộc cứng: Không được đến SỚM hơn giờ mở cửa
+                    // Không được đến SỚM hơn giờ mở cửa
                     timeDim.CumulVar(index).SetMin(startMin);
 
-                    // 2. Ràng buộc mềm: NÊN đến trước giờ đóng cửa
+                    // NÊN đến trước giờ đóng cửa
                     timeDim.SetCumulVarSoftUpperBound(index, endMin, 2000);
 
-                    // 3. Ràng buộc cứng nhất: KHÔNG ĐƯỢC BỎ ĐƠN
+                    // KHÔNG ĐƯỢC BỎ ĐƠN
                     routing.AddDisjunction(new long[] { index }, 1_000_000_000);
                 }
 
@@ -107,14 +95,12 @@ namespace ElecWasteCollection.Application.Helpers
                 // --- CHIẾN LƯỢC TÌM KIẾM (SEARCH STRATEGY) ---
                 RoutingSearchParameters searchParameters = operations_research_constraint_solver.DefaultRoutingSearchParameters();
 
-                // Chiến lược 1: Chọn cung đường rẻ nhất để khởi tạo
+                // Chọn cung đường rẻ nhất để khởi tạo
                 searchParameters.FirstSolutionStrategy = FirstSolutionStrategy.Types.Value.PathCheapestArc;
 
-                // Chiến lược 2: GUIDED LOCAL SEARCH (Quan trọng để tối ưu xăng)
-                // Nó giúp thoát khỏi các bẫy cục bộ để tìm đường ngắn hơn nữa.
+                // tối ưu xăng
                 searchParameters.LocalSearchMetaheuristic = LocalSearchMetaheuristic.Types.Value.GuidedLocalSearch;
 
-                // Thời gian suy nghĩ: 3 giây (đủ cho < 100 điểm)
                 searchParameters.TimeLimit = new Google.Protobuf.WellKnownTypes.Duration { Seconds = 3 };
 
                 // --- GIẢI ---
@@ -132,9 +118,6 @@ namespace ElecWasteCollection.Application.Helpers
                         index = solution.Value(routing.NextVar(index));
                     }
 
-                    // --- LƯỚI VÉT (FALLBACK) ---
-                    // Kiểm tra xem có node nào bị rớt lại không (dù rất khó xảy ra với penalty 1 tỷ)
-                    // Nếu có, cưỡng chế nối vào đuôi để đảm bảo đủ 100% đơn hàng.
                     var missingIndices = allIndices.Except(optimizedIndices).ToList();
                     if (missingIndices.Any())
                     {
@@ -146,11 +129,9 @@ namespace ElecWasteCollection.Application.Helpers
             }
             catch (Exception ex)
             {
-                // Log lỗi nếu cần thiết
                 Console.WriteLine($"[OR-TOOLS Error] {ex.Message}");
             }
 
-            // Nếu mọi thứ thất bại, trả về danh sách gốc để app không bị crash
             return allIndices;
         }
     }

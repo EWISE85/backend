@@ -26,6 +26,7 @@ namespace ElecWasteCollection.Application.Interfaces
           DateOnly? date,
           int page,
           int limit);
+        void RemoveProductFromCache(Guid productId);
     }
 
 }

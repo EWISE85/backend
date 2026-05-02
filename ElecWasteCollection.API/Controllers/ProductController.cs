@@ -1,6 +1,7 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
+using ElecWasteCollection.Application.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -196,7 +197,24 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Product information updated successfully." });
 		}
-	}
+        [HttpPut("force-receive-overdue")]
+        public async Task<IActionResult> ForceReceiveOverdue([FromBody] ForceReceiveOverdueProductRequest request)
+        {
+            try
+            {
+                var result = await _productService.ProcessForceReceiveOverdueAsync(request);
+                if (result)
+                {
+                    return Ok(new { Message = "Xác nhận xử lý thành công.", Success = true });
+                }
+                return BadRequest(new { Message = "Xử lý thất bại." });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
+    }
 
 
 }

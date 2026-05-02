@@ -226,7 +226,10 @@ namespace ElecWasteCollection.API
 			builder.Services.AddScoped<CallService>();
 			builder.Services.AddScoped<ICallNotificationService, SignalRNotificationService>();
 			builder.Services.AddScoped<IRedisCacheService, RedisCacheService>();
-			builder.Services.AddMemoryCache();
+            builder.Services.AddScoped<IExportService, ExportService>();
+            builder.Services.AddHostedService<AutoGroupingWorker>();
+
+            builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
 				options.AddPolicy("AllowAll", policy =>
