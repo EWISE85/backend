@@ -45,7 +45,7 @@ namespace ElecWasteCollection.Domain.Entities
         CONFIG_TIME_ABLE_TO_POST,
 		IMAGE_SIMILARITY_THRESHOLD,
 		TIME_ABLE_TO_POST,
-		FORMAT_IMPORT_CATEGORY
+		FORMAT_IMPORT_CATEGORY,
 	
 		
         AUTO_GROUP_ENABLED,       // "true" hoặc "false"
