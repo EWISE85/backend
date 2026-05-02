@@ -813,6 +813,7 @@ namespace ElecWasteCollection.Application.Services
 				RealPoints = realPoints,
 				Collector = collector != null ? new CollectorResponse { CollectorId = collector.UserId, Name = collector.Name } : null,
 				PickUpDate = route?.CollectionDate,
+				EstimatedTime = route?.EstimatedTime,
 				ChangedPointMessage = changedPointMessage,
 				RejectMessage = post?.RejectMessage ?? "Không có"
 			};
