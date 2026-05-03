@@ -50,8 +50,10 @@ namespace ElecWasteCollection.Domain.Entities
 		
         AUTO_GROUP_ENABLED,       // "true" hoặc "false"
         AUTO_GROUP_TIME,          // Định dạng "HH:mm" (ví dụ: "07:00")
-        AUTO_GROUP_LOAD_THRESHOLD
-    }
+        AUTO_GROUP_LOAD_THRESHOLD,
+		TIME_TO_SEND_NOTIFICATION_REMINDER, // Định dạng "HH:mm" (ví dụ: "18:00")   
+		TIME_TO_SEND_COLLECTION_UNIT_REMINDER
+	}
 	public class SystemConfig
     {
         public Guid SystemConfigId { get; set; }
