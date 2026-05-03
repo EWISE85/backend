@@ -159,15 +159,15 @@ namespace ElecWasteCollection.Application.Services
 
             // 5. LẤY DỮ LIỆU SẢN PHẨM VÀ GOM NHÓM (POOL)
             var attIdMap = await GetAttributeIdMapAsync();
-            //var rawPosts = await _unitOfWork.Posts.GetAllAsync(
-            //    p => p.AssignedCollectionUnitId == request.CollectionPointId
-            //    && p.Product != null
-            //    && request.ProductIds.Contains(p.Product.ProductId),
             var rawPosts = await _unitOfWork.Posts.GetAllAsync(
                 p => p.AssignedCollectionUnitId == request.CollectionPointId
                 && p.Product != null
-                && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
-                includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions"
+                && request.ProductIds.Contains(p.Product.ProductId),
+            //var rawPosts = await _unitOfWork.Posts.GetAllAsync(
+            //    p => p.AssignedCollectionUnitId == request.CollectionPointId
+            //    && p.Product != null
+            //    && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
+            includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions"
                 );
             Console.WriteLine($"[DEBUG] rawPosts Count: {rawPosts.Count()}");
 
@@ -180,11 +180,13 @@ namespace ElecWasteCollection.Application.Services
             {
                 var representative = group.First();
                 if (assignedProductPostIds.Contains(representative.PostId.ToString())) continue;
-                if (!TryParseScheduleInfo(representative.ScheduleJson!, out var sch) || !((List<DateOnly>)sch.SpecificDates).Contains(request.WorkDate)) 
-                    {
-                        Console.WriteLine("[DEBUG] Loại bỏ do không khớp WorkDate");
-                        continue;
-                    }
+                var targetDate = DateOnly.FromDateTime(request.WorkDate.ToDateTime(TimeOnly.MinValue));
+                if (!TryParseScheduleInfo(representative.ScheduleJson!, out var sch) ||
+                  !sch.SpecificDates.Contains(targetDate))
+                {
+                    Console.WriteLine($"[DEBUG] Loai bo do khong khop WorkDate. Target: {targetDate}, List: {string.Join(", ", sch.SpecificDates)}");
+                    continue;
+                }
                 if (!TryGetTimeWindowForDate(representative.ScheduleJson!, request.WorkDate, out var custStart, out var custEnd)) continue;
                 var addr = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == group.Key.SenderId && a.Address == group.Key.Address);
                 if (addr?.Iat == null || addr.Iat == 0)
@@ -242,6 +244,7 @@ namespace ElecWasteCollection.Application.Services
                     BrandName = representative.Product?.Brand?.Name ?? "N/A",
                     DimText = group.Count() > 1 ? "Nhiều sản phẩm" : (string)detailList[0].DimText
                 });
+                Console.WriteLine($"===> [SUCCESS] San pham {representative.PostId} da vao POOL!");
             }
 
             // 6. PHÂN PHỐI (TIÊU CHÍ: ƯU TIÊN GẤP -> LẤP ĐẦY XE ĐÃ CÓ HÀNG -> TỐI ƯU QUÃNG ĐƯỜNG)
@@ -252,8 +255,8 @@ namespace ElecWasteCollection.Application.Services
             {
                 bool assigned = false;
                 var firstDetail = item.GroupedDetails[0];
-                bool isRequested = request.ProductIds.Contains(firstDetail.Post.Product.ProductId);
-
+                bool isRequested = request.ProductIds.Any(id =>
+                    id.ToString().Equals(firstDetail.Post.Product.ProductId.ToString(), StringComparison.OrdinalIgnoreCase));
                 if (!isRequested)
                 {
                     AddToUnassigned(unAssigned, item, "Hàng chờ xử lý - Chưa được chọn trong danh sách ưu tiên.");
@@ -1507,9 +1510,18 @@ namespace ElecWasteCollection.Application.Services
                 var valid = new List<DateOnly>();
                 foreach (var d in days)
                 {
-                    if (DateOnly.TryParse(d.PickUpDate, out var date))
+                    if (string.IsNullOrEmpty(d.PickUpDate)) continue;
+                    Console.WriteLine($"[JSON RAW] Chuoi ngay thuc te trong JSON: '{d.PickUpDate}'");
+                    // Cách 1: Nếu chuỗi là "2026-05-04" thô, dùng ParseExact để không bị dính múi giờ
+                    if (DateOnly.TryParseExact(d.PickUpDate.Substring(0, 10), "yyyy-MM-dd", out var date))
                     {
                         valid.Add(date);
+                    }
+                    // Cách 2: Phòng hờ trường hợp chuỗi có định dạng DateTime ISO phức tạp
+                    else if (DateTime.TryParse(d.PickUpDate, out var dt))
+                    {
+                        // Ép nó về giờ địa phương trước khi lấy Date
+                        valid.Add(DateOnly.FromDateTime(dt.ToLocalTime()));
                     }
                 }
 
