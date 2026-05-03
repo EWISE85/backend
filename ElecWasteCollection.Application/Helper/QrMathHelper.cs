@@ -56,7 +56,7 @@ namespace ElecWasteCollection.Application.Helper
 			long timeMinutes = raw % 100000000;  
 
 			long currentMinutes = (long)(DateTime.UtcNow - Epoch).TotalMinutes;
-			bool isValid = Math.Abs(currentMinutes - timeMinutes) <= 5;
+			bool isValid = Math.Abs(currentMinutes - timeMinutes) <= 1440;
 
 			return (shortId, isValid);
 		}
