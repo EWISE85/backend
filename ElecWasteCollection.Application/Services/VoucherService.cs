@@ -34,7 +34,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> ActiveVoucher(Guid voucherId)
 		{
-			var voucher = await _voucherRepository.GetAsync(v => v.VoucherId == voucherId);
+			var voucher = await _unitOfWork.Vouchers.GetAsync(v => v.VoucherId == voucherId);
 			if (voucher == null)
 			{
 				throw new AppException("Không tìm thấy voucher", 404);
@@ -257,7 +257,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UnActiveVoucher(Guid voucherId)
 		{
-			var voucher = await _voucherRepository.GetAsync(v => v.VoucherId == voucherId);
+			var voucher = await _unitOfWork.Vouchers.GetAsync(v => v.VoucherId == voucherId);
 			if (voucher == null)
 			{
 				throw new AppException("Không tìm thấy voucher", 404);
