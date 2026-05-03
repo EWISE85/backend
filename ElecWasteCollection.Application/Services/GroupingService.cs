@@ -81,7 +81,7 @@ namespace ElecWasteCollection.Application.Services
             var vehicles = (await _unitOfWork.Vehicles.GetAllAsync(v =>
                 request.VehicleIds.Contains(v.VehicleId) &&
                 v.CollectionUnit == request.CollectionPointId &&
-                v.Status == VehicleStatus.DANG_HOAT_DONG.ToString())).OrderBy(v => v.Capacity_Kg).ToList();
+                v.Status == VehicleStatus.DANG_HOAT_DONG.ToString())).OrderByDescending(v => v.Capacity_Kg).ToList();
 
             if (vehicles.Count != request.VehicleIds.Count)
             {
@@ -169,6 +169,7 @@ namespace ElecWasteCollection.Application.Services
                 && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions"
                 );
+            Console.WriteLine($"[DEBUG] rawPosts Count: {rawPosts.Count()}");
 
             var groupedPosts = rawPosts
                 .Where(x => x.Product?.Status == ProductStatus.CHO_GOM_NHOM.ToString())
@@ -179,10 +180,20 @@ namespace ElecWasteCollection.Application.Services
             {
                 var representative = group.First();
                 if (assignedProductPostIds.Contains(representative.PostId.ToString())) continue;
-                if (!TryParseScheduleInfo(representative.ScheduleJson!, out var sch) || !((List<DateOnly>)sch.SpecificDates).Contains(request.WorkDate)) continue;
+                if (!TryParseScheduleInfo(representative.ScheduleJson!, out var sch) || !((List<DateOnly>)sch.SpecificDates).Contains(request.WorkDate)) 
+                    {
+                        Console.WriteLine("[DEBUG] Loại bỏ do không khớp WorkDate");
+                        continue;
+                    }
                 if (!TryGetTimeWindowForDate(representative.ScheduleJson!, request.WorkDate, out var custStart, out var custEnd)) continue;
                 var addr = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == group.Key.SenderId && a.Address == group.Key.Address);
-                if (addr?.Iat == null || addr.Iat == 0) continue;
+                if (addr?.Iat == null || addr.Iat == 0)
+                {
+                    Console.WriteLine("[DEBUG] Loại bỏ do địa chỉ không có tọa độ Iat/Ing");
+                    continue;
+                }
+
+
 
                 var newItemsInGroup = group.Where(g => !assignedProductPostIds.Contains(g.PostId.ToString())).ToList();
                 if (!newItemsInGroup.Any()) continue;
@@ -251,7 +262,7 @@ namespace ElecWasteCollection.Application.Services
                 // Sắp xếp Bucket ưu tiên xe có hàng trước để lấp đầy, sau đó ưu tiên xe gần điểm này nhất
                 var checkOrder = buckets.Values
                     .Select(b => new { Bucket = b, Dist = CalculateHaversine(b.LastLat, b.LastLng, (double)item.Lat, (double)item.Lng) })
-                    .OrderByDescending(x => x.Bucket.CurrentKg)
+                    .OrderByDescending(x => x.Bucket.Vehicle.Capacity_Kg)
                     .ThenBy(x => x.Dist)
                     .ToList();
 
