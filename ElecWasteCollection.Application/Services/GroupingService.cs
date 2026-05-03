@@ -338,7 +338,7 @@ namespace ElecWasteCollection.Application.Services
                 .Select(b => b.Vehicle.VehicleId.ToString())
                 .ToHashSet();
 
-            // Danh sách xe "Thừa" (có trong Request nhưng chưa dùng đến)
+            // Danh sách xe "Thừa" 
             var idleVehicles = vehicles
                 .Where(v => !assignedVehicleIds.Contains(v.VehicleId.ToString()))
                 .ToList();
@@ -1512,15 +1512,12 @@ namespace ElecWasteCollection.Application.Services
                 {
                     if (string.IsNullOrEmpty(d.PickUpDate)) continue;
                     Console.WriteLine($"[JSON RAW] Chuoi ngay thuc te trong JSON: '{d.PickUpDate}'");
-                    // Cách 1: Nếu chuỗi là "2026-05-04" thô, dùng ParseExact để không bị dính múi giờ
                     if (DateOnly.TryParseExact(d.PickUpDate.Substring(0, 10), "yyyy-MM-dd", out var date))
                     {
                         valid.Add(date);
                     }
-                    // Cách 2: Phòng hờ trường hợp chuỗi có định dạng DateTime ISO phức tạp
                     else if (DateTime.TryParse(d.PickUpDate, out var dt))
                     {
-                        // Ép nó về giờ địa phương trước khi lấy Date
                         valid.Add(DateOnly.FromDateTime(dt.ToLocalTime()));
                     }
                 }
