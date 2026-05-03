@@ -271,18 +271,17 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.Product != null
                           && p.Product.CollectionUnitId == smallPointId
-                          && p.Product.AssignedAt <= workDate
+                          //&& p.Product.AssignedAt <= workDate
                           && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
             );
 
             //var filteredPosts = allPosts.ToList();
-
             var filteredPosts = allPosts.Where(p =>
             {
-                if (TryParseScheduleInfo(p.ScheduleJson, out var info)) 
+                if (TryParseScheduleInfo(p.ScheduleJson!, out var dates))
                 {
-                    return info.SpecificDates.Contains(workDate);
+                    return dates.Contains(workDate);
                 }
                 return false;
             }).ToList();
@@ -747,33 +746,48 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         }
 
         private class ScheduleDayDto { public string? PickUpDate { get; set; } }
-        private static bool TryParseScheduleInfo(string raw, out PostScheduleInfo info)
+        //private static bool TryParseScheduleInfo(string raw, out PostScheduleInfo info)
+        //{
+        //    info = new PostScheduleInfo();
+        //    if (string.IsNullOrWhiteSpace(raw)) return false;
+        //    try
+        //    {
+        //        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+        //        var days = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
+
+        //        if (days == null || !days.Any()) return false;
+
+        //        var valid = new List<DateOnly>();
+        //        foreach (var d in days)
+        //        {
+        //            if (DateOnly.TryParse(d.PickUpDate, out var date))
+        //            {
+        //                valid.Add(date);
+        //            }
+        //        }
+
+        //        if (!valid.Any()) return false;
+        //        valid.Sort();
+
+        //        info.SpecificDates = valid;
+        //        info.MinDate = valid.First();
+        //        info.MaxDate = valid.Last();
+        //        return true;
+        //    }
+        //    catch { return false; }
+        //}
+        private bool TryParseScheduleInfo(string raw, out List<DateOnly> dates)
         {
-            info = new PostScheduleInfo();
+            dates = new List<DateOnly>();
             if (string.IsNullOrWhiteSpace(raw)) return false;
             try
             {
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-                var days = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
-
-                if (days == null || !days.Any()) return false;
-
-                var valid = new List<DateOnly>();
+                var days = JsonSerializer.Deserialize<List<ScheduleDayDto>>(raw, opts);
+                if (days == null) return false;
                 foreach (var d in days)
-                {
-                    if (DateOnly.TryParse(d.PickUpDate, out var date))
-                    {
-                        valid.Add(date);
-                    }
-                }
-
-                if (!valid.Any()) return false;
-                valid.Sort();
-
-                info.SpecificDates = valid;
-                info.MinDate = valid.First();
-                info.MaxDate = valid.Last();
-                return true;
+                    if (DateOnly.TryParse(d.PickUpDate, out var date)) dates.Add(date);
+                return dates.Any();
             }
             catch { return false; }
         }
