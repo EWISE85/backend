@@ -338,7 +338,7 @@ namespace ElecWasteCollection.Application.Services
                 .Select(b => b.Vehicle.VehicleId.ToString())
                 .ToHashSet();
 
-            // Danh sách xe "Thừa" (có trong Request nhưng chưa dùng đến)
+            // Danh sách xe "Thừa" 
             var idleVehicles = vehicles
                 .Where(v => !assignedVehicleIds.Contains(v.VehicleId.ToString()))
                 .ToList();
