@@ -1491,7 +1491,6 @@ namespace ElecWasteCollection.Application.Services
         }
         private static bool TryGetTimeWindowForDate(string raw, DateOnly targetDate, out TimeOnly start, out TimeOnly end)
         {
-            // Mặc định: 7h sáng đến 9h tối nếu không parse được
             start = new TimeOnly(7, 0);
             end = new TimeOnly(21, 0);
 
@@ -1499,13 +1498,11 @@ namespace ElecWasteCollection.Application.Services
 
             try
             {
-                // Cấu hình Case Insensitive để đọc được cả "startTime" lẫn "StartTime"
                 var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
                 var days = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
 
                 if (days == null) return false;
 
-                // Tìm đúng ngày
                 var match = days.FirstOrDefault(d =>
                     DateOnly.TryParse(d.PickUpDate, out var dt) && dt == targetDate);
 
