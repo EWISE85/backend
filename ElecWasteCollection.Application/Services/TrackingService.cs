@@ -30,19 +30,149 @@ namespace ElecWasteCollection.Application.Services
 			_redisCacheService = redisCacheService;
 		}
 
+		//public async Task<ProductTrackingTimelineResponse> GetFullTimelineByProductIdAsync(Guid id)
+		//{
+		//	var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+		//	// 1. TRA CỨU ĐA TẦNG (SQL -> Redis Map)
+		//	// Thử tìm Post bằng PostId hoặc ProductId (đã có trong SQL)
+		//	var post = await _unitOfWork.Posts.GetAsync(
+		//		p => p.PostId == id || (p.Product != null && p.Product.ProductId == id),
+		//		includeProperties: "Sender,Images,Product,Product.Category,Product.Brand"
+		//	);
+
+		//	// Fallback Redis: Nếu id truyền vào là ProductId nháp (trường hợp bài chưa được duyệt)
+		//	if (post == null)
+		//	{
+		//		var mappedPostIdStr = await _redisCacheService.GetStringAsync($"ewise:product_map:{id}");
+		//		if (!string.IsNullOrEmpty(mappedPostIdStr) && Guid.TryParse(mappedPostIdStr, out var mappedPostId))
+		//		{
+		//			post = await _unitOfWork.Posts.GetAsync(
+		//				p => p.PostId == mappedPostId,
+		//				includeProperties: "Sender,Images,Product,Product.Category,Product.Brand"
+		//			);
+		//		}
+		//	}
+
+		//	if (post == null) throw new AppException("Không tìm thấy thông tin sản phẩm để theo dõi", 404);
+
+		//	// 2. CẤU HÌNH MÚI GIỜ & KHỞI TẠO
+		//	string timeZoneId = "SE Asia Standard Time";
+		//	TimeZoneInfo vnTimeZone;
+		//	try { vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId); }
+		//	catch { vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById("Asia/Ho_Chi_Minh"); }
+
+		//	var timelineResponse = new List<CollectionTimelineModel>();
+		//	ProductDetailForTracking productResponse;
+		//	ProductDraftModel? draftData = null;
+
+		//	if (post.Product != null)
+		//	{
+		//		var product = post.Product;
+		//		var pointTransactions = await _unitOfWork.PointTransactions.GetsAsync(t => t.ProductId == product.ProductId);
+		//		double? realPoints = pointTransactions?.Any() == true ? pointTransactions.Sum(t => t.Point) : post.EstimatePoint;
+
+		//		productResponse = new ProductDetailForTracking
+		//		{
+		//			CategoryName = product.Category?.Name ?? "Không rõ", // Cate con từ DB
+		//			Description = product.Description,
+		//			BrandName = product.Brand?.Name ?? "Không rõ",
+		//			Images = post.Images?.Select(img => img.ImageUrl).ToList()
+		//					 ?? product.Images?.Select(img => img.ImageUrl).ToList()
+		//					 ?? new List<string>(),
+		//			Address = post.Address,
+		//			Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
+		//			Points = realPoints,
+		//			CollectionRouteId = product.CollectionRoutes?.OrderByDescending(r => r.CollectionDate).FirstOrDefault()?.CollectionRouteId ?? Guid.Empty
+		//		};
+
+		//		var history = await _unitOfWork.ProductStatusHistory.GetsAsync(h => h.ProductId == product.ProductId);
+		//		if (history != null && history.Any())
+		//		{
+		//			foreach (var h in history)
+		//			{
+		//				timelineResponse.Add(MapToTimelineModel(h.Status, h.StatusDescription, h.ChangedAt, vnTimeZone));
+		//			}
+		//		}
+		//	}
+		//	else
+		//	{
+		//		string? draftJson = null;
+		//		if (post.Status == PostStatus.CHO_DUYET.ToString())
+		//			draftJson = await _redisCacheService.GetStringAsync($"ewise:draft_product:{post.PostId}");
+		//		else if (post.CheckMessage != null)
+		//		{
+		//			var trick = post.CheckMessage.FirstOrDefault(x => x.StartsWith("[REJECTED_PRODUCT_DATA]"));
+		//			if (trick != null) draftJson = trick.Split('|')[1];
+		//		}
+
+		//		draftData = !string.IsNullOrEmpty(draftJson) ? JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions) : null;
+
+		//		productResponse = new ProductDetailForTracking
+		//		{
+		//			CategoryName = draftData?.ChildCategoryName ?? "Dữ liệu đang chờ", // Cate con từ Draft
+		//			Description = post.Description ?? draftData?.Product?.Description ?? "Không có mô tả",
+		//			BrandName = draftData?.BrandName ?? "Không rõ",
+		//			Images = post.Images?.Select(img => img.ImageUrl).ToList() ?? new List<string>(),
+		//			Address = post.Address,
+		//			Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status),
+		//			Points = post.EstimatePoint,
+		//			CollectionRouteId = Guid.Empty
+		//		};
+
+		//		// Lấy mốc History "Lúc tạo" từ Redis
+		//		if (draftData?.History != null)
+		//		{
+		//			timelineResponse.Add(MapToTimelineModel(
+		//				draftData.History.Status,
+		//				draftData.History.StatusDescription,
+		//				draftData.History.ChangedAt,
+		//				vnTimeZone));
+		//		}
+		//	}
+
+		//	var currentStatusName = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status);
+		//	if (!timelineResponse.Any(t => t.Status == currentStatusName))
+		//	{
+		//		timelineResponse.Add(MapToTimelineModel(
+		//			post.Status,
+		//			(post.Status == PostStatus.DA_HUY.ToString() || post.Status == PostStatus.DA_TU_CHOI.ToString())
+		//				? (post.RejectMessage ?? "Yêu cầu đã được đóng")
+		//				: "Yêu cầu đã được ghi nhận",
+		//			post.Date,
+		//			vnTimeZone));
+		//	}
+
+		//	// 5. TRẢ VỀ KẾT QUẢ SẮP XẾP MỚI NHẤT TRÊN ĐẦU
+		//	return new ProductTrackingTimelineResponse
+		//	{
+		//		ProductInfo = productResponse,
+		//		Timeline = timelineResponse.OrderByDescending(t => DateTime.ParseExact($"{t.Date} {t.Time}", "dd/MM/yyyy HH:mm", null)).ToList()
+		//	};
+		//}
 		public async Task<ProductTrackingTimelineResponse> GetFullTimelineByProductIdAsync(Guid id)
 		{
 			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
-			// 1. TRA CỨU ĐA TẦNG (SQL -> Redis Map)
-			// Thử tìm Post bằng PostId hoặc ProductId (đã có trong SQL)
+			// 1. TÌM KIẾM THÔNG TIN ĐẦU VÀO (POST HOẶC PRODUCT)
 			var post = await _unitOfWork.Posts.GetAsync(
 				p => p.PostId == id || (p.Product != null && p.Product.ProductId == id),
-				includeProperties: "Sender,Images,Product,Product.Category,Product.Brand"
+				includeProperties: "Sender,Images,Product,Product.Category,Product.Brand,Product.CollectionRoutes,Product.Images"
 			);
 
-			// Fallback Redis: Nếu id truyền vào là ProductId nháp (trường hợp bài chưa được duyệt)
-			if (post == null)
+			Products? product = post?.Product;
+
+			// Trường hợp nhập kho trực tiếp (không qua Post)
+			if (product == null)
+			{
+				product = await _unitOfWork.Products.GetAsync(
+					p => p.ProductId == id,
+					includeProperties: "Category,Brand,Images,CollectionRoutes"
+				);
+			}
+
+			// Fallback Redis cho hàng Draft/Chờ duyệt
+			if (post == null && product == null)
 			{
 				var mappedPostIdStr = await _redisCacheService.GetStringAsync($"ewise:product_map:{id}");
 				if (!string.IsNullOrEmpty(mappedPostIdStr) && Guid.TryParse(mappedPostIdStr, out var mappedPostId))
@@ -51,12 +181,14 @@ namespace ElecWasteCollection.Application.Services
 						p => p.PostId == mappedPostId,
 						includeProperties: "Sender,Images,Product,Product.Category,Product.Brand"
 					);
+					product = post?.Product;
 				}
 			}
 
-			if (post == null) throw new AppException("Không tìm thấy thông tin sản phẩm để theo dõi", 404);
+			if (post == null && product == null)
+				throw new AppException("Không tìm thấy thông tin sản phẩm để theo dõi", 404);
 
-			// 2. CẤU HÌNH MÚI GIỜ & KHỞI TẠO
+			// 2. CẤU HÌNH MÚI GIỜ
 			string timeZoneId = "SE Asia Standard Time";
 			TimeZoneInfo vnTimeZone;
 			try { vnTimeZone = TimeZoneInfo.FindSystemTimeZoneById(timeZoneId); }
@@ -64,30 +196,32 @@ namespace ElecWasteCollection.Application.Services
 
 			var timelineResponse = new List<CollectionTimelineModel>();
 			ProductDetailForTracking productResponse;
-			ProductDraftModel? draftData = null;
 
-			if (post.Product != null)
+			// 3. XỬ LÝ DỮ LIỆU VÀ LẤY HISTORY
+			if (product != null)
 			{
-				var product = post.Product;
 				var pointTransactions = await _unitOfWork.PointTransactions.GetsAsync(t => t.ProductId == product.ProductId);
-				double? realPoints = pointTransactions?.Any() == true ? pointTransactions.Sum(t => t.Point) : post.EstimatePoint;
+				double? realPoints = (pointTransactions != null && pointTransactions.Any())
+									 ? pointTransactions.Sum(t => t.Point)
+									 : (post?.EstimatePoint ?? 0);
 
 				productResponse = new ProductDetailForTracking
 				{
-					CategoryName = product.Category?.Name ?? "Không rõ", // Cate con từ DB
+					CategoryName = product.Category?.Name ?? "Không rõ",
 					Description = product.Description,
 					BrandName = product.Brand?.Name ?? "Không rõ",
-					Images = post.Images?.Select(img => img.ImageUrl).ToList()
-							 ?? product.Images?.Select(img => img.ImageUrl).ToList()
+					Images = product.Images?.Select(img => img.ImageUrl).ToList()
+							 ?? post?.Images?.Select(img => img.ImageUrl).ToList()
 							 ?? new List<string>(),
-					Address = post.Address,
+					Address = post?.Address ?? "Nhập trực tiếp tại trạm thu gom",
 					Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
 					Points = realPoints,
 					CollectionRouteId = product.CollectionRoutes?.OrderByDescending(r => r.CollectionDate).FirstOrDefault()?.CollectionRouteId ?? Guid.Empty
 				};
 
+				// CHỈ LẤY TỪ HISTORY TRONG DATABASE
 				var history = await _unitOfWork.ProductStatusHistory.GetsAsync(h => h.ProductId == product.ProductId);
-				if (history != null && history.Any())
+				if (history != null)
 				{
 					foreach (var h in history)
 					{
@@ -97,8 +231,9 @@ namespace ElecWasteCollection.Application.Services
 			}
 			else
 			{
+				// TRƯỜNG HỢP HÀNG NHÁP (DRAFT) - CHỈ LẤY TỪ HISTORY TRONG REDIS
 				string? draftJson = null;
-				if (post.Status == PostStatus.CHO_DUYET.ToString())
+				if (post!.Status == PostStatus.CHO_DUYET.ToString())
 					draftJson = await _redisCacheService.GetStringAsync($"ewise:draft_product:{post.PostId}");
 				else if (post.CheckMessage != null)
 				{
@@ -106,11 +241,13 @@ namespace ElecWasteCollection.Application.Services
 					if (trick != null) draftJson = trick.Split('|')[1];
 				}
 
-				draftData = !string.IsNullOrEmpty(draftJson) ? JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions) : null;
+				var draftData = !string.IsNullOrEmpty(draftJson)
+								? JsonSerializer.Deserialize<ProductDraftModel>(draftJson, jsonOptions)
+								: null;
 
 				productResponse = new ProductDetailForTracking
 				{
-					CategoryName = draftData?.ChildCategoryName ?? "Dữ liệu đang chờ", // Cate con từ Draft
+					CategoryName = draftData?.ChildCategoryName ?? "Dữ liệu đang chờ",
 					Description = post.Description ?? draftData?.Product?.Description ?? "Không có mô tả",
 					BrandName = draftData?.BrandName ?? "Không rõ",
 					Images = post.Images?.Select(img => img.ImageUrl).ToList() ?? new List<string>(),
@@ -120,7 +257,6 @@ namespace ElecWasteCollection.Application.Services
 					CollectionRouteId = Guid.Empty
 				};
 
-				// Lấy mốc History "Lúc tạo" từ Redis
 				if (draftData?.History != null)
 				{
 					timelineResponse.Add(MapToTimelineModel(
@@ -131,26 +267,15 @@ namespace ElecWasteCollection.Application.Services
 				}
 			}
 
-			var currentStatusName = StatusEnumHelper.ConvertDbCodeToVietnameseName<PostStatus>(post.Status);
-			if (!timelineResponse.Any(t => t.Status == currentStatusName))
-			{
-				timelineResponse.Add(MapToTimelineModel(
-					post.Status,
-					(post.Status == PostStatus.DA_HUY.ToString() || post.Status == PostStatus.DA_TU_CHOI.ToString())
-						? (post.RejectMessage ?? "Yêu cầu đã được đóng")
-						: "Yêu cầu đã được ghi nhận",
-					post.Date,
-					vnTimeZone));
-			}
-
-			// 5. TRẢ VỀ KẾT QUẢ SẮP XẾP MỚI NHẤT TRÊN ĐẦU
+			// 4. TRẢ VỀ KẾT QUẢ (SẮP XẾP MỚI NHẤT LÊN ĐẦU)
 			return new ProductTrackingTimelineResponse
 			{
 				ProductInfo = productResponse,
-				Timeline = timelineResponse.OrderByDescending(t => DateTime.ParseExact($"{t.Date} {t.Time}", "dd/MM/yyyy HH:mm", null)).ToList()
+				Timeline = timelineResponse
+					.OrderByDescending(t => DateTime.ParseExact($"{t.Date} {t.Time}", "dd/MM/yyyy HH:mm", null))
+					.ToList()
 			};
 		}
-
 		// Hàm phụ để Map Timeline tránh lặp code
 		private CollectionTimelineModel MapToTimelineModel(string status, string description, DateTime dateTime, TimeZoneInfo tz)
 		{

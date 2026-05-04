@@ -34,9 +34,9 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IBrandCategoryService _brandCategoryService;
 		private readonly ICategoryAttributeService _categoryAttributeService;
 		private readonly IUnitOfWork _unitOfWork;
+		private readonly ICloudinaryService _cloudinaryService;
 
-
-		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ICollectionUnitService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository, IPublicHolidayService publicHolidayService, IAttributeService attributeService, IBrandService brandService, ICategoryService categoryService, IBrandCategoryService brandCategoryService, ICategoryAttributeService categoryAttributeService, IUnitOfWork unitOfWork)
+		public ExcelImportService(ICompanyService CompanyService, IAccountService accountService, IUserService userService, ICollectionUnitService smallCollectionPointService, ICollectorService collectorService, IShiftService shiftService, IVehicleService vehicleService, IEmailService emailService, IMapboxService mapboxService, IVoucherService voucherService, IUserRepository userRepository, IPublicHolidayService publicHolidayService, IAttributeService attributeService, IBrandService brandService, ICategoryService categoryService, IBrandCategoryService brandCategoryService, ICategoryAttributeService categoryAttributeService, IUnitOfWork unitOfWork, ICloudinaryService cloudinaryService)
 		{
 			_companyService = CompanyService;
 			_accountService = accountService;
@@ -56,6 +56,7 @@ namespace ElecWasteCollection.Application.Services
 			_brandCategoryService = brandCategoryService;
 			_categoryAttributeService = categoryAttributeService;
 			_unitOfWork = unitOfWork;
+			_cloudinaryService = cloudinaryService;
 		}
 
 		public async Task<ImportResult> ImportAsync(Stream excelStream, string importType)
@@ -67,14 +68,31 @@ namespace ElecWasteCollection.Application.Services
 
 				if (importType.Equals("CategorySystem", StringComparison.OrdinalIgnoreCase))
 				{
-					//Thứ tự cực kỳ quan trọng để tránh lỗi khóa ngoại
+					// 1. Chạy các bước Import
 					await ImportCategoriesAsync(workbook.Worksheet(1), result);
-					await ImportBrandsAsync(workbook.Worksheet(2), result);
-					await ImportAttributesAsync(workbook.Worksheet(4), result);
+					_unitOfWork.ClearTracker();
 
-					//// Sau khi có dữ liệu gốc mới tiến hành Map
+					await ImportBrandsAsync(workbook.Worksheet(2), result);
+					_unitOfWork.ClearTracker();
+
+					await ImportAttributesAsync(workbook.Worksheet(4), result);
+					_unitOfWork.ClearTracker();
+
 					await ImportCategoryBrandMapAsync(workbook.Worksheet(3), result);
+					_unitOfWork.ClearTracker();
+
 					await ImportCategoryAttributeMapAsync(workbook.Worksheet(5), result);
+					_unitOfWork.ClearTracker();
+
+					if (!result.Messages.Any(m => m.Contains("Lỗi")))
+					{
+						result.Success = true;
+						await UpdateSystemImportTemplateAsync(workbook, result);
+					}
+					else
+					{
+						result.Success = false;
+					}
 				}
 				else
 				{
@@ -745,14 +763,15 @@ Ban Quản Trị Hệ Thống";
 			for (int row = 2; row <= rowCount; row++)
 			{
 				var name = worksheet.Cell(row, 2).Value.ToString().Trim();
-				if (string.IsNullOrEmpty(name)) throw new AppException("Tên danh mục đang bị trống",400) ;
+				if (string.IsNullOrEmpty(name)) throw new AppException("Tên danh mục đang bị trống", 400);
 
 				excelCategories.Add(new CategoryImportModel
 				{
 					Name = name,
 					ParentName = worksheet.Cell(row, 3).Value.ToString().Trim(),
-					EmissionFactor = double.TryParse(worksheet.Cell(row, 4).Value.ToString(), out var ef) ? ef : 0,
-					AiRecognitionTags = worksheet.Cell(row, 5).Value.ToString().Trim()
+					DefaultWeight = double.TryParse(worksheet.Cell(row, 4).Value.ToString(), out var efw) ? efw : 0,
+					EmissionFactor = double.TryParse(worksheet.Cell(row, 5).Value.ToString(), out var ef) ? ef : 0,
+					AiRecognitionTags = worksheet.Cell(row, 6).Value.ToString().Trim()
 				});
 			}
 
@@ -799,6 +818,49 @@ Ban Quản Trị Hệ Thống";
 				});
 			}
 			await _categoryAttributeService.SyncCategoryAttributeMapsAsync(maps);
+		}
+
+		private async Task UpdateSystemImportTemplateAsync(XLWorkbook workbook, ImportResult result)
+		{
+			try
+			{
+				// 1. Chuyển đổi Workbook sang Stream
+				using var ms = new MemoryStream();
+				workbook.SaveAs(ms);
+				ms.Position = 0;
+
+				// 2. Đẩy lên Cloudinary (Dùng ID cố định để luôn ghi đè file cũ)
+				string publicId = "format_import_category_template";
+				string fileName = "Format_Import_Category_Latest.xlsx";
+
+				string cloudUrl = await _cloudinaryService.UploadRawStreamAsync(ms, fileName, publicId);
+
+				var config = await _unitOfWork.SystemConfig.GetAsync(x => x.Key == SystemConfigKey.FORMAT_IMPORT_CATEGORY.ToString());
+
+				if (config != null)
+				{
+					config.Value = cloudUrl;
+					_unitOfWork.SystemConfig.Update(config);
+				}
+				else
+				{
+					await _unitOfWork.SystemConfig.AddAsync(new Domain.Entities.SystemConfig
+					{
+						SystemConfigId = Guid.NewGuid(),
+						Key = SystemConfigKey.FORMAT_IMPORT_CATEGORY.ToString(),
+						Value = cloudUrl,
+					});
+				}
+
+				await _unitOfWork.SaveAsync();
+				result.Messages.Add("[Hệ thống] Đã tự động cập nhật file mẫu mới nhất lên Cloudinary.");
+			}
+			catch (Exception ex)
+			{
+				// Chỉ ghi message cảnh báo, không làm gián đoạn quá trình Import chính
+				result.Messages.Add($"[Cảnh báo] Không thể cập nhật file mẫu hệ thống: {ex.Message}");
+
+			}
 		}
 	}
 }

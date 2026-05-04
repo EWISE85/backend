@@ -34,7 +34,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> ActiveVoucher(Guid voucherId)
 		{
-			var voucher = await _voucherRepository.GetAsync(v => v.VoucherId == voucherId);
+			var voucher = await _unitOfWork.Vouchers.GetAsync(v => v.VoucherId == voucherId);
 			if (voucher == null)
 			{
 				throw new AppException("Không tìm thấy voucher", 404);
@@ -257,7 +257,7 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UnActiveVoucher(Guid voucherId)
 		{
-			var voucher = await _voucherRepository.GetAsync(v => v.VoucherId == voucherId);
+			var voucher = await _unitOfWork.Vouchers.GetAsync(v => v.VoucherId == voucherId);
 			if (voucher == null)
 			{
 				throw new AppException("Không tìm thấy voucher", 404);
@@ -347,7 +347,14 @@ namespace ElecWasteCollection.Application.Services
 				Point = -isVoucherExist.PointsToRedeem
 			};
 			user.Points -= isVoucherExist.PointsToRedeem;
-			isVoucherExist.Quantity -= 1;
+			var updatedRows = await _unitOfWork.Vouchers.GetQueryable()
+	.Where(v => v.VoucherId == voucherId && v.Quantity > 0)
+	.ExecuteUpdateAsync(s => s.SetProperty(v => v.Quantity, v => v.Quantity - 1));
+
+			if (updatedRows == 0)
+			{
+				throw new AppException("Voucher đã hết lượt đổi hoặc không tồn tại", 400);
+			}
 			var userVoucher = new UserVoucher
 			{
 				UserId = userId,
@@ -358,6 +365,7 @@ namespace ElecWasteCollection.Application.Services
 			};
 			_unitOfWork.PointTransactions.Add(pointsTransaction);
 			_unitOfWork.Users.Update(user);
+			//_unitOfWork.Vouchers.Update(isVoucherExist);
 			_unitOfWork.UserVouchers.Add(userVoucher);
 			try
 			{

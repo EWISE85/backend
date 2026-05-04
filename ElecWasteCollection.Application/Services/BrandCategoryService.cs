@@ -71,11 +71,10 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task SyncBrandCategoryMapsAsync(List<BrandCategoryMapModel> excelMaps)
 		{
-			var dbMaps = await _brandCategoryRepository.GetAllAsync();
+			var dbMaps = (await _brandCategoryRepository.GetAllAsync()).ToList();
 			var categories = await _categoryRepository.GetAllAsync();
 			var dbBrands = await _unitOfWork.Brands.GetAllAsync();
 
-			// 1. SOFT DELETE: Chuyển sang KHONG_HOAT_DONG nếu bị xóa khỏi Excel
 			foreach (var dbMap in dbMaps)
 			{
 				var cat = categories.FirstOrDefault(c => c.CategoryId == dbMap.CategoryId);
@@ -95,18 +94,22 @@ namespace ElecWasteCollection.Application.Services
 				}
 			}
 
-			// 2. UPSERT: Thêm mới hoặc Cập nhật (Kèm chốt chặn Status)
 			foreach (var map in excelMaps)
 			{
-				var category = categories.FirstOrDefault(c => c.Name.Trim().Equals(map.CategoryName.Trim(), StringComparison.OrdinalIgnoreCase));
-				var brandId = await _brandService.CheckAndUpdateBrandAsync(map.BrandName);
+				var category = categories.FirstOrDefault(c =>
+					c.Name.Trim().Equals(map.CategoryName.Trim(), StringComparison.OrdinalIgnoreCase));
 
-				if (category != null)
+				var brand = dbBrands.FirstOrDefault(b =>
+					b.Name.Trim().Equals(map.BrandName.Trim(), StringComparison.OrdinalIgnoreCase));
+
+				if (category != null && brand != null)
 				{
+					var brandId = brand.BrandId; // Lấy ID trực tiếp từ đối tượng đã fetch
 					var existingMap = dbMaps.FirstOrDefault(bc => bc.BrandId == brandId && bc.CategoryId == category.CategoryId);
 
-					// CHỐT CHẶN: Cha (Category) sống thì Map mới được sống
-					var targetStatus = (category.Status == CategoryStatus.HOAT_DONG.ToString()) ? CategoryStatus.HOAT_DONG.ToString() : CategoryStatus.KHONG_HOAT_DONG.ToString();
+					var targetStatus = (category.Status == CategoryStatus.HOAT_DONG.ToString())
+										? CategoryStatus.HOAT_DONG.ToString()
+										: CategoryStatus.KHONG_HOAT_DONG.ToString();
 
 					if (existingMap != null)
 					{
@@ -125,9 +128,10 @@ namespace ElecWasteCollection.Application.Services
 							BrandId = brandId,
 							CategoryId = category.CategoryId,
 							Points = map.Points,
-							Status = targetStatus // Gán theo trạng thái của cha
+							Status = targetStatus
 						};
 						await _unitOfWork.BrandCategories.AddAsync(newMap);
+						dbMaps.Add(newMap);
 					}
 				}
 			}

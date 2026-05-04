@@ -118,6 +118,12 @@ namespace ElecWasteCollection.API.Controllers
 			var attributes = await _categoryAttributeService.GetAttributeByCategoryIdForAdmin(categoryId, status);
 			return Ok(attributes);
 		}
+		[HttpGet("collection-unit/{id}")]
+		public async Task<IActionResult> GetParentCategoryWithCollectionUnit([FromRoute] string id)
+		{
+			var categories = await _categorySerivce.GetParentCategoryWithCollectionUnit(id);
+			return Ok(categories);
+		}
 
 		}
 }
