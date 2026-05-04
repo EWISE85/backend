@@ -271,12 +271,10 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var allPosts = await _unitOfWork.Posts.GetAllAsync(
                 filter: p => p.Product != null
                           && p.Product.CollectionUnitId == smallPointId
-                          //&& p.Product.AssignedAt <= workDate
                           && p.Product.Status == ProductStatus.CHO_GOM_NHOM.ToString(),
                 includeProperties: "Product,Product.Category,Product.Brand,Sender,Product.User"
             );
 
-            //var filteredPosts = allPosts.ToList();
             var filteredPosts = allPosts.Where(p =>
             {
                 if (TryParseScheduleInfo(p.ScheduleJson!, out var dates))
@@ -423,10 +421,8 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
             var listIds = new List<string>();
 
-            // 2. Lọc theo ngày làm việc (xử lý JSON Schedule)
             foreach (var post in posts)
             {
-                // Tái sử dụng hàm TryParseDates có sẵn trong class
                 if (!TryParseDates(post.ScheduleJson!, out var dates))
                     continue;
 
@@ -436,25 +432,26 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 }
             }
 
-            // 3. Trả về object kết quả
             return new
             {
                 Total = listIds.Count,
                 List = listIds
             };
         }
+
         public async Task<List<CompanyDailySummaryDto>> GetCompanySummariesByDateAsync(DateOnly workDate)
         {
-            var allPosts = await _unitOfWork.Posts.GetAllAsync();
+            var productsInDate = await _unitOfWork.Products.GetAllAsync(
+                filter: p => p.AssignedAt.HasValue && p.AssignedAt.Value == workDate
+            );
 
-            var activePosts = allPosts.Where(p =>
-            {
-                if (string.IsNullOrEmpty(p.ScheduleJson) || !TryParseDates(p.ScheduleJson, out var list))
-                    return false;
-                return list.Contains(workDate);
-            }).ToList();
+            var activePostIds = productsInDate.Select(p => p.PostId).Distinct().ToList();
 
-            if (!activePosts.Any()) return new List<CompanyDailySummaryDto>();
+            if (!activePostIds.Any()) return new List<CompanyDailySummaryDto>();
+
+            var activePosts = await _unitOfWork.Posts.GetAllAsync(
+                filter: p => activePostIds.Contains(p.PostId)
+            );
 
             var companyIds = activePosts.Select(p => p.CompanyId).Distinct().ToList();
 
@@ -471,9 +468,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                 var companyDto = new CompanyDailySummaryDto
                 {
-                    CompanyId = company.CompanyId,
+                    CompanyId = company.CompanyId.ToString(), 
                     CompanyName = company.Name,
-                    TotalCompanyProducts = companyPosts.Select(p => p.PostId).Distinct().Count()
+                    TotalCompanyProducts = productsInDate.Count(p => companyPosts.Any(cp => cp.PostId == p.PostId))
                 };
 
                 var pointGroups = companyPosts.GroupBy(p => p.AssignedCollectionUnitId);
@@ -488,9 +485,9 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     companyDto.Points.Add(new SmallPointSummaryDto
                     {
-                        SmallCollectionId = spId,
+                        SmallCollectionId = spId.ToString(),
                         Name = spName,
-                        TotalProduct = grp.Select(p => p.PostId).Distinct().Count()
+                        TotalProduct = productsInDate.Count(p => grp.Any(g => g.PostId == p.PostId))
                     });
                 }
 
@@ -641,10 +638,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             return result;
         }
 
-        private (double weight, double volume, double length, double width, double height) CalculateMetricsInProcess(
-    List<ProductValues> pValues,
-    Dictionary<string, Guid> attMap,
-    List<AttributeOptions> allOptions)
+        private (double weight, double volume, double length, double width, double height) CalculateMetricsInProcess( List<ProductValues> pValues, Dictionary<string, Guid> attMap, List<AttributeOptions> allOptions)
         {
             // 1. Tính toán Trọng lượng
             double weight = 0;
@@ -746,36 +740,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         }
 
         private class ScheduleDayDto { public string? PickUpDate { get; set; } }
-        //private static bool TryParseScheduleInfo(string raw, out PostScheduleInfo info)
-        //{
-        //    info = new PostScheduleInfo();
-        //    if (string.IsNullOrWhiteSpace(raw)) return false;
-        //    try
-        //    {
-        //        var opts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-        //        var days = System.Text.Json.JsonSerializer.Deserialize<List<DailyTimeSlotsDto>>(raw, opts);
-
-        //        if (days == null || !days.Any()) return false;
-
-        //        var valid = new List<DateOnly>();
-        //        foreach (var d in days)
-        //        {
-        //            if (DateOnly.TryParse(d.PickUpDate, out var date))
-        //            {
-        //                valid.Add(date);
-        //            }
-        //        }
-
-        //        if (!valid.Any()) return false;
-        //        valid.Sort();
-
-        //        info.SpecificDates = valid;
-        //        info.MinDate = valid.First();
-        //        info.MaxDate = valid.Last();
-        //        return true;
-        //    }
-        //    catch { return false; }
-        //}
+        
         private bool TryParseScheduleInfo(string raw, out List<DateOnly> dates)
         {
             dates = new List<DateOnly>();
@@ -790,23 +755,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 return dates.Any();
             }
             catch { return false; }
-        }
-        private sealed class TimeSlotDetailDto
-        {
-            public string? StartTime { get; set; }
-            public string? EndTime { get; set; }
-        }
-        private sealed class DailyTimeSlotsDto
-        {
-            public string? DayName { get; set; }
-            public string? PickUpDate { get; set; }
-            public TimeSlotDetailDto? Slots { get; set; }
-        }
-        private class PostScheduleInfo
-        {
-            public DateOnly MinDate { get; set; }
-            public DateOnly MaxDate { get; set; }
-            public List<DateOnly> SpecificDates { get; set; } = new();
-        }
+        }     
     }
 }
