@@ -103,5 +103,24 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Collection company has been marked as active." });
 		}
+		[HttpGet("export/{companyId}")]
+		public async Task<IActionResult> ExportCompany(string companyId)
+		{
+			try
+			{
+				var fileBytes = await _collectionCompanyService.ExportCompanyToExcelAsync(companyId);
+				string fileName = $"Company_{companyId}_{DateTime.Now:yyyyMMdd}.xlsx";
+
+				return File(
+					fileBytes,
+					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+					fileName
+				);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { Message = ex.Message });
+			}
+		}
 	}
 }

@@ -22,6 +22,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<PagedResultModel<CollectionCompanyResponse>> GetPagedCompanyAsync(CompanySearchModel model);
 		Task<bool> UnActiveCompany(string companyId);
 		Task<bool> ActiveCompany(string companyId);
+		Task<byte[]> ExportCompanyToExcelAsync(string companyId);
 
 	}
 }

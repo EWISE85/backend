@@ -1,4 +1,5 @@
 ﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Office2010.Excel;
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
@@ -395,7 +396,10 @@ namespace ElecWasteCollection.Application.Services
 
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 				string statusToSave;
-
+				if (string.IsNullOrEmpty(code) && string.IsNullOrEmpty(name))
+				{
+					continue; // Nhảy sang dòng tiếp theo, không xử lý dòng này
+				}
 				// Map "Đang làm việc" -> Active
 				if (statusNormalized == "đang làm việc")
 				{
@@ -481,7 +485,10 @@ Ban Quản Trị Hệ Thống";
 				var rawStatus = worksheet.Cell(row, 10).Value.ToString();
 				var statusNormalized = string.IsNullOrEmpty(rawStatus) ? "" : rawStatus.Trim().ToLower();
 				string statusToSave;
-
+				if (string.IsNullOrEmpty(id) && string.IsNullOrEmpty(name))
+				{
+					continue; // Nhảy sang dòng tiếp theo, không xử lý dòng này
+				}
 				if (statusNormalized.Equals("còn hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = CollectionUnitStatus.DANG_HOAT_DONG.ToString(); 
@@ -533,14 +540,14 @@ Ban Quản Trị Hệ Thống";
 					Created_At = DateTime.UtcNow,
 					Updated_At = DateTime.UtcNow
 				};
-				var importResult = await _smallCollectionPointService.CheckAndUpdateSmallCollectionPointAsync(smallCollectionPoint, adminUsername, adminPassword);
+				var importResult = await _smallCollectionPointService.CheckAndUpdateSmallCollectionPointAsync(smallCollectionPoint, adminUsername, adminPassword, email, phone);
 				result.Messages.AddRange(importResult.Messages);
 				if (importResult.IsNew)
 				{
 					string emailSubject = "Thông tin tài khoản quản trị hệ thống";
 					string emailBody = $@"Kính gửi {name},
 
-Hệ thống đã tạo thành công tài khoản quản trị cho kho của bạn. Dưới đây là thông tin đăng nhập:
+Hệ thống đã tạo thành công tài khoản quản trị cho đơn vị thu gom của bạn. Dưới đây là thông tin đăng nhập:
 
 - Tên đăng nhập: {adminUsername}
 - Mật khẩu: {adminPassword}
@@ -581,7 +588,10 @@ Ban Quản Trị Hệ Thống";
 				var adminPassword = GenerateRandomPassword(6);
 				string statusToSave;
 				string companyTypeToSave;
-
+				if (string.IsNullOrEmpty(id) && string.IsNullOrEmpty(name))
+				{
+					continue; // Nhảy sang dòng tiếp theo, không xử lý dòng này
+				}
 				if (statusNormalized.Equals("Còn hoạt động", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = CompanyStatus.DANG_HOAT_DONG.ToString();

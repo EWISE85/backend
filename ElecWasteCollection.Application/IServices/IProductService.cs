@@ -32,6 +32,6 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> CheckExistingQRCode(string qrCode);
 		Task<bool> UpdateProductInformation(Guid categoryId, Guid brandId, List<string> images, Guid productId);
 		Task<bool> ProcessForceReceiveOverdueAsync(ForceReceiveOverdueProductRequest request);
-        Task<bool> AssignQRCodeAndAutoSyncAsync(Guid productId, string qrCode);
+        Task<bool> AssignQRCodeAndAutoSyncAsync(Guid productId, string qrCode, double? points);
     }
 }

@@ -46,7 +46,7 @@ namespace ElecWasteCollection.API.Controllers
 			}
 
 			using var stream = file.OpenReadStream();
-			var result = await _excelImportService.ImportAsync(stream, "SmallCollectionPoint");
+			var result = await _excelImportService.ImportAsync(stream, "CollectionUnit");
 
 			if (result.Success)
 			{
@@ -99,7 +99,25 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { message = "Small collection point has been marked as active." });
 		}
 
+		[HttpGet("export-point/{id}")]
+		public async Task<IActionResult> ExportPoint(string id)
+		{
+			try
+			{
+				var fileBytes = await _smallCollectionService.ExportSmallCollectionPointToExcelAsync(id);
+				string fileName = $"Kho_{id}_{DateTime.Now:yyyyMMdd}.xlsx";
 
+				return File(
+					fileBytes,
+					"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+					fileName
+				);
+			}
+			catch (Exception ex)
+			{
+				return BadRequest(new { Message = ex.Message });
+			}
+		}
 	}
 
 }
