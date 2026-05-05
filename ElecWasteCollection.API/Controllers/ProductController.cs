@@ -1,4 +1,5 @@
 ﻿using ElecWasteCollection.API.DTOs.Request;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
 using ElecWasteCollection.Application.Services;
@@ -212,6 +213,19 @@ namespace ElecWasteCollection.API.Controllers
             catch (Exception ex)
             {
                 return BadRequest(new { Message = ex.Message });
+            }
+        }
+        [HttpPost("assign-qr-auto/{productId}")]
+        public async Task<IActionResult> AssignQRCode(Guid productId, [FromQuery] string qrCode)
+        {
+            try
+            {
+                var success = await _productService.AssignQRCodeAndAutoSyncAsync(productId, qrCode);
+                return Ok(new { Success = success, Message = "Hoàn tất gắn mã QR và đồng bộ dữ liệu." });
+            }
+            catch (AppException ex)
+            {
+                return StatusCode(ex.StatusCode, ex.Message);
             }
         }
     }
