@@ -1,20 +1,10 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
-using ElecWasteCollection.Application.Exceptions;
+﻿using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.Helper;
-using ElecWasteCollection.Application.Interfaces;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
-using ElecWasteCollection.Application.Model.GroupModel;
 using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
-using Microsoft.AspNetCore.Routing;
-using Microsoft.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -301,90 +291,6 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-        //public async Task<bool> UpdateProductStatusByQrCodeAndPlusUserPoint(string productQrCode, string status)
-        //{
-        //    var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == productQrCode);
-        //    if (product == null) throw new AppException("Không tìm thấy sản phẩm với mã QR đã cho", 404);
-
-
-        //    var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
-        //    if (post == null) throw new AppException("Không tìm thấy bài đăng liên quan đến sản phẩm", 404);
-        //    var pointTransaction = new CreatePointTransactionModel
-        //    {
-        //        UserId = product.UserId,
-        //        ProductId = product.ProductId,
-        //        Point = post.EstimatePoint,
-        //        Desciption = "Sản phầm đã về đến kho"
-        //    };
-        //    var statusEnum = StatusEnumHelper.GetValueFromDescription<ProductStatus>(status);
-        //    product.Status = statusEnum.ToString();
-        //    _unitOfWork.Products.Update(product);
-        //    var newHistory = new ProductStatusHistory
-        //    {
-        //        ProductStatusHistoryId = Guid.NewGuid(),
-        //        ProductId = product.ProductId,
-        //        ChangedAt = DateTime.UtcNow,
-        //        StatusDescription = "Sản phẩm đã về đến kho",
-        //        Status = statusEnum.ToString()
-        //    };
-        //    await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
-        //    await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
-        //    await _unitOfWork.SaveAsync();
-        //    return true;
-        //}
-
-        //      public async Task<bool> ReceiveProductAtWarehouse(List<UserReceivePointFromCollectionPointModel> models)
-        //      {
-        //	if (models == null || !models.Any()) return false;
-        //	string pointIdToSync = null;
-
-        //	foreach (var model in models)
-        //	{
-        //		var product = await _unitOfWork.Products.GetAsync(p => p.QRCode == model.QRCode);
-        //		if (product == null) throw new AppException($"Không tìm thấy sản phẩm với mã QR: {model.QRCode}", 404);
-        //		if (string.IsNullOrEmpty(pointIdToSync))
-        //		{
-        //			pointIdToSync = product.SmallCollectionPointId;
-        //		}
-
-        //		var post = await _unitOfWork.Posts.GetAsync(p => p.ProductId == product.ProductId);
-        //		if (post == null) throw new AppException($"Không tìm thấy bài đăng liên quan đến sản phẩm mã QR: {model.QRCode}", 404);
-        //		double pointToSave = model.Point ?? post.EstimatePoint;
-        //		string descriptionToSave = !string.IsNullOrEmpty(model.Description) ? model.Description : "Sản phẩm đã về đến kho";
-        //		var pointTransaction = new CreatePointTransactionModel
-        //		{
-        //			UserId = product.UserId,
-        //			ProductId = product.ProductId,
-        //			Point = pointToSave,
-        //			Desciption = descriptionToSave
-        //		};
-
-        //		product.Status = ProductStatus.NHAP_KHO.ToString();
-        //		_unitOfWork.Products.Update(product);
-        //		var newHistory = new ProductStatusHistory
-        //		{
-        //			ProductStatusHistoryId = Guid.NewGuid(),
-        //			ProductId = product.ProductId,
-        //			ChangedAt = DateTime.UtcNow,
-        //			StatusDescription = descriptionToSave,
-        //			Status = ProductStatus.NHAP_KHO.ToString()
-        //		};
-        //		await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
-
-        //		await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
-        //	}
-
-        //	await _unitOfWork.SaveAsync();
-
-        //	if (!string.IsNullOrEmpty(pointIdToSync))
-        //	{
-        //		await _capacityHelper.SyncRealtimeCapacityAsync(pointIdToSync);
-        //	}
-
-        //	return true;
-        //}
-
-
         public async Task<bool> ReceiveProductAtWarehouse(List<UserReceivePointFromCollectionPointModel> models)
         {
             if (models == null || !models.Any()) return false;
@@ -441,32 +347,6 @@ namespace ElecWasteCollection.Application.Services
 
             return true;
         }
-
-
-		//      public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit)
-		//{
-		//	var (products, totalItems) = await _productRepository.GetProductsBySenderIdWithDetailsAsync(search, createAt, userId, page, limit);
-
-		//	if (products == null || !products.Any())
-		//	{
-		//		return new PagedResultModel<ProductComeWarehouseDetailModel>(new List<ProductComeWarehouseDetailModel>(), page, limit, 0);
-		//	}
-
-		//	// Mapping sang DetailModel
-		//	var productDetails = products.Select(product =>
-		//	{
-		//              // Lấy post liên quan đến user này (nếu có logic đặc thù)
-		//              var post = product.Post?.SenderId == userId
-		//                  ? product.Post
-		//                  : null; 
-		//		return MapToDetailModel(product, post);
-		//	})
-		//	.Where(x => x != null)
-		//	.ToList();
-
-		//	// Trả về kết quả bọc trong PagedResultModel
-		//	return new PagedResultModel<ProductComeWarehouseDetailModel>(productDetails, page, limit, totalItems);
-		//}
 
 		public async Task<PagedResultModel<ProductComeWarehouseDetailModel>> GetAllProductsByUserId(string? search, DateOnly? createAt, Guid userId, int page, int limit)
 		{
@@ -583,109 +463,7 @@ namespace ElecWasteCollection.Application.Services
 				UserName = post.Sender?.Name ?? "N/A"
 			};
 		}
-		//public async Task<ProductDetail?> GetProductDetailByIdAsync(Guid productId)
-		//{
-		//	var product = await _productRepository.GetProductDetailWithAllRelationsAsync(productId);
-		//	if (product == null) return null;
-
-		//	var post = product.Post;
-
-		//	List<ProductValueDetailModel> productAttributes = new List<ProductValueDetailModel>();
-		//	if (product.ProductValues != null)
-		//	{
-		//		foreach (var pv in product.ProductValues)
-		//		{
-		//			ProductValueDetailModel detail;
-		//			if (pv.AttributeOptionId.HasValue)
-		//			{
-		//				detail = await MapProductValueDetailWithOptionAsync(pv);
-		//			}
-		//			else
-		//			{
-		//				detail = MapProductValueDetail(pv, null);
-		//			}
-		//			productAttributes.Add(detail);
-		//		}
-		//	}
-		//	var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
-		//	List<DailyTimeSlots> schedule = new List<DailyTimeSlots>();
-		//	if (post != null)
-		//	{
-		//		if (!string.IsNullOrEmpty(post.ScheduleJson))
-		//		{
-		//			try { schedule = JsonSerializer.Deserialize<List<DailyTimeSlots>>(post.ScheduleJson, options) ?? new List<DailyTimeSlots>(); }
-		//			catch (JsonException) { schedule = new List<DailyTimeSlots>(); }
-		//		}
-		//	}
-
-		//	var route = product.CollectionRoutes?.FirstOrDefault();
-		//	var shifts = route?.CollectionGroup?.Shifts;
-		//	var senderId = product.UserId;
-		//	var collector = shifts?.Collector;
-		//	var realPoint = product.PointTransactions?.FirstOrDefault()?.Point;
-		//	var sender = await _unitOfWork.Users.GetAsync(u => u.UserId == senderId);
-		//	if (sender == null) throw new AppException("Không tìm thấy người gửi", 404);
-
-		//	var userResponse = new UserResponse
-		//	{
-		//		UserId = sender?.UserId ?? Guid.Empty,
-		//		Name = sender?.Name,
-		//		Phone = sender?.Phone,
-		//		Email = sender?.Email,
-		//		Avatar = sender?.Avatar,
-		//		Role = sender.Role,
-		//		SmallCollectionPointId = sender?.CollectionUnitId
-		//          };
-
-		//	double? realPoints = null;
-		//	string? changedPointMessage = null;
-
-		//	if (product.PointTransactions != null && product.PointTransactions.Any())
-		//	{
-		//		realPoints = product.PointTransactions.Sum(pt => pt.Point);
-
-		//		var latestTransaction = product.PointTransactions
-		//			.OrderByDescending(pt => pt.CreatedAt)
-		//			.FirstOrDefault();
-
-		//		if (latestTransaction != null && latestTransaction.TransactionType == PointTransactionType.DIEU_CHINH.ToString())
-		//		{
-		//			changedPointMessage = latestTransaction.Desciption;
-		//		}
-		//	}
-
-		//	return new ProductDetail
-		//	{
-		//		ProductId = product.ProductId,
-		//		CategoryId = product.CategoryId,
-		//		CategoryName = product.Category?.Name ?? "Không rõ",
-		//		BrandId = product.BrandId,
-		//		BrandName = product.Brand?.Name ?? "Không rõ",
-		//		Description = product.Description,
-		//		ProductImages = product.ProductImages?.Select(pi => pi.ImageUrl).ToList() ?? new List<string>(),
-		//		Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
-		//		EstimatePoint = post?.EstimatePoint,
-		//		Sender = userResponse,
-		//		Address = post?.Address ?? "Không có địa chỉ",
-		//		Schedule = schedule,
-		//		Attributes = productAttributes,
-		//		RejectMessage = post?.RejectMessage ?? "Không có lý do",
-		//		QRCode = product.QRCode,
-		//		IsChecked = product.isChecked,
-		//		RealPoints = realPoints,
-		//		Collector = collector != null ? new CollectorResponse
-		//		{
-		//			CollectorId = collector.UserId,
-		//			Name = collector.Name
-		//		} : null,
-		//		PickUpDate = route?.CollectionDate,
-		//		EstimatedTime = route?.EstimatedTime,
-		//		CollectionRouterId = route?.CollectionRouteId,
-		//		ChangedPointMessage = changedPointMessage,
-
-
-		//	};
-		//}
+	
 		public async Task<ProductDetail?> GetProductDetailByIdAsync(Guid id)
 		{
 			var jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
@@ -1281,10 +1059,64 @@ namespace ElecWasteCollection.Application.Services
             await _unitOfWork.SaveAsync();
 
             await _notificationService.NotifyScheduleEmergencyConfirmedAsync(new Dictionary<Guid, (DateOnly, string)> {
-        { product.UserId, (newRoute.CollectionDate, newRoute.EstimatedTime.ToString("HH:mm")) }
-    });
+				{ product.UserId, (newRoute.CollectionDate, newRoute.EstimatedTime.ToString("HH:mm")) }
+			});
 
             return true;
+        }
+        public async Task<bool> AssignQRCodeAndAutoSyncAsync(Guid productId, string qrCode)
+        {
+            var product = await _unitOfWork.Products.GetAsync(
+                p => p.ProductId == productId
+            );
+
+            if (product == null) throw new AppException("Không tìm thấy sản phẩm", 404);
+            if (!string.IsNullOrEmpty(product.QRCode)) throw new AppException("Sản phẩm đã có mã QR", 400);
+
+            var isQrExist = await _unitOfWork.Products.GetAsync(p => p.QRCode == qrCode);
+            if (isQrExist != null) throw new AppException("Mã QR này đã được sử dụng", 400);
+
+            var post = await _unitOfWork.Posts.GetAsync(p => p.Product != null && p.Product.ProductId == productId);
+            if (post == null) throw new AppException("Không tìm thấy bài đăng", 404);
+
+            product.QRCode = qrCode;
+            product.Status = ProductStatus.NHAP_KHO.ToString();
+
+            var pointTransaction = new CreatePointTransactionModel
+            {
+                UserId = product.UserId,
+                ProductId = product.ProductId,
+                Point = post.EstimatePoint,
+                Desciption = "Hệ thống tự động cộng điểm khi gắn mã QR"
+            };
+            await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
+
+            var user = await _unitOfWork.Users.GetAsync(u => u.UserId == product.UserId);
+            if (user != null)
+            {
+                await _rankService.UpdateUserRankImpactAsync(user, product.ProductId);
+            }
+
+            var history = new ProductStatusHistory
+            {
+                ProductStatusHistoryId = Guid.NewGuid(),
+                ProductId = product.ProductId,
+                ChangedAt = DateTime.UtcNow,
+                StatusDescription = $"Gắn QR: {qrCode}. Tự động đồng bộ điểm và CO2.",
+                Status = product.Status
+            };
+            await _unitOfWork.ProductStatusHistory.AddAsync(history);
+
+            _unitOfWork.Products.Update(product);
+
+            var result = await _unitOfWork.SaveAsync() > 0;
+
+            if (result && !string.IsNullOrEmpty(product.CollectionUnitId))
+            {
+                await _capacityHelper.SyncRealtimeCapacityAsync(product.CollectionUnitId);
+            }
+
+            return result;
         }
     }
 }
