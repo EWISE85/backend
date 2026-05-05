@@ -73,6 +73,7 @@ namespace ElecWasteCollection.Application.Services
 				Type = NotificationType.System.ToString(),
 				CreatedAt = DateTime.UtcNow
 			};
+			await _unitOfWork.Notifications.AddAsync(notification);
 			return await _unitOfWork.SaveAsync() > 0;
 		}
 
