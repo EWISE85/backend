@@ -1,4 +1,6 @@
-﻿using DocumentFormat.OpenXml.Spreadsheet;
+﻿using ClosedXML.Excel;
+using DocumentFormat.OpenXml.Office2010.Excel;
+using DocumentFormat.OpenXml.Spreadsheet;
 using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
@@ -34,14 +36,14 @@ namespace ElecWasteCollection.Application.Services
 			return true;
 		}
 
-		public async Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(CollectionUnit smallCollectionPoints, string adminUsername, string adminPassword)
+		public async Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(CollectionUnit smallCollectionPoints, string adminUsername, string adminPassword, string email, string phone)
 		{
 			var result = new ImportResult();
 
 			var existingCompany = await _smallCollectionRepository.GetAsync(s => s.CollectionUnitId == smallCollectionPoints.CollectionUnitId);
 			if (existingCompany != null)
 			{
-				await UpdateSmallCollectionPoint(smallCollectionPoints);
+				await UpdateSmallCollectionPoint(smallCollectionPoints, email, phone);
 				result.Messages.Add($"Đã cập nhật thông tin kho '{smallCollectionPoints.Name}'.");
 				result.IsNew = false;
 			}
@@ -61,6 +63,8 @@ namespace ElecWasteCollection.Application.Services
 				{
 					UserId = Guid.NewGuid(),
 					Avatar = null,
+					Email = email,
+					Phone = phone,
 					Name = "Admin " + smallCollectionPoints.Name,
 					RoleId = role.RoleId,
 					Status = UserStatus.DANG_HOAT_DONG.ToString(),
@@ -222,18 +226,25 @@ namespace ElecWasteCollection.Application.Services
 			return result;
 		}
 
-		public async Task<bool> UpdateSmallCollectionPoint(CollectionUnit smallCollectionPoints)
+		public async Task<bool> UpdateSmallCollectionPoint(CollectionUnit smallCollectionPoints, string email, string phone)
 		{
-			var smallPoint = await _smallCollectionRepository.GetAsync(s => s.CollectionUnitId == smallCollectionPoints.CollectionUnitId);
+			var smallPoint = await _unitOfWork.CollectionUnits.GetAsync(
+				x => x.CollectionUnitId == smallCollectionPoints.CollectionUnitId && x.Users.Any(u => u.Role.Name == UserRole.AdminWarehouse.ToString()),
+				includeProperties: "Users,Users.Role"
+			);
 			if (smallPoint == null) throw new AppException("Không tìm thấy kho", 404);
-			var statusEnum = StatusEnumHelper.GetValueFromDescription<CollectionUnitStatus>(smallCollectionPoints.Status).ToString();
+			var adminUser = smallPoint?.Users.FirstOrDefault(u => u.Role.Name == UserRole.AdminWarehouse.ToString());
+			if (adminUser == null) throw new AppException("Không tìm thấy tài khoản quản trị kho", 404);
+			adminUser.Email = email;
+			adminUser.Phone = phone;
 			smallPoint.Name = smallCollectionPoints.Name;
 			smallPoint.Address = smallCollectionPoints.Address;
 			smallPoint.Latitude = smallCollectionPoints.Latitude;
 			smallPoint.Longitude = smallCollectionPoints.Longitude;
-			smallPoint.Status = statusEnum.ToString();
+			smallPoint.Status = smallCollectionPoints.Status.ToString();
 			smallPoint.CompanyId = smallCollectionPoints.CompanyId;
 			smallPoint.OpenTime = smallCollectionPoints.OpenTime;
+			smallPoint.MaxCapacity = smallCollectionPoints.MaxCapacity;
 			_unitOfWork.CollectionUnits.Update(smallPoint);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -257,6 +268,91 @@ namespace ElecWasteCollection.Application.Services
 			_unitOfWork.CollectionUnits.Update(collectionUnit);
 			await _unitOfWork.SaveAsync();
 			return true;
+		}
+		public async Task<byte[]> ExportSmallCollectionPointToExcelAsync(string id)
+		{
+			var point = await _unitOfWork.CollectionUnits.GetAsync(
+				x => x.CollectionUnitId == id && x.Users.Any(u => u.Role.Name == UserRole.AdminWarehouse.ToString()),
+				includeProperties: "Users,Users.Role"
+			);
+
+			if (point == null) throw new AppException("Không tìm thấy đơn vị thu gom", 404);
+
+			var adminUser = point.Users.FirstOrDefault();
+
+			using (var workbook = new XLWorkbook())
+			{
+				var worksheet = workbook.Worksheets.Add("CollectionUnits");
+
+				string[] headers = {
+			"STT", "Mã đơn vị thu gom", "Tên đơn vị thu gom", "Địa chỉ", "Email",
+			"Số điện thoại", "Giờ mở cửa", "Sức chứa tối đa", "Mã công ty", "Tình trạng"
+		};
+
+				for (int i = 0; i < headers.Length; i++)
+				{
+					var cell = worksheet.Cell(1, i + 1);
+					cell.Value = headers[i];
+					cell.Style.Font.Bold = true;
+					cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2E75B6");
+					cell.Style.Font.FontColor = XLColor.White;
+					cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+					cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				}
+
+				worksheet.Cell(2, 1).Value = 1; // STT
+				worksheet.Cell(2, 2).Value = point.CollectionUnitId;
+				worksheet.Cell(2, 3).Value = point.Name;
+				worksheet.Cell(2, 4).Value = point.Address;
+
+				worksheet.Cell(2, 5).Value = adminUser?.Email ?? "Chưa có dữ liệu";
+				worksheet.Cell(2, 6).Value = adminUser?.Phone ?? "Chưa có dữ liệu";
+
+				worksheet.Cell(2, 7).Value = point.OpenTime;
+				worksheet.Cell(2, 8).Value = point.MaxCapacity;
+				worksheet.Cell(2, 9).Value = point.CompanyId;
+
+				// Map Status theo đúng logic Import của bạn
+				string statusText = "Không hoạt động";
+				if (point.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString())
+					statusText = "Còn hoạt động";
+				else if (point.Status == CollectionUnitStatus.BAO_TRI.ToString())
+					statusText = "Bảo trì";
+
+				worksheet.Cell(2, 10).Value = statusText;
+
+				// 4. Thêm bảng chú thích (Legend) ở cột L
+				// Tạo tiêu đề bảng chú thích
+				var legendHeader = worksheet.Cell(1, 12);
+				legendHeader.Value = "Trạng thái hợp lệ";
+				legendHeader.Style.Font.Bold = true;
+				legendHeader.Style.Fill.BackgroundColor = XLColor.FromHtml("#2E75B6");
+				legendHeader.Style.Font.FontColor = XLColor.White;
+				legendHeader.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+				// Các giá trị hợp lệ cho cột Tình trạng
+				worksheet.Cell(2, 12).Value = "Còn hoạt động";
+				worksheet.Cell(3, 12).Value = "Không hoạt động";
+
+				// Định dạng viền cho bảng chú thích
+				var legendRange = worksheet.Range("L1:L4");
+				legendRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				legendRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+				legendRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+				worksheet.Column(12).Width = 20;
+
+				// 5. Căn chỉnh bảng chính và định dạng
+				worksheet.Columns(1, 10).AdjustToContents();
+				var dataRange = worksheet.Range("A1:J2");
+				dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+				using (var stream = new MemoryStream())
+				{
+					workbook.SaveAs(stream);
+					return stream.ToArray();
+				}
+			}
 		}
 	}
 }

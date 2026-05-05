@@ -11,7 +11,7 @@ namespace ElecWasteCollection.Application.IServices
 	public interface ICollectionUnitService
     {
 		Task<bool> AddNewSmallCollectionPoint(CollectionUnit smallCollectionPoints);
-		Task<bool> UpdateSmallCollectionPoint(CollectionUnit smallCollectionPoints);
+		Task<bool> UpdateSmallCollectionPoint(CollectionUnit smallCollectionPoints, string email, string phone);
 
 		Task<bool> DeleteSmallCollectionPoint(string smallCollectionPointId);
 
@@ -19,13 +19,14 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<SmallCollectionPointsResponse> GetSmallCollectionById(string smallCollectionPointId);
 
-		Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(CollectionUnit smallCollectionPoints, string adminUsername, string adminPassword);
+		Task<ImportResult> CheckAndUpdateSmallCollectionPointAsync(CollectionUnit smallCollectionPoints, string adminUsername, string adminPassword, string email, string phone);
 
 		Task<PagedResultModel<SmallCollectionPointsResponse>> GetPagedSmallCollectionPointsAsync(SmallCollectionSearchModel model);
 
 		Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointActive();
 		Task<bool> UnActiveCollectionUnit(string collectionUnitId);
 		Task<bool> ActiveCollectionUnit(string collectionUnitId);
+		Task<byte[]> ExportSmallCollectionPointToExcelAsync(string id);
 
 	}
 }

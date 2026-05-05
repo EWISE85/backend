@@ -6,6 +6,7 @@ using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using ElecWasteCollection.Application.Helpers;
 using ElecWasteCollection.Application.Helper;
+using ClosedXML.Excel;
 
 namespace ElecWasteCollection.Application.Services
 {
@@ -57,11 +58,10 @@ namespace ElecWasteCollection.Application.Services
 
 				if (existingCompany != null)
 				{
-					var statusEnum = StatusEnumHelper.GetValueFromDescription<CompanyStatus>(importData.Status);
 					existingCompany.Name = importData.Name;
 					existingCompany.Address = importData.Address;
 					existingCompany.Phone = importData.Phone;
-					existingCompany.Status = statusEnum.ToString();
+					existingCompany.Status = importData.Status;
 					existingCompany.CompanyEmail = importData.CompanyEmail;
 					existingCompany.Updated_At = DateTime.UtcNow;
 					_unitOfWork.Companies.Update(existingCompany);
@@ -276,6 +276,89 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.SaveAsync();
 			return true;
 
+		}
+		public async Task<byte[]> ExportCompanyToExcelAsync(string companyId)
+		{
+			// 1. Lấy dữ liệu công ty
+			var company = await _unitOfWork.Companies.GetAsync(c => c.CompanyId == companyId);
+			if (company == null) throw new AppException("Không tìm thấy công ty", 404);
+
+			using (var workbook = new XLWorkbook())
+			{
+				var worksheet = workbook.Worksheets.Add("Company");
+
+				// 2. Tạo Header (Dòng 1) theo đúng file mẫu
+				string[] headers = { "STT", "Mã công ty", "Tên công ty", "Email", "Số điện thoại", "Địa chỉ", "Loại công ty", "Tình trạng" };
+				for (int i = 0; i < headers.Length; i++)
+				{
+					var cell = worksheet.Cell(1, i + 1);
+					cell.Value = headers[i];
+					cell.Style.Font.Bold = true;
+					cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2E75B6"); // Màu xanh giống file mẫu
+					cell.Style.Font.FontColor = XLColor.White;
+					cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+				}
+
+				// 3. Đổ dữ liệu (Dòng 2)
+				worksheet.Cell(2, 1).Value = 1; // STT
+				worksheet.Cell(2, 2).Value = company.CompanyId;
+				worksheet.Cell(2, 3).Value = company.Name;
+				worksheet.Cell(2, 4).Value = company.CompanyEmail;
+				worksheet.Cell(2, 5).Value = company.Phone;
+				worksheet.Cell(2, 6).Value = company.Address;
+
+				worksheet.Cell(2, 7).Value = company.CompanyType == CompanyType.CTY_TAI_CHE.ToString()
+											? "Công ty tái chế"
+											: "Công ty thu gom";
+
+				worksheet.Cell(2, 8).Value = company.Status == CompanyStatus.DANG_HOAT_DONG.ToString()
+											? "Còn hoạt động"
+											: "Ngưng hoạt động";
+
+				// 4. Căn chỉnh định dạng
+				worksheet.Columns().AdjustToContents();
+				worksheet.RangeUsed().Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				worksheet.RangeUsed().Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+				worksheet.Cell(1, 10).Value = "Loại công ty";
+				worksheet.Cell(1, 11).Value = "Trạng thái";
+
+				// Các giá trị tùy chọn (Bắt đầu từ Hàng 2)
+				worksheet.Cell(2, 10).Value = "Công ty thu gom";
+				worksheet.Cell(3, 10).Value = "Công ty tái chế";
+
+				worksheet.Cell(2, 11).Value = "Còn hoạt động";
+				worksheet.Cell(3, 11).Value = "Ngưng hoạt động";
+				var legendHeader = worksheet.Range("J1:K1");
+				legendHeader.Style.Font.Bold = true;
+				legendHeader.Style.Font.FontColor = XLColor.White;
+				legendHeader.Style.Fill.BackgroundColor = XLColor.FromHtml("#2E75B6"); 
+				legendHeader.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+				legendHeader.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				legendHeader.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+				var typeBody = worksheet.Range("J2:J3");
+				typeBody.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				typeBody.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+				typeBody.Style.Fill.BackgroundColor = XLColor.FromHtml("#D9E1F2"); // Màu xanh nhạt
+				typeBody.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+				// --- FORMAT VÙNG DỮ LIỆU TRẠNG THÁI (K2:K3) ---
+				var statusBody = worksheet.Range("K2:K3");
+				statusBody.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				statusBody.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+				statusBody.Style.Fill.BackgroundColor = XLColor.FromHtml("#E2EFDA"); // Màu xanh lá nhạt
+				statusBody.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+				// Tự động giãn độ rộng cột để nhìn rõ nội dung chú thích
+				worksheet.Column(10).Width = 20;
+				worksheet.Column(11).Width = 20;
+				using (var stream = new MemoryStream())
+				{
+					workbook.SaveAs(stream);
+					return stream.ToArray();
+				}
+			}
 		}
 	}
 }

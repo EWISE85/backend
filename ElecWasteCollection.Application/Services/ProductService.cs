@@ -1066,7 +1066,7 @@ namespace ElecWasteCollection.Application.Services
 
             return true;
         }
-        public async Task<bool> AssignQRCodeAndAutoSyncAsync(Guid productId, string qrCode)
+        public async Task<bool> AssignQRCodeAndAutoSyncAsync(Guid productId, string qrCode, double? point)
         {
             var product = await _unitOfWork.Products.GetAsync(
                 p => p.ProductId == productId
@@ -1083,13 +1083,13 @@ namespace ElecWasteCollection.Application.Services
 
             product.QRCode = qrCode;
             product.Status = ProductStatus.NHAP_KHO.ToString();
-
-            var pointTransaction = new CreatePointTransactionModel
+			double pointToSave = point ?? post.EstimatePoint;
+			var pointTransaction = new CreatePointTransactionModel
             {
                 UserId = product.UserId,
                 ProductId = product.ProductId,
-                Point = post.EstimatePoint,
-                Desciption = "Hệ thống tự động cộng điểm khi gắn mã QR"
+                Point = pointToSave,
+                Desciption = "Sản phẩm của bạn đã được về tới đơn vị thu gom"
             };
             await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
 
