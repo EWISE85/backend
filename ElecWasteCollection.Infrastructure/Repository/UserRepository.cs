@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Domain.Entities;
+﻿using ElecWasteCollection.Application.Helpers;
+using ElecWasteCollection.Domain.Entities;
 using ElecWasteCollection.Domain.IRepository;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -60,6 +61,71 @@ namespace ElecWasteCollection.Infrastructure.Repository
 				.ToListAsync();
 
 			return (users, totalCount);
+		}
+		public Task<(List<User> Items, int TotalItems)> GetUsersByPointRangeAsync(double minPoint, double maxPoint, int page, int limit)
+		{
+			var query = _dbSet.AsNoTracking()
+				.Include(u => u.Role)
+				.Where(u => u.Status == UserStatus.DANG_HOAT_DONG.ToString() && u.Points >= minPoint && u.Points <= maxPoint);
+
+			var totalItems = query.Count();
+
+			var items = query
+				.OrderByDescending(u => u.CreateAt)
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToList();
+
+			return Task.FromResult((items, totalItems));
+		}
+
+		public async Task<(List<User> Items, int TotalItems)> GetUsersByRadiusAsync(double warehouseLat, double warehouseLng, double radiusKm, int page, int limit)
+		{
+			double latDelta = radiusKm / 111.0;
+			double lngDelta = radiusKm / (111.0 * Math.Cos(warehouseLat * Math.PI / 180.0));
+
+			double minLat = warehouseLat - latDelta;
+			double maxLat = warehouseLat + latDelta;
+			double minLng = warehouseLng - lngDelta;
+			double maxLng = warehouseLng + lngDelta;
+
+			var potentialUsers = await _dbSet.AsNoTracking()
+								.Include(u => u.Role)
+								.Include(u => u.UserAddresses.Where(a => a.isDefault == true))
+								.Where(u => u.Status == UserStatus.DANG_HOAT_DONG.ToString())
+								.Where(u => u.UserAddresses.Any(a =>
+										a.isDefault == true &&
+										a.Iat.HasValue && a.Ing.HasValue &&
+										a.Iat.Value >= minLat && a.Iat.Value <= maxLat &&
+										a.Ing.Value >= minLng && a.Ing.Value <= maxLng))
+								.ToListAsync();
+
+			var validUsers = new List<User>();
+
+			foreach (var user in potentialUsers)
+			{
+				var defaultAddress = user.UserAddresses.FirstOrDefault(a => a.isDefault);
+				if (defaultAddress != null && defaultAddress.Iat.HasValue && defaultAddress.Ing.HasValue)
+				{
+					double distance = GeoHelper.DistanceKm(
+						warehouseLat, warehouseLng,
+						defaultAddress.Iat.Value, defaultAddress.Ing.Value);
+
+					if (distance <= radiusKm)
+					{
+						validUsers.Add(user);
+					}
+				}
+			}
+
+			int totalItems = validUsers.Count;
+
+			var pagedItems = validUsers
+				.OrderByDescending(u => u.CreateAt)
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToList();
+			return (pagedItems, totalItems);
 		}
 	}
 }

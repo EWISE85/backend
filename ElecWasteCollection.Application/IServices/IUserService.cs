@@ -31,7 +31,8 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<bool> UpdatePointForUser(Guid userId, double pointToAdd);
 		Task<UserPointModel> GetPointByUserId(Guid userId);
-
+		Task<PagedResultModel<UserResponse>> FilterUserByRadius(string CollectionUnitId, double km, int page = 1, int limit = 10);
+		Task<PagedResultModel<UserResponse>> FilterUserByPoint(double minPoint, double maxPoint, int page = 1, int limit = 10);
 
 	}
 }
