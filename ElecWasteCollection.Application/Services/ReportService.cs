@@ -59,7 +59,7 @@ namespace ElecWasteCollection.Application.Services
 			var adminSystem = await _unitOfWork.Users.GetAsync(u => u.Role.Name == UserRole.Admin.ToString(), includeProperties: "Role");
 			await _webNotificationService.SendNotificationAsync(
 	userId: adminSystem.UserId.ToString(),
-	title: "Báo cáo mới",
+	title: "Phản ánh mới",
 	message: "Có một phản ánh mới đang chờ được xử lý.",
 	type: "PENDING_REPORT"
 	//data: new { PostId = newPost.PostId } // Gửi kèm ID để Admin nhấn vào là mở đúng bài đó
