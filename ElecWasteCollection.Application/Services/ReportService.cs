@@ -18,12 +18,14 @@ namespace ElecWasteCollection.Application.Services
 		private readonly IUnitOfWork _unitOfWork;
 		private readonly IReportRepository _reportRepository;
 		private readonly INotificationService _notificationService;
+		private readonly IWebNotificationService _webNotificationService;
 
-		public ReportService(IUnitOfWork unitOfWork, IReportRepository reportRepository, INotificationService notificationService)
+		public ReportService(IUnitOfWork unitOfWork, IReportRepository reportRepository, INotificationService notificationService, IWebNotificationService webNotificationService)
 		{
 			_unitOfWork = unitOfWork;
 			_reportRepository = reportRepository;
 			_notificationService = notificationService;
+			_webNotificationService = webNotificationService;
 		}
 
 		public async Task<bool> AnswerReport(Guid reportId, string answerMessage)
@@ -54,6 +56,23 @@ namespace ElecWasteCollection.Application.Services
 				Status = ReportStatus.DANG_XU_LY.ToString()
 			};
 			await _unitOfWork.UserReports.AddAsync(newReport);
+			var adminSystem = await _unitOfWork.Users.GetAsync(u => u.Role.Name == UserRole.Admin.ToString(), includeProperties: "Role");
+			await _webNotificationService.SendNotificationAsync(
+	userId: adminSystem.UserId.ToString(),
+	title: "Báo cáo mới",
+	message: "Có một phản ánh mới đang chờ được xử lý.",
+	type: "PENDING_REPORT"
+	//data: new { PostId = newPost.PostId } // Gửi kèm ID để Admin nhấn vào là mở đúng bài đó
+);
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = adminSystem.UserId,
+				Title = "Báo cáo mới",
+				Body = "Có một phản ánh mới đang chờ được xử lý.",
+				Type = NotificationType.System.ToString(),
+				CreatedAt = DateTime.UtcNow
+			};
 			return await _unitOfWork.SaveAsync() > 0;
 		}
 
