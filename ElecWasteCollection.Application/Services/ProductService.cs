@@ -575,6 +575,8 @@ namespace ElecWasteCollection.Application.Services
 			return new ProductDetail
 			{
 				ProductId = product.ProductId,
+				BrandId = product.BrandId,
+				CategoryId = product.CategoryId,
 				CategoryName = product.Category?.Name ?? "Không rõ",
 				BrandName = product.Brand?.Name ?? "Không rõ",
 				Description = product.Description,
