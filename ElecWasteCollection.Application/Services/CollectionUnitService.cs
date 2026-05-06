@@ -182,11 +182,13 @@ namespace ElecWasteCollection.Application.Services
 
 		}
 
-		public async Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointActive()
+		public async Task<PagedResultModel<SmallCollectionPointsResponse>> GetSmallCollectionPointActive(string? categoryName, int page, int limit)
 		{
-			var smallPoints = await _smallCollectionRepository.GetAllAsync(s => s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString(),
-				includeProperties: "Company.CompanyRecyclingCategories.Category.SubCategories");
-			return smallPoints.Select(point => new SmallCollectionPointsResponse
+			// 1. Gọi Repo lấy data gốc
+			var (items, totalCount) = await _smallCollectionRepository.GetPagedActiveCollectionPointsAsync(page, limit, categoryName);
+
+			// 2. Map sang Response Model
+			var responseItems = items.Select(point => new SmallCollectionPointsResponse
 			{
 				Id = point.CollectionUnitId,
 				CompanyId = point.CompanyId,
@@ -207,6 +209,9 @@ namespace ElecWasteCollection.Application.Services
 						Name = sub.Name
 					}).ToList() ?? new List<CategoryModel>()
 			}).ToList();
+
+			// 3. Đóng gói kết quả phân trang
+			return new PagedResultModel<SmallCollectionPointsResponse>(responseItems,page,limit, totalCount);
 		}
 
 		public async Task<List<SmallCollectionPointsResponse>> GetSmallCollectionPointByCompanyId(string companyId)

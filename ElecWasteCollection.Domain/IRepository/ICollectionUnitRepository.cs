@@ -11,5 +11,9 @@ namespace ElecWasteCollection.Domain.IRepository
 	{
 		Task<(List<CollectionUnit> Items, int TotalCount)> GetPagedAsync(string? companyId,string? status,int page,int limit);
 		Task<string?> GetScpNameAsync(string scpId);
-    }
+		Task<(List<CollectionUnit> Items, int TotalCount)> GetPagedActiveCollectionPointsAsync(
+	int page,
+	int limit,
+	string? categoryName);
+	}
 }

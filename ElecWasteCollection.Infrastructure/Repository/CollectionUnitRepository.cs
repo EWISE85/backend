@@ -47,5 +47,37 @@ namespace ElecWasteCollection.Infrastructure.Repository
                 .Select(s => s.Name)
                 .FirstOrDefaultAsync();
         }
-    }
+		public async Task<(List<CollectionUnit> Items, int TotalCount)> GetPagedActiveCollectionPointsAsync(
+	int page,
+	int limit,
+	string? categoryName)
+		{
+			var query = _dbSet.AsNoTracking()
+				.Include(s => s.Company)
+					.ThenInclude(c => c.CompanyRecyclingCategories)
+						.ThenInclude(crc => crc.Category)
+							.ThenInclude(cat => cat.SubCategories)
+				.Where(s => s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString())
+				.AsQueryable();
+
+			if (!string.IsNullOrWhiteSpace(categoryName))
+			{
+				var searchLower = categoryName.ToLower();
+				query = query.Where(s => s.Company.CompanyRecyclingCategories
+					.Any(crc => crc.Category.SubCategories
+						.Any(sub => sub.Name.ToLower().Contains(searchLower)
+									&& sub.Status == CategoryStatus.HOAT_DONG.ToString())));
+			}
+
+			int totalCount = await query.CountAsync();
+
+			var items = await query
+				.OrderByDescending(s => s.CollectionUnitId) // Nên có OrderBy khi dùng Skip/Take
+				.Skip((page - 1) * limit)
+				.Take(limit)
+				.ToListAsync();
+
+			return (items, totalCount);
+		}
+	}
 }
