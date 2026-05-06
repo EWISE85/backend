@@ -33,6 +33,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task NotifyCollectorsScheduleConfirmedAsync(IEnumerable<(Guid CollectorId, DateOnly Date, string GroupCode, string VehiclePlate)> collectorSchedules);
 		Task NotifyPointAdjustmentAsync(Guid userId, double delta, double newPointValue, string reason);
 		Task NotifyScheduleEmergencyConfirmedAsync(Dictionary<Guid, (DateOnly Date, string Time)> userSchedules);
+		Task NotifyUserReceivePoint(Guid userId, double point);
 
     }
 }

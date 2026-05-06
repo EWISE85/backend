@@ -336,7 +336,9 @@ namespace ElecWasteCollection.Application.Services
                 await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 
                 await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
-            }
+
+				await _notificationService.NotifyUserReceivePoint(product.UserId, pointToSave);
+			}
 
             await _unitOfWork.SaveAsync();
 
