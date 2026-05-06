@@ -73,9 +73,9 @@ namespace ElecWasteCollection.API.Controllers
 		}
 
 		[HttpGet("active")]
-		public async Task<IActionResult> GetActiveSmallCollectionPoints()
+		public async Task<IActionResult> GetActiveSmallCollectionPoints([FromQuery] string? categoryName, [FromQuery] int page = 1 , [FromQuery] int limit = 10)
 		{
-			var result = await _smallCollectionService.GetSmallCollectionPointActive();
+			var result = await _smallCollectionService.GetSmallCollectionPointActive(categoryName,page,limit);
 			return Ok(result);
 		}
 		[HttpPatch("un-active/{collectionUnitId}")]
