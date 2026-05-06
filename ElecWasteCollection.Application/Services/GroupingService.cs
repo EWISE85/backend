@@ -798,12 +798,24 @@ namespace ElecWasteCollection.Application.Services
             return availableVehicles;
         }
 
+        //private string GetCompanyInitials(string companyName)
+        //{
+        //    if (string.IsNullOrWhiteSpace(companyName)) return "CORP";
+
+        //    var words = companyName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        //    var initials = words.Select(w => w[0]).Take(3).ToArray();
+        //    return new string(initials).ToUpper();
+        //}
         private string GetCompanyInitials(string companyName)
         {
             if (string.IsNullOrWhiteSpace(companyName)) return "CORP";
 
-            var words = companyName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            var initials = words.Select(w => w[0]).Take(3).ToArray();
+            var parts = companyName.Split('-', StringSplitOptions.RemoveEmptyEntries);
+            var targetPart = parts.Length > 1 ? parts.Last().Trim() : companyName;
+
+            var words = targetPart.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            var initials = words.Select(w => w[0]).ToArray();
+
             return new string(initials).ToUpper();
         }
         private async Task<Shifts> FindAndAssignUniqueShiftAsync(string vehicleId, DateOnly date, string pointId)
