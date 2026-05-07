@@ -124,6 +124,19 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
         private async Task<AssignProductResult> AssignProductsLogicInternal(IUnitOfWork unitOfWork, IMapboxDistanceCacheService distanceCache, List<Guid> productIds, DateOnly workDate, List<string>? targetCompanyIds)
         {
             var result = new AssignProductResult();
+
+            // 1. LẤY LỊCH NGHỈ CỦA NGÀY workDate
+            var offDays = await unitOfWork.CollectionOffDays.GetAllAsync(x => x.OffDate == workDate);
+
+            // Tập hợp ID công ty nghỉ toàn bộ
+            var offCompanyIds = offDays.Where(x => x.CollectionUnitId == null)
+                                       .Select(x => x.CompanyId).ToHashSet();
+
+            // Tập hợp ID các kho lẻ nghỉ (CollectionUnitId IS NOT NULL)
+            var offPointIds = offDays.Where(x => x.CollectionUnitId != null)
+                                     .Select(x => x.CollectionUnitId).ToHashSet();
+
+
             var attIdMap = await GetAttributeIdMapAsync(unitOfWork);
             var allCategories = await unitOfWork.Categories.GetAllAsync();
             var categoryMap = allCategories.ToDictionary(c => c.CategoryId, c => c.ParentCategoryId ?? c.CategoryId);
@@ -133,9 +146,15 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
             var recyclingCompanies = allCompanies.Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()).ToList();
 
             // Tách nhóm Primary và Fallback
+            //var allColCompanies = allCompanies
+            //    .Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString() && c.Status == CompanyStatus.DANG_HOAT_DONG.ToString())
+            //    .ToList();
+
             var allColCompanies = allCompanies
-                .Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString() && c.Status == CompanyStatus.DANG_HOAT_DONG.ToString())
-                .ToList();
+                .Where(c => c.CompanyType == CompanyType.CTY_TAI_CHE.ToString()
+               && c.Status == CompanyStatus.DANG_HOAT_DONG.ToString()
+               && !offCompanyIds.Contains(c.CompanyId))
+               .ToList();
 
             var primaryCompanies = allColCompanies.Where(c => !c.IsFallback).OrderBy(c => c.Priority).ToList();
             var fallbackComp = allColCompanies.FirstOrDefault(c => c.IsFallback);
@@ -208,7 +227,12 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                 var candidates = new List<ProductAssignCandidate>();
                 foreach (var rc in rangeConfigs)
                 {
-                    foreach (var sp in rc.CompanyEntity.CollectionUnits.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
+                    var activeUnits = rc.CompanyEntity.CollectionUnits
+                .Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()
+                       && !offPointIds.Contains(s.CollectionUnitId));
+
+                    //foreach (var sp in rc.CompanyEntity.CollectionUnits.Where(s => s.Status == CompanyStatus.DANG_HOAT_DONG.ToString()))
+                    foreach (var sp in activeUnits)
                     {
                         bool supportsAll = true;
                         foreach (var prod in groupProds)
@@ -229,7 +253,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     }
                 }
 
-                // Quyết định chọn kho (Primary hoặc Fallback)
+                // Quyết định chọn kho 
                 ProductAssignCandidate? chosenCandidate = null;
                 string assignNote = "";
 
