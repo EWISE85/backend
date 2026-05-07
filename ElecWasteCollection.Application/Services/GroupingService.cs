@@ -845,6 +845,7 @@ namespace ElecWasteCollection.Application.Services
                             string.IsNullOrEmpty(s.Vehicle_Id) &&
                             !busyCollectorIds.Contains(s.CollectorId) &&
                             s.Collector != null &&
+                            s.Collector.Status == UserStatus.DANG_HOAT_DONG.ToString() &&
                             string.Equals(s.Collector.CollectionUnitId, pointIdStr, StringComparison.OrdinalIgnoreCase))
                 .FirstOrDefault();
 
