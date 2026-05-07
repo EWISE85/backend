@@ -59,5 +59,15 @@ namespace ElecWasteCollection.API.Controllers
 			var result = await _vehicleService.PagedVehicles(model);
 			return Ok(result);
 		}
+		[HttpGet("export/collection-unit/{collectionUntId}")]
+		public async Task<IActionResult> ExportVehiclesByCollectionUnit(string collectionUntId)
+		{
+			var fileContent = await _vehicleService.ExportVehiclesToExcelAsync(collectionUntId);
+			if (fileContent == null)
+			{
+				return NotFound();
+			}
+			return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"Vehicles_CollectionUnit_{collectionUntId}.xlsx");
+		}
 	}
 }

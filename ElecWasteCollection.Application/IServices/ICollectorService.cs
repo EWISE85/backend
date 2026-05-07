@@ -32,6 +32,6 @@ namespace ElecWasteCollection.Application.IServices
 
 		Task<bool> UnActiveCollector(Guid collectorId);
 		Task<bool> ActiveCollector(Guid collectorId);
-
+		Task<byte[]> ExportCollectorsToExcelAsync(string collectionUnitId);
 	}
 }

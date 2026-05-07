@@ -134,6 +134,18 @@ namespace ElecWasteCollection.API.Controllers
 			}
 			return Ok(new { message = "Collector active successfully." });
 		}
+		[HttpGet("export/collection-unit/{id}")]
+		public async Task<IActionResult> ExportCollectorsToExcel(string id)
+		{
+			var fileContent = await _collectorService.ExportCollectorsToExcelAsync(id);
+			if (fileContent == null || fileContent.Length == 0)
+			{
+				return NotFound("No data to export.");
+			}
 
+			var fileName = $"Collectors_{id}_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx";
+			return File(fileContent, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", fileName);
 		}
+
+	}
 }

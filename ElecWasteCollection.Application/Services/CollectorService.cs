@@ -1,4 +1,5 @@
-﻿using ElecWasteCollection.Application.Exceptions;
+﻿using ClosedXML.Excel;
+using ElecWasteCollection.Application.Exceptions;
 using ElecWasteCollection.Application.Helper;
 using ElecWasteCollection.Application.IServices;
 using ElecWasteCollection.Application.Model;
@@ -30,7 +31,7 @@ namespace ElecWasteCollection.Application.Services
 		public async Task<ImportResult> CheckAndUpdateCollectorAsync(User collector, string collectorUsername, string password)
 		{
 			var result = new ImportResult();
-			var existingCollector = await _collectorRepository.GetAsync(c => c.UserId == collector.UserId);
+			var existingCollector = await _collectorRepository.GetAsync(c => c.CollectorCode == collector.CollectorCode);
 			if (existingCollector != null)
 			{
 				await UpdateCollector(collector);
@@ -169,16 +170,15 @@ namespace ElecWasteCollection.Application.Services
 
 		public async Task<bool> UpdateCollector(User collector)
 		{
-			var collectorToUpdate = await _collectorRepository.GetAsync(c => c.CollectorCode == collector.CollectorCode);
+			var collectorToUpdate = await _unitOfWork.Users.GetAsync(c => c.CollectorCode == collector.CollectorCode);
 			if (collectorToUpdate == null) throw new AppException("Không tìm thấy người thu gom", 404);
-			var status = StatusEnumHelper.GetValueFromDescription<UserStatus>(collector.Status);
 			collectorToUpdate.Name = collector.Name;
 			collectorToUpdate.Email = collector.Email;
 			collectorToUpdate.Phone = collector.Phone;
 			collectorToUpdate.Avatar = collector.Avatar;
 			collectorToUpdate.CompanyId = collector.CompanyId;
 			collectorToUpdate.CollectionUnitId = collector.CollectionUnitId;
-			collectorToUpdate.Status = status.ToString();
+			collectorToUpdate.Status = collector.Status;
 			_unitOfWork.Users.Update(collectorToUpdate);
 			await _unitOfWork.SaveAsync();
 			return true;
@@ -344,6 +344,96 @@ namespace ElecWasteCollection.Application.Services
 			_unitOfWork.Users.Update(collector);
 			await _unitOfWork.SaveAsync();
 			return true;
+		}
+		public async Task<byte[]> ExportCollectorsToExcelAsync(string collectionUnitId)
+		{
+			// 1. Lấy danh sách Collector từ Database
+			// Giả định bạn lấy tất cả người dùng có Role là Collector
+			var collectors = await _unitOfWork.Users.GetAllAsync(
+				u => u.Role.Name == UserRole.Collector.ToString() && u.CollectionUnitId == collectionUnitId && !u.Name.StartsWith("Nhân viên khẩn cấp"),
+				includeProperties: "Role"
+			);
+
+			using (var workbook = new XLWorkbook())
+			{
+				var worksheet = workbook.Worksheets.Add("Collectors");
+
+				string[] headers = {
+			"STT",
+			"Mã nhân viên",
+			"Họ và tên",
+			"Email",
+			"Số điện thoại",
+			"Hình đại diện",
+			"Mã kho",
+			"Mã công ty",
+			"Tình trạng làm việc"
+		};
+
+				// 3. Định dạng Header
+				for (int i = 0; i < headers.Length; i++)
+				{
+					var cell = worksheet.Cell(1, i + 1);
+					cell.Value = headers[i];
+					cell.Style.Font.Bold = true;
+					cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#2E75B6");
+					cell.Style.Font.FontColor = XLColor.White;
+					cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+					cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				}
+
+				// 4. Đổ dữ liệu vào các dòng
+				int currentRow = 2;
+				int stt = 1;
+				foreach (var user in collectors)
+				{
+					worksheet.Cell(currentRow, 1).Value = stt++;
+					worksheet.Cell(currentRow, 2).Value = user.CollectorCode; // Mã COLL-2026-XXX
+					worksheet.Cell(currentRow, 3).Value = user.Name;
+					worksheet.Cell(currentRow, 4).Value = user.Email;
+					worksheet.Cell(currentRow, 5).Value = user.Phone;
+					worksheet.Cell(currentRow, 6).Value = user.Avatar; // Link ảnh hoặc để trống
+					worksheet.Cell(currentRow, 7).Value = user.CollectionUnitId; // Mã kho quản lý
+					worksheet.Cell(currentRow, 8).Value = user.CompanyId;
+
+					string statusText = (user.Status == UserStatus.DANG_HOAT_DONG.ToString())
+										? "Đang làm việc"
+										: "Nghỉ việc";
+					worksheet.Cell(currentRow, 9).Value = statusText;
+
+					currentRow++;
+				}
+
+				var legendHeader = worksheet.Cell(1, 11);
+				legendHeader.Value = "Trạng thái làm việc";
+				legendHeader.Style.Font.Bold = true;
+				legendHeader.Style.Fill.BackgroundColor = XLColor.FromHtml("#2E75B6");
+				legendHeader.Style.Font.FontColor = XLColor.White;
+				legendHeader.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+				worksheet.Cell(2, 11).Value = "Đang làm việc";
+				worksheet.Cell(3, 11).Value = "Nghỉ việc";
+
+				// Định dạng viền cho bảng chú thích
+				var legendRange = worksheet.Range("K1:K3");
+				legendRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				legendRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+				legendRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+				worksheet.Column(11).Width = 20;
+
+				// 6. Căn chỉnh và định dạng vùng dữ liệu chính (Cột A đến I)
+				worksheet.Columns(1, 9).AdjustToContents();
+				var dataRange = worksheet.Range(1, 1, Math.Max(currentRow - 1, 1), 9);
+				dataRange.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+				dataRange.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
+
+				// 7. Xuất file
+				using (var stream = new MemoryStream())
+				{
+					workbook.SaveAs(stream);
+					return stream.ToArray();
+				}
+			}
 		}
 	}
 }
