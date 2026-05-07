@@ -446,7 +446,8 @@ namespace ElecWasteCollection.Application.Services
 				pickUpDate: dateParam,
 				status: statusEnum,
 				page: page,
-				limit: limit
+				limit: limit,
+				collectorName: parameters.CollectorName
 			);
 
 			// 4. Map dữ liệu sang Model

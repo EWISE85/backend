@@ -230,6 +230,7 @@ namespace ElecWasteCollection.API
             builder.Services.AddHostedService<AutoGroupingWorker>();
 			builder.Services.AddHostedService<AutoSendNotificationReminderWorker>();
 			builder.Services.AddHostedService<CollectionUnitDailyReminderWorker>();
+			builder.Services.AddHostedService<PackageStatusBackgroundWorker>();
 
 			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>

@@ -15,7 +15,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 		}
 
-		public async Task<(List<CollectionRoutes> Items, int TotalCount)> GetPagedRoutesAsync(string? collectionPointId, DateOnly? pickUpDate, string? status, int page, int limit)
+		public async Task<(List<CollectionRoutes> Items, int TotalCount)> GetPagedRoutesAsync(string? collectionPointId, DateOnly? pickUpDate, string? status, int page, int limit, string? collectorName)
 		{
 			var query = _dbSet.AsNoTracking()
 				.AsSplitQuery()
@@ -51,7 +51,18 @@ namespace ElecWasteCollection.Infrastructure.Repository
 			{
 				query = query.Where(r => r.Status == status);
 			}
+			if (!string.IsNullOrEmpty(collectorName))
+			{
+				// Chuyển về viết thường để tìm kiếm không phân biệt hoa thường
+				string search = collectorName.ToLower().Trim();
 
+				query = query.Where(r =>
+					r.CollectionGroup != null &&
+					r.CollectionGroup.Shifts != null &&
+					r.CollectionGroup.Shifts.Collector != null &&
+					r.CollectionGroup.Shifts.Collector.Name.ToLower().Contains(search)
+				);
+			}
 			// 5. Đếm tổng (Chạy dưới DB)
 			var totalCount = await query.CountAsync();
 

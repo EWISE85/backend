@@ -47,7 +47,8 @@ namespace ElecWasteCollection.Infrastructure.Repository
 		{
 			var query = _dbSet.AsNoTracking()
 				.AsSplitQuery()
-				.Include(p => p.CollectionRoutes).ThenInclude(r => r.CollectionGroup).ThenInclude(g => g.Shifts).ThenInclude(s => s.Vehicle)
+				.Include(p => p.CollectionRoutes).ThenInclude(r => r.CollectionGroup).ThenInclude(g => g.Shifts)
+				//.ThenInclude(s => s.Vehicle)
 				.Include(p => p.Brand)
 				.Include(p => p.Category)
 				.Include(p => p.Images)
@@ -62,8 +63,9 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					r.CollectionDate <= toDate &&
 					r.CollectionGroup != null &&
 					r.CollectionGroup.Shifts != null &&
-					r.CollectionGroup.Shifts.Vehicle != null &&
-					r.CollectionGroup.Shifts.Vehicle.CollectionUnit == smallCollectionPointId
+					//r.CollectionGroup.Shifts.Vehicle != null &&
+					//r.CollectionGroup.Shifts.Vehicle.CollectionUnit == smallCollectionPointId
+					r.Product.CollectionUnitId == smallCollectionPointId
 				)
 			);
 

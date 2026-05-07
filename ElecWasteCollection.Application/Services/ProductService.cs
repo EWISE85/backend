@@ -336,7 +336,9 @@ namespace ElecWasteCollection.Application.Services
                 await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
 
                 await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
-            }
+
+				await _notificationService.NotifyUserReceivePoint(product.UserId, pointToSave);
+			}
 
             await _unitOfWork.SaveAsync();
 
@@ -595,7 +597,8 @@ namespace ElecWasteCollection.Application.Services
 				PickUpDate = route?.CollectionDate,
 				EstimatedTime = route?.EstimatedTime,
 				ChangedPointMessage = changedPointMessage,
-				RejectMessage = post?.RejectMessage ?? "Không có"
+				RejectMessage = post?.RejectMessage ?? "Không có",
+				CollectionRouterId = route?.CollectionRouteId
 			};
 		}
 		private async Task<ProductDetail> MapDraftProductToDetail(ProductDraftModel? draft, Post post, JsonSerializerOptions options)
@@ -1104,7 +1107,7 @@ namespace ElecWasteCollection.Application.Services
                 ProductStatusHistoryId = Guid.NewGuid(),
                 ProductId = product.ProductId,
                 ChangedAt = DateTime.UtcNow,
-                StatusDescription = $"Gắn QR: {qrCode}. Tự động đồng bộ điểm và CO2.",
+                StatusDescription = $"Sản phẩm của bạn đã được về đến đơn vị thu gom.",
                 Status = product.Status
             };
             await _unitOfWork.ProductStatusHistory.AddAsync(history);

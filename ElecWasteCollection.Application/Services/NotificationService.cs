@@ -576,5 +576,33 @@ namespace ElecWasteCollection.Application.Services
 
             await _unitOfWork.SaveAsync();
         }
-    }
+
+		public async Task NotifyUserReceivePoint(Guid userId, double point)
+		{
+			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
+			string title = "Bạn đã nhận được điểm!";
+			string body = $"Bạn đã nhận được {point} điểm từ việc quyên góp rác điện tử. Cảm ơn bạn đã góp phần bảo vệ môi trường!";
+			var dataPayload = new Dictionary<string, string>
+			{
+				{ "type", "POINT_RECEIVED" },
+				{ "point", point.ToString() }
+			};
+			if (userTokens != null && userTokens.Any())
+			{
+				var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+				await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+			}
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = userId,
+				Title = title,
+				Body = body,
+				IsRead = false,
+				CreatedAt = DateTime.UtcNow,
+				Type = NotificationType.System.ToString()
+			};
+			await _unitOfWork.Notifications.AddAsync(notification);
+		}
+	}
 }

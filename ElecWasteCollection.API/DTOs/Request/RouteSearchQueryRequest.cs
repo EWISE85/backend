@@ -10,5 +10,7 @@
 		public DateOnly? PickUpDate { get; set; }
 
 		public string? Status { get; set; }
+
+		public string? CollectorName { get; set; }
 	}
 }

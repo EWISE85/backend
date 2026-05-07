@@ -304,7 +304,7 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     if (chosenCandidate == null)
                     {
                         chosenCandidate = candidates.OrderBy(c => c.HaversineKm).First();
-                        assignNote = $"Phân bổ theo nhóm đối tác gần nhất (Vol: {totalGroupVol}m3)";
+                        assignNote = $"Phân bổ theo nhóm đối tác gần nhất";
                     }
                 }
 

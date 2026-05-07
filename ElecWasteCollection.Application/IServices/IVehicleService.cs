@@ -14,6 +14,6 @@ namespace ElecWasteCollection.Application.IServices
 		Task<PagedResultModel<VehicleModel>> PagedVehicles(VehicleSearchModel model);
 
 		Task<ImportResult> CheckAndUpdateVehicleAsync(CreateVehicleModel vehicle);
-
+		Task<byte[]> ExportVehiclesToExcelAsync(string collectionUnitId);
 	}
 }
