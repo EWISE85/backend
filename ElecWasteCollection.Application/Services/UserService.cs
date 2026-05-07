@@ -10,6 +10,7 @@ using System.Linq;
 using System.Security.Principal;
 using System.Text;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace ElecWasteCollection.Application.Services
@@ -162,8 +163,16 @@ namespace ElecWasteCollection.Application.Services
 			if (user == null) throw new AppException("User không tồn tại", 404);
 			user.Email = model.Email ?? user.Email;
 			user.Avatar = model.AvatarUrl ?? user.Avatar;
-			user.Phone = model.phoneNumber ?? user.Phone;
-			//user.Preferences = JsonSerializer.Serialize(model.Settings);
+			if (!string.IsNullOrEmpty(model.phoneNumber))
+			{
+				var vnPhoneRegex = @"^(0|\+84)(3|5|7|8|9)[0-9]{8}$";
+				if (!Regex.IsMatch(model.phoneNumber, vnPhoneRegex))
+				{
+					throw new AppException("Số điện thoại không đúng định dạng Việt Nam (phải gồm 10 số và đúng đầu số nhà mạng)", 400);
+				}
+
+				user.Phone = model.phoneNumber;
+			}
 			_unitOfWork.Users.Update(user);
 			await _unitOfWork.SaveAsync();
 			return true;
