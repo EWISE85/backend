@@ -1106,7 +1106,7 @@ namespace ElecWasteCollection.Application.Services
                 ProductStatusHistoryId = Guid.NewGuid(),
                 ProductId = product.ProductId,
                 ChangedAt = DateTime.UtcNow,
-                StatusDescription = $"Gắn QR: {qrCode}. Tự động đồng bộ điểm và CO2.",
+                StatusDescription = $"Sản phẩm của bạn đã được về đến đơn vị thu gom.",
                 Status = product.Status
             };
             await _unitOfWork.ProductStatusHistory.AddAsync(history);

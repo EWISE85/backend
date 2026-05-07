@@ -43,7 +43,8 @@ namespace ElecWasteCollection.API.Controllers
 				Limit = searchQueryRequest.Limit,
 				CollectionPointId = searchQueryRequest.CollectionPointId,
 				PickUpDate = searchQueryRequest.PickUpDate,
-				Status = searchQueryRequest.Status
+				Status = searchQueryRequest.Status,
+				CollectorName = searchQueryRequest.CollectorName
 			};
 			var routes = await _collectionRouteService.GetPagedRoutes(model);
 			return Ok(routes);
