@@ -597,7 +597,8 @@ namespace ElecWasteCollection.Application.Services
 				PickUpDate = route?.CollectionDate,
 				EstimatedTime = route?.EstimatedTime,
 				ChangedPointMessage = changedPointMessage,
-				RejectMessage = post?.RejectMessage ?? "Không có"
+				RejectMessage = post?.RejectMessage ?? "Không có",
+				CollectionRouterId = route?.CollectionRouteId
 			};
 		}
 		private async Task<ProductDetail> MapDraftProductToDetail(ProductDraftModel? draft, Post post, JsonSerializerOptions options)
