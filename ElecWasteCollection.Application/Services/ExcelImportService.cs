@@ -382,7 +382,7 @@ namespace ElecWasteCollection.Application.Services
 		private async Task ImportCollectorAsync(IXLWorksheet worksheet, ImportResult result)
 		{
 			int rowCount = worksheet.RowsUsed().Count();
-			for (int row = 2; row <= rowCount; row++) // Bỏ qua dòng tiêu đề
+			for (int row = 2; row <= rowCount; row++) 
 			{
 				var code = worksheet.Cell(row, 2).Value.ToString()?.Trim(); 
 				var name = worksheet.Cell(row, 3).Value.ToString()?.Trim();
@@ -401,11 +401,11 @@ namespace ElecWasteCollection.Application.Services
 					continue; // Nhảy sang dòng tiếp theo, không xử lý dòng này
 				}
 				// Map "Đang làm việc" -> Active
-				if (statusNormalized == "đang làm việc")
+				if (statusNormalized.Equals("Đang làm việc", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = UserStatus.DANG_HOAT_DONG.ToString(); // Hoặc UserStatus.Active.ToString()
 				}
-				else if (statusNormalized == "nghỉ việc" || statusNormalized == "ngưng hoạt động")
+				else if (statusNormalized.Equals("Nghỉ việc", StringComparison.OrdinalIgnoreCase))
 				{
 					statusToSave = UserStatus.KHONG_HOAT_DONG.ToString();
 				}
