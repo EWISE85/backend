@@ -9,7 +9,7 @@ namespace ElecWasteCollection.Domain.IRepository
 {
 	public interface ICollectionRouteRepository : IGenericRepository<CollectionRoutes>
 	{
-		Task<(List<CollectionRoutes> Items, int TotalCount)> GetPagedRoutesAsync(string? collectionPointId,DateOnly? pickUpDate,string? status,int page,int limit);
+		Task<(List<CollectionRoutes> Items, int TotalCount)> GetPagedRoutesAsync(string? collectionPointId, DateOnly? pickUpDate, string? status, int page, int limit, string? collectorName);
 		Task<List<CollectionRoutes>> GetRoutesByDateWithDetailsAsync(DateOnly pickUpDate);
 		Task<List<CollectionRoutes>> GetRoutesByDateAndPointWithDetailsAsync(DateOnly pickUpDate,string collectionPointId);
 		Task<CollectionRoutes?> GetRouteWithDetailsByIdAsync(Guid collectionRouteId);
