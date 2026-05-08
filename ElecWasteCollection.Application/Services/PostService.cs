@@ -1417,7 +1417,9 @@ namespace ElecWasteCollection.Application.Services
 				search: model.Search,
 				order: model.Order,
 				page: model.Page,
-				limit: model.Limit
+				limit: model.Limit,
+				startTime: model.StartDate,
+				endTime: model.EndDate
 			);
 
 			var summaryList = new List<PostSummaryModel>();

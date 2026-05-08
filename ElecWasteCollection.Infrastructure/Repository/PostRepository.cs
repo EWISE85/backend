@@ -76,22 +76,23 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 		//	return (items, totalCount);
 		//}
-		public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(string? status, string? search, string? order, int page, int limit)
+		public async Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(string? status, string? search, string? order, int page, int limit, DateOnly? startTime, DateOnly? endTime)
 		{
 			var query = _dbSet.AsNoTracking()
 				.Include(p => p.Sender)
 				.Include(p => p.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.Category).ThenInclude(c => c.ParentCategory)
-				//.Include(p => p.Product).ThenInclude(pr => pr.Images)
 				.Include(p => p.Product).ThenInclude(pr => pr.Brand)
 				.AsQueryable();
 
+			// 1. Filter theo status
 			if (!string.IsNullOrEmpty(status))
 			{
 				var trimmedStatus = status.Trim().ToLower();
 				query = query.Where(p => !string.IsNullOrEmpty(p.Status) && p.Status.ToLower() == trimmedStatus);
 			}
 
+			// 2. Filter theo search term
 			if (!string.IsNullOrEmpty(search))
 			{
 				string searchLower = search.ToLower();
@@ -102,6 +103,27 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					(p.Address != null && p.Address.ToLower().Contains(searchLower)));
 			}
 
+			if (startTime.HasValue)
+			{
+				// Chuyển DateOnly thành DateTime ở thời điểm 00:00:00 và set Kind là UTC
+				var startDateTime = DateTime.SpecifyKind(
+					startTime.Value.ToDateTime(TimeOnly.MinValue),
+					DateTimeKind.Utc
+				);
+				query = query.Where(p => p.Date >= startDateTime);
+			}
+
+			if (endTime.HasValue)
+			{
+				// Lấy < mốc 00:00:00 của ngày hôm sau và set Kind là UTC
+				var endDateTime = DateTime.SpecifyKind(
+					endTime.Value.AddDays(1).ToDateTime(TimeOnly.MinValue),
+					DateTimeKind.Utc
+				);
+				query = query.Where(p => p.Date < endDateTime);
+			}
+
+			// 4. Xử lý OrderBy
 			var choDuyetStatus = PostStatus.CHO_DUYET.ToString().ToLower();
 			var daDuyetStatus = PostStatus.DA_DUYET.ToString().ToLower();
 			var tuChoiStatus = PostStatus.DA_TU_CHOI.ToString().ToLower();
@@ -124,6 +146,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 					query = query.OrderByDescending(p => p.Date);
 			}
 
+			// 5. Execute Count và Paging
 			int totalCount = await query.CountAsync();
 
 			var items = await query

@@ -23,5 +23,7 @@ namespace ElecWasteCollection.Application.Model
 		
 
 		public string? Status { get; set; }
+		public DateOnly? StartDate { get; set; }
+		public DateOnly? EndDate { get; set; }
 	}
 }

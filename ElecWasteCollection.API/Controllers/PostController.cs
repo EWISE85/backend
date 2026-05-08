@@ -112,7 +112,6 @@ namespace ElecWasteCollection.API.Controllers
 		public async Task<IActionResult> GetPagedPosts(
 			[FromQuery] PostSearchQueryModel parameters)
 		{
-			// Gọi thẳng đến service, service sẽ lo toàn bộ logic
 			var pagedResult = await _postService.GetPagedPostsAsync(parameters);
 			return Ok(pagedResult);
 		}
