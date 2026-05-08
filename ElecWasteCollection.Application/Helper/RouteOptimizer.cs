@@ -67,11 +67,15 @@ namespace ElecWasteCollection.Application.Helpers
 
                     if (endMin <= startMin) { startMin = 0; endMin = horizon; }
 
-                    // Không được đến SỚM hơn giờ mở cửa
-                    timeDim.CumulVar(index).SetMin(startMin);
+                    //// Không được đến SỚM hơn giờ mở cửa
+                    //timeDim.CumulVar(index).SetMin(startMin);
 
-                    // NÊN đến trước giờ đóng cửa
-                    timeDim.SetCumulVarSoftUpperBound(index, endMin, 2000);
+                    //// NÊN đến trước giờ đóng cửa
+                    //timeDim.SetCumulVarSoftUpperBound(index, endMin, 2000);
+
+                    //timeDim.CumulVar(index).SetMax(endMin);
+                    long penalty = node.IsCritical ? 50_000_000_000 : 1_000_000_000;
+                    routing.AddDisjunction(new long[] { index }, penalty);
 
                     // KHÔNG ĐƯỢC BỎ ĐƠN
                     routing.AddDisjunction(new long[] { index }, 1_000_000_000);
@@ -118,11 +122,11 @@ namespace ElecWasteCollection.Application.Helpers
                         index = solution.Value(routing.NextVar(index));
                     }
 
-                    var missingIndices = allIndices.Except(optimizedIndices).ToList();
-                    if (missingIndices.Any())
-                    {
-                        optimizedIndices.AddRange(missingIndices);
-                    }
+                    //var missingIndices = allIndices.Except(optimizedIndices).ToList();
+                    //if (missingIndices.Any())
+                    //{
+                    //    optimizedIndices.AddRange(missingIndices);
+                    //}
 
                     return optimizedIndices;
                 }
@@ -145,6 +149,7 @@ namespace ElecWasteCollection.Application.Helpers
         public TimeOnly End { get; set; }
         public double Lat { get; set; }
         public double Lng { get; set; }
+        public bool IsCritical { get; set; }
         public List<PreAssignProduct> Tag { get; set; } = new List<PreAssignProduct>();
     }
 }
