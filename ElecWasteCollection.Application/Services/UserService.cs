@@ -161,9 +161,20 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var user = await _userRepository.GetAsync(u => u.UserId == model.UserId);
 			if (user == null) throw new AppException("User không tồn tại", 404);
-			user.Email = model.Email ?? user.Email;
+
+			if (!string.IsNullOrEmpty(model.Email) && model.Email != user.Email)
+			{
+				var existingEmail = await _userRepository.GetAsync(u => u.Email == model.Email);
+				if (existingEmail != null)
+				{
+					throw new AppException("Email này đã được sử dụng bởi tài khoản khác", 400);
+				}
+				user.Email = model.Email;
+			}
+
 			user.Avatar = model.AvatarUrl ?? user.Avatar;
-			if (!string.IsNullOrEmpty(model.phoneNumber))
+
+			if (!string.IsNullOrEmpty(model.phoneNumber) && model.phoneNumber != user.Phone)
 			{
 				var vnPhoneRegex = @"^(0|\+84)(3|5|7|8|9)[0-9]{8}$";
 				if (!Regex.IsMatch(model.phoneNumber, vnPhoneRegex))
@@ -171,10 +182,18 @@ namespace ElecWasteCollection.Application.Services
 					throw new AppException("Số điện thoại không đúng định dạng Việt Nam (phải gồm 10 số và đúng đầu số nhà mạng)", 400);
 				}
 
+				var existingPhone = await _userRepository.GetAsync(u => u.Phone == model.phoneNumber);
+				if (existingPhone != null)
+				{
+					throw new AppException("Số điện thoại này đã được sử dụng bởi tài khoản khác", 400);
+				}
+
 				user.Phone = model.phoneNumber;
 			}
+
 			_unitOfWork.Users.Update(user);
 			await _unitOfWork.SaveAsync();
+
 			return true;
 		}
 

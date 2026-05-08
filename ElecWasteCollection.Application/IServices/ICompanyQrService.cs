@@ -11,6 +11,6 @@ namespace ElecWasteCollection.Application.IServices
 	public interface ICompanyQrService
 	{
 		string GenerateQrCode(string companyId);
-		Task<CollectionCompanyResponse?> VerifyQrCodeAsync(string qrCode);
+		Task<CollectionCompanyResponse?> VerifyQrCodeAsync(string qrCode, string collectionUnitId);
 	}
 }

@@ -22,9 +22,9 @@ namespace ElecWasteCollection.API.Controllers
 			return Ok(new { QrCode = qrCode });
 		}
 		[HttpPost("Verify/{qrCode}")]
-		public async Task<IActionResult> VerifyQrCode(string qrCode)
+		public async Task<IActionResult> VerifyQrCode(string qrCode, [FromQuery] string collectionUnitId)
 		{
-			var company = await _companyQrService.VerifyQrCodeAsync(qrCode);
+			var company = await _companyQrService.VerifyQrCodeAsync(qrCode, collectionUnitId);
 			if (company == null)
 			{
 				return NotFound(new { Message = "Invalid or expired QR code." });
