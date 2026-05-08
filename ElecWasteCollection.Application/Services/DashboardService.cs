@@ -531,6 +531,34 @@ namespace ElecWasteCollection.Application.Services
 
             return new PagedResultModel<CollectionUnitDashboardModel>(data, page, limit, totalItems);
         }
+        public async Task<PostDashboardSummaryModel> GetPostDashboardSummary(DateOnly from, DateOnly to)
+        {
+            DateTime currentFromDate = DateTime.SpecifyKind(from.ToDateTime(TimeOnly.MinValue), DateTimeKind.Utc);
+            DateTime currentToDate = DateTime.SpecifyKind(to.ToDateTime(new TimeOnly(23, 59, 59)), DateTimeKind.Utc);
+
+            DateTime prevFromDate = currentFromDate.AddMonths(-1);
+            DateTime prevToDate = currentToDate.AddMonths(-1);
+
+            var currTotal = await _dashboardRepository.CountPostsAsync(currentFromDate, currentToDate);
+            var prevTotal = await _dashboardRepository.CountPostsAsync(prevFromDate, prevToDate);
+
+            var statusDict = await _dashboardRepository.GetPostStatusCountsAsync(currentFromDate, currentToDate);
+
+
+            int pending = statusDict.GetValueOrDefault(PostStatus.CHO_DUYET.ToString(), 0);
+            int approved = statusDict.GetValueOrDefault(PostStatus.DA_DUYET.ToString(), 0);
+            int rejected = statusDict.GetValueOrDefault(PostStatus.DA_TU_CHOI.ToString(), 0);
+
+            return new PostDashboardSummaryModel
+            {
+                FromDate = from,
+                ToDate = to,
+                TotalPosts = CalculateMetric(currTotal, prevTotal),
+                PendingCount = pending,
+                ApprovedCount = approved,
+                RejectedCount = rejected
+            };
+        }
 
     }
 }

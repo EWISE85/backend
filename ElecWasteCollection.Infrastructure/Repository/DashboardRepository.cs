@@ -344,5 +344,19 @@ namespace ElecWasteCollection.Infrastructure.Repository
             var data = itemsRaw.Select(x => (x.CollectionUnitId, x.Name, x.Address, x.Status, x.Created_At)).ToList();
             return (data, totalCount);
         }
+        public async Task<int> CountPostsAsync(DateTime fromUtc, DateTime toUtc)
+        {
+            return await _context.Posts
+                .CountAsync(p => p.Date >= fromUtc && p.Date <= toUtc);
+        }
+
+        public async Task<Dictionary<string, int>> GetPostStatusCountsAsync(DateTime fromUtc, DateTime toUtc)
+        {
+            return await _context.Posts
+                .Where(p => p.Date >= fromUtc && p.Date <= toUtc)
+                .GroupBy(p => p.Status)
+                .Select(g => new { Status = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(k => k.Status, v => v.Count);
+        }
     }
 }

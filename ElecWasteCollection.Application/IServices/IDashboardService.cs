@@ -27,5 +27,6 @@ namespace ElecWasteCollection.Application.IServices
         Task<PagedResultModel<CollectionUnitDashboardModel>> GetUnitsByCompanyAsync(string companyId, string? search, int page, int limit);
         Task<PagedResultModel<CompanyDashboardModel>> GetRecyclingCompaniesAsync(string? search, DateOnly from, DateOnly to, int page, int limit);
         Task<PagedResultModel<CollectionUnitDashboardModel>> GetCollectionUnitsAsync(string? search, DateOnly from, DateOnly to, int page, int limit);
+        Task<PostDashboardSummaryModel> GetPostDashboardSummary(DateOnly from, DateOnly to);
     }
 }
