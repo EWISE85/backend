@@ -13,6 +13,6 @@ namespace ElecWasteCollection.Domain.IRepository
 		Task<Post?> GetPostWithDetailsAsync(Guid id);
 		Task<List<Post>> GetPostsBySenderIdWithDetailsAsync(Guid senderId);
 
-		Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(string? status,string? search,string? order,int page,int limit);
+		Task<(List<Post> Items, int TotalCount)> GetPagedPostsAsync(string? status, string? search, string? order, int page, int limit, DateOnly? startTime, DateOnly? endTime);
 	}
 }
