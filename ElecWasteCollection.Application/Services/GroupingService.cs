@@ -365,6 +365,11 @@ namespace ElecWasteCollection.Application.Services
                 .Where(v => !assignedVehicleIds.Contains(v.VehicleId.ToString()))
                 .ToList();
 
+            var idleVehicleIdsForRescue = buckets.Values
+                .Where(b => !b.Products.Any())
+                .Select(b => b.Vehicle.VehicleId.ToString())
+                .ToList();
+
             // 7. CHẠY VRP (CHỈ CHẠY CHO XE CÓ THAY ĐỔI HÀNG HÓA ĐỂ TỐI ƯU LỘ TRÌNH)
             const double DETOUR_FACTOR = 1.3;
             foreach (var bId in currentRequestIds)
@@ -385,6 +390,7 @@ namespace ElecWasteCollection.Application.Services
                         Lng = pSample.Lng,
                         Start = original?.CustStart ?? shiftStart,
                         End = original?.CustEnd ?? shiftEnd,
+                        IsCritical = original?.IsCritical ?? false,
                         Tag = g.ToList()
                     };
                 }).ToList();
@@ -432,6 +438,95 @@ namespace ElecWasteCollection.Application.Services
                     curLat = node.Lat;
                     curLng = node.Lng;
                 }
+                var missingIndices = Enumerable.Range(0, nodesForVRP.Count).Except(optimizedOrder).ToList();
+                foreach (var i in missingIndices)
+                {
+                    var node = nodesForVRP[i];
+
+                    VehicleBucket targetBucket = null;
+                    double finalDist = 0;
+                    double finalTravelMin = 0;
+                    TimeOnly finalArrival = shiftStart;
+
+                    // Quét qua đội xe dự bị, chiếc nào còn đủ chỗ thì cứ nhét tiếp vào
+                    foreach (var idleId in idleVehicleIdsForRescue)
+                    {
+                        if (!buckets.TryGetValue(idleId, out var idleB)) continue;
+
+                        double dist = CalculateHaversine(idleB.LastLat, idleB.LastLng, node.Lat, node.Lng) * DETOUR_FACTOR;
+                        double travelMin = (dist / avgSpeedKmH) * 60;
+                        TimeOnly arrival = shiftStart.AddMinutes(idleB.CurrentTimeMin + travelMin);
+                        if (arrival < node.Start) arrival = node.Start;
+
+                        if (idleB.CurrentKg + node.Weight <= idleB.MaxKg &&
+                            idleB.CurrentM3 + node.Volume <= idleB.MaxM3 &&
+                            (idleB.CurrentTimeMin + travelMin + serviceTimeMin) <= idleB.MaxShiftMinutes &&
+                            arrival <= node.End)
+                        {
+                            targetBucket = idleB; 
+                            finalDist = dist;
+                            finalTravelMin = travelMin;
+                            finalArrival = arrival;
+                            break; 
+                        }
+                    }
+
+                    if (targetBucket != null)
+                    {
+                        targetBucket.CurrentKg += node.Weight;
+                        targetBucket.CurrentM3 += node.Volume;
+                        targetBucket.CurrentTimeMin += (finalTravelMin + serviceTimeMin);
+                        targetBucket.LastLat = node.Lat;
+                        targetBucket.LastLng = node.Lng;
+
+                        bool isFirst = true;
+                        foreach (var p in (List<PreAssignProduct>)node.Tag)
+                        {
+                            p.DistanceKm = isFirst ? Math.Round(finalDist, 2) : 0;
+                            p.EstimatedArrival = finalArrival.ToString("HH:mm");
+
+                            // Lookup lại thông tin gốc từ pool
+                            var originalItem = pool.FirstOrDefault(x => x.Lat == node.Lat && x.Lng == node.Lng && x.UserName == p.UserName);
+                            if (originalItem != null)
+                            {
+                                var detailInfo = ((IEnumerable<dynamic>)originalItem.GroupedDetails)
+                                    .FirstOrDefault(d => d.Post.PostId.ToString() == p.PostId);
+                                if (detailInfo != null)
+                                {
+                                    p.CategoryName = detailInfo.Post.Product?.Category?.Name ?? "N/A";
+                                    p.BrandName = detailInfo.Post.Product?.Brand?.Name ?? "N/A";
+                                    p.DimensionText = detailInfo.DimText ?? "";
+                                }
+                            }
+
+                            targetBucket.Products.Add(p);
+                            isFirst = false;
+                        }
+                    }
+                    else
+                    {
+                        string dropReason = node.IsCritical ? "HẠN CHÓT - Cần thu gom gấp nhưng chưa có xe phù hợp." : "Xe đã đầy, sẽ thu gom vào ngày sau.";
+
+                        foreach (var p in (List<PreAssignProduct>)node.Tag)
+                        {
+                            unAssigned.Add(new UnAssignProductPreview
+                            {
+                                ProductId = p.ProductId,
+                                PostId = p.PostId,
+                                Name = p.UserName,
+                                PhoneNumber = "N/A",
+                                Address = p.Address,
+                                Weight = Math.Round(p.Weight, 2),
+                                Volume = Math.Round(p.Volume, 4),
+                                CategoryName = p.CategoryName,
+                                BrandName = p.BrandName,
+                                DimensionText = p.DimensionText,
+                                Reason = dropReason
+                            });
+                        }
+                    }
+                }
+
                 b.Products = newOrderedProducts;
                 b.CurrentKg = b.Products.Sum(p => p.Weight); b.CurrentM3 = b.Products.Sum(p => p.Volume);
             }

@@ -113,7 +113,7 @@ namespace ElecWasteCollection.API.Controllers
                 return Ok(new
                 {
                     WorkDate = date.ToString("yyyy-MM-dd"),
-                    Message = $"Chưa có sản phẩm nào cần gom nhóm cho ngày {date:yyyy-MM-dd}."
+                    Message = $"Chưa có sản phẩm nào cần phân chia cho ngày {date:yyyy-MM-dd}."
                 });
             }
 
