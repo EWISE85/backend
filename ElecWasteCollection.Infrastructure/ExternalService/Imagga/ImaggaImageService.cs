@@ -33,7 +33,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Imagga
 			_systemConfigService = systemConfigService;
 			_clarifaiSettings = optionsc.Value;
 		}
-		public async Task<ImaggaCheckResult> AnalyzeImageCategoryAsync(string imageUrl, string? aiTags)
+		public async Task<ImaggaCheckResult> AnalyzeImageWithClarifaiFallbackAsync(string imageUrl, string? aiTags)
 		{
 			_logger.LogInformation("--- CLARIFAI AI (NATURAL RANKING MODE) START ---");
 
@@ -179,7 +179,7 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Imagga
 		//			var errorContent = await response.Content.ReadAsStringAsync();
 		//			Console.WriteLine($"[IMAGGA API FAILED] Status: {statusCode}");
 		//			Console.WriteLine($"[IMAGGA API FAILED] Response: {errorContent}");
-		//			return new ImaggaCheckResult { IsMatch = false, DetectedTagsJson = null };
+		//			return await AnalyzeImageWithClarifaiFallbackAsync(imageUrl, aiTags);
 		//		}
 
 		//		var jsonResponse = await response.Content.ReadAsStringAsync();
@@ -241,5 +241,131 @@ namespace ElecWasteCollection.Infrastructure.ExternalService.Imagga
 		//		return new ImaggaCheckResult { IsMatch = false, DetectedTagsJson = null };
 		//	}
 		//}
+		public async Task<ImaggaCheckResult> AnalyzeImageCategoryAsync(string imageUrl, string? aiTags)
+		{
+			_logger.LogInformation("--- IMAGGA AI (NO BLACKLIST MODE) START ---");
+
+			List<string> acceptedEnglishTags = new List<string> { "electronics", "appliance" };
+			if (!string.IsNullOrWhiteSpace(aiTags))
+			{
+				acceptedEnglishTags = aiTags.Split(',')
+											.Select(tag => tag.Trim().ToLower())
+											.ToList();
+			}
+
+			var thresholdConfig = await _systemConfigService.GetSystemConfigByKey(SystemConfigKey.AI_AUTO_APPROVE_THRESHOLD.ToString());
+			double minConfidenceThreshold = 30.0; // Default
+			if (thresholdConfig != null && double.TryParse(thresholdConfig.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out double parsed))
+			{
+				minConfidenceThreshold = parsed;
+			}
+
+			var basicAuthValue = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{_settings.ApiKey}:{_settings.ApiSecret}"));
+			var requestUrl = $"https://api.imagga.com/v2/tags?image_url={Uri.EscapeDataString(imageUrl)}";
+
+			using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+			request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", basicAuthValue);
+
+			try
+			{
+				var response = await _httpClient.SendAsync(request);
+
+				if (!response.IsSuccessStatusCode)
+				{
+					var statusCode = response.StatusCode;
+					var errorContent = await response.Content.ReadAsStringAsync();
+					_logger.LogWarning($"[IMAGGA API FAILED] Status: {statusCode}. Lỗi: {errorContent}");
+					_logger.LogInformation(">>> SWITCHING TO CLARIFAI FALLBACK <<<");
+
+					return await AnalyzeImageWithClarifaiFallbackAsync(imageUrl, aiTags);
+				}
+
+				var jsonResponse = await response.Content.ReadAsStringAsync();
+				var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+				var imaggaData = JsonSerializer.Deserialize<ImaggaResponse>(jsonResponse, options);
+				var tags = imaggaData?.Result?.Tags;
+
+				var allProcessedLabels = new List<LabelModel>();
+				bool overallImageMatch = false;
+
+				if (tags != null)
+				{
+					foreach (var tag in tags)
+					{
+						if (!tag.Tag.TryGetValue("en", out var tagName)) continue;
+
+						tagName = tagName.ToLower();
+						double confidence = Math.Round(tag.Confidence, 2);
+						bool isExactMatch = acceptedEnglishTags.Contains(tagName);
+
+						if (!overallImageMatch && isExactMatch && confidence >= minConfidenceThreshold)
+						{
+							overallImageMatch = true;
+						}
+
+						if (confidence > Confidence_AcceptToSave)
+						{
+							allProcessedLabels.Add(new LabelModel
+							{
+								Tag = tagName,
+								Confidence = confidence,
+								Status = isExactMatch ? "Phù hợp với danh mục" : "Không phù hợp với danh mục"
+							});
+						}
+					}
+				}
+
+
+				var rawTagsLog = string.Join(" | ", allProcessedLabels.Select(x => $"{x.Tag}: {x.Confidence}%"));
+				_logger.LogInformation($"[IMAGGA RAW RESULTS] TẤT CẢ TAG NHẬN DIỆN ĐƯỢC (> {Confidence_AcceptToSave}%):");
+				_logger.LogInformation(rawTagsLog);
+
+				var priorityTags = allProcessedLabels
+					.Where(x => acceptedEnglishTags.Contains(x.Tag))
+					.OrderByDescending(x => x.Confidence)
+					.ToList();
+
+				var otherTags = allProcessedLabels
+					.Where(x => !acceptedEnglishTags.Contains(x.Tag))
+					.OrderByDescending(x => x.Confidence)
+					.ToList();
+
+				var finalLabelsToShow = new List<LabelModel>();
+				double currentThreshold = 101.0;
+
+				foreach (var tag in priorityTags)
+				{
+					finalLabelsToShow.Add(tag);
+					currentThreshold = tag.Confidence; 
+				}
+
+				foreach (var tag in otherTags)
+				{
+					if (finalLabelsToShow.Count >= 5)
+						break;
+
+					if (tag.Confidence < currentThreshold)
+					{
+						finalLabelsToShow.Add(tag);
+						currentThreshold = tag.Confidence; 
+					}
+				}
+
+				_logger.LogInformation($"[IMAGGA SUCCESS] Final Match: {overallImageMatch}");
+
+				return new ImaggaCheckResult
+				{
+					IsMatch = overallImageMatch,
+					DetectedTagsJson = JsonSerializer.Serialize(finalLabelsToShow)
+				};
+			}
+			catch (Exception ex)
+			{
+				_logger.LogError($"[FATAL ERROR IMAGGA] {ex.Message}");
+				_logger.LogInformation(">>> SWITCHING TO CLARIFAI FALLBACK <<<");
+
+				return await AnalyzeImageWithClarifaiFallbackAsync(imageUrl, aiTags);
+			}
+		}
 	}
 }
