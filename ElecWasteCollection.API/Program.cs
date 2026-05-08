@@ -33,6 +33,7 @@ using StackExchange.Redis;
 using ElecWasteCollection.Infrastructure.ExternalService.Redis;
 using ElecWasteCollection.Infrastructure.ExternalService.CallApp;
 using ElecWasteCollection.Infrastructure.Hubs;
+using ElecWasteCollection.Infrastructure.ExternalService.Clarifai;
 namespace ElecWasteCollection.API
 {
 	public class Program
@@ -231,7 +232,7 @@ namespace ElecWasteCollection.API
 			builder.Services.AddHostedService<AutoSendNotificationReminderWorker>();
 			builder.Services.AddHostedService<CollectionUnitDailyReminderWorker>();
 			builder.Services.AddHostedService<PackageStatusBackgroundWorker>();
-
+			builder.Services.Configure<ClarifaiSettings>(builder.Configuration.GetSection("ClarifaiSettings"));
 			builder.Services.AddMemoryCache();
 			builder.Services.AddCors(options =>
 			{
