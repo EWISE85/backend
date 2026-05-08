@@ -56,7 +56,7 @@ namespace ElecWasteCollection.Application.Services
 
 			if (collectionUnit.CompanyId != realCompanyId)
 			{
-				throw new AppException("Công ty của bạn không có quyền xác nhận giao/nhận hàng tại đơn vị thu gom này", 403);
+				throw new AppException("Công ty của bạn không có quyền xác nhận giao/nhận hàng tại đơn vị thu gom này", 400);
 			}
 
 			var company = await _companyService.GetCompanyById(realCompanyId);
