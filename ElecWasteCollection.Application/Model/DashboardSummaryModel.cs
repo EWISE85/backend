@@ -142,4 +142,14 @@ namespace ElecWasteCollection.Application.Model
         public string Status { get; set; } = null!;
         public DateTime Created_At { get; set; }
     }
+    public class PostDashboardSummaryModel
+    {
+        public DateOnly FromDate { get; set; }
+        public DateOnly ToDate { get; set; }
+        public MetricStats TotalPosts { get; set; }
+        public int PendingCount { get; set; }
+        public int ApprovedCount { get; set; }
+        public int RejectedCount { get; set; }
+    }
+
 }

@@ -27,6 +27,8 @@ namespace ElecWasteCollection.Domain.IRepository
         Task<(List<(string Id, string Name, string Phone, string Address, string Status, DateTime CreatedAt)> Data, int TotalCount)> GetPagedRecyclingCompaniesRawAsync(string? search, DateOnly from, DateOnly to, int page, int limit);
         Task<(List<(string Id, string Name, string Address, string Status)> Data, int TotalCount)> GetUnitsByCompanyRawAsync(string companyId, string? search, int page, int limit);
         Task<(List<(string Id, string Name, string Address, string Status, DateTime CreatedAt)> Data, int TotalCount)> GetPagedCollectionUnitsRawAsync(string? search, DateOnly from, DateOnly to, int page, int limit);
+        Task<int> CountPostsAsync(DateTime fromUtc, DateTime toUtc);
+        Task<Dictionary<string, int>> GetPostStatusCountsAsync(DateTime fromUtc, DateTime toUtc);
 
     }
 }

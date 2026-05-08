@@ -189,5 +189,18 @@ namespace ElecWasteCollection.API.Controllers
             var result = await _dashboardService.GetCollectionUnitsAsync(search, from, to, page, limit);
             return Ok(result);
         }
+        [HttpGet("post-summary")]
+        public async Task<IActionResult> GetPostDashboardSummary([FromQuery] DateOnly from, [FromQuery] DateOnly to)
+        {
+            try
+            {
+                var result = await _dashboardService.GetPostDashboardSummary(from, to);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { Message = ex.Message });
+            }
+        }
     }
 }
