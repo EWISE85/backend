@@ -18,12 +18,14 @@ namespace ElecWasteCollection.Application.Services
 		private readonly ICompanyService _companyService;
 		private readonly ICompanyRepository _companyRepository;
 		private readonly IPackageRepository _packageRepository;
-		public CompanyQrService(IMemoryCache cache, ICompanyService companyService, ICompanyRepository companyRepository, IPackageRepository packageRepository)
+		private readonly IUnitOfWork _unitOfWork;
+		public CompanyQrService(IMemoryCache cache, ICompanyService companyService, ICompanyRepository companyRepository, IPackageRepository packageRepository, IUnitOfWork unitOfWork)
 		{
 			_cache = cache;
 			_companyService = companyService;
 			_companyRepository = companyRepository;
 			_packageRepository = packageRepository;
+			_unitOfWork = unitOfWork;
 		}
 		public string GenerateQrCode(string companyId)
 		{
@@ -31,21 +33,34 @@ namespace ElecWasteCollection.Application.Services
 			return QrMathHelper.Encrypt(shortId);
 		}
 
-		public async Task<CollectionCompanyResponse?> VerifyQrCodeAsync(string qrCode)
+		public async Task<CollectionCompanyResponse?> VerifyQrCodeAsync(string qrCode, string collectionUnitId)
 		{
 			var result = QrMathHelper.Decrypt(qrCode);
 			if (!result.IsTimeValid) throw new AppException("Qr code giao hàng đã hết hạn sử dụng", 400);
+
 			var isQrCodeUsed = await _packageRepository.GetAsync(p => p.DeliveryQrCode == qrCode);
-			if (isQrCodeUsed != null) throw new AppException("Qr code giao hàng đã được sử dụng",400);
+			if (isQrCodeUsed != null) throw new AppException("Qr code giao hàng đã được sử dụng", 400);
 
 			var mapping = await GetCompanyMappingAsync();
-			if (mapping.TryGetValue(result.ShortId, out string? realCompanyId))
+			if (!mapping.TryGetValue(result.ShortId, out string? realCompanyId))
 			{
-				var company = await _companyService.GetCompanyById(realCompanyId);
-				return company;
+				throw new AppException("Mã QR không hợp lệ hoặc không tìm thấy thông tin công ty", 400);
 			}
 
-			return null;
+			var collectionUnit = await _unitOfWork.CollectionUnits.GetAsync(c => c.CollectionUnitId == collectionUnitId);
+
+			if (collectionUnit == null)
+			{
+				throw new AppException("Trạm thu gom không tồn tại", 404);
+			}
+
+			if (collectionUnit.CompanyId != realCompanyId)
+			{
+				throw new AppException("Công ty của bạn không có quyền xác nhận giao/nhận hàng tại đơn vị thu gom này", 403);
+			}
+
+			var company = await _companyService.GetCompanyById(realCompanyId);
+			return company;
 		}
 		private async Task<Dictionary<int, string>> GetCompanyMappingAsync()
 		{
