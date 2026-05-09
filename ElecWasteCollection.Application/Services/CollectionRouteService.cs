@@ -32,7 +32,10 @@ namespace ElecWasteCollection.Application.Services
 
         public async Task<bool> CancelCollection(Guid collectionRouteId, string rejectMessage)
 		{
-			var route = await _collectionRouteRepository.GetAsync(r => r.CollectionRouteId == collectionRouteId,includeProperties: "Product");
+			var route = await _unitOfWork.CollecctionRoutes.GetAsync(
+			   r => r.CollectionRouteId == collectionRouteId,
+			   includeProperties: "Product,Product.User"
+		   );
 
 			if (route == null) throw new AppException("Không tìm thấy tuyến thu gom", 404);
 
@@ -54,6 +57,11 @@ namespace ElecWasteCollection.Application.Services
 
 				await _unitOfWork.ProductStatusHistory.AddAsync(history);
 				_unitOfWork.Products.Update(route.Product);
+			}
+			if (route.Product.User != null)
+			{
+				await _notificationService.NotifyPickUpFail(route.Product.UserId, rejectMessage);
+
 			}
 			_unitOfWork.CollecctionRoutes.Update(route);
 			await _unitOfWork.SaveAsync();
