@@ -51,33 +51,17 @@ namespace ElecWasteCollection.Application.Services
                 oldCache = _preAssignPreviewCache.FirstOrDefault(x =>
                     x.SmallCollectionPointId == request.CollectionPointId &&
                     x.WorkDate == request.WorkDate);
-                //if (oldCache != null)
-                //{
-                //    var cachedIds = oldCache.Response.Days
-                //        .SelectMany(d => d.Products.Select(p => p.ProductId))
-                //        .ToHashSet();
 
-                //    bool isDifferent = request.ProductIds.Count != cachedIds.Count ||
-                //                       request.ProductIds.Any(id => !cachedIds.Contains(id.ToString()));
-
-                //    if (isDifferent)
-                //    {
-                //        _preAssignPreviewCache.Remove(oldCache);
-                //        oldCache = null;
-                //    }
-                //}
                 if (oldCache != null)
                 {
                     var cachedIds = oldCache.Response.Days
                         .SelectMany(d => d.Products.Select(p => p.ProductId))
                         .ToHashSet();
 
-                    // Lấy danh sách xe của lần chạy trước
                     var cachedVehicleIds = oldCache.Response.Days
                         .Select(d => d.SuggestedVehicle.Id)
                         .ToHashSet();
 
-                    // Kiểm tra: Nếu số lượng sản phẩm đổi, HOẶC số lượng xe đổi -> ÉP TÍNH LẠI TỪ ĐẦU
                     bool isDifferent = request.ProductIds.Count != cachedIds.Count ||
                                        request.ProductIds.Any(id => !cachedIds.Contains(id.ToString())) ||
                                        request.VehicleIds.Count != cachedVehicleIds.Count ||
@@ -116,14 +100,14 @@ namespace ElecWasteCollection.Application.Services
             var shift = (await _unitOfWork.Shifts.GetAllAsync(s =>
                 s.WorkDate == request.WorkDate &&
                 s.Status == ShiftStatus.CO_SAN.ToString() &&
-                s.Collector.CollectionUnitId == request.CollectionPointId, includeProperties: "Collector")).FirstOrDefault()
+                s.Collector.CollectionUnitId == request.CollectionPointId, 
+                includeProperties: "Collector")).FirstOrDefault()
                 ?? throw new Exception($"Không có ca làm việc trống ngày {request.WorkDate:dd/MM/yyyy}");
 
             double totalShiftMin = (shift.Shift_End_Time.ToLocalTime() - shift.Shift_Start_Time.ToLocalTime()).TotalMinutes;
             TimeOnly shiftStart = TimeOnly.FromDateTime(shift.Shift_Start_Time.ToLocalTime());
             TimeOnly shiftEnd = TimeOnly.FromDateTime(shift.Shift_End_Time.ToLocalTime());
 
-            // --- LOGIC TỐI ƯU HÓA TĂNG DẦN ---
             var buckets = new Dictionary<string, VehicleBucket>();
             var assignedProductPostIds = new HashSet<string>();
             var dirtyBuckets = new HashSet<string>();
@@ -131,7 +115,7 @@ namespace ElecWasteCollection.Application.Services
             var currentRequestIds = request.VehicleIds.Select(id => id.ToString()).ToHashSet();
             var oldVehicleIds = oldCache?.Response.Days.Select(d => d.SuggestedVehicle.Id).ToHashSet() ?? new HashSet<string>();
 
-            // 4. KHỞI TẠO BUCKET TỪ CACHE (TỐI ƯU RAM)
+            // 4. Create BUCKET TỪ CACHE
             if (oldCache != null)
             {
                 foreach (var day in oldCache.Response.Days)
@@ -180,10 +164,8 @@ namespace ElecWasteCollection.Application.Services
                 dirtyBuckets.Add(vId);
             }
 
-            // 5. LẤY DỮ LIỆU SẢN PHẨM VÀ GOM NHÓM (POOL)
             var attIdMap = await GetAttributeIdMapAsync();
 
-            // 1. Lấy TẤT CẢ bài đăng có trạng thái "Chờ gom" thuộc trạm này
             var allPendingAtPoint = await _unitOfWork.Posts.GetAllAsync(
                 p => p.AssignedCollectionUnitId == request.CollectionPointId
                 && p.Product != null
@@ -191,7 +173,6 @@ namespace ElecWasteCollection.Application.Services
                 includeProperties: "Product,Product.User,Product.Category,Product.Brand,Product.ProductValues.Attribute.AttributeOptions"
             );
 
-            // 2. Lọc ra những bài đăng thực sự có lịch hẹn vào ngày WorkDate
             var targetDate = DateOnly.FromDateTime(request.WorkDate.ToDateTime(TimeOnly.MinValue));
 
             var rawPosts = allPendingAtPoint.Where(p =>
@@ -292,10 +273,10 @@ namespace ElecWasteCollection.Application.Services
             //        DimText = newItemsInGroup.Count > 1 ? "Nhiều sản phẩm" : (string)detailList[0].DimText
             //    });
             //}
+
             var pool = new List<dynamic>();
             foreach (var group in groupedPosts)
             {
-                // 1. Lấy khung giờ của tất cả các món đồ hợp lệ
                 var validItemsWithTimes = group
                     .Where(p => TryParseScheduleInfo(p.ScheduleJson!, out var s) && s.SpecificDates.Contains(targetDate))
                     .Select(p =>
@@ -309,14 +290,11 @@ namespace ElecWasteCollection.Application.Services
 
                 if (!validItemsWithTimes.Any()) continue;
 
-                // 2. Query tọa độ 1 lần cho cả cụm
                 var addr = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == group.Key.SenderId && a.Address == group.Key.Address);
                 if (addr?.Iat == null || addr.Iat == 0) continue;
 
-                // 3. Sắp xếp theo giờ bắt đầu sớm nhất
                 var sortedItems = validItemsWithTimes.OrderBy(x => x.Start).ThenBy(x => x.End).ToList();
 
-                // 4. Thuật toán gộp nhóm giao nhau 
                 var subGroups = new List<List<dynamic>>();
                 var currentSubGroup = new List<dynamic>();
 
@@ -338,14 +316,14 @@ namespace ElecWasteCollection.Application.Services
 
                     if (latestStart <= earliestEnd)
                     {
-                        // CÓ GIAO NHAU -> Bóp hẹp thời gian chung lại và nhét vào cùng 1 Node
+                        // CÓ GIAO NHAU 
                         currentIntersectStart = latestStart;
                         currentIntersectEnd = earliestEnd;
                         currentSubGroup.Add(item);
                     }
                     else
                     {
-                        // KHÔNG GIAO NHAU -> Chốt Node cũ, tách ra Node mới (Xe phải đến 2 lần)
+                        // KHÔNG GIAO NHAU 
                         subGroups.Add(currentSubGroup);
                         currentSubGroup = new List<dynamic> { item };
                         currentIntersectStart = item.Start;
@@ -354,10 +332,9 @@ namespace ElecWasteCollection.Application.Services
                 }
                 if (currentSubGroup.Any()) subGroups.Add(currentSubGroup);
 
-                // 5. Build dữ liệu cho TỪNG NHÓM THỜI GIAN (subGroup) và đẩy vào Pool
+
                 foreach (var subGroup in subGroups)
                 {
-                    // Lọc bỏ các sản phẩm đã được gán vào xe (từ cache)
                     var newItemsInSubGroup = subGroup.Where(g => !assignedProductPostIds.Contains(g.Post.PostId.ToString())).ToList();
                     if (!newItemsInSubGroup.Any()) continue;
 
@@ -375,7 +352,6 @@ namespace ElecWasteCollection.Application.Services
                         var postItem = item.Post;
                         var product = postItem.Product;
 
-                        // [BẢN VÁ 1: Lỗi Tuple Length] -> Ép kiểu rõ ràng về (Guid) để bẻ gãy dynamic
                         var metrics = await GetProductMetricsInternalAsync((Guid)product.ProductId, attIdMap);
 
                         double actualWeight = 0; double actualVolume = 0;
@@ -383,20 +359,17 @@ namespace ElecWasteCollection.Application.Services
                         {
                             foreach (var pv in product.ProductValues)
                             {
-                                // [BẢN VÁ 2: Lỗi CS1977] -> Ép kiểu về IEnumerable<dynamic>
                                 var options = pv.Attribute?.AttributeOptions as IEnumerable<dynamic>;
                                 var opt = options?.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId);
 
                                 if (opt != null)
                                 {
-                                    // [BẢN VÁ 3: Lỗi HasValue] -> Dùng check khác null thay cho HasValue
                                     if (opt.EstimateWeight != null && actualWeight <= 0) actualWeight = (double)opt.EstimateWeight;
                                     if (opt.EstimateVolume != null && actualVolume <= 0) actualVolume = (double)opt.EstimateVolume;
                                 }
                             }
                         }
 
-                        // Lấy metrics an toàn như code cũ
                         if (actualWeight <= 0) actualWeight = product.Category?.DefaultWeight ?? metrics.weight;
                         if (actualVolume <= 0) actualVolume = (metrics.length > 0) ? (metrics.length * metrics.width * metrics.height) : 0.01;
 
@@ -512,13 +485,11 @@ namespace ElecWasteCollection.Application.Services
                 }
             }
 
-            // Lấy ID của các xe đã được gán sản phẩm yêu cầu
             var assignedVehicleIds = buckets.Values
                 .Where(b => b.Products.Any())
                 .Select(b => b.Vehicle.VehicleId.ToString())
                 .ToHashSet();
 
-            // Danh sách xe "Thừa" 
             var idleVehicles = vehicles
                 .Where(v => !assignedVehicleIds.Contains(v.VehicleId.ToString()))
                 .ToList();
@@ -528,7 +499,7 @@ namespace ElecWasteCollection.Application.Services
                 .Select(b => b.Vehicle.VehicleId.ToString())
                 .ToList();
 
-            // 7. CHẠY VRP (CHỈ CHẠY CHO XE CÓ THAY ĐỔI HÀNG HÓA ĐỂ TỐI ƯU LỘ TRÌNH)
+            // 7. CHẠY VRP 
             const double DETOUR_FACTOR = 1.3;
             foreach (var bId in currentRequestIds)
             {
@@ -631,7 +602,7 @@ namespace ElecWasteCollection.Application.Services
                     double finalTravelMin = 0;
                     TimeOnly finalArrival = shiftStart;
 
-                    // Quét qua đội xe dự bị, chiếc nào còn đủ chỗ thì cứ nhét tiếp vào
+                    //  còn đủ chỗ thì cứ nhét tiếp vào
                     foreach (var idleId in idleVehicleIdsForRescue)
                     {
                         if (!buckets.TryGetValue(idleId, out var idleB)) continue;
@@ -668,7 +639,6 @@ namespace ElecWasteCollection.Application.Services
                             p.DistanceKm = isFirst ? Math.Round(finalDist, 2) : 0;
                             p.EstimatedArrival = finalArrival.ToString("HH:mm");
 
-                            // Lookup lại thông tin gốc từ pool
                             var originalItem = pool.FirstOrDefault(x => x.Lat == node.Lat && x.Lng == node.Lng && x.UserName == p.UserName);
                             if (originalItem != null)
                             {
@@ -726,7 +696,7 @@ namespace ElecWasteCollection.Application.Services
                 autoSuggestionMessage = "Không có sản phẩm nào phù hợp để gán vào xe.";
             }
 
-            // 8. LOGIC GỢI Ý
+            // 8. GỢI Ý
             var criticalUnassigned = unAssigned.Where(x => x.Reason.Contains("HẠN CHÓT")).ToList();
             CriticalGapSuggestion? suggestion = null;
             if (criticalUnassigned.Any())
@@ -760,7 +730,6 @@ namespace ElecWasteCollection.Application.Services
 
                     foreach (var item in simPool)
                     {
-                        // Tính toán y hệt như lúc xe chạy thực tế
                         double dist = CalculateHaversine(lastLat, lastLng, (double)item.Lat, (double)item.Lng) * 1.3;
                         double travelMin = (dist / avgSpeedKmH) * 60;
 
