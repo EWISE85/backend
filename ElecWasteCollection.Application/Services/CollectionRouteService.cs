@@ -60,7 +60,7 @@ namespace ElecWasteCollection.Application.Services
 			}
 			if (route.Product.User != null)
 			{
-				await _notificationService.NotifyPickUpFail(route.Product.UserId, rejectMessage);
+				await _notificationService.NotifyPickUpFail(route.Product.UserId, rejectMessage,route.Product.ProductId);
 
 			}
 			_unitOfWork.CollecctionRoutes.Update(route);
