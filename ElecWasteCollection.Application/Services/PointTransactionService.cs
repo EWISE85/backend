@@ -51,7 +51,7 @@ namespace ElecWasteCollection.Application.Services
 					TransactionType = pt.TransactionType,
 					Point = pt.Point,
 					CreatedAt = pt.CreatedAt,
-
+					VoucherId = pt.VoucherId,
 					Images = images
 				};
 			})
