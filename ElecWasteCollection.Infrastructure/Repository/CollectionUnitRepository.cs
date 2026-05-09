@@ -59,7 +59,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 							.ThenInclude(cat => cat.SubCategories)
 				.Where(s => s.Status == CollectionUnitStatus.DANG_HOAT_DONG.ToString())
 				.AsQueryable();
-
+			query = query.Where(c => c.Company.IsFallback == false && c.Company.Status == CompanyStatus.DANG_HOAT_DONG.ToString());
 			if (!string.IsNullOrWhiteSpace(categoryName))
 			{
 				var searchLower = categoryName.ToLower();
@@ -68,7 +68,7 @@ namespace ElecWasteCollection.Infrastructure.Repository
 						.Any(sub => sub.Name.ToLower().Contains(searchLower)
 									&& sub.Status == CategoryStatus.HOAT_DONG.ToString())));
 			}
-
+			
 			int totalCount = await query.CountAsync();
 
 			var items = await query
