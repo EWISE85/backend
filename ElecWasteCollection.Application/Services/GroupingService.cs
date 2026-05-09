@@ -51,14 +51,37 @@ namespace ElecWasteCollection.Application.Services
                 oldCache = _preAssignPreviewCache.FirstOrDefault(x =>
                     x.SmallCollectionPointId == request.CollectionPointId &&
                     x.WorkDate == request.WorkDate);
+                //if (oldCache != null)
+                //{
+                //    var cachedIds = oldCache.Response.Days
+                //        .SelectMany(d => d.Products.Select(p => p.ProductId))
+                //        .ToHashSet();
+
+                //    bool isDifferent = request.ProductIds.Count != cachedIds.Count ||
+                //                       request.ProductIds.Any(id => !cachedIds.Contains(id.ToString()));
+
+                //    if (isDifferent)
+                //    {
+                //        _preAssignPreviewCache.Remove(oldCache);
+                //        oldCache = null;
+                //    }
+                //}
                 if (oldCache != null)
                 {
                     var cachedIds = oldCache.Response.Days
                         .SelectMany(d => d.Products.Select(p => p.ProductId))
                         .ToHashSet();
 
+                    // Lấy danh sách xe của lần chạy trước
+                    var cachedVehicleIds = oldCache.Response.Days
+                        .Select(d => d.SuggestedVehicle.Id)
+                        .ToHashSet();
+
+                    // Kiểm tra: Nếu số lượng sản phẩm đổi, HOẶC số lượng xe đổi -> ÉP TÍNH LẠI TỪ ĐẦU
                     bool isDifferent = request.ProductIds.Count != cachedIds.Count ||
-                                       request.ProductIds.Any(id => !cachedIds.Contains(id.ToString()));
+                                       request.ProductIds.Any(id => !cachedIds.Contains(id.ToString())) ||
+                                       request.VehicleIds.Count != cachedVehicleIds.Count ||
+                                       request.VehicleIds.Any(vid => !cachedVehicleIds.Contains(vid.ToString()));
 
                     if (isDifferent)
                     {
@@ -564,16 +587,51 @@ namespace ElecWasteCollection.Application.Services
                 foreach (var v in availableToSuggest)
                 {
                     if (!simPool.Any()) break;
-                    double vMaxKg = v.Capacity_Kg * loadFactor * 0.9; double vMaxM3 = (v.Length_M * v.Width_M * v.Height_M) * loadFactor * 0.9;
-                    double curKg = 0; double curM3 = 0; bool added = false; var toRem = new List<dynamic>();
+                    double vMaxKg = v.Capacity_Kg * loadFactor * 0.9; 
+                    double vMaxM3 = (v.Length_M * v.Width_M * v.Height_M) * loadFactor * 0.9;
+                    double curKg = 0;
+                    double curM3 = 0;
+                    double curTimeMin = 0;
+                    double lastLat = point.Latitude;
+                    double lastLng = point.Longitude;
+
+                    bool added = false;
+                    var toRem = new List<dynamic>();
+
                     foreach (var item in simPool)
                     {
-                        if (curKg + (double)item.Weight <= vMaxKg && curM3 + (double)item.Volume <= vMaxM3)
+                        // Tính toán y hệt như lúc xe chạy thực tế
+                        double dist = CalculateHaversine(lastLat, lastLng, (double)item.Lat, (double)item.Lng) * 1.3;
+                        double travelMin = (dist / avgSpeedKmH) * 60;
+
+                        // Điều kiện Gợi ý = Khối lượng + Thể tích + THỜI GIAN
+                        if (curKg + (double)item.Weight <= vMaxKg &&
+                            curM3 + (double)item.Volume <= vMaxM3 &&
+                            (curTimeMin + travelMin + serviceTimeMin) <= totalShiftMin)
                         {
-                            curKg += (double)item.Weight; curM3 += (double)item.Volume; toRem.Add(item); added = true;
+                            curKg += (double)item.Weight;
+                            curM3 += (double)item.Volume;
+                            curTimeMin += (travelMin + serviceTimeMin);
+                            lastLat = (double)item.Lat;
+                            lastLng = (double)item.Lng;
+
+                            toRem.Add(item);
+                            added = true;
                         }
+
+                        //if (curKg + (double)item.Weight <= vMaxKg && curM3 + (double)item.Volume <= vMaxM3)
+                        //{
+                        //    curKg += (double)item.Weight; curM3 += (double)item.Volume; toRem.Add(item); added = true;
+                        //}
                     }
-                    if (added) { foreach (var r in toRem) simPool.Remove(r); recVehicles.Add(new { v.Plate_Number, v.Capacity_Kg }); }
+                    if (added) 
+                    { 
+                        foreach (var r in toRem) simPool.Remove(r); 
+                        recVehicles.Add(new 
+                        { 
+                            v.Plate_Number, v.Capacity_Kg 
+                        }); 
+                    }
                 }
                 suggestion = new CriticalGapSuggestion
                 {
