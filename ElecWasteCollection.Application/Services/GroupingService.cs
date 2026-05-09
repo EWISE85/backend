@@ -210,88 +210,223 @@ namespace ElecWasteCollection.Application.Services
             var groupedPosts = rawPosts
                 .GroupBy(p => new { p.SenderId, p.Address });
 
+            //var pool = new List<dynamic>();
+            //foreach (var group in groupedPosts)
+            //{
+
+            //    PostScheduleInfo? sch = null;
+            //    var validItemsInGroup = group.Where(p =>
+            //    {
+            //        if (TryParseScheduleInfo(p.ScheduleJson!, out var s))
+            //        {
+            //            if (s.SpecificDates.Contains(targetDate))
+            //            {
+            //                sch = s;
+            //                return true;
+            //            }
+            //        }
+            //        return false;
+            //    }).ToList();
+
+            //    if (!validItemsInGroup.Any() || sch == null) continue;
+
+            //    var representative = validItemsInGroup.First();
+
+            //    if (assignedProductPostIds.Contains(representative.PostId.ToString())) continue;
+
+            //    if (!TryGetTimeWindowForDate(representative.ScheduleJson!, request.WorkDate, out var custStart, out var custEnd)) continue;
+
+            //    var addr = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == group.Key.SenderId && a.Address == group.Key.Address);
+            //    if (addr?.Iat == null || addr.Iat == 0) continue;
+
+            //    var newItemsInGroup = validItemsInGroup.Where(g => !assignedProductPostIds.Contains(g.PostId.ToString())).ToList();
+            //    if (!newItemsInGroup.Any()) continue;
+
+            //    double gWeight = 0; double gVolume = 0;
+            //    var detailList = new List<dynamic>();
+
+            //    foreach (var postItem in newItemsInGroup)
+            //    {
+            //        var product = postItem.Product;
+            //        var metrics = await GetProductMetricsInternalAsync(product.ProductId, attIdMap);
+
+            //        double actualWeight = 0; double actualVolume = 0;
+            //        if (product.ProductValues != null)
+            //        {
+            //            foreach (var pv in product.ProductValues)
+            //            {
+            //                var opt = pv.Attribute?.AttributeOptions?.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId);
+            //                if (opt != null)
+            //                {
+            //                    if (opt.EstimateWeight.HasValue && actualWeight <= 0) actualWeight = opt.EstimateWeight.Value;
+            //                    if (opt.EstimateVolume.HasValue && actualVolume <= 0) actualVolume = opt.EstimateVolume.Value;
+            //                }
+            //            }
+            //        }
+
+            //        if (actualWeight <= 0) actualWeight = product.Category?.DefaultWeight ?? metrics.weight;
+            //        if (actualVolume <= 0) actualVolume = (metrics.length > 0) ? (metrics.length * metrics.width * metrics.height) : 0.01;
+
+            //        string dim = $"{Math.Round(metrics.length * 100)}x{Math.Round(metrics.width * 100)}x{Math.Round(metrics.height * 100)} cm - {Math.Round(actualWeight, 1)}kg - {Math.Round(actualVolume, 4)}m³";
+
+            //        detailList.Add(new { Post = postItem, Weight = actualWeight, Volume = actualVolume, DimText = dim });
+            //        gWeight += actualWeight;
+            //        gVolume += actualVolume;
+            //    }
+
+            //    pool.Add(new
+            //    {
+            //        GroupedDetails = detailList,
+            //        Lat = addr.Iat.Value,
+            //        Lng = addr.Ing.Value,
+            //        Weight = gWeight,
+            //        Volume = gVolume,
+            //        IsCritical = sch.SpecificDates.Max() <= targetDate,
+            //        CustStart = custStart,
+            //        CustEnd = custEnd,
+            //        UserName = representative.Product?.User?.Name ?? "N/A",
+            //        UserPhone = representative.Product?.User?.Phone ?? "N/A",
+            //        FullAddress = group.Key.Address ?? "N/A",
+            //        CategoryName = newItemsInGroup.Count > 1 ? $"{representative.Product?.Category?.Name} (+{newItemsInGroup.Count - 1})" : representative.Product?.Category?.Name,
+            //        BrandName = representative.Product?.Brand?.Name ?? "N/A",
+            //        DimText = newItemsInGroup.Count > 1 ? "Nhiều sản phẩm" : (string)detailList[0].DimText
+            //    });
+            //}
             var pool = new List<dynamic>();
             foreach (var group in groupedPosts)
             {
-
-                PostScheduleInfo? sch = null;
-                var validItemsInGroup = group.Where(p =>
-                {
-                    if (TryParseScheduleInfo(p.ScheduleJson!, out var s))
+                // 1. Lấy khung giờ của tất cả các món đồ hợp lệ
+                var validItemsWithTimes = group
+                    .Where(p => TryParseScheduleInfo(p.ScheduleJson!, out var s) && s.SpecificDates.Contains(targetDate))
+                    .Select(p =>
                     {
-                        if (s.SpecificDates.Contains(targetDate))
-                        {
-                            sch = s;
-                            return true;
-                        }
-                    }
-                    return false;
-                }).ToList();
+                        TryGetTimeWindowForDate(p.ScheduleJson!, request.WorkDate, out var start, out var end);
+                        TryParseScheduleInfo(p.ScheduleJson!, out var s);
+                        bool isCritical = s.SpecificDates.Max() <= targetDate;
+                        return new { Post = p, Start = start, End = end, IsCritical = isCritical };
+                    })
+                    .ToList();
 
-                if (!validItemsInGroup.Any() || sch == null) continue;
+                if (!validItemsWithTimes.Any()) continue;
 
-                var representative = validItemsInGroup.First();
-
-                if (assignedProductPostIds.Contains(representative.PostId.ToString())) continue;
-
-                if (!TryGetTimeWindowForDate(representative.ScheduleJson!, request.WorkDate, out var custStart, out var custEnd)) continue;
-
+                // 2. Query tọa độ 1 lần cho cả cụm
                 var addr = await _unitOfWork.UserAddresses.GetAsync(a => a.UserId == group.Key.SenderId && a.Address == group.Key.Address);
                 if (addr?.Iat == null || addr.Iat == 0) continue;
 
-                var newItemsInGroup = validItemsInGroup.Where(g => !assignedProductPostIds.Contains(g.PostId.ToString())).ToList();
-                if (!newItemsInGroup.Any()) continue;
+                // 3. Sắp xếp theo giờ bắt đầu sớm nhất
+                var sortedItems = validItemsWithTimes.OrderBy(x => x.Start).ThenBy(x => x.End).ToList();
 
-                double gWeight = 0; double gVolume = 0;
-                var detailList = new List<dynamic>();
+                // 4. Thuật toán gộp nhóm giao nhau 
+                var subGroups = new List<List<dynamic>>();
+                var currentSubGroup = new List<dynamic>();
 
-                foreach (var postItem in newItemsInGroup)
+                TimeOnly currentIntersectStart = sortedItems[0].Start;
+                TimeOnly currentIntersectEnd = sortedItems[0].End;
+
+                foreach (var item in sortedItems)
                 {
-                    var product = postItem.Product;
-                    var metrics = await GetProductMetricsInternalAsync(product.ProductId, attIdMap);
-
-                    double actualWeight = 0; double actualVolume = 0;
-                    if (product.ProductValues != null)
+                    if (!currentSubGroup.Any())
                     {
-                        foreach (var pv in product.ProductValues)
-                        {
-                            var opt = pv.Attribute?.AttributeOptions?.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId);
-                            if (opt != null)
-                            {
-                                if (opt.EstimateWeight.HasValue && actualWeight <= 0) actualWeight = opt.EstimateWeight.Value;
-                                if (opt.EstimateVolume.HasValue && actualVolume <= 0) actualVolume = opt.EstimateVolume.Value;
-                            }
-                        }
+                        currentSubGroup.Add(item);
+                        currentIntersectStart = item.Start;
+                        currentIntersectEnd = item.End;
+                        continue;
                     }
 
-                    if (actualWeight <= 0) actualWeight = product.Category?.DefaultWeight ?? metrics.weight;
-                    if (actualVolume <= 0) actualVolume = (metrics.length > 0) ? (metrics.length * metrics.width * metrics.height) : 0.01;
+                    TimeOnly latestStart = item.Start > currentIntersectStart ? item.Start : currentIntersectStart;
+                    TimeOnly earliestEnd = item.End < currentIntersectEnd ? item.End : currentIntersectEnd;
 
-                    string dim = $"{Math.Round(metrics.length * 100)}x{Math.Round(metrics.width * 100)}x{Math.Round(metrics.height * 100)} cm - {Math.Round(actualWeight, 1)}kg - {Math.Round(actualVolume, 4)}m³";
-
-                    detailList.Add(new { Post = postItem, Weight = actualWeight, Volume = actualVolume, DimText = dim });
-                    gWeight += actualWeight;
-                    gVolume += actualVolume;
+                    if (latestStart <= earliestEnd)
+                    {
+                        // CÓ GIAO NHAU -> Bóp hẹp thời gian chung lại và nhét vào cùng 1 Node
+                        currentIntersectStart = latestStart;
+                        currentIntersectEnd = earliestEnd;
+                        currentSubGroup.Add(item);
+                    }
+                    else
+                    {
+                        // KHÔNG GIAO NHAU -> Chốt Node cũ, tách ra Node mới (Xe phải đến 2 lần)
+                        subGroups.Add(currentSubGroup);
+                        currentSubGroup = new List<dynamic> { item };
+                        currentIntersectStart = item.Start;
+                        currentIntersectEnd = item.End;
+                    }
                 }
+                if (currentSubGroup.Any()) subGroups.Add(currentSubGroup);
 
-                pool.Add(new
+                // 5. Build dữ liệu cho TỪNG NHÓM THỜI GIAN (subGroup) và đẩy vào Pool
+                foreach (var subGroup in subGroups)
                 {
-                    GroupedDetails = detailList,
-                    Lat = addr.Iat.Value,
-                    Lng = addr.Ing.Value,
-                    Weight = gWeight,
-                    Volume = gVolume,
-                    IsCritical = sch.SpecificDates.Max() <= targetDate,
-                    CustStart = custStart,
-                    CustEnd = custEnd,
-                    UserName = representative.Product?.User?.Name ?? "N/A",
-                    UserPhone = representative.Product?.User?.Phone ?? "N/A",
-                    FullAddress = group.Key.Address ?? "N/A",
-                    CategoryName = newItemsInGroup.Count > 1 ? $"{representative.Product?.Category?.Name} (+{newItemsInGroup.Count - 1})" : representative.Product?.Category?.Name,
-                    BrandName = representative.Product?.Brand?.Name ?? "N/A",
-                    DimText = newItemsInGroup.Count > 1 ? "Nhiều sản phẩm" : (string)detailList[0].DimText
-                });
+                    // Lọc bỏ các sản phẩm đã được gán vào xe (từ cache)
+                    var newItemsInSubGroup = subGroup.Where(g => !assignedProductPostIds.Contains(g.Post.PostId.ToString())).ToList();
+                    if (!newItemsInSubGroup.Any()) continue;
+
+                    var representative = newItemsInSubGroup.First().Post;
+
+                    TimeOnly finalCustStart = subGroup.Max(x => (TimeOnly)x.Start);
+                    TimeOnly finalCustEnd = subGroup.Min(x => (TimeOnly)x.End);
+                    bool isGroupCritical = subGroup.Any(x => (bool)x.IsCritical);
+
+                    double gWeight = 0; double gVolume = 0;
+                    var detailList = new List<dynamic>();
+
+                    foreach (var item in newItemsInSubGroup)
+                    {
+                        var postItem = item.Post;
+                        var product = postItem.Product;
+
+                        // [BẢN VÁ 1: Lỗi Tuple Length] -> Ép kiểu rõ ràng về (Guid) để bẻ gãy dynamic
+                        var metrics = await GetProductMetricsInternalAsync((Guid)product.ProductId, attIdMap);
+
+                        double actualWeight = 0; double actualVolume = 0;
+                        if (product.ProductValues != null)
+                        {
+                            foreach (var pv in product.ProductValues)
+                            {
+                                // [BẢN VÁ 2: Lỗi CS1977] -> Ép kiểu về IEnumerable<dynamic>
+                                var options = pv.Attribute?.AttributeOptions as IEnumerable<dynamic>;
+                                var opt = options?.FirstOrDefault(o => o.OptionId == pv.AttributeOptionId);
+
+                                if (opt != null)
+                                {
+                                    // [BẢN VÁ 3: Lỗi HasValue] -> Dùng check khác null thay cho HasValue
+                                    if (opt.EstimateWeight != null && actualWeight <= 0) actualWeight = (double)opt.EstimateWeight;
+                                    if (opt.EstimateVolume != null && actualVolume <= 0) actualVolume = (double)opt.EstimateVolume;
+                                }
+                            }
+                        }
+
+                        // Lấy metrics an toàn như code cũ
+                        if (actualWeight <= 0) actualWeight = product.Category?.DefaultWeight ?? metrics.weight;
+                        if (actualVolume <= 0) actualVolume = (metrics.length > 0) ? (metrics.length * metrics.width * metrics.height) : 0.01;
+
+                        string dim = $"{Math.Round(metrics.length * 100)}x{Math.Round(metrics.width * 100)}x{Math.Round(metrics.height * 100)} cm - {Math.Round(actualWeight, 1)}kg - {Math.Round(actualVolume, 4)}m³";
+
+                        detailList.Add(new { Post = postItem, Weight = actualWeight, Volume = actualVolume, DimText = dim });
+                        gWeight += actualWeight;
+                        gVolume += actualVolume;
+                    }
+
+                    pool.Add(new
+                    {
+                        GroupedDetails = detailList,
+                        Lat = addr.Iat.Value,
+                        Lng = addr.Ing.Value,
+                        Weight = gWeight,
+                        Volume = gVolume,
+                        IsCritical = isGroupCritical,
+                        CustStart = finalCustStart,
+                        CustEnd = finalCustEnd,
+                        UserName = representative.Product?.User?.Name ?? "N/A",
+                        UserPhone = representative.Product?.User?.Phone ?? "N/A",
+                        FullAddress = group.Key.Address ?? "N/A",
+                        CategoryName = newItemsInSubGroup.Count > 1 ? $"{representative.Product?.Category?.Name} (+{newItemsInSubGroup.Count - 1})" : representative.Product?.Category?.Name,
+                        BrandName = representative.Product?.Brand?.Name ?? "N/A",
+                        DimText = newItemsInSubGroup.Count > 1 ? "Nhiều sản phẩm" : (string)detailList[0].DimText
+                    });
+                }
             }
+
             // 6. PHÂN PHỐI (TIÊU CHÍ: ƯU TIÊN GẤP -> LẤP ĐẦY XE ĐÃ CÓ HÀNG -> TỐI ƯU QUÃNG ĐƯỜNG)
             var unAssigned = new List<UnAssignProductPreview>();
             var sortedPool = pool.OrderByDescending(x => x.IsCritical).ThenByDescending(x => x.Weight).ToList();
@@ -401,22 +536,47 @@ namespace ElecWasteCollection.Application.Services
                 var b = buckets[bId];
                 if (!b.Products.Any()) continue;
 
-                var nodesForVRP = b.Products.GroupBy(p => new { p.Address, p.UserName }).Select((g, idx) => {
-                    var pSample = g.First();
-                    var original = pool.FirstOrDefault(x => x.FullAddress == g.Key.Address && x.UserName == g.Key.UserName);
-                    return new OptimizationNode
+                //var nodesForVRP = b.Products.GroupBy(p => new { p.Address, p.UserName }).Select((g, idx) => {
+                //    var pSample = g.First();
+                //    var original = pool.FirstOrDefault(x => x.FullAddress == g.Key.Address && x.UserName == g.Key.UserName);
+                //    return new OptimizationNode
+                //    {
+                //        OriginalIndex = idx,
+                //        Weight = g.Sum(p => p.Weight),
+                //        Volume = g.Sum(p => p.Volume),
+                //        Lat = pSample.Lat,
+                //        Lng = pSample.Lng,
+                //        Start = original?.CustStart ?? shiftStart,
+                //        End = original?.CustEnd ?? shiftEnd,
+                //        IsCritical = original?.IsCritical ?? false,
+                //        Tag = g.ToList()
+                //    };
+                //}).ToList();
+                var nodesForVRP = b.Products
+                    .Select(p =>
                     {
-                        OriginalIndex = idx,
-                        Weight = g.Sum(p => p.Weight),
-                        Volume = g.Sum(p => p.Volume),
-                        Lat = pSample.Lat,
-                        Lng = pSample.Lng,
-                        Start = original?.CustStart ?? shiftStart,
-                        End = original?.CustEnd ?? shiftEnd,
-                        IsCritical = original?.IsCritical ?? false,
-                        Tag = g.ToList()
-                    };
-                }).ToList();
+                        var originalPoolItem = pool.First(x => ((IEnumerable<dynamic>)x.GroupedDetails).Any(d => d.Post.PostId.ToString() == p.PostId));
+                        return new { Product = p, PoolItem = originalPoolItem };
+                    })
+                    .GroupBy(x => x.PoolItem) 
+                    .Select((g, idx) =>
+                    {
+                        var pSample = g.First().Product;
+                        var original = g.Key; 
+
+                        return new OptimizationNode
+                        {
+                            OriginalIndex = idx,
+                            Weight = g.Sum(x => x.Product.Weight),
+                            Volume = g.Sum(x => x.Product.Volume),
+                            Lat = pSample.Lat,
+                            Lng = pSample.Lng,
+                            Start = original.CustStart,  
+                            End = original.CustEnd,     
+                            IsCritical = original.IsCritical,
+                            Tag = g.Select(x => x.Product).ToList()
+                        };
+                    }).ToList();
 
                 var matrix = BuildMatrixForVehicle(point.Latitude, point.Longitude, nodesForVRP, avgSpeedKmH, serviceTimeMin);
                 var optimizedOrder = RouteOptimizer.SolveVRP(matrix.Distances, matrix.Times, nodesForVRP, b.Vehicle.Capacity_Kg, (b.Vehicle.Length_M * b.Vehicle.Width_M * b.Vehicle.Height_M), shiftStart, shiftEnd);
@@ -951,14 +1111,6 @@ namespace ElecWasteCollection.Application.Services
             return availableVehicles;
         }
 
-        //private string GetCompanyInitials(string companyName)
-        //{
-        //    if (string.IsNullOrWhiteSpace(companyName)) return "CORP";
-
-        //    var words = companyName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-        //    var initials = words.Select(w => w[0]).Take(3).ToArray();
-        //    return new string(initials).ToUpper();
-        //}
         private string GetCompanyInitials(string companyName)
         {
             if (string.IsNullOrWhiteSpace(companyName)) return "CORP";
