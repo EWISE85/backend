@@ -13,6 +13,7 @@ namespace ElecWasteCollection.Application.Model
 		public Guid? PostId { get; set; }
 
 		public Guid? ProductId { get; set; }
+		public Guid? VoucherId { get; set; }
 
 		public List<string> Images { get; set; }
 
