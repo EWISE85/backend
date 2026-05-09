@@ -604,5 +604,33 @@ namespace ElecWasteCollection.Application.Services
 			};
 			await _unitOfWork.Notifications.AddAsync(notification);
 		}
+
+		public async Task NotifyPickUpFail(Guid userId, string reason)
+		{
+			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
+			var title = "Thông báo thu gom thất bại";
+			var body = $"Rất tiếc, tài xế không thể thu gom rác điện tử của bạn như dự kiến. Lý do: {reason}. Vui lòng kiểm tra lại thông tin đơn hàng hoặc liên hệ hỗ trợ để được giúp đỡ.";
+			var dataPayload = new Dictionary<string, string>
+			{
+				{ "type", "SHIPPER_ARRIVAL" },
+				{ "reason", reason }
+			};
+			if (userTokens != null && userTokens.Any())
+			{
+				var tokens = userTokens.Select(d => d.FCMToken).Distinct().ToList();
+				await _firebaseService.SendMulticastAsync(tokens, title, body, dataPayload);
+			}
+			var notification = new Notifications
+			{
+				NotificationId = Guid.NewGuid(),
+				UserId = userId,
+				Title = title,
+				Body = body,
+				IsRead = false,
+				CreatedAt = DateTime.UtcNow,
+				Type = NotificationType.System.ToString()
+			};
+			await _unitOfWork.Notifications.AddAsync(notification);
+		}
 	}
 }
