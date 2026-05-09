@@ -34,7 +34,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task NotifyPointAdjustmentAsync(Guid userId, double delta, double newPointValue, string reason);
 		Task NotifyScheduleEmergencyConfirmedAsync(Dictionary<Guid, (DateOnly Date, string Time)> userSchedules);
 		Task NotifyUserReceivePoint(Guid userId, double point);
-		Task NotifyPickUpFail(Guid userId, string reason);
+		Task NotifyPickUpFail(Guid userId, string reason, Guid productId);
 
     }
 }

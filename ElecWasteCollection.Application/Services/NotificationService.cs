@@ -605,7 +605,7 @@ namespace ElecWasteCollection.Application.Services
 			await _unitOfWork.Notifications.AddAsync(notification);
 		}
 
-		public async Task NotifyPickUpFail(Guid userId, string reason)
+		public async Task NotifyPickUpFail(Guid userId, string reason, Guid productId)
 		{
 			var userTokens = await _unitOfWork.UserDeviceTokens.GetsAsync(udt => udt.UserId == userId);
 			var title = "Thông báo thu gom thất bại";
@@ -613,7 +613,8 @@ namespace ElecWasteCollection.Application.Services
 			var dataPayload = new Dictionary<string, string>
 			{
 				{ "type", "SHIPPER_ARRIVAL" },
-				{ "reason", reason }
+				{ "reason", reason },
+				{ "productId", productId.ToString() }
 			};
 			if (userTokens != null && userTokens.Any())
 			{
