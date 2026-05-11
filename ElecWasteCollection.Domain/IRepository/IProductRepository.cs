@@ -29,5 +29,6 @@ namespace ElecWasteCollection.Domain.IRepository
 		Task<(List<Products> Items, int TotalCount)> GetPagedProductsByPackageIdAsync(string packageId, int page, int limit);
 
 		Task<List<Products>> GetProductsNeedToPickUpAsync(Guid userId, DateOnly pickUpDate);
+		Task<Products?> GetProductByQrCodeWithDetailsToWarehouseAsync(string qrcode);
 	}
 }

@@ -43,6 +43,21 @@ namespace ElecWasteCollection.Infrastructure.Repository
 
 			return await query.ToListAsync();
 		}
+		public async Task<Products?> GetProductByQrCodeWithDetailsToWarehouseAsync(string qrcode)
+		{
+			var query = _dbSet.AsNoTracking()
+				.AsSplitQuery();
+
+			query = query
+				.Include(p => p.User)
+				.Include(p => p.Brand)
+				.Include(p => p.Category).ThenInclude(c => c.ParentCategory)
+				.Include(p => p.Images)
+				.Include(p => p.PointTransactions);
+				
+
+			return await query.FirstOrDefaultAsync(p => p.QRCode == qrcode);
+		}
 		public async Task<List<Products>> GetProductsCollectedByRouteAsync(DateOnly fromDate, DateOnly toDate, string smallCollectionPointId)
 		{
 			var query = _dbSet.AsNoTracking()

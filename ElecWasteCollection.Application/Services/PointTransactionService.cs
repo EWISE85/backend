@@ -26,7 +26,42 @@ namespace ElecWasteCollection.Application.Services
 			_userService = userService;
 			_notificationService = notificationService;
 		}
+		public async Task<bool> ConfirmProductPoint(Guid productId, double point, string? reason, bool saveChanges = true)
+		{
+			var product = await _unitOfWork.Products.GetAsync(p => p.ProductId == productId);
+			if (product == null)
+			{
+				throw new AppException("Sản phẩm không tồn tại", 404);
+			}
+			if (point < 0)
+			{
+				throw new AppException("Số điểm xác nhận phải là số dương", 400);
+			}
+			var description = "Xác nhận điểm cho sản phẩm.";
+			if (reason != null)
+			{
+				description = $"Điểm của sản phẩm bị đổi, lý do: {reason}";
+				
+			}
+			var pointTransaction = new PointTransactions
+			{
+				ProductId = productId,
+				UserId = product.UserId,
+				Desciption = description,
+				TransactionType = PointTransactionType.TICH_DIEM.ToString(),
+				Point = point,
+				CreatedAt = DateTime.UtcNow
+			};
+			await _unitOfWork.PointTransactions.AddAsync(pointTransaction);
+			await _userService.UpdatePointForUser(product.UserId, point);
 
+			if (!saveChanges)
+			{
+				return true;
+			}
+			var result = await _unitOfWork.SaveAsync();
+			return result > 0;
+		}
 		public async Task<List<PointTransactionModel>> GetAllPointHistoryByUserId(Guid id)
 		{
 			var pointTransactions = await _pointTransactionRepository.GetPointHistoryWithProductImagesAsync(id);

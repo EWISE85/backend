@@ -1123,5 +1123,144 @@ namespace ElecWasteCollection.Application.Services
 
             return result;
         }
-    }
+
+		public async Task<ProductDetailModel> AddDropOffProduct(ProductDropOffModel model)
+		{
+			var existingProduct = await _productRepository.GetAsync(p => p.QRCode == model.QrCode);
+			if (existingProduct != null)
+			{
+				throw new AppException("Sản phẩm với mã QR này đã tồn tại.", 400);
+			}
+			var newProduct = new Products
+			{
+				ProductId = Guid.NewGuid(),
+				CategoryId = model.SubCategoryId,
+				UserId = model.SenderId,
+				BrandId = model.BrandId,
+				Description = model.Description,
+				QRCode = model.QrCode,
+				CreateAt = DateOnly.FromDateTime(DateTime.UtcNow),
+				CollectionUnitId = model.SmallCollectionPointId,
+				isChecked = false,
+				Status = ProductStatus.CHO_TIEP_NHAN.ToString()
+			};
+			await _unitOfWork.Products.AddAsync(newProduct);
+
+			var productImages = new List<Image>();
+			for (int i = 0; i < model.Images.Count; i++)
+			{
+				var newProductImage = new Image
+				{
+					ImageUrl = model.Images[i],
+					ProductId = newProduct.ProductId,
+					Id = Guid.NewGuid()
+				};
+				productImages.Add(newProductImage);
+				await _unitOfWork.Images.AddAsync(newProductImage);
+			}
+
+			//if (createProductRequest.SenderId.HasValue)
+			//{
+			//	var pointTransaction = new CreatePointTransactionModel
+			//	{
+			//		UserId = createProductRequest.SenderId.Value,
+			//		Point = createProductRequest.Point,
+			//		ProductId = newProduct.ProductId,
+			//		Desciption = "Điểm nhận được khi gửi sản phẩm tại kho",
+			//	};
+			//	await _pointTransactionService.ReceivePointFromCollectionPoint(pointTransaction, false);
+			//	var user = await _unitOfWork.Users.GetAsync(u => u.UserId == createProductRequest.SenderId.Value);
+			//	if (user != null)
+			//	{
+			//		await _rankService.CalculateUserRankImpactAsync(user, newProduct);
+			//	}
+			//}
+			var newHistory = new ProductStatusHistory
+			{
+				ProductStatusHistoryId = Guid.NewGuid(),
+				ProductId = newProduct.ProductId,
+				ChangedAt = DateTime.UtcNow,
+				StatusDescription = "Sản phẩm đã được bỏ vào thùng tái chế.",
+				Status = ProductStatus.CHO_TIEP_NHAN.ToString()
+			};
+			await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
+			await _unitOfWork.SaveAsync();
+			return await BuildProductDetailModelAsync(newProduct);
+		}
+
+		public async Task<bool> UpdateProductStatusToInWarehouse(Guid productId, double point, string? reason)
+		{
+			var product = await _productRepository.GetAsync(p => p.ProductId == productId);
+			if (product == null) throw new AppException("Không tìm thấy sản phẩm với Id đã cho", 404);
+			product.Status = ProductStatus.NHAP_KHO.ToString();
+			_unitOfWork.Products.Update(product);
+			var newHistory = new ProductStatusHistory
+			{
+				ProductStatusHistoryId = Guid.NewGuid(),
+				ProductId = product.ProductId,
+				ChangedAt = DateTime.UtcNow,
+				StatusDescription = "Sản phẩm đã được tiếp nhận vào kho.",
+				Status = ProductStatus.NHAP_KHO.ToString()
+			};
+			await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
+			await _pointTransactionService.ConfirmProductPoint(productId, point, reason, false);
+			var user = await _unitOfWork.Users.GetAsync(u => u.UserId == product.UserId);
+			if (user != null)
+			{
+				await _rankService.CalculateUserRankImpactAsync(user, product);
+			}
+			await _unitOfWork.SaveAsync();
+			return true;
+		}
+
+		public async Task<ProductWatingToWarehouseDetailModel> GetInformationByQrCode(string qrcode)
+		{
+			var product = await _productRepository.GetProductByQrCodeWithDetailsToWarehouseAsync(qrcode);
+			if (product == null) throw new AppException("Không tìm thấy sản phẩm với mã QR đã cho", 404);
+			var imageUrls = product.Images?.Select(img => img.ImageUrl).ToList() ?? new List<string>();
+			var userReponse = new UserResponse
+			{
+				Avatar = product.User?.Avatar,
+				Name = product.User?.Name,
+				Email = product.User?.Email,
+				Phone = product.User?.Phone,
+				Points = product.User?.Points ?? 0,
+
+			};
+			var points = await _unitOfWork.BrandCategories.GetAsync(p => p.BrandId == product.BrandId && p.CategoryId == product.CategoryId);
+			double? realPoints = null;
+			string? changedPointMessage = null;
+
+			if (product.PointTransactions != null && product.PointTransactions.Any())
+			{
+				realPoints = product.PointTransactions.Sum(pt => pt.Point);
+
+				var latestTransaction = product.PointTransactions
+					.OrderByDescending(pt => pt.CreatedAt)
+					.FirstOrDefault();
+
+				if (latestTransaction != null && latestTransaction.TransactionType == PointTransactionType.DIEU_CHINH.ToString())
+				{
+					changedPointMessage = latestTransaction.Desciption;
+				}
+			}
+			return new ProductWatingToWarehouseDetailModel
+			{
+				ProductId = product.ProductId,
+				ParentCategoryId = product.Category?.ParentCategoryId,
+				ParentCategoryName = product.Category?.ParentCategory?.Name ?? "N/A",
+				SubCategoryId = product.CategoryId,
+				SubCategoryName = product.Category?.Name ?? "N/A",
+				Description = product.Description,
+				BrandId = product.BrandId,
+				BrandName = product.Brand?.Name ?? "N/A",
+				ProductImages = imageUrls,
+				QrCode = product.QRCode,
+				Status = StatusEnumHelper.ConvertDbCodeToVietnameseName<ProductStatus>(product.Status),
+				EstimatePoint = points.Points,
+				RealPoint = realPoints,
+				User = userReponse
+			};
+		}
+	}
 }
