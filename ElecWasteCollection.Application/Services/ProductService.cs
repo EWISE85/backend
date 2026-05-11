@@ -1217,6 +1217,7 @@ namespace ElecWasteCollection.Application.Services
 		{
 			var product = await _productRepository.GetProductByQrCodeWithDetailsToWarehouseAsync(qrcode);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với mã QR đã cho", 404);
+			if (product.Status != ProductStatus.CHO_TIEP_NHAN.ToString()) throw new AppException("Sản phẩm không ở trạng thái chờ tiếp nhận", 400);
 			var imageUrls = product.Images?.Select(img => img.ImageUrl).ToList() ?? new List<string>();
 			var userReponse = new UserResponse
 			{
