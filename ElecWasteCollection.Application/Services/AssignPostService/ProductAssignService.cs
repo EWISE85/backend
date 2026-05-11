@@ -36,7 +36,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
 
                     try
                     {
-                        // Truyền thêm targetCompanyIds vào logic xử lý nội bộ
                         var result = await AssignProductsLogicInternal(unitOfWork, distanceCache, productIds, workDate, targetCompanyIds);
 
                         var summaryData = new
@@ -75,7 +74,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                                 // Tạo thông báo
                                 string msg = $"Kho {stat.WarehouseName} vừa nhận được {stat.AssignedCount} sản phẩm.";
 
-                                // Gửi SignalR (await trực tiếp -> tuần tự)
                                 await notifService.SendNotificationAsync(
                                     userId: stat.AdminWarehouseId,
                                     title: "Hàng về kho",
@@ -223,7 +221,6 @@ namespace ElecWasteCollection.Application.Services.AssignPostService
                     totalGroupVol += m.volume;
                 }
 
-                // Tìm ứng viên thỏa mãn Bán kính (Chỉ quét trong RangeConfigs - các đối tác Primary)
                 var candidates = new List<ProductAssignCandidate>();
                 foreach (var rc in rangeConfigs)
                 {

@@ -228,7 +228,61 @@ namespace ElecWasteCollection.API.Controllers
                 return StatusCode(ex.StatusCode, ex.Message);
             }
         }
-    }
+		[HttpPut("update-status-to-warehouse/{productId}")]
+		public async Task<IActionResult> UpdateProductStatusToInWarehouse([FromRoute] Guid productId, UpdatePointTransactionRequest request)
+		{
+			var result = await _productService.UpdateProductStatusToInWarehouse(productId, request.NewPointValue, request.ReasonForUpdate);
+			if (!result)
+			{
+				return BadRequest("Failed to update product status to in warehouse.");
+			}
+			return Ok(new { message = "Product status updated to in warehouse successfully." });
+		}
+		[HttpGet("information-by-qrcode/{QRcode}")]
+		public async Task<IActionResult> GetProductInformationByQrCode(string QRcode)
+		{
+			var product = await _productService.GetInformationByQrCode(QRcode);
+			if (product == null)
+			{
+				return NotFound("Product not found.");
+			}
+
+			return Ok(product);
+		}
+		[HttpPost("drop-off")]
+		public async Task<IActionResult> DropOffProduct([FromBody] ProductDropOffRequest request)
+		{
+			if (request == null)
+			{
+				return BadRequest("Invalid data.");
+			}
+
+			var model = new ProductDropOffModel
+			{
+				QrCode = request.QrCode,
+				ParentCategoryId = request.ParentCategoryId,
+				SubCategoryId = request.SubCategoryId,
+				SmallCollectionPointId = request.SmallCollectionPointId,
+				BrandId = request.BrandId,
+				Images = request.Images,
+				Description = request.Description,
+				SenderId = request.SenderId
+			};
+
+			var result = await _productService.AddDropOffProduct(model);
+
+			if (result == null)
+			{
+				return StatusCode(400, "An error occurred while processing the product drop-off.");
+			}
+
+			return Ok(new
+			{
+				message = "Product dropped off successfully waiting for warehouse confirmation.",
+				item = result
+			});
+		}
+	}
 
 
 }

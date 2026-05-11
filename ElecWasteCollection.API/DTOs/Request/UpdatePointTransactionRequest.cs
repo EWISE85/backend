@@ -4,6 +4,6 @@
 	{
 		public double NewPointValue { get; set; }
 
-		public string ReasonForUpdate { get; set; }
+		public string? ReasonForUpdate { get; set; }
 	}
 }

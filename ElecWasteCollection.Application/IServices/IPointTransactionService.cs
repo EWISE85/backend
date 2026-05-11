@@ -18,5 +18,7 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> RevertPointFromCollectionPoint(Guid productId, Guid userId, bool saveChanges = true);
 
 		Task<bool> ReceivePointDaily(Guid userId, double point);
+		Task<bool> ConfirmProductPoint(Guid productId, double point, string? reason, bool saveChanges = true);
+
 	}
 }

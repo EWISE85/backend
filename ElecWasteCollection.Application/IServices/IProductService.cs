@@ -33,5 +33,9 @@ namespace ElecWasteCollection.Application.IServices
 		Task<bool> UpdateProductInformation(Guid categoryId, Guid brandId, List<string> images, Guid productId);
 		Task<bool> ProcessForceReceiveOverdueAsync(ForceReceiveOverdueProductRequest request);
         Task<bool> AssignQRCodeAndAutoSyncAsync(Guid productId, string qrCode, double? points);
-    }
+		Task<ProductDetailModel> AddDropOffProduct(ProductDropOffModel model);
+		Task<bool> UpdateProductStatusToInWarehouse(Guid productId, double point, string? reason);
+		Task<ProductWatingToWarehouseDetailModel> GetInformationByQrCode(string qrcode);
+
+	}
 }
