@@ -26,7 +26,7 @@ namespace ElecWasteCollection.Application.Services
 			_userService = userService;
 			_notificationService = notificationService;
 		}
-		public async Task<bool> ConfirmProductPoint(Guid productId, double point, string? reason, bool saveChanges = true)
+		public async Task<bool> ConfirmProductPoint(Guid productId, double estimatePoint, double point, string? reason, bool saveChanges = true)
 		{
 			var product = await _unitOfWork.Products.GetAsync(p => p.ProductId == productId);
 			if (product == null)
@@ -37,22 +37,29 @@ namespace ElecWasteCollection.Application.Services
 			{
 				throw new AppException("Số điểm xác nhận phải là số dương", 400);
 			}
-			var description = "Xác nhận điểm cho sản phẩm.";
-			if (reason != null)
-			{
-				description = $"Điểm của sản phẩm bị đổi, lý do: {reason}";
-				
-			}
 			var pointTransaction = new PointTransactions
 			{
 				ProductId = productId,
 				UserId = product.UserId,
-				Desciption = description,
+				Desciption = "Xác nhận điểm cho sản phẩm.",
 				TransactionType = PointTransactionType.TICH_DIEM.ToString(),
-				Point = point,
+				Point = estimatePoint,
 				CreatedAt = DateTime.UtcNow
 			};
 			await _unitOfWork.PointTransactions.AddAsync(pointTransaction);
+			if (estimatePoint != point)
+			{
+				var adjustmentTransaction = new PointTransactions
+				{
+					ProductId = productId,
+					UserId = product.UserId,
+					Desciption = $"Điểm của sản phẩm bị điều chỉnh từ {estimatePoint} thành {point}. Lý do: {reason}",
+					TransactionType = PointTransactionType.DIEU_CHINH.ToString(),
+					Point = point - estimatePoint,
+					CreatedAt = DateTime.UtcNow
+				};
+				await _unitOfWork.PointTransactions.AddAsync(adjustmentTransaction);
+			}
 			await _userService.UpdatePointForUser(product.UserId, point);
 
 			if (!saveChanges)

@@ -1188,10 +1188,12 @@ namespace ElecWasteCollection.Application.Services
 			return await BuildProductDetailModelAsync(newProduct);
 		}
 
-		public async Task<bool> UpdateProductStatusToInWarehouse(Guid productId, double point, string? reason)
+		public async Task<bool> UpdateProductStatusToInWarehouse(Guid productId, double realPoint, string? reason)
 		{
 			var product = await _productRepository.GetAsync(p => p.ProductId == productId);
 			if (product == null) throw new AppException("Không tìm thấy sản phẩm với Id đã cho", 404);
+			var estimatePoint = await _unitOfWork.BrandCategories.GetAsync(p => p.BrandId == product.BrandId && p.CategoryId == product.CategoryId);
+			if (estimatePoint == null) throw new AppException("Không tìm thấy điểm ước tính cho sản phẩm này", 404);
 			product.Status = ProductStatus.NHAP_KHO.ToString();
 			_unitOfWork.Products.Update(product);
 			var newHistory = new ProductStatusHistory
@@ -1203,7 +1205,7 @@ namespace ElecWasteCollection.Application.Services
 				Status = ProductStatus.NHAP_KHO.ToString()
 			};
 			await _unitOfWork.ProductStatusHistory.AddAsync(newHistory);
-			await _pointTransactionService.ConfirmProductPoint(productId, point, reason, false);
+			await _pointTransactionService.ConfirmProductPoint(productId, estimatePoint.Points ,realPoint, reason, false);
 			var user = await _unitOfWork.Users.GetAsync(u => u.UserId == product.UserId);
 			if (user != null)
 			{
